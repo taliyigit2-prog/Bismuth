@@ -77,7 +77,8 @@ Yetkiler (`src/shared/permissions.ts:57-60`, sıra: owner, manager, reception, a
 4. **İade yolu var ama resepsiyona kapalı:** `payments-service.create` `kind='refund'` (`payments-service.ts:139, :186`);
    iade tutarı net tahsilatı aşamaz (`assertRefundCovered` :167-180). Yetki `payments.refund` resepsiyonda **N**.
 5. Çıkış penceresinde giriş günü çıkış = gündüz kullanımı ücreti; ücret `dayUsePriceMinor` ile değiştirilebilir
-   (`reservations-service.ts:1408-1410`), 0 yazılabilir mi doğrulanmadı (sözleşme şemasına bakılmalı).
+   (`reservations-service.ts:1408-1410`); **0 yazılabilir** (doğrulandı: şema `dayUsePriceMinor: amountSchema.nonnegative().optional()`,
+   `procedures/booking.ts:104`; servis yalnız `!== undefined` bakıyor ve `repriceNight` 0 tutarlı kalem yazıyor, ek koruma yok) → H-06, P17d.
 
 **Sınıf:** eksik akış (Kritik) + küçük UI hatası (menünün açılıp tek pasif satır göstermesi; kapalı durumda menünün
 tamamen kaybolması). Hata değil, ama resepsiyon için "çalışmıyor" ile aynı etki.
@@ -107,7 +108,8 @@ Tasarım kuralları:
 - Kapalı rezervasyonda (`checked_out`) üç nokta menüsü **görünür kalmalı** ve "İade gir", "Geçmişi gör", "Not ekle"
   sunmalı. Menünün yok olması "program bozuk" algısı yaratıyor.
 - Kasa/defter: iade satırı negatif tahsilat olarak günün defterine düşer, kasa teslimine (x) dahil edilir;
-  `handover_id` mevcut mekanizmayla bağlanır. Rapor: iade ayrı sütun (bugün var mı doğrulanmadı; `reports/queries.ts`).
+  `handover_id` mevcut mekanizmayla bağlanır. Rapor: iade ayrı satır **bugün yok** (doğrulandı: yalnız net toplamdan düşülüyor,
+  `reports/queries.ts:69,299`, `reports-service.ts:394,501,606`; gelir defteri listesinde ayrı satır var, `income-section.tsx:104`) → P17a kabul 7.
 - "Girişi geri al" için yeni servis `reservations.undoCheckIn`: yalnız giriş gününde, odada KBS işaretli kişi varsa
   uyarı; `room_nights` yuvalarına dokunmaz; `audit`.
 
@@ -149,7 +151,7 @@ Amaç: en sık beş işlem tek tıkla, geri kalanı sağ tık menüsünde.
    Park et, Gelmedi, Vazgeçme ve iade, Misafir kartı. Telefonda uzun basma.
 4. **Çoklu seçim** (Ctrl/Shift ile çubuk seçimi) → üst araç çubuğunda **Toplu giriş**, **Toplu çıkış**, **Toplu not**,
    **Toplu ödeme**. Seçim aynı rezervasyonun odaları ya da aynı grup kimliğine bağlı rezervasyonlar.
-5. **Grup rezervasyonu**: `reservations.group_id` (yeni sütun, migrasyon 0019) + grup adı; takvimde aynı grup aynı
+5. **Grup rezervasyonu**: `reservations.group_id` (yeni sütun, migrasyon 0020; 0019 gündüz kullanımına ayrıldı, dalga sırası) + grup adı; takvimde aynı grup aynı
    kenarlık deseniyle; grup panelinde oda listesi ve oda başına misafir adı; **toplu giriş** = grup panelindeki tek düğme
    (`booking.checkInMany` yeni yordam, var olan `checkIn`'i döngüde çağırır, tek transaction).
 6. **Bugün şeridi**: takvimin üstünde "Bugün gelecekler N · Gidecekler N · Otelde N" ve tıklayınca liste (mevcut
@@ -157,8 +159,8 @@ Amaç: en sık beş işlem tek tıkla, geri kalanı sağ tık menüsünde.
 7. Oda satırında misafir adının yanına **aynı misafir başka odada da varsa** küçük zincir simgesi (yorum (a)/(b) için
    görünür açıklama).
 
-Bu tasarım G-30…G-48'i bozmaz; yeni gereksinim satırları gerektirir (G-193 grup rezervasyonu ve toplu giriş,
-G-194 sağ tık/hızlı işlemler). Faz 17 paketleri: P17b (grup + toplu giriş, L), P17c (sağ tık/hızlı rezervasyon, M).
+Bu tasarım G-30…G-48'i bozmaz; yeni gereksinim satırları gerektirir (G-194 grup rezervasyonu ve toplu giriş,
+G-195 sağ tık/hızlı işlemler; G-193 vazgeçme ve iade madde 1'de). Faz 17 paketleri: P17b (grup + toplu giriş, L), P17c (sağ tık/hızlı rezervasyon, M).
 
 ## 4. Madde 3 — "Rezervasyon silinmiyor; ödemesi olan iptal edilince takvimden tam çıkmıyor"
 
@@ -181,8 +183,12 @@ oda `cancelled`, 0 gece, ızgarada 0 konaklama; folyo `chargesMinor 0 / credited
 4. **Silme düğmesi yok:** bilinçli (CLAUDE.md yasak 11, G-24). Bir "Sil" asla eklenmemeli; ama "iptal edilen kayıtları
    göster/gizle" süzgeci ve geçmiş listesi gerekir.
 
-Doğrulanmadı: gerçek uygulamada iptal sonrası ızgaranın tazelenmesi (`booking-api.ts:94-102` `isCalendarQuery` ile
-geçersiz kılıyor; bayat veri kanıtı yok). Flow testi (bkz. `05-ekran-ve-tam-ekran-uyumu.md`) bunu doğrulamalı.
+**Doğrulandı (2026-11-12, gerçek Electron, F5 yok):** iptal ve gelmedi onayından 32 ms / 268 ms / 768 ms / 2 s sonra çubuk
+ızgarada **yok** (kontrol çubuğu duruyor), park alanına düşmüyor, misafir kartı geçmişinde "İptal edildi" / "Gelmedi"
+etiketiyle kalıyor; konsolda hata yok (`booking-api.ts:94-102` `isCalendarQuery` tazelemesi çalışıyor; betik ve
+görüntüler `.tmp/flow-tester/verify/`, depoya girmez). Yani resepsiyonun "takvimden çıkarılmıyor" algısı UI tazeleme
+hatası değil: (a) check-in sonrası iptal yolunun olmaması (madde 1, H-01) ve (b) ödemeli kaydın iptalinde iadenin
+yönetilmemesi (H-02) ile açıklanıyor.
 
 ### Çözüm
 
@@ -191,7 +197,7 @@ geçersiz kılıyor; bayat veri kanıtı yok). Flow testi (bkz. `05-ekran-ve-tam
   **İade bekliyor olarak park et** · **Tahsilat kalsın** (ör. iptal bedeli; neden zorunlu).
 - Takvim lejantına "İptal/gelmedi kayıtları geçmişte görünür: Misafir kartı → Geçmiş" notu; takvim üst çubuğuna
   "Son iptaller" küçük listesi (7 gün), böylece "nereye gitti?" sorusu cevaplanır.
-- Raporlarda iptal/gelmedi/iade ayrı satırlar (bugün var mı: `reports-service.ts` doğrulanmadı → hata raporu P17e).
+- Raporlarda iptal/gelmedi/iade ayrı satırlar (doğrulandı: bugün yok, yalnız net toplam → P17a kabul 7).
 
 ## 5. Madde 4 — "Sabah girip akşam çıkan müşteriden sonra oda aynı gün tekrar satılamıyor"
 
@@ -227,7 +233,8 @@ saat simgesi, raporda ayrı satır. Mews: day-use ayrı "hizmet", aynı oda hem 
 hizmet tanımlanabilir; saatlik hizmet ayrı. Opera: 0 gece + day-use fiyat kodu. HotelRunner: aynı gün giriş-çıkış +
 çıkış saatini ileri alma. Ortak desen: **day-use geceleme değildir, gece satışını engellemez, oda başına günde bir ya
 da saat aralığıyla birden fazla, sabit gündüz fiyatı, ayrı rapor satırı.** KBS/istatistikte day-use'un nasıl sayıldığı
-için resmî kaynak bulunamadı (doğrulanmadı; sahibin muhasebecisine sorulmalı).
+için resmî kaynak bulunamadı (doğrulanamadı: mevzuat yalnız "konaklayan" der, gündüz için ayrı hüküm yok; S-104 ile
+sahibin muhasebecisine soruluyor).
 
 ### Önerilen tasarım: "Gündüz kullanımı 2.0" (ayarlı, gereksinim değişikliği gerektirir)
 
@@ -239,7 +246,7 @@ için resmî kaynak bulunamadı (doğrulanmadı; sahibin muhasebecisine sorulmal
    `dayUse.turnoverMinutes` (temizlik arası, varsayılan 60), `dayUse.defaultStart/End` (ör. 10:00–18:00),
    `dayUse.priceMode` (`nightly` = gecelik öneri, `fixed` = oda tipi başına sabit gündüz fiyatı, `hourly`),
    `dayUse.countsInOccupancy` (raporda doluluğa girsin mi; varsayılan hayır), `dayUse.kbsReport` (KBS'ye bildirilir;
-   varsayılan evet — 1774 sayılı Kanun her konaklamayı kapsar; doğrulanmadı).
+   varsayılan evet — 1774 sayılı Kanun her konaklamayı kapsar; doğrulanamadı: gündüz konaklamaya özgü resmî yorum yok, S-104).
 3. **Çıkışta ikinci tur düzeltmesi (hata C):** `checkOut` aynı gün çıkışta gündüz yuvası doluysa gece satırını
    `day` yuvasına **saat aralığıyla** çevirir (turnover sonrası), gece yuvası boşalır. `dayUse.enabled=false` ise en
    azından gece satırı `day` yuvası doluyken **ikinci bir `day` satırı** olarak saklanır ve gece boşalır (benzersizlik
@@ -253,7 +260,7 @@ için resmî kaynak bulunamadı (doğrulanmadı; sahibin muhasebecisine sorulmal
 7. **Fiyat:** `priceMode=fixed` için `room_types.day_use_price_minor` (yeni sütun) ya da ayar tablosu; `hourly` için
    `hour_price_minor` × saat (yuvarlama `money.ts`).
 
-Gereksinim etkisi: G-37 değişir ("ayrı fiyat yok" kalkar), yeni G-195 (saat aralıklı gündüz kullanımı ve aynı gün
+Gereksinim etkisi: G-37 değişir ("ayrı fiyat yok" kalkar), yeni G-196 (saat aralıklı gündüz kullanımı ve aynı gün
 çoklu satış, ayarlı), K-44'e ek (K-48 taslağı). Hata C düzeltmesi gereksinim değişikliği beklemeden yapılabilir (K-44
 metni zaten "yeniden satılabilir" diyor).
 

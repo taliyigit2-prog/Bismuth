@@ -86,29 +86,40 @@ Harcama sütunu: başlatıcının yazdığı `$` (dalga toplamı, gerçek).
 
 | Dalga | Paket | Faz | Modül dosyası / ad alanı | Ajan | Tahmin | Harcama | Durum |
 |---|---|---|---|---|---|---|---|
-| 1 | P17a Vazgeçme ve iade akışı (undoCheckIn, iptal/çıkışta ödeme + iade, kapalı rezervasyonda menü) | 17 | booking, calendar | calendar-specialist | $12–18 | | ⬜ |
+| 1 | P17a Vazgeçme ve iade akışı (undoCheckIn, iptal/çıkışta ödeme + iade, kapalı rezervasyonda menü, raporda iptal/gelmedi/iade satırları) | 17 | booking, calendar, reports | calendar-specialist | $12–18 | | ⬜ |
 | 1 | P19c Depo temizliği (prototypes arşiv, faz0 iş akışları, icon, yerel yollar, kanca istisnaları) | 19 | — | feature-builder-lite | $2–4 | | ⬜ |
-| 2 | P17d Gündüz kullanımı 2.0 + ikinci tur hatası (migrasyon 0020) | 17 | booking, reservations, settings | db-migration-builder → calendar-specialist | $15–22 | | ⬜ |
-| 2 | P18a ui-shot çoklu boyut/ölçek/dil + ölçüm JSON | 18 | scripts | feature-builder-lite | $2–4 | | ⬜ |
-| 3 | P17b Grup rezervasyonu + toplu giriş (migrasyon 0019) | 17 | booking, reservations | db-migration-builder → calendar-specialist | $15–22 | | ⬜ |
-| 3 | P17c Hızlı takvim: sağ tık, hızlı çubuk, çoklu seçim, bugün şeridi | 17 | calendar | feature-builder | $8–12 | | ⬜ |
-| 4 | P17e Kritik/Yüksek hata düzeltmeleri (02 raporu) | 17 | bulguya göre | feature-builder / calendar-specialist | $8–12 | | ⬜ |
-| 4 | P18b Düzen düzeltmeleri (05 raporu) | 18 | features/*, layouts | feature-builder | $8–12 | | ⬜ |
-| 5 | P18c Pencere: F11, tam ekran/zoom hatırlama, çoklu monitör | 18 | main/windows, main/app | feature-builder | $6–10 | | ⬜ |
+| 2 | P17d Gündüz kullanımı 2.0 + ikinci tur hatası + H-06 (migrasyon **0019**) | 17 | booking, reservations, settings | db-migration-builder → calendar-specialist | $15–22 | | ⬜ |
+| 2 | P18a ui-shot çoklu boyut/ölçek/dil + ölçüm JSON; Electron e2e Codespace'te yeşil | 18 | scripts, tests/e2e | feature-builder-lite | $2–4 | | ⬜ |
+| 3 | P17b Grup rezervasyonu + toplu giriş (migrasyon **0020**) | 17 | booking, reservations | db-migration-builder → calendar-specialist | $15–22 | | ⬜ |
+| 3 | P18c Pencere: F11, tam ekran/zoom hatırlama, çoklu monitör | 18 | main/windows, main/app | feature-builder | $6–10 | | ⬜ |
+| 4 | P17c Hızlı takvim: sağ tık, hızlı çubuk, çoklu seçim (+ toplu ödeme), bugün şeridi, son iptaller listesi, park nedeni etiketi | 17 | calendar | feature-builder | $8–12 | | ⬜ |
+| 4 | P17e Yüksek/Orta hata düzeltmeleri (02 raporu; H-05, H-07, H-08, H-09) | 17 | bulguya göre | feature-builder / calendar-specialist | $8–12 | | ⬜ |
+| 5 | P18b Düzen düzeltmeleri (05 raporu) | 18 | features/*, layouts | feature-builder | $8–12 | | ⬜ |
 | 5 | P18d Çalışmayan öğeler (akış testi) | 18 | bulguya göre | feature-builder | $6–10 | | ⬜ |
 | 6 | P19a Sürüm iş akışı tekleştirme (tetikleme sahipte) | 19 | .github, electron-builder | packager | $5–8 | | ⬜ |
-| 6 | P19b Kurulum belgeleri + kılavuz + sihirbaz tek kâğıt adımı; P19d ajan bakımı | 19 | docs, guide, setup, .claude | feature-builder-lite (+ feature-builder sihirbaz) | $4–8 | | ⬜ |
-| 7 | P20a Kamera yan süreç iskeleti + Python hijyeni | 20 | main/camera, otel-kamera | camera-integrator | $12–20 | | ⬜ |
-| 7 | P20d Model değişimi (YuNet + SFace/AuraFace + ByteTrack) | 20 | otel-kamera | camera-integrator | $12–20 | | ⬜ |
+| 6 | P19b Kurulum belgeleri + kılavuz + sihirbaz tek kâğıt adımı + belge çelişkileri (Ç-01/02/04/05); P19d ajan bakımı | 19 | docs, guide, setup, .claude | feature-builder-lite (+ feature-builder sihirbaz) | $4–8 | | ⬜ |
+| 7 | P20a Kamera yan süreç iskeleti + Python hijyeni (kod bulguları listesi `ekler/kamera-kod-bulgulari.md` §0) | 20 | main/camera, otel-kamera | camera-integrator | $12–20 | | ⬜ |
 | 8 | P20b Kamera sekmesi | 20 | features/camera | camera-integrator | $8–12 | | ⬜ |
-| 8 | P20c Veri entegrasyonu (migrasyon 0021, şifreleme, rıza, alarm → bildirim) | 20 | camera, today | db-migration-builder → camera-integrator | $15–22 | | ⬜ |
-| 9 | P20e KVKK paketi | 20 | camera, settings | camera-integrator | $8–12 | | ⬜ |
-| 9 | P20f Kamera paketleme | 20 | electron-builder, resources | packager | $10–15 | | ⬜ |
-| 10 | P21a Profil altyapısı (K-54) | 21 | main/app/paths, auth, settings | feature-builder | $10–15 | | ⬜ |
-| 10 | P21b İstemci çoklu ana bilgisayar | 21 | remote | feature-builder | $8–12 | | ⬜ |
-| 11 | P21c Portföy özeti | 21 | portfolio | feature-builder | $8–12 | | ⬜ |
-| 11 | P21d Geç çıkış, no-show bedeli, gece raporu; P21e Orta/Düşük bulgular | 21 | booking, reports | feature-builder / lite | $8–12 | | ⬜ |
+| 8 | P20d Model değişimi (YuNet + SFace/AuraFace + ByteTrack) | 20 | otel-kamera | camera-integrator | $12–20 | | ⬜ |
+| 9 | P20c Veri entegrasyonu (migrasyon 0021, şifreleme, rıza, alarm → bildirim) | 20 | camera, today | db-migration-builder → camera-integrator | $15–22 | | ⬜ |
+| 10 | P20e KVKK paketi | 20 | camera, settings | camera-integrator | $8–12 | | ⬜ |
+| 10 | P20f Kamera paketleme | 20 | electron-builder, resources | packager | $10–15 | | ⬜ |
+| 11 | P21a Profil altyapısı (K-54) | 21 | main/app/paths, auth, settings | feature-builder | $10–15 | | ⬜ |
+| 11 | P21d Geç çıkış, no-show bedeli, hasar depozitosu kalemi, gece raporu | 21 | booking, reports | feature-builder | $6–9 | | ⬜ |
+| 12 | P21b İstemci çoklu ana bilgisayar | 21 | remote | feature-builder | $8–12 | | ⬜ |
+| 12 | P21e Orta/Düşük bulgular (02 + 04 listesi, faz-21) | 21 | bulguya göre | feature-builder-lite / feature-builder | $4–6 | | ⬜ |
+| 13 | P21c Portföy özeti | 21 | portfolio | feature-builder | $8–12 | | ⬜ |
 | Son | Tam kontrol sürüsü (bug-hunter + flow-tester modül başına, decision, security, db, ui, screen, privacy, copy, tracer) → düzeltme turu → `/owner-review` | — | — | hepsi | $40–60 | | ⬜ |
+
+Dalga sırası kuralları: bir paket bağımlı olduğu paketten **sonraki** dalgada (P17c → P17b, P18b → P17c, P20b/P20d → P20a,
+P20c → P20b, P21b/P21c → P21a); aynı dalgadaki iki paket aynı dizine dokunmaz. Migrasyon numarası dalga sırasıyla verilir
+(`db:generate` sıradakini üretir): P17d 0019 → P17b 0020 → P20c 0021; çakışırsa yeniden üretilir.
+
+Dalga toplamları (paket + kontrol ajanları $3–8 + orkestra Opus $3–8): 1: $20–38 · 2: $23–42 · 3: $27–48 · 4: $22–40 ·
+5: $20–38 · 6: $15–32 · 7: $18–36 · 8: $26–48 · 9: $21–38 · 10: $24–43 · 11: $22–40 · 12: $18–34 · 13: $14–28 ·
+Son: $45–70 → **toplam $315–575** (dalga 1–5 = Faz 17 + ekran ≈ $110–210). Model başına: Opus $50–130 · Sonnet $250–415 ·
+Haiku $15–30. Ölçüm: Codespace 2026-11-12'de 4 çekirdek / 15 GB (paralel kodlayan ajan sınırı yine 2; üçüncü çekirdekler
+test/paketleme için).
 
 Kontrol ajanları dalga başına: `08-gelistirme-plani.md` §6. Faz 5–16'nın açık kalan satırları (5. dalga son kontrol,
 QA2b, akış testleri C/D) bu plana **Son** satırında katılır; ayrı yürütülmez.

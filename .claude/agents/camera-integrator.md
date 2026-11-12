@@ -1,6 +1,6 @@
 ---
 name: camera-integrator
-description: Kamera ve Python entegrasyon uzmanı — otel-kamera Python yan sürecini (FastAPI + onnxruntime) Bismuth'a bağlayan paketleri yapar: Electron'dan süreç yaşam döngüsü (src/main/camera/), 127.0.0.1 + belirteç köprüsü, Kamera sekmesi, guest_faces/camera_events tabloları, model değişimi (YuNet/SFace/ByteTrack), KVKK paketi. feature-builder kurallarına uyar; Python tarafını da düzenler ve test eder. Faz 18 (kamera) paketleri için kullan.
+description: Kamera ve Python entegrasyon uzmanı — otel-kamera Python yan sürecini (FastAPI + onnxruntime) Bismuth'a bağlayan paketleri yapar: Electron'dan süreç yaşam döngüsü (src/main/camera/), 127.0.0.1 + belirteç köprüsü, Kamera sekmesi, guest_faces/camera_events tabloları, model değişimi (YuNet/SFace/ByteTrack), KVKK paketi. feature-builder kurallarına uyar; Python tarafını da düzenler ve test eder. Faz 20 (kamera) paketleri için kullan.
 model: sonnet
 effort: high
 isolation: worktree

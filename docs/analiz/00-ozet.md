@@ -48,10 +48,10 @@ Tam liste: `02-hata-raporu.md` (18 hata, 9 çelişki), `06-…` §7 ve `ekler/ka
 | 7–9 | **Faz 20 Kamera:** yan süreç, sekme, veri, açık lisanslı modeller, KVKK, paketleme | $85–130 |
 | 10–11 | **Faz 21 Çoklu otel + diğer:** otel profilleri, portföy özeti, geç çıkış/no-show/gece raporu | $40–60 |
 | Son | Tam kontrol sürüsü + sahip onay sayfası | $40–60 |
-| **Toplam** | | **$300–440** (Opus orkestra ≈ $90–130, Sonnet ≈ $190–280, Haiku ≈ $10–20) |
+| **Toplam** | | **$315–575** (Opus orkestra + decision-auditor ≈ $50–130, Sonnet ≈ $250–415, Haiku ≈ $15–30; 13 dalga + Son, `08` §6) |
 
-Kısa bütçeyle: yalnız dalga 1–4 resepsiyonun dört maddesini kapatır. Opus `node tools/ajan/ajan.mjs --model claude-opus-5-5
---butce 150 "…"` ile başlar (`OPUS-BASLANGIC.md`); bütçe bitince `--devam` ile sürer.
+Kısa bütçeyle: yalnız dalga 1–5 ($110–210) resepsiyonun dört maddesini ve ekran düzeltmelerini kapatır. Opus `node tools/ajan/ajan.mjs --model claude-opus-5-5
+--butce 200 "…"` ile başlar (`OPUS-BASLANGIC.md`); bütçe bitince `--devam` ile sürer.
 
 ## 4. Sizin yapmanız gerekenler (program dışı)
 1. Aşağıdaki soruları cevaplayın (cevapsız = yazılı varsayılan).
@@ -87,6 +87,6 @@ Kısa bütçeyle: yalnız dalga 1–4 resepsiyonun dört maddesini kapatır. Opu
 17. (S-116) Tüm oteller için tek ekranda görmek istediğiniz ilk **üç bilgi**? — *Varsayılan: bugünkü doluluk, kasa, ayın geliri.*
 18. (S-117) Aynı personel iki otelde de çalışıyor mu? — *Varsayılan: hayır.*
 19. (S-118) 21st.dev için ücretsiz anahtar alıp denemeyi onaylıyor musunuz (günde 2 bileşen; `API_KEY_21ST` secret)? — *Varsayılan: denenmez.*
-20. (Ç-01) Hafta sonu: fiyat için **Cuma + Cumartesi**, takvim vurgusu **Cumartesi + Pazar** — bilinçli mi? — *Varsayılan: bilinçli; belgeye not düşülür.*
+20. (S-119, Ç-01) Hafta sonu: fiyat için **Cuma + Cumartesi**, takvim vurgusu **Cumartesi + Pazar** — bilinçli mi? — *Varsayılan: bilinçli; belgeye not düşülür.*
 
-Cevaplarınızı Opus'a yazarsanız `docs/plan/06-kararlar.md` 7. tur tablosuna işler ve ilgili K-48…K-55 kararlarını kesinleştirir.
+Cevaplarınızı Opus'a yazarsanız `docs/plan/06-kararlar.md` 7. tur tablosuna işler ve ilgili K-48…K-55 kararlarını kesinleştirir (K-56 ajan sistemi kararı zaten kesin).

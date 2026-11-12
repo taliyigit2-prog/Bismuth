@@ -1,7 +1,7 @@
 # Faz 21 — Çoklu otel ve diğer iyileştirmeler
 
 > Kaynak: `docs/analiz/10-coklu-otel.md` (K-54), `04-otel-ihtiyaclari.md` §5, `02-hata-raporu.md` (Orta/Düşük);
-> paket kartları `08-gelistirme-plani.md` §5. Dalgalar 10–11. Ön koşul: S-114…S-117 cevapları ya da varsayılanlar.
+> paket kartları `08-gelistirme-plani.md` §5. Dalgalar 11–13. Ön koşul: S-114…S-117 cevapları ya da varsayılanlar.
 
 ## Amaç
 Sahibin birden fazla oteli tek programdan, her otel kendi bilgisayarında ve kendi veritabanıyla (çevrimdışı ilke
@@ -22,9 +22,11 @@ S-114…S-117.
    `replica/<kod>`; otel değiştirince oturum yenilenir.
 3. **P21c Portföy özeti** — `features/portfolio/` (owner): otel başına bugün doluluk, gelen/giden, kasa, ayın
    gelir/gider, açık arızalar; kaynak kopya ya da canlı bağlantı; para birimi otel başına, toplam için otel kuru; telefon düzeni.
-4. **P21d Küçük otel pratikleri** — geç çıkış ücreti (saat + tutar kalemi), no-show bedeli kalemi, yazdırılabilir
-   tek sayfa gece raporu (gelen/giden/kalan/kasa).
-5. **P21e Orta/Düşük bulgular** — 02 raporunda "P21e" işaretli bulgular.
+4. **P21d Küçük otel pratikleri** — geç çıkış ücreti (saat + tutar kalemi), no-show bedeli kalemi, hasar depozitosu
+   (iade edilecek emanet) kalemi, yazdırılabilir tek sayfa gece raporu (gelen/giden/kalan/kasa).
+5. **P21e Orta/Düşük bulgular** — 02 raporunda "P21e" işaretli bulgular: H-13 telefon "çıkış yaptı" rozeti; H-16 telefon
+   sheet'i geri tuşuyla kapanmıyor; 04 §3: mükerrer misafir kartı uyarısı (ad yazılınca mevcut kart önerisi), Ayarlar
+   "sık kullanılan" sekmesi; akış testi 2. oturum Orta/Düşük maddeleri (02 §2 "P21e").
 
 ## Kabul ölçütleri
 - [ ] Mevcut tek otel kurulumu yükseltmede veri kaybı olmadan `hotels/<kod>/` altına taşınır; yedekler açılır (migrasyon/taşıma testi).

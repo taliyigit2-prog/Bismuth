@@ -104,7 +104,7 @@ Gerekçeler ve ayrıntılar `docs/analiz/` altında: K-48 ve K-55 → `03-reseps
 `00-ozet.md`'deki soruları cevaplamasıyla kesinleşir; cevap gelmezse Opus varsayılanla uygular ve satırı
 "varsayılan (tarih)" yapar (K-39).
 
-## Sahip cevapları (2026-11-12, 7. tur — analiz turu soruları S-100…S-117)
+## Sahip cevapları (2026-11-12, 7. tur — analiz turu soruları S-100…S-119)
 
 > Henüz cevap yok. Opus cevapları buraya `| Soru | Cevap | Etki |` tablosuyla yazar; cevapsız soru = `05-sorular.md`
 > varsayılanı + "(varsayılan)".

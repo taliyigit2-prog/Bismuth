@@ -103,8 +103,9 @@ sonunda). Durunca `YURUTME.md` günlüğü + `❓ SORULARIM`.
 - Kancaların gerçek oturumda çalıştığı bu oturumda gözlendi: `camera-data-guard` ilk commit denemesinde belgede örnek
   RTSP adresini yakaladı (düzeltildi); `pre-commit-gate` belge commit'inde araç zincirini atladı; `format-file`,
   `no-network-guard`, `protect-files` Write/Edit'lerde çalıştı.
-- Doğrulanmadı: `bypassPermissions` modunda `permissions.deny` kurallarının uygulanması (SDK davranışı); kancalar bu
-  modda çalıştı (gözlendi).
+- **Doğrulandı (2026-11-12, 2. oturum):** `bypassPermissions` ile çalışan Agent SDK oturumunda `permissions.deny`
+  `Read(./**/*.npy)` kuralı, `.tmp/deny-test.npy` dosyasının Read aracıyla okunmasını engelledi ("directory denied by
+  permission settings"); deny kuralları bu modda da uygulanıyor. Kancalar da bu modda çalıştı (gözlendi).
 
 ## 6. Açık işler (plan P19d "ajan sistemi bakımı")
 `protect-files` kaçış değişkenini kaldır; `stop-gate` izleme kapsamına `drizzle/`, `scripts/`, `package.json`;

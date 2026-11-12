@@ -1,7 +1,7 @@
 # Faz 20 — Kamera entegrasyonu (otel-kamera → Bismuth içinde sekme)
 
 > Kaynak: `docs/analiz/06-kamera-entegrasyonu.md` (seçenekler, mimari A', veri sözleşmesi, hukuk/lisans, aşamalar),
-> `.claude/rules/camera.md`; paket kartları `08-gelistirme-plani.md` §4. Dalgalar 7–9. **Ön koşul: sahip kararları
+> `.claude/rules/camera.md`; paket kartları `08-gelistirme-plani.md` §4. Dalgalar 7–10. **Ön koşul: sahip kararları
 > S-107…S-112 (ya da varsayılanlar) ve K-49…K-53 taslaklarının kabulü.** Ürünleştirme öncesi KVKK avukat görüşü sahip
 > onay paketindedir; geliştirme bunu beklemez.
 
@@ -19,7 +19,9 @@ S-107 (personel), S-108 (telefon görünümü), S-109 (Telegram), S-110 (modelle
 ## Teslimatlar
 1. **P20a Yan süreç iskeleti + Python hijyeni** — `src/main/camera/sidecar.ts`, `bridge.ts` (belirteç, `127.0.0.1`,
    sağlık, 5 çökme/10 dk → durdur + bildirim), `camera` yetki alanı, `camera.*` ayarları; Python: `requirements.txt` `==`,
-   analiz döngüsünde try/except + sağlık, Telegram kodu kaldırılır, belirteç/Origin denetimi, `pytest` + `ruff`.
+   analiz döngüsünde try/except + sağlık, Telegram kodu kaldırılır, belirteç/Origin denetimi, `pytest` + `ruff`;
+   `docs/analiz/ekler/kamera-kod-bulgulari.md` §0'da "P20a" işaretli kod bulguları; `AI_GELISTIRICI_NOTLARI.md` kodla
+   eşitlenir (Ç-08); `docs/plan/bagimliliklar.md`'ye kamera bölümü. Dalga 7'de tek paket (P20d ile aynı dizin).
 2. **P20b Kamera sekmesi** — `features/camera/`: canlı yayın (MJPEG `<img>`), durum kartı, alarm listesi, "alarmları
    duraklat"; CSP istisnası yalnız `127.0.0.1:<port>`; menü + yetki; telefon/Mac yalnız alarm listesi (S-108 varsayılanı).
 3. **P20c Veri entegrasyonu** — migrasyon 0021 (`guest_faces`: occupant_id, embedding_enc, crop_path, model, consent_at,
@@ -27,7 +29,8 @@ S-107 (personel), S-108 (telefon görünümü), S-109 (Telegram), S-110 (modelle
    "Kameradan yüz al" (Kişiler sekmesi, rıza kutusu zorunlu); check-in/out → aktif liste; alarm → `notifications`;
    "misafir olarak kaydet"; dışa aktarma/yedek/kopya dışı; silme + audit.
 4. **P20d Model değişimi** — YuNet (tespit) + SFace ya da AuraFace (tanıma) + ByteTrack, hepsi ONNX; torch/ultralytics/
-   insightface kaldırılır; eşik ölçüm betiği (sentetik set, FAR/FRR); CPU/RSS ölçümü raporda.
+   insightface kaldırılır; eşik ölçüm betiği (sentetik set, FAR/FRR); CPU/RSS ölçümü raporda; kod bulguları §0'da "P20d"
+   işaretli maddeler (etiket çizimi renderer'a, ByteTrack/IoU, eşikler). Dalga 8 (P20b ile).
 5. **P20e KVKK paketi** — rıza kaydı ve geri alma; aydınlatma metni şablonu (3 dil, yazdırılabilir); saklama/imha
    ayarları ve imha raporu (`camera.faceRetentionDays`, `camera.alertRetentionDays`); personel dışlama listesi;
    `privacy-auditor` temiz.

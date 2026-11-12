@@ -147,4 +147,5 @@ Cevaplar `06-kararlar.md` 7. tura yazılır. Cevap gelmezse varsayılan uygulan�
 | S-116 | Tüm oteller için tek yerde görmek istediğiniz ilk **üç bilgi**? | Bugünkü doluluk, kasa, ayın geliri | ⬜ |
 | S-117 | Aynı personel iki otelde de çalışıyor mu (maaş tek bordroda mı)? | Hayır; çalışıyorsa her otelde ayrı kayıt | ⬜ |
 | S-118 | 21st.dev için ücretsiz anahtar alıp denemeyi onaylıyor musunuz (günde 2 bileşen)? Codespaces secret adı `API_KEY_21ST`. | Denenmez; mevcut shadcn bileşenleriyle devam | ⬜ |
+| S-119 | Hafta sonu tanımı: fiyat için **Cuma + Cumartesi** (K-44), takvim vurgusu **Cumartesi + Pazar** (G-40). Bu ayrım bilinçli mi, yoksa ikisi de aynı günler mi olsun? (02 raporu Ç-01) | Bilinçli; K-44 detayına tek cümle not düşülür, kod değişmez (P19b) | ⬜ |
 

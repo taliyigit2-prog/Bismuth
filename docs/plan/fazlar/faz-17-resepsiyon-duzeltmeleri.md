@@ -1,7 +1,7 @@
 # Faz 17 — Resepsiyon düzeltmeleri (vazgeçme ve iade, grup, hızlı takvim, gündüz kullanımı 2.0)
 
 > Kaynak: resepsiyonun gerçek kullanımdan dört maddesi (`docs/analiz/03-resepsiyon-geri-bildirimi.md`), paket kartları
-> `docs/analiz/08-gelistirme-plani.md` §1. Yürütme `/orkestra`, dalgalar 1–4 (`YURUTME.md`).
+> `docs/analiz/08-gelistirme-plani.md` §1. Yürütme `/orkestra`, dalgalar 1–4 (`YURUTME.md`; P17c dalga 4, P17b'den sonra).
 
 ## Amaç
 
@@ -13,7 +13,7 @@ G-193 (vazgeçme ve iade, ZORUNLU), G-194 (grup ve toplu giriş, ZORUNLU), G-195
 kullanımı 2.0, ZORUNLU); G-37, G-39, G-42, G-43, G-46, G-60. Kararlar: K-44, K-48 (taslak), K-55 (taslak).
 
 ## Ön koşul
-Faz 5–16 kodu (`main` ile aynı taban), `npm run check` yeşil, migrasyon sırası 0019 (P17b) ve 0020 (P17d).
+Faz 5–16 kodu (`main` ile aynı taban), `npm run check` yeşil, migrasyon sırası **0019 (P17d, dalga 2)** ve **0020 (P17b, dalga 3)**.
 
 ## Sorular
 S-100 (iade yetkisi), S-101 ("ortak görünüyor"), S-102…S-105 (gündüz kuralları), S-106 (grup folyosu). Cevapsız =
@@ -23,15 +23,19 @@ S-100 (iade yetkisi), S-101 ("ortak görünüyor"), S-102…S-105 (gündüz kura
 1. **P17a Vazgeçme ve iade** — `booking.undoCheckIn`; `in_house` menüsünde "Vazgeçme ve iade" (aynı gün çıkış + iade /
    girişi geri al + iptal / erken çıkış); iptal ve çıkış pencerelerinde tahsilat özeti ve iade satırı ya da "İade
    bekliyor" parkı; `checked_out` panelde üç nokta menüsü (İade gir, Geçmiş, Not); iade satırı defter + kasa teslimi;
-   raporlarda iade satırı; kılavuz §3–4 güncel.
-2. **P17b Grup rezervasyonu** — migrasyon 0019 (`reservation_groups`, `reservations.group_id`); oda başına misafir adı;
+   raporlarda iptal / gelmedi / iade ayrı satırlar (bugün yalnız net toplam); `undoCheckIn`'de odada KBS işaretli kişi
+   varsa uyarı; kılavuz §3–4 güncel.
+2. **P17b Grup rezervasyonu** — migrasyon 0020 (`reservation_groups`, `reservations.group_id`); oda başına misafir adı;
    grup paneli; `booking.checkInMany/checkOutMany` (atomik); takvimde grup deseni + lejant; folyo kipi ayarı (S-106).
 3. **P17c Hızlı takvim** — sağ tık / uzun basma menüsü; hızlı rezervasyon çubuğu; Ctrl/Shift çoklu seçim + toplu
-   işlemler; bugün şeridi; panel başlığında Giriş yap · Ödeme al · Çıkış yap düğmeleri.
-4. **P17d Gündüz kullanımı 2.0** — migrasyon 0020 (`room_nights.start_time/end_time`, indeks, `room_types.day_use_price_minor`);
+   işlemler (not/giriş/çıkış/ödeme); bugün şeridi; panel başlığında Giriş yap · Ödeme al · Çıkış yap düğmeleri; takvim
+   üst çubuğunda "Son iptaller" (7 gün) listesi + lejant notu; park alanında park nedeni etiketi; S-101 (b) ise aynı
+   misafirin başka odadaki konaklaması için zincir simgesi.
+4. **P17d Gündüz kullanımı 2.0** — migrasyon 0019 (`room_nights.start_time/end_time`, indeks, `room_types.day_use_price_minor`);
    `dayUse.*` ayarları; saat çakışma kuralı; ikinci tur çıkışında gece yuvası boşalır (hata C); takvimde yarım çubuk;
-   rapor satırı; doluluğa katılım ayarı.
-5. **P17e Kritik/Yüksek hata düzeltmeleri** — `docs/analiz/02-hata-raporu.md` §2'de "P17e" işaretli bulgular:
+   rapor satırı; doluluğa katılım ayarı; H-06 (çıkış penceresinde "aynı gün ücreti" varsayılanı ayardan, 0 için onay,
+   yuva doluysa alan gizli).
+5. **P17e Yüksek/Orta hata düzeltmeleri** (Kritik H-01 P17a'da) — `docs/analiz/02-hata-raporu.md` §2'de "P17e" işaretli bulgular:
    H-05 telefon numarası maskesi (+90/0 ayıklama, yapıştırma), H-07 misafir adı uzunluk sınırı + istemci 400'leri,
    H-08 gecelik fiyat doğrulama (negatif/üst sınır/`abc`/0 onayı), H-09 yetkisiz ayar sekmesi adı sızıntısı; her biri
    için yeniden üretim testi.
@@ -52,7 +56,7 @@ S-100 (iade yetkisi), S-101 ("ortak görünüyor"), S-102…S-105 (gündüz kura
 
 ## Teknik notlar
 - Durum makinesi değişmezleri `endReservation`/`settleStatus` korunur; yeni geçişler tabloya eklenir (03 §1.1).
-- `room_nights` benzersizliği 0020'de `(room_id, date, slot, start_time)`; eski satırlarda `start_time` null = tüm gün.
+- `room_nights` benzersizliği 0019'da `(room_id, date, slot, start_time)`; eski satırlarda `start_time` null = tüm gün.
 - Para `amount_minor`; iade `payments.kind='refund'`, `assertRefundCovered` korunur; silme yok.
 - Takvim ızgarası sanallaştırılmış; `dir="ltr"` adası; inline style yalnız konum/boyut.
 - i18n: `booking.*`, `calendar.*`, `errors.*`, `settings.dayUse.*`; `tr-copy-guide` sözlüğü.

@@ -58,7 +58,8 @@ Faz durumu: `docs/plan/fazlar/DURUM.md` · Yürütme (dalgalar): `docs/plan/fazl
 - **Otonom yürütme:** `/orkestra` — `YURUTME.md`'den sıradaki dalgayı alır, paketleri ajanlara dağıtır, birleştirir,
   kontrolleri ve kontrol ajanlarını koşturur, durma koşullarında (`/orkestra` §5) sahibe `❓ SORULARIM` ile sorar.
   Tek faz için `/phase-runner NN`; dağıtım ayrıntısı `/parallel-build`; kontroller `/qa`; token kuralları `/token-economy`;
-  arama `/code-graph`. Diğerleri: `/owner-review`, `/add-migration`, `/ui-screen`, `/release`, `/requirement-change`.
+  arama `/code-graph`. Diğerleri: `/owner-review`, `/add-migration`, `/ui-screen`, `/release`, `/requirement-change`;
+  başvuru: `/electron-security` (Electron/HTTP güvenlik listesi), `/tr-copy-guide` (arayüz metni sözlüğü ve tonu).
 - **Yapan ajanlar** (model/çaba ajan dosyasında sabit; `docs/analiz/09-ajan-sistemi.md` §2): `feature-builder` (sonnet),
   `calendar-specialist` (sonnet/high; takvim, rezervasyon, iptal/iade, gündüz kullanımı), `db-migration-builder`
   (sonnet/high; şema + migrasyon), `camera-integrator` (sonnet/high; Python yan süreç + Kamera sekmesi), `packager`

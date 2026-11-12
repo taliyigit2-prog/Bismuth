@@ -1,8 +1,9 @@
 # 07 — Kurulum ve dağıtım ("kolayca indir ve kur")
 
 > Hazırlayan: Fable (2026-11-12). Kaynak: `electron-builder.yml`, `.github/workflows/*.yml`, `docs/kurulum.md`,
-> `docs/gelistirici.md`, `package.json`, `scripts/`, `prototypes/`, `.devcontainer/`. Dakika tahminleri kendi bilgimdir
-> (GitHub: Windows runner 2×, macOS runner 10× Linux dakikası); doğrulanmadı. Sahip için tek sayfalık rehber:
+> `docs/gelistirici.md`, `package.json`, `scripts/`, `prototypes/`, `.devcontainer/`. Dakika çarpanları GitHub belgesinden
+> (doğrulandı 2026-11-12, docs.github.com "About billing for GitHub Actions": dakika başına Linux 2 çekirdek $0,006,
+> Windows $0,010, macOS $0,062 → macOS ≈ 10×, Windows ≈ 2× Linux; dahil dakikalarda çarpan 1×/2×/10×). Sahip için tek sayfalık rehber:
 > `docs/kurulum-rehberi-basit.md` (taslak; gerçek makinede doğrulanacak, S-80).
 
 ## 1. Mevcut durum

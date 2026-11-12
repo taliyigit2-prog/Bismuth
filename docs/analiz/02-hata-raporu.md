@@ -17,7 +17,7 @@
 | `node .claude/hooks/test-hooks.mjs` | ✓ 89/89 | önce 73/73; yeni kancalarla 89 |
 | `npm run build` | ✓ 13,6 s | |
 | `npm run check` | ✓ (2026-11-12, oturum sonu) | typecheck + lint + format:check + 2427 test; `.claude/.checks-passed` yazıldı |
-| e2e | koşulmadı (Electron Codespace'te `libgtk-3`/`xauth` eksikliğiyle açılmıyordu; devcontainer düzeltildi) | akış testi mobil harness (aynı React + servis katmanı, HTTP taşıma) üzerinden yapıldı; ekran denetimi Electron'u elle kütüphane açarak çalıştırdı |
+| e2e | 1. oturum: koşulmadı (Electron `libgtk-3`/`xauth` eksikliğiyle açılmıyordu; devcontainer düzeltildi). **2. oturum (2026-11-12, 4 çekirdek):** Electron `xvfb-run -a` ile açıldı; `flow-tester` doğrulama ve modül turlarını **gerçek Electron'da** koştu | tam `npm run e2e` koşusu P18a kabulünde |
 
 ## 2. Mantık hataları, yarım akışlar, çalışmayan öğeler (koddan ve gerçek uygulamadan)
 
@@ -37,8 +37,8 @@
 | H-12 | Orta | Grup rezervasyonu / toplu giriş yok; sağ tık ve çift tık (boş hücre) hiçbir şey yapmıyor | Resepsiyon madde 2 | akış E, D; `calendar-grid.tsx` (onContextMenu yok) | P17b, P17c | L/M | P17b, P17c |
 | H-13 | Düşük | Telefon gün listesinde çıkış yapmış misafir "Gidenler"de "Ödenmedi" rozetiyle; "çıkış yaptı" bilgisi yok | Yanıltıcı rozet | akış P8 | Durum rozeti `done` → "Çıkış yaptı" | S | P21e |
 | H-14 | Düşük | Telefonda Ayarlar radyoları 16×16, görev anahtarları 32×18 (<44 px) | Dokunma zorluğu | 05 §3 #4 | Satır tıklanabilir, min-h 44 | S | P18b |
-| H-15 | Düşük | `?` kısayolu listeyi açmadı (F1 açıyor) — doğrulanmadı (odak) | Küçük | akış E | `?` için `keydown` `key === '?'` kontrolü | S | P21e |
-| H-16 | Düşük | Telefon ledger "Gider/Ödeme ekle" sheet'i Esc ile kapanmadı — doğrulanmadı | Küçük | 05 #13 | flow-tester telefon turunda doğrula | — | P18d |
+| H-15 | — | ~~`?` kısayolu listeyi açmadı~~ **Doğrulandı, hata değil** (2026-11-12, gerçek Electron): odak gövde/ızgara/düğmedeyken `?` ve F1 listeyi açıyor (takvim, bugün, defter, misafirler, ayarlar); yazı alanı odaktayken ve diyalog açıkken bilerek susuyor (`use-global-shortcuts.ts`). İlk turdaki gözlem Playwright `press('Shift+/')`'in `key="/"` üretmesinden | — | `.tmp` doğrulama raporu §2 | — | — | — |
+| H-16 | Düşük | ~~Telefon ledger sheet'i Esc ile kapanmadı~~ **Çürütüldü** (2026-11-12, telefon 390×844): "Gider ekle"/"Ödeme ekle" sheet'inde 44×44 Kapat (X), Vazgeç, Esc ve dışa dokunma dördü de kapatıyor. Kalan pürüz: **tarayıcı geri tuşu sheet'i kapatmıyor** | Küçük (telefonda geri tuşu alışkanlığı) | `.tmp` doğrulama raporu §3 | Sheet açıkken `history.pushState` + `popstate` ile kapatma | S | P21e |
 | H-17 | Düşük | 2×/3× zoom'da araç çubuğu düğmeleri üst üste biniyor | Nadir | 05 #7 | Zoom üst sınırı 1.5 ya da katlanan araç çubuğu | S | P18c |
 | H-18 | Düşük | 1–2 gecelik çubuklarda ad "…" ile kısalıyor (her çözünürlükte) | Okunabilirlik | 05 #3 | Gün sütunu genişliği çözünürlüğe göre | S | P18b |
 
@@ -55,7 +55,7 @@ listesi ve alt gezinme, resepsiyon rolünde menü/adres/API yetki denetimleri (4
 | `in_house` iken iptal reddi (`guestInHouse`) | servis testi yok | `reservations-service.test.ts` | P17a |
 | `in_house` / `checked_out` panel menüsü | UI testi yok | `reservation-panel.test.tsx` durum × menü matrisi | P17a |
 | 1 gecelik aynı gün çıkış, ikinci tur (C), iki gündüz kullanımı | yok | repro betiği (`ekler/resepsiyon-repro.test.ts.txt`) beklenen davranışa çevrilir | P17d |
-| İptal sonrası ızgara ve park alanı | grid testi var mı doğrulanmadı | `grid.test.ts` cancelled/parked | P17a |
+| İptal sonrası ızgara ve park alanı | **Doğrulandı:** `grid.test.ts:106` iptal ve park edilen rezervasyonun ızgarada olmadığını kapsıyor (`grid.ts:63` `ON_GRID` süzmesi); gerçek Electron'da iptal/gelmedi onayından <40 ms sonra çubuk kalkıyor, park alanına düşmüyor, misafir kartı geçmişinde kalıyor | — (kapsam var) | — |
 | Telefon tarih seçici genişliği | e2e yok | mobil e2e viewport ölçümü | P18d |
 | Telefon alanı maskesi | yok | 6 biçim birim testi | P17e |
 | Pencere durumu (tam ekran/maximize) | `window-state` testi yalnız sınırlar | `isFullScreen` kaydı | P18c |

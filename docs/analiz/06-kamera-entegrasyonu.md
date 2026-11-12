@@ -125,7 +125,7 @@ Python sidecar (resources/camera/, gömülü Python 3.12 + venv yok, site-packag
 |---|---|---|
 | Ağ kodu yalnız dört klasörde | RTSP (`cv2.VideoCapture`) ve `127.0.0.1` HTTP yeni yüzey | **K-49:** `src/main/camera/` beşinci izinli klasör; yalnız `127.0.0.1` ve RTSP (yerel ağ) hedefleri; `no-network-guard` kancası bu klasörde yalnız `127.0.0.1`/`rtsp://` desenlerine izin verir, `fetch` dış adres yasak |
 | Telegram = dış servis (G-07, çevrimdışı ilke) | `api.telegram.org`'a fotoğraf | **K-50:** Telegram kaldırılır. Bildirim = Bismuth bildirim merkezi + telefon arayüzü. İsteğe bağlı fotoğrafsız metin bildirimi ileride `src/main/network/notify/` altında, `network.enabled` ve `camera.externalNotify` ikisi de açıkken, 5 sn zaman aşımı, sessiz başarısızlık |
-| KBS/kimlik verisi depoya girmez | Yüz = biyometrik, kimlikten hassas | **K-51:** yüz vektörü/kırpma `userData/camera/` ve `guest_faces` tablosunda AES-GCM şifreli (anahtar `safeStorage`); yedek/dışa aktarma dışı; kanca `kbs-data-guard` `.npy/.onnx-embedding/guest_photos` desenlerini de engeller; test verisi sentetik |
+| KBS/kimlik verisi depoya girmez | Yüz = biyometrik, kimlikten hassas | **K-51:** yüz vektörü/kırpma `userData/camera/` ve `guest_faces` tablosunda AES-GCM şifreli (anahtar `safeStorage`); yedek/dışa aktarma dışı; kanca `camera-data-guard` (mevcut) `.npy/.onnx-embedding/guest_photos` desenlerini engeller; test verisi sentetik |
 | Veri silinmez (yasak 11) | Kamera 30 günde siler | **K-52:** biyometrik veri bu kuralın **istisnasıdır** (KVKK ölçülülük): `guest_faces` çıkışta/sürede fiziksel silinir, `audit_log`'a "face.deleted" yazılır; `camera_events` kırpmaları `camera.alertRetentionDays` (varsayılan 3) sonra silinir, olay satırı kalır |
 | Tek giriş (G-60) | Kamera panelinde elle ad/oda | **K-53:** kamera tarafında misafir girişi yok; tek kaynak Bismuth |
 | Otele özel kural = ayar | Eşikler `.env` | Tüm eşikler Bismuth ayarları (`camera.*`), kamera sürecine başlangıçta JSON ile iletilir |
@@ -137,10 +137,12 @@ Python sidecar (resources/camera/, gömülü Python 3.12 + venv yok, site-packag
 
 ### 6.1 KVKK (özet; kaynaklar ve tarihler `ekler/kamera-kaynaklar.md`'de)
 
-- Yüz verisi **biyometrik = özel nitelikli kişisel veri** (6698 m.6). 7499 sayılı Kanun (01.06.2024) açık rıza dışındaki
-  şartları genişletti; ama "misafir tanıma" bu şartlardan hiçbirine açıkça girmiyor → fiilen **açık rıza** gerekir; rıza
-  serbest olmalı, yani **kamerasız alternatif** sunulmalı (Kurul biyometrik rehberi, 2021).
-- Kurul 2026/921 ilke kararı: **mesai takibinde yüz tanıma, açık rıza olsa bile ölçüsüz.** Kamera çalışanları da
+- Yüz verisi **biyometrik = özel nitelikli kişisel veri** (6698 m.6). 7499 sayılı Kanun (RG 12.03.2024, yürürlük 01.06.2024; **doğrulandı**, Resmî Gazete metni) m.6/3'ü yedi şarta
+  çıkardı: açık rıza, kanunda öngörülme, hayat/beden bütünlüğü, alenileştirme, hak tesisi, sağlık, istihdam/İSG, vakıf-dernek.
+  "Sözleşmenin ifası" listede **yok**; "misafir tanıma" bu şartlardan hiçbirine açıkça girmiyor → fiilen **açık rıza** gerekir;
+  rıza serbest olmalı, yani **kamerasız alternatif** sunulmalı (Kurul "Biyometrik Verilerin İşlenmesinde Dikkat Edilmesi
+  Gereken Hususlara İlişkin Rehber", Eylül 2021 — tarih ikincil kaynaktan; PDF 10 MB üstü olduğu için bu oturumda okunamadı).
+- Kurul 2026/921 ilke kararı (29.04.2026; kvkk.gov.tr duyurusu, **doğrulandı**): **mesai takibinde yüz tanıma, açık rıza olsa bile ölçüsüz.** Kamera çalışanları da
   görüyorsa yüz tanıma çalışanlara uygulanmamalı (çalışan yüzleri "tanınmayan ama alarm üretmeyen" listede).
 - Aydınlatma: kamera olan her yerde tabela + metin; VERBİS: 50 çalışan / 100 milyon TL altı muaf (2025/1572; ana
   faaliyet biyometri değilse), yine de aydınlatma, güvenlik ve imha politikası zorunlu.
@@ -154,13 +156,13 @@ Python sidecar (resources/camera/, gömülü Python 3.12 + venv yok, site-packag
 
 | Bileşen | Lisans | Kapalı kaynak ticari ürüne gömme | Kaynak (2026-11-12) |
 |---|---|---|---|
-| Ultralytics YOLO11 (kod + ağırlık) | AGPL-3.0 | ❌ Enterprise lisans olmadan olmaz; ayrı süreç olarak dağıtmak bile tartışmalı | ultralytics.com/license |
+| Ultralytics YOLO11 (kod + ağırlık) | AGPL-3.0 | ❌ Enterprise lisans olmadan olmaz: resmî sayfa "ticari ürün, kapalı kaynak yazılım, gömülü kamera/cihaz" için Enterprise lisans şart diyor; ayrıca `settings.sync=True` varsayılanıyla anonim analitik gönderir (G-07 ihlali) | ultralytics.com/license, docs.ultralytics.com/usage/settings (doğrulandı) |
 | InsightFace kodu | MIT | ✅ | github deepinsight/insightface |
 | InsightFace `buffalo_s/l`, `antelopev2` ağırlıkları | yalnız ticari olmayan araştırma | ❌ (ticari lisans e-posta ile) | README "non-commercial research" |
-| ByteTrack | MIT | ✅ | github ifzhang/ByteTrack |
-| onnxruntime / OpenCV / FastAPI | MIT / Apache-2.0 / MIT | ✅ (OpenCV FFmpeg LGPL dinamik bağlı; bildirim dosyası) | kendi bilgi, doğrulanmadı |
-| **YuNet** (yüz tespiti) | MIT | ✅ | opencv_zoo |
-| **SFace** (tanıma) | Apache-2.0 (eğitim verisi lisansı belirsiz) | ✅ (veri riski notu) | opencv_zoo |
+| ByteTrack | MIT | ✅ | github ifzhang/ByteTrack LICENSE (doğrulandı) |
+| onnxruntime / OpenCV / FastAPI | MIT / Apache-2.0 / MIT | ✅ (`opencv-python` tekerlekleri FFmpeg'i **LGPL 2.1** ile taşır; dinamik bağ + bildirim dosyası yeterli) | **doğrulandı** (LICENSE dosyaları: microsoft/onnxruntime, opencv/opencv 4.x, fastapi/fastapi; opencv-python README "Licensing"; ffmpeg.org/legal) |
+| **YuNet** (yüz tespiti) | MIT (Shiqi Yu, 2020) | ✅ | opencv_zoo `models/face_detection_yunet/LICENSE` (doğrulandı) |
+| **SFace** (tanıma) | Apache-2.0 (eğitim verisi lisansı belirsiz) | ✅ (veri riski notu) | opencv_zoo `models/face_recognition_sface/LICENSE` (doğrulandı) |
 | **AuraFace** (tanıma) | Apache-2.0, ticari veriyle eğitilmiş | ✅ (ağır: ResNet100) | huggingface fal/AuraFace-v1 |
 | YOLOX-Nano/Tiny (kişi) | Apache-2.0 | ✅ | github Megvii |
 | YOLO-NAS | ticari yasak | ❌ | super-gradients |

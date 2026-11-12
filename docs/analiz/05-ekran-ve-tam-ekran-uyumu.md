@@ -23,7 +23,8 @@ metin, viewport dışına taşan etkileşimli öğe, üst üste binen etkileşim
 **Ortam notu (kurulum bulgusu):** Electron bu Codespace'te `libgtk-3` eksikliğinden açılmıyordu ve `xvfb-run` `xauth`
 olmadığı için çalışmıyordu; ajan kütüphaneleri kök yetkisi olmadan `/tmp` altına açtı. `.devcontainer/devcontainer.json`
 bu dalda düzeltildi (`xauth libgtk-3-0 libnss3 libasound2t64 libxss1`). Yeni Codespace'te e2e ve ekran görüntüsü
-komutları bu düzeltmeyle çalışır (doğrulanacak: P18a).
+komutları bu düzeltmeyle çalışır (**doğrulandı 2. oturumda, 2026-11-12:** Electron `xvfb-run -a` ile açıldı, akış testleri gerçek
+Electron'da koştu; tam `npm run e2e` koşusu P18a kabulünde).
 
 ## 2. Genel sonuç
 
@@ -47,7 +48,7 @@ Esc ile kapandı (kalan ikisi diyalog değil satır içi öneri düğmesi). Tele
 | 10 | Düşük | Pencere | Yakınlaştırma (Ctrl +/−) kalıcı değil; her açılışta 100 % | `menu.ts:36-38` roller; `zoomFactor` kodu yok | `ui.zoom` kişisel ayar (IPC ile uygulanır, HTTP'den değil, K-37); Görünüm ayarında seçici | P18c | S |
 | 11 | Bilgi | Pencere | Çoklu monitör: yalnız "kayıtlı konum bir ekranla kesişiyor mu" denetimi; monitör çıkarılınca OS yerleşimine düşer (makul) | `window-state.ts` loadWindowState | `screen.getDisplayMatching` ile en yakın ekranın çalışma alanına sığdır (isteğe bağlı) | P18c | S |
 | 12 | Bilgi | Pencere | `minWidth 960 / minHeight 600` çalışıyor; 960×600'de yatay taşma yok; ikinci pencere yok | window.json | — | — | — |
-| 13 | Doğrulanmadı | Telefon ledger | "Gider ekle"/"Ödeme ekle" tam ekran sheet'i Esc ile kapanmadı (dokunmatikte Esc yok; kapatma düğmesi var mı bakılmadı) | phone-dialogs.json | `flow-tester` telefon turunda doğrulanır | P18d | — |
+| 13 | Düşük (çürütüldü) | Telefon ledger | **Doğrulandı 2026-11-12:** "Gider ekle"/"Ödeme ekle" sheet'inde 44×44 Kapat (X), Vazgeç, Esc ve dışa dokunma dördü de kapatıyor; yatay taşma 0. Kalan: tarayıcı/telefon **geri tuşu** sheet'i kapatmıyor | `.tmp/flow-tester/verify/` §3 | Sheet açıkken `pushState` + `popstate` ile kapat | P21e | S |
 
 Denenemeyenler (pencere yöneticisi yok): gerçek `maximize`, F11 ve Ctrl +/− tuşlarının OS düzeyinde etkisi, çoklu
 monitör, gerçek DPI, macOS Retina. Bunlar P18c kabulünde kod incelemesi + birim test ve sahip onay paketinde gerçek
@@ -93,8 +94,10 @@ Ekran denetimi 24 diyalog/menüyü açtı. Tam etkileşim taraması (`flow-teste
   1. https://21st.dev/mcp → hesap aç → API anahtarını kopyala.
   2. GitHub → profil → Settings → Codespaces → **New secret**: ad `API_KEY_21ST`, değer anahtar, depo olarak Bismuth seç.
   3. Codespace'i durdurup yeniden başlat (secret ortam değişkeni olarak gelir; `echo ${API_KEY_21ST:+var}` ile kontrol).
-  4. Depodaki `.mcp.json` zaten hazır (anahtar yok, `${API_KEY_21ST}` başvurusu); Claude Code ilk açılışta proje MCP
-     sunucusunu onaylamanı ister. Başlık adı (`x-api-key`) doğrulanmadı; çalışmazsa `claude mcp add --transport http 21st
-     https://21st.dev/api/mcp --header "Authorization: Bearer ${API_KEY_21ST}"` denenir ve `.mcp.json` ona göre düzeltilir.
+  4. Depodaki `.mcp.json` zaten hazır (anahtar yok, `${API_KEY_21ST}` başvurusu; başlık `x-api-key` — resmî README ile
+     **doğrulandı**, `.mcp.json` değişmedi; Claude Code `headers` içinde `${VAR}` genişletmesini destekler, resmî belge
+     code.claude.com/docs/en/mcp). Claude Code ilk açılışta proje MCP sunucusunu onaylamanı ister. Alternatif resmî
+     kurulum: `npx @21st-dev/cli@latest init --client claude`. Ücretsiz planda günde 2 bileşen alma sınırı var
+     (ayrıntı `ekler/kamera-kaynaklar.md` §D).
   5. Ajanlar yalnız görev metninde "21st.dev'den kalıp ara" yazıyorsa kullanır; alınan her bileşen lisans + bağımlılık
      + i18n + CSS değişkeni dönüşümünden geçer ve `ui-reviewer` onayı alır.
