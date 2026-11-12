@@ -2,10 +2,6 @@ name: faz0-shell
 # Faz 0 · A0.1 — package the spike shell for Windows (NSIS) and macOS (DMG, ad-hoc) with two Electron lines,
 # smoke-run the unpacked app on each OS and report sizes. Artifacts are only uploaded for the line the owner tests.
 on:
-  push:
-    paths:
-      - "prototypes/shell/**"
-      - ".github/workflows/faz0-shell.yml"
   workflow_dispatch:
 
 permissions:

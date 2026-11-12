@@ -1,10 +1,6 @@
 name: faz0-live-checks
 # Faz 0 · A0.5 — live checks of FX / weather / holiday sources from a runner with open internet.
 on:
-  push:
-    paths:
-      - "prototypes/live-checks/**"
-      - ".github/workflows/faz0-live-checks.yml"
   workflow_dispatch:
     inputs:
       samples:

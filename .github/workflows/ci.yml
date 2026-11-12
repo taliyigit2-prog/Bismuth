@@ -1,14 +1,8 @@
 name: ci
-# Every push: typecheck, lint, unit tests, hook tests, build, e2e (Electron + phone view) on Linux;
-# Windows and macOS installers (smoke-tested, kept 14 days) only when started by hand ("Run workflow") or for a tag:
-# they use most of the free Actions minutes (macOS minutes count ten times).
+# Started by hand only ("Run workflow"): typecheck, lint, unit tests, hook tests, build, e2e on Linux,
+# plus Windows and macOS installers. Pushes and pull requests do not start it, to save the account's
+# limited Actions minutes (checks run in the development environment instead; macOS minutes count ten times).
 on:
-  push:
-    paths-ignore:
-      - 'docs/**'
-      - 'prototypes/**'
-      - '.github/workflows/faz0-*.yml'
-  pull_request:
   workflow_dispatch:
 
 permissions:
