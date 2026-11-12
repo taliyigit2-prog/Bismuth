@@ -55,7 +55,7 @@ karşılanır; bu ekran Mac'teki salt-okunur kopya altyapısının (Faz 13) doğ
 7. **Raporlar.** Otel içinde değişmez; portföy ekranı yalnız özet (ayrıntı için otele geçilir).
 8. **Turizm istatistiği / KBS** otel başına kalır (her tesisin kendi bildirimi).
 
-Varsayılan (sahip cevaplamazsa): K-54 uygulanır, portföy özeti Faz 20'ye ertelenir (önce profil altyapısı).
+Varsayılan (sahip cevaplamazsa): K-54 uygulanır, portföy özeti Faz 21 içinde son pakete ertelenir (önce profil altyapısı).
 
 ## 4. Sahibe sorular (S-114…S-117)
 
@@ -68,6 +68,6 @@ Varsayılan (sahip cevaplamazsa): K-54 uygulanır, portföy özeti Faz 20'ye ert
 
 | Paket | İçerik | Büyüklük | Bağımlılık |
 |---|---|---|---|
-| P20a Profil altyapısı | `paths.ts` profil kökü, taşıma, otel seçici, "Oteller" ayarı, sahip hesabı kopyalama, yedek yolu | M | — |
-| P20b İstemci çoklu ana bilgisayar | Bağlan ekranında kayıt listesi, kopya klasörleri otel başına | M | P20a |
-| P20c Portföy özeti | `features/portfolio/`, özet üretici, owner yetkisi, telefon düzeni | M | P20a, P20b |
+| P21a Profil altyapısı | `paths.ts` profil kökü, taşıma, otel seçici, "Oteller" ayarı, sahip hesabı kopyalama, yedek yolu | M | — |
+| P21b İstemci çoklu ana bilgisayar | Bağlan ekranında kayıt listesi, kopya klasörleri otel başına | M | P21a |
+| P21c Portföy özeti | `features/portfolio/`, özet üretici, owner yetkisi, telefon düzeni | M | P21a, P21b |

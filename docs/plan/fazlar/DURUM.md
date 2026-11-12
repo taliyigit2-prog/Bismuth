@@ -22,8 +22,13 @@
 | 14 | `faz-14-yedek-aktarma.md` | ✅ kod tamam (2026-10-05); son kontrol + onay paketinde | program klasörü + otel Drive'ı, 30 gün, şifreli, parçalı |
 | 15 | `faz-15-ui-cilasi.md` | ✅ kod tamam (2026-10-05); son kontrol + onay paketinde | UI fazı 2 + üç dil + **ayrıntılı program içi kılavuz** + kısayollar |
 | 16 | `faz-16-test-paketleme-surum.md` | 🔄 sertleştirme, paketleme, belgeler tamam; uçtan uca testler (P16c) ve CI yeşili sürüyor | v1.0 |
+| 17 | `faz-17-resepsiyon-duzeltmeleri.md` | ⬜ planlandı (2026-11-12) | resepsiyonun 4 maddesi: vazgeçme/iade, grup + toplu giriş, hızlı takvim, gündüz kullanımı 2.0, kritik hatalar (G-193…G-196) |
+| 18 | `faz-18-ekran-ve-tam-ekran.md` | ⬜ planlandı (2026-11-12) | çözünürlük/ölçek/tema/dil uyumu, pencere ve tam ekran, çalışmayan öğeler |
+| 19 | `faz-19-kurulum-ve-dagitim.md` | ⬜ planlandı (2026-11-12) | sürüm iş akışı tekleştirme, kurulum belgeleri, depo temizliği, ajan bakımı |
+| 20 | `faz-20-kamera-entegrasyonu.md` | ⬜ planlandı (2026-11-12; sahip kararı S-107…S-112) | otel-kamera Bismuth içinde sekme: yan süreç, veri, açık lisanslı modeller, KVKK, paketleme |
+| 21 | `faz-21-coklu-otel-ve-diger.md` | ⬜ planlandı (2026-11-12; sahip kararı S-114…S-117) | profil başına otel + portföy özeti (K-54), geç çıkış/no-show/gece raporu, orta/düşük bulgular |
 
-**Şu anki faz:** 5–16 **kesintisiz yürütülüyor** (K-39: sahip ara onay istemiyor; hepsi bitince ayrıntılı kontrol ve
+**Şu anki faz:** 17–21 **analiz turu planı; `/orkestra` ile dalga 1'den başlanır** (`YURUTME.md`). Faz 5–16 kodu tamam; kalan son kontrol "Son" dalgasında. Eski not: 5–16 **kesintisiz yürütülüyor** (K-39: sahip ara onay istemiyor; hepsi bitince ayrıntılı kontrol ve
 tek onay). Plan, paketler ve ilerleme: `YURUTME.md`. Faz 4'ün güncellenen ekranları da son onay paketine girer.
 
 **Açık küçük soru (fazları engellemez):** S-80 — Faz 1 paketini otel bilgisayarında (Windows) ve Mac'te açıp denemek +

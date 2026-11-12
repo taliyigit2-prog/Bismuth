@@ -59,5 +59,5 @@
 2. Gündüz kullanımı 2.0 + ikinci tur hatası (P17d) — Yüksek.
 3. Grup rezervasyonu + toplu giriş (P17b) — Yüksek.
 4. Hızlı rezervasyon ve sağ tık (P17c) — Orta.
-5. Geç çıkış ücreti, no-show bedeli kalemi, gece raporu yazdırma (P21a, "diğer iyileştirmeler") — Orta.
-6. Çoklu otel (P20a–c) — sahip kararına bağlı.
+5. Geç çıkış ücreti, no-show bedeli kalemi, gece raporu yazdırma (P21d, "diğer iyileştirmeler") — Orta.
+6. Çoklu otel (P21a–c) — sahip kararına bağlı.

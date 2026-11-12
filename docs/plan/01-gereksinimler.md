@@ -76,7 +76,7 @@ ertelenebilir) · **İSTEĞE BAĞLI** (sahip onayına bağlı ek fikir).
 | G-34 | Hücre içeriği: **misafir adı + gecelik fiyat** (+ birim) (S-23); küçük simgeler: hücre notu, **VIP**, sürekli istek, **KBS'ye bildirilmemiş kişi uyarısı** (G-54); misafirin sürekli isteği varsa rezervasyonda otomatik görünür (G-192). (değişti: 2026-10-02, 4. tur) | ZORUNLU |
 | G-35 | Bir rezervasyon birden fazla oda. | ZORUNLU |
 | G-36 | Geceye göre farklı fiyat. | ZORUNLU |
-| G-37 | Aynı gün aynı odada iki misafir; day‑use ayrı tür (yalnız tür + renk; ayrı fiyat kuralı yok — S-25). (değişti: 2026-10-02, 4. tur) | ZORUNLU |
+| G-37 | Aynı gün aynı odada iki misafir; day‑use ayrı tür (yalnız tür + renk; ayrı fiyat kuralı yok — S-25). (değişti: 2026-10-02, 4. tur) | ZORUNLU (değişti: 2026-11-12 — ayrı gündüz fiyatı ve saat aralığı G-196 ile eklendi) |
 | G-38 | Satılmaz / bakımda / arızalı oda bloğu (G-180 ile bağlantılı). | ZORUNLU |
 | G-39 | Park edilmiş rezervasyonlar (tablo altı). | ZORUNLU |
 | G-40 | Özel günler: bayram otomatik (TR); **varsayılan vurgulu günler cumartesi ve pazar**; kullanıcı **istediği günü özel gün** yapar; kullanıcı notu tek/aralık/toplu (S-24). (değişti: 2026-10-02, 4. tur) | ZORUNLU |
@@ -88,6 +88,10 @@ ertelenebilir) · **İSTEĞE BAĞLI** (sahip onayına bağlı ek fikir).
 | G-46 | Rezervasyon panelinde **misafirin geçmişi tek tıkla**: önceki konaklamalar ve ödediği gecelik fiyatlar (G-190). | ZORUNLU |
 | G-47 | **Açılış ekranı Takvim**'dir (S-11); kullanıcı kendi açılış ekranını ayarlardan değiştirebilir. (yeni: 2026-10-02) | ZORUNLU |
 | G-48 | **Oda tipine göre varsayılan fiyat** ve **hafta sonu / özel gün farkı** (S-20): rezervasyon yazılırken öneri fiyat gelir, kullanıcı değiştirir; program fiyat dayatmaz. (yeni: 2026-10-02) | ÖNEMLİ |
+| G-193 | **Vazgeçme ve iade** (resepsiyon geri bildirimi 1 ve 3, 2026-11-12): giriş yapılmış bir konaklamadan misafir vazgeçtiğinde program tek menüden "aynı gün çıkış + iade", "girişi geri al + iptal" ya da "erken çıkış" sunar; iptal ve çıkış pencereleri tahsilatı gösterir ve iade satırı ya da "İade bekliyor" parkı önerir; kapalı (çıkış yapılmış) rezervasyonun paneli işlem menüsünü (iade gir, geçmiş, not) korur; hiçbir kayıt silinmez (`docs/analiz/03-resepsiyon-geri-bildirimi.md`). (yeni: 2026-11-12) | ZORUNLU |
+| G-194 | **Grup rezervasyonu ve toplu giriş** (resepsiyon geri bildirimi 2): birden çok oda tek grup kimliğiyle bağlanır, oda başına misafir adı yazılır, grup panelinden toplu giriş/çıkış/not yapılır; takvimde grup aynı desenle görünür; ödeme tek folyo ya da oda başına (S-106). (yeni: 2026-11-12) | ZORUNLU |
+| G-195 | **Hızlı takvim işlemleri** (resepsiyon geri bildirimi 2): sağ tık (telefonda uzun basma) menüsü, boş hücrede hızlı rezervasyon çubuğu, çoklu seçim ile toplu işlem, takvim üstünde bugün şeridi (gelen/giden/otelde); en sık beş işlem tek tıkla. (yeni: 2026-11-12) | ÖNEMLİ |
+| G-196 | **Gündüz kullanımı 2.0** (resepsiyon geri bildirimi 4; G-37'yi genişletir): gündüz yuvası saat aralıklı; aynı odada aynı gün birden çok gündüz satışı ve gece satışı ayarla mümkün; temizlik arası uyarısı; ayrı gündüz fiyatı (sabit/saatlik/gecelik, ayar); raporda ayrı satır ve doluluğa katılım ayarı; aynı gün ikinci tur çıkışında oda o gece yeniden satılabilir (K-44 eki, K-48). (yeni: 2026-11-12) | ZORUNLU |
 
 ## E. Misafirler, odadaki kişiler, kara liste, firmalar
 
@@ -241,3 +245,8 @@ ertelenebilir) · **İSTEĞE BAĞLI** (sahip onayına bağlı ek fikir).
 | Ö-17 | Tedarik için "stok/kalan" sayacı (su stoku) | S-63 | ✅ isteğe bağlı, kapalı → G-170 |
 | Ö-18 | Arıza kaydına fotoğraf ekleme | S-64 | ✅ kabul, çözülünce silinir → G-180 |
 | Ö-19 | **Kat görevlisi telefonu**: otelin Wi‑Fi'ına bağlı telefondan (özel ağ gerekmez) temizlenen odayı "temiz" yapma ve arıza fotoğrafı gönderme — WhatsApp'taki "302+" alışkanlığının karşılığı (`akislar.md`) | S-97 | ❌ WhatsApp grubu yeterli (2026-10-02) |
+| Ö-20 | **Kamera entegrasyonu** (otel-kamera Python projesi Bismuth içinde sekme; yan süreç; açık lisanslı modeller; KVKK paketi) — `docs/analiz/06-kamera-entegrasyonu.md` | S-107…S-112 | ⬜ sahip kararı bekliyor (2026-11-12) |
+| Ö-21 | **Çoklu otel**: otel başına veritabanı profili + otel değiştirme + sahip portföy özeti (K-54) — `docs/analiz/10-coklu-otel.md` | S-114…S-117 | ⬜ sahip kararı bekliyor (2026-11-12) |
+| Ö-22 | **Geç çıkış ücreti ve no-show bedeli kalemi**; yazdırılabilir tek sayfa gece raporu — `docs/analiz/04-otel-ihtiyaclari.md` §5 | — | ⬜ öneri (2026-11-12) |
+| Ö-23 | **Pencere:** F11 tam ekran kısayolu, tam ekran durumunun hatırlanması, yakınlaştırma ayarının kalıcı olması, çoklu monitörde pencerenin kaldığı ekrana dönmesi — `docs/analiz/05-ekran-ve-tam-ekran-uyumu.md` | — | ⬜ öneri (2026-11-12) |
+| Ö-24 | **Windows makine geneli kurulum** seçeneği (S-113) | S-113 | ⬜ öneri (2026-11-12) |
