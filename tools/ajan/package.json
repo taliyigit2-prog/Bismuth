@@ -1,0 +1,9 @@
+{
+  "name": "bismuth-ajan",
+  "private": true,
+  "type": "module",
+  "description": "Runs a Claude agent on this repository through the Claude Agent SDK (Anthropic API billing).",
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "0.3.322"
+  }
+}

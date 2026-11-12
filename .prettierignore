@@ -6,6 +6,7 @@ coverage
 drizzle
 docs
 prototypes
+tools
 package-lock.json
 .claude
 src/renderer/components/ui

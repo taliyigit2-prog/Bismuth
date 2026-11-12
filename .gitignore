@@ -58,3 +58,6 @@ otel-kamera/*.db
 otel-kamera/guest_photos/
 otel-kamera/alerts/
 otel-kamera/*.pt
+
+# agent runner logs and session state
+tools/ajan/kayit/

@@ -1,7 +1,8 @@
 # Fable — Derin Analiz, Geliştirme Raporu ve Ajan Sistemi Kurulum Talimatı
 
-> **Kullanım:** Codespace'te `claude` açıp `/model claude-fable-5-1` seçtikten sonra şunu yazın:
-> `docs/fable-talimati.md dosyasını baştan sona oku ve eksiksiz uygula.`
+> **Kullanım:** Codespace terminalinde `node tools/ajan/ajan.mjs --model claude-fable-5-1 --butce 120`
+> (başlatıcı bu dosyayı okuyup uygulamanı ister). Oturum Claude Agent SDK ile yürür; `AskUserQuestion` aracı yok.
+> Soruyu mesajının sonuna numaralı yazıp turu bitirirsen sahip terminalden cevaplar.
 
 ---
 
@@ -37,6 +38,15 @@ iki kez okuma; okuduklarını notlara dök.
 
 ## 1. Çalışma ortamı ve kısıtlar
 
+- **Sahibin ek notları (bu talimatla aynı önemde):**
+  - "Bana istediğin kadar soru sorabilirsin." Belirsiz ya da yönü değiştiren konularda sahibe sor (§8.1).
+  - Bir otel sahibinin **birden fazla oteli** olabilir. Bunun için ne yapılacağına sen karar ver (§5.2).
+  - Kamera sistemi `localhost`'ta ayrı bir sitede çalışmak zorunda değil. **Program içinde bir sekmede**
+    çalışması sahibin tercihi (§5).
+  - Sahibin **21st.dev** üyeliği var. Görsel geliştirme için kullanılmasını istersen projeye nasıl ekleneceğini
+    sahibe ayrıntılı anlat (§4.3). Sahip nasıl ekleneceğini bilmiyor.
+  - Oturum `bypassPermissions` ile çalışıyor (bulut ortamı, sahibin yerelde yedeği var). Yine de yıkıcı git
+    işlemlerinden (`reset --hard`, zorla push, dal silme) kaçın.
 - **Ortam:** GitHub Codespaces, Linux, 2 çekirdek / 8 GB RAM. Ekran yok; Electron'u `xvfb-run -a` ile çalıştır.
   `.devcontainer/devcontainer.json` Node 22, Python 3.12, xvfb ve Playwright Chromium kuruyor.
 - **API faturası:** Bu oturum sahibin Anthropic Console kredisinden ödeniyor (sınırlı). Gereksiz uzun komut çıktısı
@@ -157,6 +167,21 @@ Sahip programı ve kamera bileşenini teknik bilgi gerektirmeden kurabilmeli.
 
 ---
 
+### 4.3 21st.dev ile görsel geliştirme (isteğe bağlı)
+
+Sahibin 21st.dev üyeliği var. Arayüzü güzelleştirmede faydalı olup olmayacağını değerlendir.
+
+- 21st.dev'in sunduğu şeyler: bileşen kütüphanesi, Magic MCP sunucusu, API anahtarıyla çalışma. Bunları resmi
+  kaynaklardan araştır. Projenin kurallarıyla uyumlu mu? (shadcn/ui ve Radix tabanı, paket içi kaynaklar, CDN yok,
+  i18n, mantıksal CSS, telemetri yok.)
+- Faydalıysa sahibe adım adım kurulum anlat:
+  - anahtarı nereden alacağı
+  - anahtarı **depoya değil** Codespaces secret olarak nasıl ekleyeceği (örn. adı `TWENTYFIRST_API_KEY`)
+  - `.mcp.json` ile MCP sunucusunun projeye nasıl tanıtılacağı
+  - ajanların bunu ne zaman kullanacağı
+- `.mcp.json` dosyasını anahtar içermeyecek biçimde (ortam değişkeni referansıyla) hazırla.
+- Faydalı değilse nedenini yaz.
+
 ## 5. Kamera sistemi entegrasyon araştırması
 
 `otel-kamera/` ayrı bir Python projesi: FastAPI, InsightFace (buffalo_s, ONNX) yüz tanıma, YOLO11n + ByteTrack,
@@ -173,6 +198,8 @@ içinde çalışsın.
      ya da bir worker'da çalışır; Python gerekmez.
    - **C — Ayrı uygulama, gevşek bağ:** İki program ayrı kalır; Bismuth'ta kamera sekmesi, ortak misafir/oda verisi.
    - Varsa başka seçenekler.
+   - **Sahibin tercihi:** Kamera görüntüsü ve paneli Bismuth'un **içinde bir sekme** olarak çalışsın. Bu tercihi
+     karşılamayan bir seçenek öneriyorsan gerekçesini açıkça yaz.
 2. **Her seçenek için:** kurulum kolaylığı (Windows/macOS), paket boyutu, CPU/RAM (otel bilgisayarı zayıf
    olabilir), çökme yalıtımı, güncelleme, test edilebilirlik, bakım yükü, çevrimdışı çalışma (G-01/G-02).
 3. **Veri entegrasyonu:** Kamera "KBS kayıtlı misafir" listesini nereden almalı? Bismuth'un otelde kalanlar
@@ -194,6 +221,31 @@ içinde çalışsın.
      öner.
 6. **Kamera kodunun kalitesi:** Python kodunda bulduğun hatalar, güvenlik sorunları ve performans riskleri.
 7. **Aşamalı entegrasyon planı:** En küçük çalışan ilk adımdan tam birleşmeye kadar; her aşamanın kabul ölçütleri.
+
+### 5.2 Birden fazla otel
+
+Bir otel sahibinin birden fazla oteli olabilir. Mevcut mimariyi buna göre değerlendir:
+- tek otel varsayımları
+- veritabanı yapısı
+- sunucu ve istemci modu
+- yedekleme
+- roller
+
+Seçenekleri karşılaştır ve bir karar öner:
+- **Otel başına ayrı veritabanı ve program içinde otel değiştirme.**
+- **Tek veritabanında otel kimliği.**
+- **Sahip için tüm otellerin özet ekranı.** Doluluk, gelir ve kasanın tek yerde görünmesi.
+  Not: Sahibin gerçek rakamları ilgi alanı değil; yalnızca yapı.
+
+Her seçenek için şunları yaz:
+- veri taşıma (migrasyon) riski
+- personelin otellere atanması
+- raporların otel bazında ve toplu görünmesi
+- lisans ve kurulum etkisi
+- sahibe sorulacak sorular
+
+Kararı yeni bir K-xx taslağı olarak `06-kararlar.md`'ye yaz ve plana iş paketi olarak koy. Sonucu
+`docs/analiz/04-otel-ihtiyaclari.md` raporuna ekle; istersen ayrı bir `10-coklu-otel.md` dosyası da aç.
 
 ---
 
@@ -328,9 +380,13 @@ Sahibin Opus'a yapıştıracağı **tek satırlık başlangıç komutunu** da en
 
 Sahip modeli **kendisi** Opus'a geçirecek. Bu yüzden işin bittiğini açıkça ve kaçırılmayacak biçimde bildir.
 
-- **Ara aşamalarda durma.** 1–5. adımlar boyunca sahibe soru sorup cevap bekleme. Soruları listeye yaz ve
-  varsayılanla devam et. Yalnızca gerçekten ilerleyemiyorsan dur: örneğin kurulum hiç çalışmıyor ya da yetki
-  engeli var. O durumda nedenini ve sahibin ne yapması gerektiğini yaz.
+- **Soru sorabilirsin.** Sahip "istediğin kadar soru sorabilirsin" dedi.
+  - Yönü değiştiren ya da yanlış varsayım pahalıya patlayacak konularda sor. Örnekler: resepsiyon madde 2'deki
+    belirsiz cümle, çoklu otel kapsamı, kamera yöntemi, day-use kuralları.
+  - Soru sorduğunda mesajını `❓ SORULARIM` başlığıyla bitir. Soruları numaralı, basit Türkçe yaz ve her birine
+    önerdiğin cevabı ekle. Sonra turu bitir.
+  - Önce cevaptan bağımsız işleri bitir, soruları toplu sor. Tek tek soru sorarak sahibi bekletme.
+  - Yalnızca küçük ve geri alınabilir konularda soru sormadan varsayılanla devam et.
 - **Bitti diyebilmek için şu koşulların hepsi sağlanmalı:**
   - Bu talimattaki tüm adımlar (§2–§8) tamamlandı.
   - Tüm değişiklikler commit edilip `claude/fable-analiz` dalına push edildi; `git status` temiz.
@@ -341,11 +397,14 @@ Sahip modeli **kendisi** Opus'a geçirecek. Bu yüzden işin bittiğini açıkç
   ```
   ✅ FABLE İŞİ BİTTİ — Opus'a geçebilirsiniz.
 
-  1. Modeli değiştirin:  /model claude-opus-5-5
-  2. Opus'a şunu yazın:  <OPUS-BASLANGIC.md'deki tek satırlık komut>
+  1. Bu oturumu kapatın: cevap satırını boş bırakıp Enter'a basın.
+  2. Opus'u başlatın:
+     node tools/ajan/ajan.mjs --model claude-opus-5-5 --butce <tutar> "<OPUS-BASLANGIC.md'deki tek satırlık komut>"
   ```
 
-- Bu mesajdan sonra **başka iş yapma** ve yeni bir göreve başlama. Sahip modeli değiştirene kadar bekle.
+- Bu mesajdan sonra **başka iş yapma** ve yeni bir göreve başlama. `<tutar>` için kalan krediye göre bir öneri yaz.
+- `OPUS-BASLANGIC.md`'de Opus'un da aynı başlatıcıyla çalışacağını yaz: `node tools/ajan/ajan.mjs --model claude-opus-5-5`.
+  Bu başlatıcıda `AskUserQuestion` aracı yok.
 - **İş yarıda kalırsa:** Örneğin bağlam, bütçe ya da hata nedeniyle bitiremiyorsan, "bitti" bloğunu **kullanma**.
   Bunun yerine mesajın en başına `⏸️ FABLE İŞİ HENÜZ BİTMEDİ` yaz. Altına şunları ekle:
   - Neyin tamamlandığı.
