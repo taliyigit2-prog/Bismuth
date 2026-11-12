@@ -208,4 +208,5 @@ QA2b, akış testleri C/D) bu plana **Son** satırında katılır; ayrı yürüt
   ajan sistemi v2 (6 yeni ajan, `/orkestra`, `workflow-guard`, `camera-data-guard`, belge-yalnız commit kapısı);
   baz: typecheck ✓, lint ✓, 2427 birim test ✓, kanca 89/89. Faz 5–16'nın 🔄 satırları "Son" dalgasına taşındı.
   Opus devir notu `docs/analiz/OPUS-BASLANGIC.md`. Sonraki adım: `/orkestra` dalga 1.
-
+- 2026-11-12 (kapanış): analiz turu commit'leri `claude/fable-analiz` dalında (8346aec → 07a3fad + bu). `npm run check` ✓
+  (2427 test), kanca testleri 89/89. Fable harcaması ≈ $45. Opus: `OPUS-BASLANGIC.md` → `/orkestra 1`.

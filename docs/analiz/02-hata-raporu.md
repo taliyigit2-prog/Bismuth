@@ -16,7 +16,7 @@
 | `npm run format:check` | ✓ (düzeltme sonrası) | `otel-kamera/` iki dosyada takılıyordu → `.prettierignore`'a `otel-kamera` eklendi (Python projesi) |
 | `node .claude/hooks/test-hooks.mjs` | ✓ 89/89 | önce 73/73; yeni kancalarla 89 |
 | `npm run build` | ✓ 13,6 s | |
-| `npm run check` | bu oturumun sonunda koşuldu; sonuç son mesajda ve `YURUTME.md` günlüğünde | |
+| `npm run check` | ✓ (2026-11-12, oturum sonu) | typecheck + lint + format:check + 2427 test; `.claude/.checks-passed` yazıldı |
 | e2e | koşulmadı (Electron Codespace'te `libgtk-3`/`xauth` eksikliğiyle açılmıyordu; devcontainer düzeltildi) | akış testi mobil harness (aynı React + servis katmanı, HTTP taşıma) üzerinden yapıldı; ekran denetimi Electron'u elle kütüphane açarak çalıştırdı |
 
 ## 2. Mantık hataları, yarım akışlar, çalışmayan öğeler (koddan ve gerçek uygulamadan)
