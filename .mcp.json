@@ -1,0 +1,12 @@
+{
+  "$comment": "21st.dev MCP (isteğe bağlı görsel geliştirme aracı; docs/analiz/05-ekran-ve-tam-ekran-uyumu.md §7). Anahtar depoya girmez: Codespaces secret API_KEY_21ST tanımlı değilse Claude Code uyarı verir ve sunucu çalışmaz. Üretilen kod shadcn/ui + Tailwind kurallarına, i18n'e ve ağ yasağına (CDN/font yok) uymak zorundadır; her bileşenin lisansı ayrıca kontrol edilir.",
+  "mcpServers": {
+    "21st": {
+      "type": "http",
+      "url": "https://21st.dev/api/mcp",
+      "headers": {
+        "x-api-key": "${API_KEY_21ST}"
+      }
+    }
+  }
+}
