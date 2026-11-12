@@ -324,6 +324,36 @@ Sahibin Opus'a yapıştıracağı **tek satırlık başlangıç komutunu** da en
    - Opus'a geçiş için yapılacaklar ve tek satırlık başlangıç komutu.
    - Tahmini toplam geliştirme maliyeti (model başına kabaca).
 
+### 8.1 İş bitti bildirimi (zorunlu)
+
+Sahip modeli **kendisi** Opus'a geçirecek. Bu yüzden işin bittiğini açıkça ve kaçırılmayacak biçimde bildir.
+
+- **Ara aşamalarda durma.** 1–5. adımlar boyunca sahibe soru sorup cevap bekleme. Soruları listeye yaz ve
+  varsayılanla devam et. Yalnızca gerçekten ilerleyemiyorsan dur: örneğin kurulum hiç çalışmıyor ya da yetki
+  engeli var. O durumda nedenini ve sahibin ne yapması gerektiğini yaz.
+- **Bitti diyebilmek için şu koşulların hepsi sağlanmalı:**
+  - Bu talimattaki tüm adımlar (§2–§8) tamamlandı.
+  - Tüm değişiklikler commit edilip `claude/fable-analiz` dalına push edildi; `git status` temiz.
+  - `npm run check` ve `node .claude/hooks/test-hooks.mjs` geçiyor. Geçmiyorsa nedeni raporda yazıyor.
+  - `docs/analiz/OPUS-BASLANGIC.md` hazır.
+- Bu koşullar sağlanınca son mesajın **en başına** şu bloğu aynen koy, sonra yukarıdaki son mesaj maddelerini yaz:
+
+  ```
+  ✅ FABLE İŞİ BİTTİ — Opus'a geçebilirsiniz.
+
+  1. Modeli değiştirin:  /model claude-opus-5-5
+  2. Opus'a şunu yazın:  <OPUS-BASLANGIC.md'deki tek satırlık komut>
+  ```
+
+- Bu mesajdan sonra **başka iş yapma** ve yeni bir göreve başlama. Sahip modeli değiştirene kadar bekle.
+- **İş yarıda kalırsa:** Örneğin bağlam, bütçe ya da hata nedeniyle bitiremiyorsan, "bitti" bloğunu **kullanma**.
+  Bunun yerine mesajın en başına `⏸️ FABLE İŞİ HENÜZ BİTMEDİ` yaz. Altına şunları ekle:
+  - Neyin tamamlandığı.
+  - Neyin kaldığı.
+  - Kaldığı yerden devam etmek için sahibin yazması gereken tek satırlık komut.
+
+  Yarım işi de commit ve push et.
+
 **Kalite çıtası:**
 - Her iddia kanıta dayanır (`dosya:satır`, test çıktısı, ekran görüntüsü, kaynak bağlantısı).
 - Emin olmadığın şeyi "doğrulanmadı" diye işaretle.
