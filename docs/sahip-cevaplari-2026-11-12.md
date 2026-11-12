@@ -91,6 +91,11 @@ işler yapıldıktan sonra bolca kullansın."
   - Her seçilen öğenin lisansını kontrol et.
   - Görsel yenilemeyi Faz 18 (ekran) ve takvim yeniden tasarımı (Faz 17) paketlerine bağla.
   - Somut seçimleri (bağlantı, hangi ekrana) `docs/analiz/12-21st-tasarim-secimi.md` dosyasına yaz.
+- **Anahtar:** Sahip anahtarı Codespaces secret `API_KEY_21ST` olarak ekliyor; ad `.mcp.json` ile aynı. Secret
+  ortam değişkeni olarak yalnızca codespace yeniden başlatılınca gelir; `echo ${API_KEY_21ST:+var}` ile kontrol et.
+- **MCP sunucusunun açılması:** Başlatıcı (Agent SDK) proje `.mcp.json` sunucularını onay sormadan açmayabilir.
+  `.claude/settings.json`'a `"enabledMcpjsonServers": ["21st"]` ekle ve sunucunun gerçekten bağlandığını küçük bir
+  denemeyle doğrula.
 - Sahip "en uygun olana karar versin, direkt alsın" dedi. Uygulamayı Opus yapar; sen seçimi ve uyarlama talimatını
   hazırla.
 
