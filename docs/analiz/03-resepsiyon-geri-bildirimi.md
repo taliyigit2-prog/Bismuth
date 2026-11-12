@@ -274,3 +274,19 @@ gündüz misafiri KBS'ye bildiriliyor mu ve istatistikte geceleme sayılsın mı
 
 Numaralar `00-ozet.md`'deki tek listeyle aynıdır: S-100 (iade yetkisi), S-101 ("ortak görünüyor" hangi anlam),
 S-102–S-105 (gündüz kullanımı kuralları), S-106 (grup rezervasyonu tek folyo mu oda başına folyo mu).
+
+## 8. Gerçek uygulamada doğrulama (akış testi, 2026-11-12)
+
+`flow-tester` aynı React paketi ve servis katmanını (HTTP taşıma, mobil harness; Electron Codespace'te açılmadı) sahip ve
+resepsiyon rolüyle sürdü; tam rapor `02-hata-raporu.md` §2–3, görüntüler `ekler/akis/`:
+- **Madde 1 doğrulandı:** girişten sonra üç nokta menüsü tek pasif satır ("Misafir otelde; önce çıkış yapın"), iptal
+  seçeneği hiç yok; çıkıştan sonra üç nokta **yok** (yalnız Ödeme ekle · Misafir kartı · Kapat); resepsiyon rolünde
+  ödeme penceresinde **İade yok**, sahipte var (A4, A8, A10).
+- **Madde 3 doğrulandı:** kaporalı iptal takvimden kayboluyor, park alanında değil; iptal penceresi tutarı söylemiyor;
+  bakiye −₺1.500 kırmızı; defterde kapora satırı oda "—" ile duruyor (B2–B5).
+- **Madde 4 doğrulandı:** (i) odada misafir varken satış engelli ("dolu"); (ii) aynı gün çıkıştan sonra gece satılabiliyor;
+  (iii) ikinci misafir de aynı gün girip çıkınca gündüze çevrilmiyor, oda satılamıyor; çıkış penceresi yine "oda o gece
+  yeniden satılabilir" yazıyor (C). Ücret alanı gece fiyatıyla dolu, 0 kabul ediyor.
+- **Madde 2:** sağ tık/çift tık boş hücrede hiçbir şey; çok odalı panelde "Oda N: iptal et" var; aynı adla ikinci kayıt
+  "olası çift kayıt" uyarısı veriyor; geçmiş kartı önceki konaklamayı sayıyor (D, E). Hangi yorumun kastedildiği hâlâ
+  sahibe bağlı (S-101).

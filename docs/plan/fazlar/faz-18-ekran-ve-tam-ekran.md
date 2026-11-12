@@ -39,7 +39,13 @@ HTTP'den uygulanmaz — K-37); tam ekran `win.setFullScreen`; `window-state.ts` 
 ## Yapılmayacaklar
 Kiosk modu; yeni tema; tablet düzeni.
 
-## Bulgu listesi (Opus doldurur)
-05 ve 02 raporlarından P18b/P18d satırları.
+## Bulgu listesi
+- **P18b (05 §3):** #1 takvim üç kaydırma çubuğu / tam yükseklik düzeni; #2 panel genişliği ve üst düğmeler; #3 çubuk ad
+  kısaltma / gün sütunu genişliği; #4 telefon 44 px hedefler (ayarlar radyoları, görev anahtarları); #5 kenar çubuğu alt
+  grupları 768 px; #6 bugün/kılavuz/ayarlar tek kaydırma, yedek uyarısı tek satır.
+- **P18c (05 §3):** #7 zoom üst sınırı; #8 tam ekran durumu hatırlama + debounce kayıt; #9 F11 / Ctrl+Shift+F; #10 `ui.zoom`
+  kalıcı; #11 çoklu monitör sığdırma (isteğe bağlı).
+- **P18d (02 §2):** H-04 telefon tarih seçici taşması; H-16 telefon ledger sheet Esc (doğrula); Electron e2e'nin yeni
+  devcontainer'da yeşil olduğunun doğrulanması.
 
 ## Sonuç

@@ -65,7 +65,7 @@ if (!existsSync(join(root, "node_modules"))) skip("node_modules yok (önce npm c
 // typecheck/lint/test cannot change outcome, so the commit proceeds without them (a 2-core machine needs ~10 min
 // for the full suite). Hook changes still run the hook self-test. Conservative: an unreadable git state runs everything.
 const CODE_PATH =
-  /^(src|tests|drizzle|scripts|build|resources)\/|^(package\.json|package-lock\.json|tsconfig[^/]*\.json|vitest\.config\.ts|playwright\.config\.ts|electron\.vite\.config\.ts|electron-builder\.yml|eslint\.config\.mjs|\.prettierrc\.yaml|\.prettierignore|drizzle\.config\.ts|\.npmrc)$/;
+  /^(src|tests|drizzle|scripts|build|resources)\/|^(package\.json|package-lock\.json|tsconfig[^/]*\.json|vitest\.config\.ts|playwright\.config\.ts|electron\.vite\.config\.ts|electron-builder\.yml|eslint\.config\.mjs|\.prettierrc\.yaml|drizzle\.config\.ts|\.npmrc)$/;
 const gitLines = (args) => {
   try {
     return execFileSync("git", args, { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], windowsHide: true })

@@ -31,8 +31,10 @@ S-100 (iade yetkisi), S-101 ("ortak görünüyor"), S-102…S-105 (gündüz kura
 4. **P17d Gündüz kullanımı 2.0** — migrasyon 0020 (`room_nights.start_time/end_time`, indeks, `room_types.day_use_price_minor`);
    `dayUse.*` ayarları; saat çakışma kuralı; ikinci tur çıkışında gece yuvası boşalır (hata C); takvimde yarım çubuk;
    rapor satırı; doluluğa katılım ayarı.
-5. **P17e Kritik/Yüksek hata düzeltmeleri** — `docs/analiz/02-hata-raporu.md` §2'de "P17e" işaretli bulgular
-   (akış testi ve kod incelemesi); her biri için yeniden üretim testi.
+5. **P17e Kritik/Yüksek hata düzeltmeleri** — `docs/analiz/02-hata-raporu.md` §2'de "P17e" işaretli bulgular:
+   H-05 telefon numarası maskesi (+90/0 ayıklama, yapıştırma), H-07 misafir adı uzunluk sınırı + istemci 400'leri,
+   H-08 gecelik fiyat doğrulama (negatif/üst sınır/`abc`/0 onayı), H-09 yetkisiz ayar sekmesi adı sızıntısı; her biri
+   için yeniden üretim testi.
 
 ## Kabul ölçütleri
 - [ ] `in_house` rezervasyonda "Vazgeçme ve iade" menüsü üç seçeneği sunar; `checked_out` rezervasyonda üç nokta menüsü

@@ -98,3 +98,11 @@ içeriğin üç dilde eklenmesi P19b paketinde.
 | Orta | `faz0-*.yml` ve `prototypes/` artık gereksiz; kanca istisnaları bunlara bağlı | P19c |
 | Düşük | `ci.yml` ölü tag koşulu; Windows arm64 yalnız release'te | P19a |
 | Düşük | `resources/icon.png` kullanılmıyor | P19c |
+
+## 8. Geliştirme ortamı bulguları (bu oturumda düzeltildi)
+
+| Bulgu | Düzeltme |
+|---|---|
+| Codespace'te Electron açılmıyordu (`libgtk-3` eksik) ve `xvfb-run` `xauth` yokluğundan çalışmıyordu → e2e ve ekran görüntüsü komutları yeni Codespace'te kırmızı | `.devcontainer/devcontainer.json` apt listesine `xauth libgtk-3-0 libnss3 libasound2t64 libxss1` eklendi (yeniden oluşturulan Codespace'te doğrulanacak) |
+| `npm run check` → `format:check` `otel-kamera/` dosyalarında (HTML, Markdown) takılıyordu (Python projesi prettier kapsamındaydı) | `.prettierignore`'a `otel-kamera` eklendi |
+| Commit kancası 2 çekirdekte tam test paketini 570 sn'de bitiremiyor, belge commit'leri bile kilitleniyordu; zaman aşımında yetim `vitest` kalıyordu | `pre-commit-gate` belge/ayar-yalnız commit'lerde araç zincirini atlar (09 §1 madde 7) |
