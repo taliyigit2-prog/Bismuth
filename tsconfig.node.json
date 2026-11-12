@@ -1,0 +1,22 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2023"],
+    "types": ["node", "electron-vite/node"],
+    "paths": {
+      "@shared/*": ["./src/shared/*"],
+      "@main/*": ["./src/main/*"]
+    }
+  },
+  "include": [
+    "electron.vite.config.ts",
+    "vitest.config.ts",
+    "drizzle.config.ts",
+    "src/main/**/*",
+    "src/preload/**/*",
+    "src/shared/**/*",
+    "tests/unit/**/*.ts",
+    "tests/factories/**/*.ts"
+  ],
+  "exclude": ["tests/unit/setup-dom.ts"]
+}

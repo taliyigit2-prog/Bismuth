@@ -1,0 +1,95 @@
+name: release
+# Tag vX.Y.Z → Windows (x64, arm64) and macOS (arm64, x64) installers, smoke-tested, attached to a GitHub
+# Release with SHA-256 sums. No update feed is produced or published (G-07): owners download by hand.
+# Fixed file names (scripts/release-names.mjs): Bismuth-Setup.exe, Bismuth-Setup-arm64.exe, Bismuth.dmg (Apple chip),
+# Bismuth-Intel.dmg, SHA256SUMS.txt. Release notes: docs/surum-notlari/<tag>.md (Turkish, for the owner).
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    defaults:
+      run:
+        shell: bash
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - name: Tag matches package.json version
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          if [ "${{ github.ref_name }}" != "v$VERSION" ]; then
+            echo "tag ${{ github.ref_name }} does not match package.json version $VERSION (About would show the wrong version)"
+            exit 1
+          fi
+      - run: npm ci --no-audit --no-fund
+      - run: npm run typecheck && npm run lint && npm test
+      - run: npm run build
+      - name: Package
+        run: |
+          if [ "$RUNNER_OS" = "Windows" ]; then npx electron-builder --win --publish never; else npx electron-builder --mac --publish never; fi
+          node scripts/release-names.mjs release
+          ls -la release
+      - name: Smoke test
+        run: |
+          if [ "$RUNNER_OS" = "Windows" ]; then APP="release/win-unpacked/Bismuth.exe"; else APP="release/mac-arm64/Bismuth.app/Contents/MacOS/Bismuth"; fi
+          export BISMUTH_USER_DATA="$RUNNER_TEMP/bismuth-smoke"
+          "$APP" --smoke --smoke-out="$PWD/smoke.json" > smoke.log 2>&1 || true
+          if [ ! -f smoke.json ]; then echo "no smoke result"; tail -60 smoke.log; exit 1; fi
+          node -e "const r=require('./smoke.json'); console.log(JSON.stringify(r,null,1)); if(!r.ok||r.db.integrity!=='ok'||r.blockedRequests.length) process.exit(1)"
+      - uses: actions/upload-artifact@v6
+        with:
+          name: installers-${{ runner.os }}
+          path: |
+            release/*.exe
+            release/*.dmg
+          compression-level: 0
+
+  publish:
+    needs: package
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          sparse-checkout: docs/surum-notlari
+      - uses: actions/download-artifact@v7
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Checksums
+        run: |
+          cd dist
+          rm -f SHA256SUMS.txt
+          sha256sum Bismuth* > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+          for f in Bismuth-Setup.exe Bismuth-Setup-arm64.exe Bismuth.dmg Bismuth-Intel.dmg; do
+            [ -f "$f" ] || { echo "missing $f"; exit 1; }
+          done
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          NOTES="docs/surum-notlari/${{ github.ref_name }}.md"
+          if [ ! -f "$NOTES" ]; then
+            NOTES="$RUNNER_TEMP/notes.md"
+            printf '%s\n' "Windows: Bismuth-Setup.exe (ARM işlemci: Bismuth-Setup-arm64.exe) · Mac (Apple çipli): Bismuth.dmg · Mac (Intel): Bismuth-Intel.dmg · Doğrulama: SHA256SUMS.txt · Kurulum: docs/kurulum.md" > "$NOTES"
+          fi
+          gh release create "${{ github.ref_name }}" dist/* --repo "${{ github.repository }}" \
+            --title "Bismuth ${{ github.ref_name }}" \
+            --notes-file "$NOTES"

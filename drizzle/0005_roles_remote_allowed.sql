@@ -1,0 +1,1 @@
+ALTER TABLE `roles` ADD `remote_allowed` integer DEFAULT true NOT NULL;

@@ -1,0 +1,1617 @@
+<!DOCTYPE html>
+<html lang="tr" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mango Suites: Kamera Denetim ve KBS Konsolu</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    /* ==========================================================================
+       TASTE-SKILL (data-terminal) + SHADCN/UI DESIGN SYSTEM TOKENS
+       ========================================================================== */
+    :root {
+      --ground: #171719;
+      --surface: #131217;
+      --raised: #212023;
+      --active: #212023;
+      --border: #222224;
+      --rule: #1b1a1f;
+      --control: #3a3a3e;
+      --text: #ffffff;
+      --muted: #8a8c92;
+      --faint: #8a8c92;
+      --accent: #4a8ad6;
+      --primary: #ffffff;
+      --primary-ink: #131217;
+      --positive: #44a282;
+      --negative: #e5566f;
+      --warning: #d9a441;
+      --pill-positive-bg: #1b2828;
+      --pill-positive-ink: #5fc39c;
+      --pill-negative-bg: #2c1a20;
+      --pill-negative-ink: #e5566f;
+      --pill-warning-bg: #2a2416;
+      --pill-warning-ink: #d9a441;
+      --pill-neutral-bg: #212023;
+      --pill-neutral-ink: #bdbdc0;
+
+      --radius-card: 6px;
+      --radius-control: 6px;
+      --sidebar-width: 56px;
+      --gap: 20px;
+      --pad: 24px;
+      --card-pad: 18px;
+      --control-height: 36px;
+      --row-height: 46px;
+
+      --font: "Public Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --fs-title: 22px;
+      --fs-section: 16px;
+      --fs-kpi: 24px;
+      --fs-body: 13px;
+      --fs-small: 12px;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background-color: var(--ground);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: var(--fs-body);
+      line-height: 1.45;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    h1, h2, h3, h4, p, figure, ul, ol {
+      margin: 0;
+    }
+
+    button, input, select {
+      font: inherit;
+      color: inherit;
+    }
+
+    .num, .kpi-value, time, .room-tag {
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ---------- SHELL: ICON RAIL + MAIN CANVAS ---------- */
+    .app-shell {
+      display: grid;
+      grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+      min-height: 100svh;
+    }
+
+    .icon-rail {
+      position: sticky;
+      top: 0;
+      height: 100svh;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px 0;
+      gap: 8px;
+      z-index: 20;
+    }
+
+    .brand-mark {
+      width: 34px;
+      height: 34px;
+      border-radius: var(--radius-card);
+      background: var(--raised);
+      border: 1px solid var(--control);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 13px;
+      color: var(--text);
+      margin-bottom: 12px;
+      letter-spacing: -0.02em;
+    }
+
+    .rail-divider {
+      width: 20px;
+      height: 1px;
+      background: var(--border);
+      margin: 6px 0;
+    }
+
+    .rail-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: var(--radius-card);
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      position: relative;
+      transition: color 140ms ease, background-color 140ms ease;
+    }
+
+    .rail-btn:hover {
+      color: var(--text);
+      background: var(--raised);
+    }
+
+    .rail-btn[aria-current="true"] {
+      color: var(--text);
+    }
+
+    /* data-terminal signature move: 1px accent line on active selection */
+    .rail-btn[aria-current="true"]::before {
+      content: "";
+      position: absolute;
+      left: -9px;
+      top: 8px;
+      bottom: 8px;
+      width: 2px;
+      background: var(--accent);
+    }
+
+    .rail-btn svg {
+      width: 18px;
+      height: 18px;
+      stroke-width: 1.6;
+    }
+
+    .rail-bottom {
+      margin-top: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: center;
+    }
+
+    /* ---------- CANVAS ---------- */
+    .canvas {
+      min-width: 0;
+      padding: var(--pad);
+      max-width: 1680px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* ---------- TITLE ROW ---------- */
+    .title-row {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .title-row h1 {
+      font-size: var(--fs-title);
+      font-weight: 600;
+      letter-spacing: -0.015em;
+      line-height: 1.2;
+    }
+
+    .title-row .subtitle {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: var(--fs-body);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    /* ---------- KPI STRIP (1 CONTAINER SPLIT BY 1PX DIVIDERS) ---------- */
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      margin-bottom: var(--gap);
+    }
+
+    .kpi {
+      padding: 14px 18px;
+    }
+
+    .kpi + .kpi {
+      border-left: 1px solid var(--border);
+    }
+
+    .kpi-label {
+      color: var(--muted);
+      font-size: var(--fs-small);
+    }
+
+    .kpi-value {
+      margin-top: 4px;
+      font-size: var(--fs-kpi);
+      font-weight: 600;
+      line-height: 1.15;
+      letter-spacing: -0.01em;
+    }
+
+    .kpi-sub {
+      margin-top: 4px;
+      font-size: var(--fs-small);
+      color: var(--muted);
+    }
+
+    /* ---------- WORKSPACE GRID: HERO CAMERA COLUMN (1fr) + RIGHT RAIL (400px) ---------- */
+    .workspace-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 400px;
+      gap: var(--gap);
+      align-items: start;
+    }
+
+    .main-column {
+      display: flex;
+      flex-direction: column;
+      gap: var(--gap);
+      min-width: 0;
+    }
+
+    .side-rail {
+      display: flex;
+      flex-direction: column;
+      gap: var(--gap);
+      min-width: 0;
+    }
+
+    /* ---------- SHADCN / DATA-TERMINAL PANEL ---------- */
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      padding: var(--card-pad);
+      min-width: 0;
+    }
+
+    .panel-flush {
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .panel-title {
+      font-size: var(--fs-section);
+      font-weight: 600;
+      line-height: 1.3;
+    }
+
+    .panel-subtitle {
+      font-size: var(--fs-small);
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    /* ---------- HERO CAMERA STAGE ---------- */
+    .camera-stage {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      min-height: 440px;
+      max-height: 680px;
+      background: #0a0a0c;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .camera-stage img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    .camera-Command-bar {
+      padding: 16px 18px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .quick-register-row {
+      display: grid;
+      grid-template-columns: minmax(160px, 1.4fr) minmax(90px, 0.6fr) minmax(110px, 0.7fr) auto auto;
+      gap: 10px;
+      align-items: end;
+    }
+
+    /* ---------- SHADCN CONTROLS ---------- */
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .field label {
+      font-size: var(--fs-small);
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .input, .select {
+      height: var(--control-height);
+      padding: 0 12px;
+      background: var(--ground);
+      border: 1px solid var(--control);
+      border-radius: var(--radius-control);
+      color: var(--text);
+      font-size: var(--fs-body);
+      width: 100%;
+      transition: border-color 140ms ease;
+    }
+
+    .input:focus, .select:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .input::placeholder {
+      color: var(--muted);
+      opacity: 0.7;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      height: var(--control-height);
+      padding: 0 14px;
+      border-radius: var(--radius-control);
+      border: 1px solid var(--control);
+      background: var(--raised);
+      color: var(--text);
+      font-size: var(--fs-body);
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background-color 140ms ease, border-color 140ms ease, opacity 140ms ease;
+    }
+
+    .btn:hover {
+      background: #2b2a2f;
+      border-color: #525258;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn svg {
+      width: 15px;
+      height: 15px;
+      flex-shrink: 0;
+      stroke-width: 1.75;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: var(--primary-ink);
+      border-color: var(--primary);
+      font-weight: 600;
+    }
+
+    .btn-primary:hover {
+      background: #e4e4e7;
+      border-color: #e4e4e7;
+    }
+
+    .btn-positive {
+      background: var(--pill-positive-bg);
+      color: var(--pill-positive-ink);
+      border-color: #28423b;
+      font-weight: 600;
+    }
+
+    .btn-positive:hover {
+      background: #223833;
+      border-color: var(--positive);
+    }
+
+    .btn-negative {
+      background: var(--pill-negative-bg);
+      color: var(--pill-negative-ink);
+      border-color: #48252e;
+      font-weight: 500;
+    }
+
+    .btn-negative:hover {
+      background: #3d1f27;
+      border-color: var(--negative);
+    }
+
+    .btn-sm {
+      height: 30px;
+      padding: 0 10px;
+      font-size: var(--fs-small);
+    }
+
+    /* ---------- STATUS PILLS ---------- */
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 22px;
+      padding: 0 8px;
+      border-radius: 4px;
+      font-size: var(--fs-small);
+      font-weight: 500;
+      background: var(--pill-neutral-bg);
+      color: var(--pill-neutral-ink);
+      white-space: nowrap;
+    }
+
+    .pill-pos {
+      background: var(--pill-positive-bg);
+      color: var(--pill-positive-ink);
+    }
+
+    .pill-neg {
+      background: var(--pill-negative-bg);
+      color: var(--pill-negative-ink);
+    }
+
+    .pill-warn {
+      background: var(--pill-warning-bg);
+      color: var(--pill-warning-ink);
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    /* ---------- UNDERLINE TABS (data-terminal 1px accent line) ---------- */
+    .underline-tabs {
+      display: flex;
+      gap: 20px;
+      border-bottom: 1px solid var(--border);
+      padding: 0 18px;
+      background: var(--surface);
+    }
+
+    .tab-link {
+      position: relative;
+      padding: 11px 0;
+      background: transparent;
+      border: 0;
+      color: var(--muted);
+      font-size: var(--fs-body);
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .tab-link:hover {
+      color: var(--text);
+    }
+
+    .tab-link[aria-selected="true"] {
+      color: var(--text);
+    }
+
+    .tab-link[aria-selected="true"]::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: -1px;
+      height: 2px;
+      background: var(--accent);
+    }
+
+    /* ---------- UNREGISTERED FACE CAPTURES / ALERTS GRID ---------- */
+    .captures-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 14px;
+      padding: 18px;
+    }
+
+    .capture-card {
+      background: var(--ground);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .capture-media {
+      display: grid;
+      grid-template-columns: 116px minmax(0, 1fr);
+      height: 116px;
+      border-bottom: 1px solid var(--border);
+      background: #0c0c0e;
+    }
+
+    .capture-face-zoom {
+      width: 116px;
+      height: 116px;
+      object-fit: cover;
+      border-right: 1px solid var(--border);
+      cursor: pointer;
+    }
+
+    .capture-scene-thumb {
+      width: 100%;
+      height: 116px;
+      object-fit: cover;
+      opacity: 0.88;
+      cursor: pointer;
+      transition: opacity 140ms ease;
+    }
+
+    .capture-scene-thumb:hover {
+      opacity: 1;
+    }
+
+    .capture-body {
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .capture-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .capture-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* ---------- GUEST LIST IN RIGHT RAIL ---------- */
+    .rail-search-box {
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .guest-rows {
+      display: flex;
+      flex-direction: column;
+      max-height: 620px;
+      overflow-y: auto;
+    }
+
+    .guest-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 18px;
+      min-height: 68px;
+    }
+
+    .guest-row + .guest-row {
+      border-top: 1px solid var(--rule);
+    }
+
+    .guest-identity {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .guest-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-card);
+      object-fit: cover;
+      border: 1px solid var(--control);
+      flex-shrink: 0;
+      background: var(--raised);
+    }
+
+    .guest-avatar-fallback {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-card);
+      background: var(--raised);
+      border: 1px solid var(--control);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 14px;
+      color: var(--text);
+      flex-shrink: 0;
+    }
+
+    .guest-info {
+      min-width: 0;
+    }
+
+    .guest-name-line {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .guest-name {
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .guest-dates {
+      margin-top: 3px;
+      font-size: var(--fs-small);
+      color: var(--muted);
+    }
+
+    .empty-box {
+      padding: 36px 20px;
+      text-align: center;
+      color: var(--muted);
+      font-size: var(--fs-body);
+    }
+
+    /* ---------- SHADCN MODAL DIALOG ---------- */
+    .dialog-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.78);
+      z-index: 50;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .dialog-backdrop.open {
+      display: flex;
+    }
+
+    .dialog-card {
+      background: var(--surface);
+      border: 1px solid var(--control);
+      border-radius: var(--radius-card);
+      width: 100%;
+      max-width: 460px;
+      overflow: hidden;
+    }
+
+    .dialog-card-wide {
+      max-width: 920px;
+    }
+
+    .dialog-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .dialog-header h3 {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .dialog-body {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .dialog-face-preview {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 12px;
+      background: var(--ground);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+    }
+
+    .dialog-face-preview img {
+      width: 84px;
+      height: 84px;
+      border-radius: var(--radius-card);
+      object-fit: cover;
+      border: 1px solid var(--control);
+    }
+
+    /* ---------- TOAST ---------- */
+    .toast-stack {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 60;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-width: 380px;
+    }
+
+    .toast-item {
+      padding: 12px 16px;
+      background: var(--surface);
+      border: 1px solid var(--control);
+      border-left: 3px solid var(--accent);
+      border-radius: var(--radius-card);
+      color: var(--text);
+      font-size: var(--fs-body);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .toast-item.error {
+      border-left-color: var(--negative);
+    }
+
+    .toast-item.success {
+      border-left-color: var(--positive);
+    }
+
+    /* ---------- RESPONSIVE ---------- */
+    @media (max-width: 1180px) {
+      .workspace-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+      .quick-register-row {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .app-shell {
+        grid-template-columns: minmax(0, 1fr);
+      }
+      .icon-rail {
+        display: none;
+      }
+      .kpis {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .kpi:nth-child(2n + 1) {
+        border-left: 0;
+      }
+      .kpi:nth-child(n + 3) {
+        border-top: 1px solid var(--border);
+      }
+      .quick-register-row {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-shell">
+    <!-- SOL İKON RAYI (ICON RAIL) -->
+    <nav class="icon-rail" aria-label="Ana Menü">
+      <div class="brand-mark" title="Mango Suites Hotel Sentinel">MS</div>
+
+      <button id="rail-cam" class="rail-btn" aria-current="true" title="Canlı Kamera ve KBS Denetimi" onclick="setActiveRail(this); window.scrollTo({top:0, behavior:'smooth'})">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+      </button>
+
+      <button id="rail-captures" class="rail-btn" title="Yakalanan Tanımsız Yüzler" onclick="setActiveRail(this); document.getElementById('section-captures').scrollIntoView({behavior:'smooth'})">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </button>
+
+      <button class="rail-btn" title="Fotoğraf Yükleyerek Misafir Ekle" onclick="openPhotoUploadModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+      </button>
+
+      <div class="rail-divider"></div>
+
+      <div class="rail-bottom">
+        <button class="rail-btn" title="Telegram Bağlantısını Test Et" onclick="sendTestTelegram()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>
+    </nav>
+
+    <!-- ANA ÇALIŞMA ALANI -->
+    <main class="canvas">
+
+      <!-- BAŞLIK VE ÜST KONTROLLER -->
+      <header class="title-row">
+        <div>
+          <h1>Mango Suites: Kamera ve KBS Denetim Konsolu</h1>
+          <p class="subtitle">Canlı yüz doğrulama, anlık KBS misafir tanımlama ve tanımsız giriş yakalama merkezi</p>
+        </div>
+
+        <div class="header-actions">
+          <span id="badge-camera" class="pill pill-pos">
+            <span class="status-dot"></span>
+            <span id="text-camera">Kamera Aktif</span>
+          </span>
+
+          <button id="btn-toggle-alarms" class="btn btn-sm" onclick="toggleAlarms()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            <span id="text-alarm-state">Telegram Alarmları: Aktif</span>
+          </button>
+
+          <button class="btn btn-sm" onclick="sendTestTelegram()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            <span>Telegram Testi</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- KPI ŞERİDİ -->
+      <section class="kpis" aria-label="Sistem Özeti">
+        <div class="kpi">
+          <div class="kpi-label">Kameradaki Son Tespit</div>
+          <div id="kpi-last-detection" class="kpi-value">İzleme Hazır</div>
+          <div class="kpi-sub">Merdiven ve kat geçiş noktası</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Aktif KBS Kayıtlı Misafir</div>
+          <div id="kpi-guest-count" class="kpi-value num">0</div>
+          <div class="kpi-sub">Beyaz listedeki konaklayan sayısı</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Bekleyen Tanımsız Yüz Kaydı</div>
+          <div id="kpi-alert-count" class="kpi-value num">0</div>
+          <div class="kpi-sub">Tek tıkla KBS'ye tanımlanabilir</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Görüntü İşleme Hızı</div>
+          <div id="kpi-fps" class="kpi-value num">0.0 FPS</div>
+          <div class="kpi-sub">InsightFace ONNX + YOLO11 CPU</div>
+        </div>
+      </section>
+
+      <!-- ANA İKİLİ DÜZEN: SOLDA DEV KAMERA + YAKALANAN YÜZLER | SAĞDA KBS MİSAFİR LİSTESİ -->
+      <div class="workspace-grid">
+
+        <!-- SOL ANA SÜTUN: DEV CANLI KAMERA & YAKALANAN TANIMSIZ YÜZLER -->
+        <div class="main-column">
+
+          <!-- 1. HERO: DEV CANLI KAMERA EKRANI VE HIZLI KBS AKSİYON ÇUBUĞU -->
+          <section class="panel panel-flush" aria-label="Canlı Kamera Ekranı">
+            <div class="panel-header">
+              <div>
+                <h2 class="panel-title">Canlı Kamera İzleme ve Yüz Yakalama Sahnesi</h2>
+                <p class="panel-subtitle">Sağ üst köşede tespit edilen kişinin yakınlaştırılmış yüzü (PIP) otomatik gösterilir</p>
+              </div>
+              <div style="display:flex; gap:8px;">
+                <button class="btn btn-sm" onclick="openPhotoUploadModal()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  <span>Fotoğraf Dosyasından Kaydet</span>
+                </button>
+                <button class="btn btn-sm" onclick="toggleFullscreenCamera()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+                  <span>Tam Ekran</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- DEV KAMERA GÖRÜNTÜSÜ -->
+            <div id="camera-stage-box" class="camera-stage">
+              <img id="live-stream-img" src="/api/stream" alt="Canlı Güvenlik Kamerası Akışı" />
+            </div>
+
+            <!-- KAMERA ALT KOMUT ÇUBUĞU: YAKALA & KAYDET + YAKALA & ÇIKIŞ YAP -->
+            <div class="camera-Command-bar">
+              <form id="camera-quick-form" onsubmit="handleCameraRegister(event)" class="quick-register-row">
+                <div class="field">
+                  <label for="cam-input-name">Misafir Adı Soyadı</label>
+                  <input id="cam-input-name" type="text" class="input" required placeholder="Örn: Ahmet Yılmaz" />
+                </div>
+
+                <div class="field">
+                  <label for="cam-input-room">Oda No</label>
+                  <input id="cam-input-room" type="text" class="input num" required placeholder="Örn: 204" />
+                </div>
+
+                <div class="field">
+                  <label for="cam-input-days">Kalış Süresi</label>
+                  <select id="cam-input-days" class="select num">
+                    <option value="7">7 Gün</option>
+                    <option value="15">15 Gün</option>
+                    <option value="30" selected>30 Gün (1 Ay)</option>
+                    <option value="90">90 Gün (3 Ay)</option>
+                    <option value="180">180 Gün (6 Ay)</option>
+                    <option value="365">365 Gün (1 Yıl)</option>
+                    <option value="3650">Personel / Süresiz (10 Yıl)</option>
+                  </select>
+                </div>
+
+                <button type="submit" id="btn-cam-register" class="btn btn-primary" title="Şu an kameraya bakan yüzü yakalar ve KBS'ye kaydeder">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></svg>
+                  <span>Kameradaki Yüzü Yakala ve KBS'ye Kaydet</span>
+                </button>
+
+                <button type="button" id="btn-cam-checkout" onclick="handleCameraCheckout()" class="btn btn-negative" title="Kameraya bakan kişiyi yüzünden tanır ve KBS çıkışını yapar">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                  <span>Kameradaki Yüzü Yakala ve KBS Çıkışını Yap</span>
+                </button>
+              </form>
+            </div>
+          </section>
+
+          <!-- 2. YAKALANAN TANIMSIZ YÜZLER (TEKRAR KAMERAYA GEÇMEDEN FOTOĞRAFTAN KBS KAYDI) -->
+          <section id="section-captures" class="panel panel-flush" aria-label="Yakalanan Tanımsız Yüzler">
+            <div class="panel-header">
+              <div>
+                <h2 class="panel-title">Yakalanan Tanımsız Yüzler: Tek Tıkla KBS'ye Tanımla</h2>
+                <p class="panel-subtitle">
+                  Misafirin yanında gelen veya kayıtsız geçen kişilerin yakınlaştırılmış yüzleri. Kişi tekrar kameraya gelmeden buradan seçip kaydedebilirsiniz.
+                </p>
+              </div>
+              <div style="display:flex; gap:8px;">
+                <button class="btn btn-sm" onclick="runSmartCleanup()" title="Aynı kişiye ait tekrar eden fotoğrafları ve 30 günü geçen kayıtları otomatik temizler">
+                  <span>Mükerrerleri Ayıkla (30 Gün Kuralı)</span>
+                </button>
+                <button class="btn btn-sm" onclick="clearAllAlerts()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                  <span>Tümünü Temizle</span>
+                </button>
+              </div>
+            </div>
+
+            <div id="captures-grid" class="captures-grid">
+              <!-- JS ile doldurulur -->
+            </div>
+          </section>
+
+        </div>
+
+        <!-- SAĞ SABİT SÜTUN (400px): AKTİF KBS MİSAFİRLERİ VE TEKİL ÇIKIŞ (SİLME) -->
+        <aside class="side-rail" aria-label="Aktif KBS Misafir Listesi">
+          <section class="panel panel-flush">
+            <div class="panel-header">
+              <div>
+                <h2 class="panel-title">Aktif KBS Kayıtlı Misafirler</h2>
+                <p class="panel-subtitle">Ayrılan kişiyi yanındaki Çıkış Yap butonuyla tekil olarak silebilirsiniz</p>
+              </div>
+              <span id="rail-guest-badge" class="pill pill-pos num">0 Kişi</span>
+            </div>
+
+            <div class="rail-search-box">
+              <input
+                type="text"
+                id="search-guests"
+                oninput="renderGuests()"
+                class="input"
+                placeholder="Oda numarası veya misafir adı ara..."
+              />
+            </div>
+
+            <div id="guests-list-container" class="guest-rows">
+              <!-- JS ile doldurulur -->
+            </div>
+          </section>
+        </aside>
+
+      </div>
+
+    </main>
+  </div>
+
+  <!-- MODAL 1: YAKALANAN ALARM FOTOĞRAFINDAN KBS'YE MİSAFİR KAYDETME DİYALOĞU -->
+  <div id="modal-register-alert" class="dialog-backdrop" onclick="closeAlertRegisterModal()">
+    <div class="dialog-card" onclick="event.stopPropagation()">
+      <div class="dialog-header">
+        <h3>Yakalanan Yüzü KBS Listesine Tanımla</h3>
+        <button class="btn btn-sm" onclick="closeAlertRegisterModal()">Kapat</button>
+      </div>
+      <form onsubmit="submitAlertRegistration(event)" class="dialog-body">
+        <input type="hidden" id="alert-reg-id" />
+
+        <div class="dialog-face-preview">
+          <img id="alert-reg-img" src="" alt="Yakalanan Yüz" />
+          <div>
+            <div class="pill pill-warn" style="margin-bottom:6px;">Kamera Kaydından Seçildi</div>
+            <p style="font-size:12px; color:var(--muted);">
+              Bu kişinin tekrar kameranın önüne geçmesine gerek yoktur. Yakalanan yüz imzası doğrudan odasına tanımlanacaktır.
+            </p>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="alert-reg-name">Misafir Adı Soyadı *</label>
+          <input id="alert-reg-name" type="text" class="input" required placeholder="Örn: Caner Kaya" />
+        </div>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+          <div class="field">
+            <label for="alert-reg-room">Oda Numarası *</label>
+            <input id="alert-reg-room" type="text" class="input num" required placeholder="Örn: 204" />
+          </div>
+
+          <div class="field">
+            <label for="alert-reg-days">Konaklama Süresi</label>
+            <select id="alert-reg-days" class="select num">
+              <option value="7">7 Gün</option>
+              <option value="15">15 Gün</option>
+              <option value="30" selected>30 Gün</option>
+              <option value="90">90 Gün</option>
+              <option value="180">180 Gün</option>
+              <option value="365">365 Gün</option>
+              <option value="3650">Personel / Süresiz</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:4px;">
+          <button type="button" class="btn" onclick="closeAlertRegisterModal()">İptal</button>
+          <button type="submit" id="btn-alert-reg-submit" class="btn btn-primary">KBS Kaydını Tamamla</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 2: FOTOĞRAF DOSYASINDAN MİSAFİR EKLEME DİYALOĞU -->
+  <div id="modal-photo-upload" class="dialog-backdrop" onclick="closePhotoUploadModal()">
+    <div class="dialog-card" onclick="event.stopPropagation()">
+      <div class="dialog-header">
+        <h3>Fotoğraf Dosyasından KBS Misafiri Tanımla</h3>
+        <button class="btn btn-sm" onclick="closePhotoUploadModal()">Kapat</button>
+      </div>
+      <form onsubmit="submitPhotoUpload(event)" class="dialog-body">
+        <div class="field">
+          <label for="up-input-name">Misafir Adı Soyadı *</label>
+          <input id="up-input-name" type="text" class="input" required placeholder="Örn: Mehmet Demir" />
+        </div>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+          <div class="field">
+            <label for="up-input-room">Oda Numarası *</label>
+            <input id="up-input-room" type="text" class="input num" required placeholder="Örn: 302" />
+          </div>
+
+          <div class="field">
+            <label for="up-input-days">Konaklama Süresi</label>
+            <select id="up-input-days" class="select num">
+              <option value="7">7 Gün</option>
+              <option value="15">15 Gün</option>
+              <option value="30" selected>30 Gün</option>
+              <option value="90">90 Gün</option>
+              <option value="365">365 Gün</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="up-input-file">Misafir Yüz / Kimlik Fotoğrafı *</label>
+          <input id="up-input-file" type="file" accept="image/*" required class="input" style="padding-top:6px;" />
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:4px;">
+          <button type="button" class="btn" onclick="closePhotoUploadModal()">İptal</button>
+          <button type="submit" id="btn-up-submit" class="btn btn-primary">Fotoğrafı Yükle ve Kaydet</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 3: GÖRSEL BÜYÜTME (LIGHTBOX) -->
+  <div id="modal-lightbox" class="dialog-backdrop" onclick="closeLightbox()">
+    <div class="dialog-card dialog-card-wide" onclick="event.stopPropagation()">
+      <div class="dialog-header">
+        <h3 id="lightbox-title">Kamera Kanıt Görüntüsü</h3>
+        <button class="btn btn-sm" onclick="closeLightbox()">Kapat</button>
+      </div>
+      <div style="background:#000; display:flex; align-items:center; justify-content:center; max-height:80vh;">
+        <img id="lightbox-img" src="" alt="Büyütülmüş Kamera Karesi" style="max-height:78vh; width:auto; max-width:100%; object-fit:contain;" />
+      </div>
+    </div>
+  </div>
+
+  <!-- BİLDİRİM YIĞINI -->
+  <div id="toast-stack" class="toast-stack"></div>
+
+  <script>
+    let allGuests = [];
+    let allAlerts = [];
+    let lastAlertsSignature = '';
+
+    function esc(str) {
+      return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function setActiveRail(btn) {
+      document.querySelectorAll('.icon-rail .rail-btn').forEach(b => b.removeAttribute('aria-current'));
+      if (btn) btn.setAttribute('aria-current', 'true');
+    }
+
+    function showToast(message, type = 'info') {
+      const stack = document.getElementById('toast-stack');
+      const item = document.createElement('div');
+      item.className = `toast-item ${type}`;
+      const span = document.createElement('span');
+      span.textContent = message;
+      const closeBtn = document.createElement('button');
+      closeBtn.textContent = 'Kapat';
+      closeBtn.style.cssText = 'background:none;border:0;color:var(--muted);cursor:pointer;font-size:12px;';
+      closeBtn.onclick = () => item.remove();
+      item.appendChild(span);
+      item.appendChild(closeBtn);
+      stack.appendChild(item);
+      setTimeout(() => item.remove(), 4500);
+    }
+
+    function toggleFullscreenCamera() {
+      const stage = document.getElementById('camera-stage-box');
+      if (!document.fullscreenElement) {
+        stage.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+
+    async function fetchStatus() {
+      try {
+        const res = await fetch('/api/status');
+        const data = await res.json();
+
+        const badgeCam = document.getElementById('badge-camera');
+        const txtCam = document.getElementById('text-camera');
+        if (!data.camera_connected) {
+          badgeCam.className = 'pill pill-neg';
+          txtCam.textContent = 'Kamera Bağlantısı Bekleniyor';
+        } else if (data.camera_covered) {
+          badgeCam.className = 'pill pill-warn';
+          txtCam.textContent = 'Kamera Kapalı / Karanlık Ekran';
+        } else {
+          badgeCam.className = 'pill pill-pos';
+          txtCam.textContent = `Kamera Aktif (${data.camera_location || 'Canlı'})`;
+        }
+
+        document.getElementById('kpi-guest-count').textContent = data.active_guests_count ?? 0;
+        document.getElementById('rail-guest-badge').textContent = `${data.active_guests_count ?? 0} Kişi`;
+        document.getElementById('kpi-fps').textContent = `${(data.fps || 0).toFixed(1)} FPS`;
+        document.getElementById('kpi-last-detection').textContent = data.last_detection || 'İzleme Hazır';
+
+        const txtAlarm = document.getElementById('text-alarm-state');
+        if (data.alarms_paused) {
+          txtAlarm.textContent = 'Telegram Alarmları: Duraklatıldı';
+        } else {
+          txtAlarm.textContent = 'Telegram Alarmları: Aktif';
+        }
+      } catch (e) {
+        console.error('Status error:', e);
+      }
+    }
+
+    async function fetchGuests() {
+      try {
+        const res = await fetch('/api/guests');
+        const data = await res.json();
+        allGuests = data.guests || [];
+        renderGuests();
+      } catch (e) {
+        console.error('Guests error:', e);
+      }
+    }
+
+    function renderGuests() {
+      const container = document.getElementById('guests-list-container');
+      const q = (document.getElementById('search-guests').value || '').toLowerCase().trim();
+
+      const filtered = allGuests.filter(g =>
+        g.name.toLowerCase().includes(q) ||
+        g.room_number.toLowerCase().includes(q)
+      );
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="empty-box">
+            Aktif KBS kaydı bulunamadı. Kameranın altındaki çubuktan veya yakalanan yüzlerden misafir ekleyebilirsiniz.
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = filtered.map(g => {
+        const safeName = esc(g.name);
+        const safeRoom = esc(g.room_number);
+        const safeUrl = esc(g.photo_url);
+        const initial = esc((g.name || '?').charAt(0).toUpperCase());
+        const avatar = safeUrl
+          ? `<img src="${safeUrl}" alt="${safeName}" class="guest-avatar" />`
+          : `<div class="guest-avatar-fallback">${initial}</div>`;
+        const angleBadge = (g.angle_count && g.angle_count > 1)
+          ? `<span class="pill num" title="Çoklu açı yüz profili tanımlı">${Number(g.angle_count)} Açı</span>`
+          : '';
+
+        return `
+          <div class="guest-row">
+            <div class="guest-identity">
+              ${avatar}
+              <div class="guest-info">
+                <div class="guest-name-line">
+                  <span class="pill pill-pos room-tag">Oda ${safeRoom}</span>
+                  <span class="guest-name">${safeName}</span>
+                  ${angleBadge}
+                </div>
+                <div class="guest-dates num">
+                  Giriş: ${esc(g.check_in_date.slice(0, 10))} · Çıkış: ${esc(g.check_out_date.slice(0, 10))}
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              class="btn btn-negative btn-sm"
+              onclick="checkoutSingleGuest(${Number(g.id)})"
+              title="Sadece bu misafirin çıkışını yapar"
+            >
+              Çıkış Yap (Sil)
+            </button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function handleCameraRegister(e) {
+      e.preventDefault();
+      const name = document.getElementById('cam-input-name').value.trim();
+      const room = document.getElementById('cam-input-room').value.trim();
+      const days = parseInt(document.getElementById('cam-input-days').value || '30', 10);
+      const btn = document.getElementById('btn-cam-register');
+
+      if (!name || !room) {
+        showToast('Lütfen misafir adı ve oda numarasını girin.', 'error');
+        return;
+      }
+
+      btn.disabled = true;
+      try {
+        const res = await fetch('/api/guests/from-camera', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, room_number: room, days })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          showToast(data.detail || 'Kameradan yüz yakalanamadı.', 'error');
+        } else {
+          showToast(data.message, 'success');
+          document.getElementById('cam-input-name').value = '';
+          document.getElementById('cam-input-room').value = '';
+          await fetchGuests();
+          await fetchStatus();
+        }
+      } catch (err) {
+        showToast('Sunucu bağlantı hatası.', 'error');
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    async function handleCameraCheckout() {
+      const btn = document.getElementById('btn-cam-checkout');
+      btn.disabled = true;
+      try {
+        const res = await fetch('/api/guests/checkout-from-camera', {
+          method: 'POST'
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          showToast(data.detail || 'Kameradaki kişi tanınamadı.', 'error');
+        } else {
+          showToast(data.message, 'success');
+          await fetchGuests();
+          await fetchStatus();
+        }
+      } catch (err) {
+        showToast('Sunucu bağlantı hatası.', 'error');
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    async function checkoutSingleGuest(guestId) {
+      const g = allGuests.find(item => item.id === guestId);
+      const label = g ? `${g.name} (Oda ${g.room_number})` : `Misafir #${guestId}`;
+      if (!confirm(`${label} isimli misafirin KBS çıkışını yapmak (listeden silmek) istediğinize emin misiniz?`)) {
+        return;
+      }
+      try {
+        const res = await fetch(`/api/guests/${guestId}/checkout`, { method: 'POST' });
+        const data = await res.json();
+        if (res.ok) {
+          showToast(data.message, 'success');
+          await fetchGuests();
+          await fetchStatus();
+        } else {
+          showToast(data.detail || 'Çıkış işlemi başarısız.', 'error');
+        }
+      } catch (e) {
+        showToast('Sunucu bağlantı hatası.', 'error');
+      }
+    }
+
+    async function fetchAlerts(force = false) {
+      try {
+        const res = await fetch('/api/alerts');
+        const data = await res.json();
+        const incoming = data.alerts || [];
+        const sig = incoming.map(a => `${a.id}:${a.face_url}:${a.image_url}`).join('|');
+        allAlerts = incoming;
+        document.getElementById('kpi-alert-count').textContent = allAlerts.length;
+        if (force || sig !== lastAlertsSignature) {
+          lastAlertsSignature = sig;
+          renderAlerts();
+        }
+      } catch (e) {
+        console.error('Alerts error:', e);
+      }
+    }
+
+    function openAlertLightbox(alertId, mode) {
+      const a = allAlerts.find(item => item.id === alertId);
+      if (!a) return;
+      const faceImg = a.face_url || a.image_url;
+      const sceneImg = a.image_url || a.face_url;
+      if (mode === 'face') {
+        openLightbox(faceImg, `Yakınlaştırılmış Yüz (${a.alert_time})`);
+      } else {
+        openLightbox(sceneImg, `${a.details} (${a.alert_time})`);
+      }
+    }
+
+    function renderAlerts() {
+      const grid = document.getElementById('captures-grid');
+      if (allAlerts.length === 0) {
+        grid.innerHTML = `
+          <div class="empty-box" style="grid-column: 1 / -1;">
+            Bekleyen tanımsız yüz veya kaçak giriş kaydı bulunmuyor. Kameradan tanımsız biri geçtiğinde yakınlaştırılmış yüzü burada listelenir.
+          </div>
+        `;
+        return;
+      }
+
+      grid.innerHTML = allAlerts.map(a => {
+        const faceImg = esc(a.face_url || a.image_url);
+        const sceneImg = esc(a.image_url || a.face_url);
+        const aid = Number(a.id);
+
+        return `
+          <article class="capture-card">
+            <div class="capture-media">
+              ${faceImg
+                ? `<img src="${faceImg}" alt="Yakın Plan Yüz" class="capture-face-zoom" title="Yakınlaştırılmış Yüz" onclick="openAlertLightbox(${aid}, 'face')" />`
+                : `<div style="display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:11px;">Yüz Yok</div>`
+              }
+              ${sceneImg
+                ? `<img src="${sceneImg}" alt="Tam Kamera Karesi" class="capture-scene-thumb" title="Tam Sahneyi Büyütmek İçin Tıklayın" onclick="openAlertLightbox(${aid}, 'scene')" />`
+                : `<div style="display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:11px;">Kare Yok</div>`
+              }
+            </div>
+            <div class="capture-body">
+              <div class="capture-meta">
+                <span class="pill pill-neg">${esc(a.details)}</span>
+                <time class="num" style="font-size:11px; color:var(--muted);">${esc(a.alert_time)}</time>
+              </div>
+              <div class="capture-actions">
+                <button
+                  type="button"
+                  class="btn btn-positive btn-sm"
+                  style="flex:1;"
+                  onclick="openAlertRegisterModal(${aid})"
+                >
+                  Bu Yüzü KBS'ye Kaydet
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-sm"
+                  onclick="deleteAlert(${aid})"
+                  title="Bu kaydı sil"
+                >
+                  Sil
+                </button>
+              </div>
+            </div>
+          </article>
+        `;
+      }).join('');
+    }
+
+    function openAlertRegisterModal(alertId) {
+      const a = allAlerts.find(item => item.id === alertId);
+      const faceUrl = a ? (a.face_url || a.image_url) : '';
+      document.getElementById('alert-reg-id').value = alertId;
+      document.getElementById('alert-reg-img').src = faceUrl || '';
+      document.getElementById('alert-reg-name').value = '';
+      document.getElementById('alert-reg-room').value = '';
+      document.getElementById('modal-register-alert').classList.add('open');
+      setTimeout(() => document.getElementById('alert-reg-name').focus(), 80);
+    }
+
+    function closeAlertRegisterModal() {
+      document.getElementById('modal-register-alert').classList.remove('open');
+    }
+
+    async function submitAlertRegistration(e) {
+      e.preventDefault();
+      const alertId = document.getElementById('alert-reg-id').value;
+      const name = document.getElementById('alert-reg-name').value.trim();
+      const room = document.getElementById('alert-reg-room').value.trim();
+      const days = parseInt(document.getElementById('alert-reg-days').value || '30', 10);
+      const btn = document.getElementById('btn-alert-reg-submit');
+
+      btn.disabled = true;
+      try {
+        const res = await fetch(`/api/alerts/${alertId}/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, room_number: room, days })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          showToast(data.detail || 'Kayıt işlemi başarısız.', 'error');
+        } else {
+          showToast(data.message, 'success');
+          closeAlertRegisterModal();
+          await fetchGuests();
+          await fetchAlerts(true);
+          await fetchStatus();
+        }
+      } catch (err) {
+        showToast('Sunucu bağlantı hatası.', 'error');
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    function openPhotoUploadModal() {
+      document.getElementById('modal-photo-upload').classList.add('open');
+    }
+
+    function closePhotoUploadModal() {
+      document.getElementById('modal-photo-upload').classList.remove('open');
+    }
+
+    async function submitPhotoUpload(e) {
+      e.preventDefault();
+      const name = document.getElementById('up-input-name').value.trim();
+      const room = document.getElementById('up-input-room').value.trim();
+      const days = parseInt(document.getElementById('up-input-days').value || '30', 10);
+      const fileInput = document.getElementById('up-input-file');
+      const btn = document.getElementById('btn-up-submit');
+
+      if (!fileInput.files || fileInput.files.length === 0) {
+        showToast('Lütfen bir fotoğraf dosyası seçin.', 'error');
+        return;
+      }
+
+      btn.disabled = true;
+      try {
+        const formData = new FormData();
+        formData.append('name', name);
+        formData.append('room_number', room);
+        formData.append('days', days);
+        formData.append('photo', fileInput.files[0]);
+
+        const res = await fetch('/api/guests/from-photo', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          showToast(data.detail || 'Fotoğraftan yüz algılanamadı.', 'error');
+        } else {
+          showToast(data.message, 'success');
+          document.getElementById('up-input-name').value = '';
+          document.getElementById('up-input-room').value = '';
+          fileInput.value = '';
+          closePhotoUploadModal();
+          await fetchGuests();
+          await fetchStatus();
+        }
+      } catch (err) {
+        showToast('Sunucu bağlantı hatası.', 'error');
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    async function deleteAlert(alertId) {
+      await fetch(`/api/alerts/${alertId}`, { method: 'DELETE' });
+      fetchAlerts(true);
+    }
+
+    async function clearAllAlerts() {
+      if (!confirm('Yakalanan tüm tanımsız yüz kayıtlarını temizlemek istediğinize emin misiniz?')) return;
+      const res = await fetch('/api/alerts/clear', { method: 'POST' });
+      if (res.ok) {
+        showToast('Tüm tanımsız yüz kayıtları temizlendi.', 'success');
+        fetchAlerts(true);
+      }
+    }
+
+    async function runSmartCleanup() {
+      const res = await fetch('/api/system/cleanup-storage', { method: 'POST' });
+      const data = await res.json();
+      if (res.ok) {
+        showToast(data.message, 'success');
+        fetchAlerts(true);
+      }
+    }
+
+    async function toggleAlarms() {
+      const res = await fetch('/api/system/toggle-alarms', { method: 'POST' });
+      const data = await res.json();
+      if (res.ok) {
+        showToast(data.message, 'info');
+        fetchStatus();
+      }
+    }
+
+    async function sendTestTelegram() {
+      showToast('Telegram grubuna test bildirimi gönderiliyor...', 'info');
+      const res = await fetch('/api/system/test-telegram', { method: 'POST' });
+      const data = await res.json();
+      if (res.ok) {
+        showToast(data.message, 'success');
+      } else {
+        showToast(data.detail || 'Telegram testi başarısız.', 'error');
+      }
+    }
+
+    function openLightbox(imgUrl, title) {
+      document.getElementById('lightbox-img').src = imgUrl;
+      document.getElementById('lightbox-title').textContent = title || 'Kamera Kanıt Görüntüsü';
+      document.getElementById('modal-lightbox').classList.add('open');
+    }
+
+    function closeLightbox() {
+      document.getElementById('modal-lightbox').classList.remove('open');
+    }
+
+    fetchStatus();
+    fetchGuests();
+    fetchAlerts();
+    setInterval(fetchStatus, 2500);
+    setInterval(fetchAlerts, 4000);
+  </script>
+</body>
+</html>

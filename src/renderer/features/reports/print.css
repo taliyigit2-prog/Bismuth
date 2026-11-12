@@ -1,0 +1,52 @@
+/* Print layout of reports (faz-10 madde 8): A4, the hotel name and the period on every page (the repeated table
+   header), page numbers in the page margin. Only the print root is printed; the app shell is left out. Also the day
+   ledger's print copy (features/ledger/ledger-print.tsx). The page rules apply only while the print root is in the
+   page (like the night list and the guide): this file stays loaded after the reports screen, and an unscoped "hide
+   everything but the print root" left those printouts blank. */
+.print-root {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm 12mm 14mm;
+
+    @bottom-center {
+      content: counter(page) ' / ' counter(pages);
+      font-size: 9pt;
+      color: var(--muted-foreground);
+    }
+  }
+
+  html:has(> body > .print-root),
+  body:has(> .print-root) {
+    height: auto !important;
+    overflow: visible !important;
+    background: var(--background) !important;
+  }
+
+  body:has(> .print-root) > :not(.print-root) {
+    display: none !important;
+  }
+
+  .print-root {
+    display: block;
+    width: 100%;
+    font-size: 10pt;
+  }
+
+  .print-root .print-sheet {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .print-root [data-slot='card'] {
+    box-shadow: none;
+    break-inside: avoid;
+  }
+
+  .print-root [data-slot='table-container'] {
+    overflow: visible;
+  }
+}

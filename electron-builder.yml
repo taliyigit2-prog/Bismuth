@@ -1,0 +1,94 @@
+# Bismuth packaging (K-07, faz-01 madde 10, faz-16 madde 3). Proven in Faz 0 (prototypes/shell): NSIS per-user wizard,
+# ad-hoc signed macOS DMGs, better-sqlite3 prebuilds without rebuilding. No `publish` block: Bismuth has
+# no update server and never checks for updates (G-07) — so no latest.yml / blockmap files are produced.
+# File names: electron-builder writes one file per architecture (Bismuth-Setup-x64.exe, Bismuth-arm64.dmg, …);
+# scripts/release-names.mjs then gives the owner fixed names (G-03): Bismuth-Setup.exe (Windows x64),
+# Bismuth-Setup-arm64.exe, Bismuth.dmg (Mac with Apple chip), Bismuth-Intel.dmg. The version is in the Release
+# title and on the About screen, never in the file name, so a "latest" download link never changes.
+appId: com.bismuth.hotel
+productName: Bismuth
+copyright: Bismuth
+directories:
+  buildResources: build
+  output: release
+files:
+  - out/**
+  - package.json
+  - '!**/*.map'
+  # better-sqlite3 ships C sources and 8 prebuilt binaries; keep only what this OS needs.
+  - '!**/node_modules/better-sqlite3/{deps,src}/**'
+  - '!**/node_modules/better-sqlite3/binding.gyp'
+extraResources:
+  - from: drizzle
+    to: drizzle
+  - from: THIRD_PARTY_NOTICES.md
+    to: THIRD_PARTY_NOTICES.md
+asar: true
+asarUnpack:
+  - '**/node_modules/better-sqlite3/**'
+npmRebuild: false
+publish: null
+electronFuses:
+  runAsNode: false
+  enableCookieEncryption: true
+  enableNodeOptionsEnvironmentVariable: false
+  enableNodeCliInspectArguments: false
+  enableEmbeddedAsarIntegrityValidation: true
+  onlyLoadAppFromAsar: true
+  resetAdHocDarwinSignature: true
+win:
+  icon: build/icon.png
+  files:
+    - '!**/node_modules/better-sqlite3/prebuilds/{darwin,linux,linuxmusl}-*.node'
+  executableName: Bismuth
+  target:
+    - target: nsis
+      arch: [x64, arm64]
+nsis:
+  artifactName: ${productName}-Setup-${arch}.${ext}
+  # One installer per architecture. The default (true) also builds a third, combined x64 + arm64 installer twice the
+  # size; the hotel PC (Windows 10 x64) only needs the x64 one and ARM Windows gets its own (G-04).
+  buildUniversalInstaller: false
+  # Wizard, not one-click: the owner sees where it goes. Per user: no administrator password (G-03).
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+  shortcutName: Bismuth
+  uninstallDisplayName: Bismuth
+  differentialPackage: false
+  # The uninstaller never deletes the data folder (userData: records, attachments, backups); its first page says so
+  # (build/installer.nsh, customUnWelcomePage).
+  deleteAppDataOnUninstall: false
+  multiLanguageInstaller: true
+  installerLanguages: [tr_TR, en_US, ru_RU]
+  # Faz 13: firewall rule for server mode (private networks only); Faz 16: uninstaller's first page (build/installer.nsh).
+  include: build/installer.nsh
+mac:
+  icon: build/icon.png
+  files:
+    - '!**/node_modules/better-sqlite3/prebuilds/{win32,linux,linuxmusl}-*.node'
+  category: public.app-category.business
+  # Faz 13: macOS asks once before Bismuth looks for, or connects to, the hotel's main computer on the local network.
+  extendInfo:
+    NSLocalNetworkUsageDescription: Bismuth otelin ana bilgisayarını yerel ağda bulur ve ona bağlanır. / Bismuth finds and connects to the hotel's main computer on the local network.
+    NSBonjourServices:
+      - _bismuth._tcp
+  # Two DMGs, not one universal app (K-07): each is half the size, and better-sqlite3's native module needs no merging.
+  target:
+    - target: dmg
+      arch: [arm64, x64]
+  identity: '-'
+  hardenedRuntime: false
+  gatekeeperAssess: false
+  notarize: false
+linux:
+  # Linux is only built in CI for e2e of the packaged app; not distributed.
+  target: dir
+  files:
+    - '!**/node_modules/better-sqlite3/prebuilds/{win32,darwin}-*.node'
+
+dmg:
+  artifactName: ${productName}-${arch}.${ext}
+  sign: false

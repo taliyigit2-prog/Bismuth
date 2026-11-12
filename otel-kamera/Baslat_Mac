@@ -1,0 +1,60 @@
+#!/bin/zsh
+# =====================================================================
+# MANGO SUITES — OTEL KAMERA (macOS Tıkla-Çalıştır Başlatıcı + tmux)
+# Finder üzerinden çift tıklayarak manuel başlatabilirsiniz.
+# =====================================================================
+
+export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
+DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$DIR"
+
+SESSION_NAME="hotel-sentinel"
+URL="http://localhost:8000"
+
+echo "================================================================="
+echo "🏨 MANGO SUITES — OTEL KAMERA BAŞLATILIYOR (macOS)"
+echo "================================================================="
+
+PYTHON_BIN="./venv/bin/python"
+if [ ! -x "$PYTHON_BIN" ] && [ -x "$DIR/../deneme/venv/bin/python" ]; then
+    PYTHON_BIN="$DIR/../deneme/venv/bin/python"
+elif [ ! -x "$PYTHON_BIN" ]; then
+    echo "📦 Sanal ortam (venv) hazırlanıyor..."
+    python3 -m venv venv
+    ./venv/bin/pip install --upgrade pip
+    ./venv/bin/pip install -r requirements.txt
+fi
+
+# Eğer port 8000'de zaten çalışan bir süreç varsa kontrol et
+if lsof -i :8000 >/dev/null 2>&1; then
+    echo "✅ Sistem zaten arka planda çalışıyor! Tarayıcı açılıyor..."
+    open "$URL"
+    exit 0
+fi
+
+# tmux yüklüyse arka planda kalıcı tmux oturumu içinde başlat
+if command -v tmux >/dev/null 2>&1; then
+    tmux kill-session -t "$SESSION_NAME" >/dev/null 2>&1
+    tmux new-session -d -s "$SESSION_NAME" "cd '$DIR' && '$PYTHON_BIN' web_app.py"
+    echo "🚀 Arka plan tmux oturumu ('$SESSION_NAME') başlatıldı."
+else
+    nohup "$PYTHON_BIN" web_app.py > sentinel.log 2>&1 &
+    echo "🚀 Arka plan servisi başlatıldı."
+fi
+
+echo "⏳ Kamera ve Yapay Zeka motorunun hazır olması bekleniyor..."
+for i in {1..20}; do
+    if curl -s "$URL/api/status" >/dev/null 2>&1; then
+        echo "✅ Sistem hazır! Tarayıcıda açılıyor: $URL"
+        open "$URL"
+        echo ""
+        echo "💡 BİLGİ:"
+        echo "   - Bu pencereyi kapatsanız bile sistem arka planda (tmux) çalışmaya devam eder."
+        echo "   - Canlı logları görmek için terminalde: tmux attach -t $SESSION_NAME"
+        echo "   - Tamamen kapatmak için 'Durdur_Mac' dosyasına çift tıklayın."
+        exit 0
+    fi
+    sleep 1
+done
+
+open "$URL"

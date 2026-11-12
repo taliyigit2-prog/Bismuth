@@ -1,0 +1,16 @@
+out
+release
+dist
+node_modules
+coverage
+drizzle
+docs
+prototypes
+package-lock.json
+.claude
+src/renderer/components/ui
+THIRD_PARTY_NOTICES.md
+build
+# Faz 0 prototype workflows: left as committed (editing them re-triggers the prototype runs)
+.github/workflows/faz0-*.yml
+i18n-spec

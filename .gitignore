@@ -1,0 +1,60 @@
+# dependencies / build
+node_modules/
+# a worktree may link the main checkout's dependencies
+/node_modules
+/out/
+/dist/
+/release/
+.vite/
+
+# local data — never commit a database or backups
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+backups/
+.demo/
+
+# secrets and per-developer overrides
+.env
+.env.*
+.claude/settings.local.json
+CLAUDE.local.md
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# test artifacts
+coverage/
+playwright-report/
+test-results/
+
+# prototype build output
+prototypes/**/release/
+prototypes/**/node_modules/
+
+# Claude hook marker (last successful npm run check)
+.claude/.checks-passed
+# local Electron profile used by e2e/ui-shot
+.tmp/
+.eslintcache
+# incremental type-check state (npm run typecheck)
+.cache/
+
+# agent worktrees (local only)
+.claude/worktrees/
+
+# parallel agents: i18n spec files are merged with npm run i18n:add, never committed
+/i18n-spec/
+graphify-out/
+
+# Otel Kamera - kisisel veri ve sirlar
+otel-kamera/.env
+otel-kamera/*.db
+otel-kamera/guest_photos/
+otel-kamera/alerts/
+otel-kamera/*.pt

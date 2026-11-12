@@ -1,0 +1,14 @@
+{
+  "name": "bismuth-holidays-proto",
+  "private": true,
+  "version": "0.0.1",
+  "description": "Faz 0 · A0.4 — offline rule-based holiday generation for any year (spike, not product code)",
+  "type": "module",
+  "license": "UNLICENSED",
+  "scripts": {
+    "test": "node --test"
+  },
+  "dependencies": {
+    "date-holidays": "3.37.0"
+  }
+}

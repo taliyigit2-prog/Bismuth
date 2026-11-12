@@ -1,0 +1,24 @@
+{
+  "name": "bismuth-tape-chart-proto",
+  "private": true,
+  "version": "0.0.1",
+  "description": "Faz 0 · A0.3 — virtualized rooms × days tape chart performance spike (not product code)",
+  "type": "module",
+  "license": "UNLICENSED",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --port 4173 --strictPort",
+    "perf": "node perf.mjs"
+  },
+  "dependencies": {
+    "@tanstack/react-virtual": "3.14.13",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "6.1.1",
+    "playwright-core": "1.63.0",
+    "vite": "8.3.2"
+  }
+}

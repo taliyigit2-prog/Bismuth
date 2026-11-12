@@ -1,0 +1,70 @@
+/* The guide's print copy (G-18): only the open section prints — the program window (menu, bars, the screen copy)
+   is hidden; black on white whatever the screen theme (system colours, no fixed values); pictures never break
+   across two pages. Same approach as the night list of "Otelde kalanlar". The "Bölümü yazdır" button also takes the
+   dark theme off while printing; the rules below keep the copy readable when it is printed another way (Ctrl+P). */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 14mm;
+  }
+
+  body:has(> .guide-print) > :not(.guide-print) {
+    display: none !important;
+  }
+
+  body:has(> .guide-print) {
+    background: Canvas;
+  }
+
+  .guide-print {
+    display: block !important;
+    color-scheme: light;
+    color: CanvasText;
+    background: Canvas;
+    font-size: 10.5pt;
+    line-height: 1.45;
+  }
+
+  /* Key caps, captions, links and notes use the screen theme's colours (light ink in the dark theme): on paper
+     everything is the page's ink, on no tinted surface. */
+  .guide-print * {
+    color: inherit !important;
+    background-color: transparent !important;
+  }
+
+  .guide-print kbd {
+    border: 1px solid GrayText !important;
+  }
+
+  .guide-print a {
+    text-decoration: underline;
+  }
+
+  .guide-print h1 {
+    font-size: 16pt;
+    font-weight: 600;
+    margin: 0 0 4mm;
+  }
+
+  .guide-print h2,
+  .guide-print h3,
+  .guide-print h4 {
+    break-after: avoid;
+  }
+
+  .guide-print figure,
+  .guide-print aside,
+  .guide-print li {
+    break-inside: avoid;
+  }
+
+  .guide-print img {
+    max-width: 100%;
+  }
+
+  /* Page ink like the rest (the system's GrayText is under 4.5:1 on paper); set apart by its size only. */
+  .guide-print .guide-print-meta {
+    font-size: 8.5pt;
+    margin: 0 0 2mm;
+  }
+}

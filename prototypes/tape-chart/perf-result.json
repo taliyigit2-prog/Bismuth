@@ -1,0 +1,38 @@
+{
+  "laptop-1366x768": {
+    "loadMs": 309,
+    "ready": true,
+    "firstPaintMs": 142,
+    "genMs": 18,
+    "stays": 17900,
+    "domNodes": 919,
+    "scroll": {
+      "frames": 599,
+      "avgMs": 16.72,
+      "fps": 59.8,
+      "p95Ms": 16.8,
+      "maxMs": 33.3,
+      "nodesAfter": 987
+    },
+    "jumpMs": 44.2,
+    "barsVisible": 137
+  },
+  "fullhd-1920x1080": {
+    "loadMs": 131,
+    "ready": true,
+    "firstPaintMs": 66,
+    "genMs": 6,
+    "stays": 17900,
+    "domNodes": 1082,
+    "scroll": {
+      "frames": 599,
+      "avgMs": 16.69,
+      "fps": 59.9,
+      "p95Ms": 16.7,
+      "maxMs": 33.3,
+      "nodesAfter": 1152
+    },
+    "jumpMs": 43.5,
+    "barsVisible": 159
+  }
+}

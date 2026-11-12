@@ -1,0 +1,307 @@
+// The window's router in client mode (faz-13 madde 3, CLAUDE.md yasak 13): no local database is opened. The client
+// procedures (connection screen) are answered here; every other call goes to the hotel's main computer through the
+// link, which keeps this window's session there. Until a main computer answers, the window is told "set up is
+// needed in client mode" (it shows the connection screen) and gets the default look (last language and theme).
+import { Hono } from 'hono'
+import {
+  SETTINGS_DEFAULTS,
+  isProcedureName,
+  type AuthState,
+  type ErrorCode,
+  type SettingsValues
+} from '@shared/contract'
+import {
+  acceptHostIdentitySchema,
+  connectInputSchema,
+  normalizeHostUrl,
+  replicaFolderInputSchema,
+  replicaKeyInputSchema,
+  takeOverInputSchema,
+  type FoundHost
+} from '@shared/contract/remote'
+import type { ApiEnv } from '../api/app'
+import type { SessionBinding } from '../api/session'
+import type { ReplicaStore } from '../replica/store'
+import { AppError } from '../services/errors'
+import type { ConfigStore } from './connection-config'
+import { fingerprintOf } from './host-identity'
+import { LinkError, type HostLink, type LinkAnswer, type ProbeResult } from './host-link'
+import type { ReplicaClient } from './replica-client'
+
+/**
+ * Status of an answer this computer gives itself (connection screen, the copy's own settings): 202, so the screens
+ * learn nothing about the main computer from it (200 = it answered, 203 = the read-only copy answered).
+ */
+export const LOCAL_ANSWER = 202
+const LOCAL = LOCAL_ANSWER
+
+/** How long the first call after start waits for the main computer before the copy answers. */
+const FIRST_CONTACT_MS = 4_000
+/** Sign-in answers that carry the signed-in person (the copy grant is asked for after them). */
+const SIGN_IN_ANSWERS = new Set(['auth.signIn', 'auth.signInWithPin', 'auth.unlock'])
+
+/** A window in client mode: the main process gives each one its own session on the main computer. */
+export interface ClientBinding extends SessionBinding {
+  readonly windowId: number
+}
+
+export const isClientBinding = (b: SessionBinding | null | undefined): b is ClientBinding =>
+  !!b && typeof (b as Partial<ClientBinding>).windowId === 'number'
+
+/** A binding whose sign-in methods do nothing locally: the main computer keeps the session (cookies). */
+export function clientBinding(windowId: number, device: SessionBinding['device']): ClientBinding {
+  const none = (): void => undefined
+  return {
+    windowId,
+    device,
+    signedIn: none,
+    signedOut: none,
+    lock: none,
+    unlock: none,
+    unlockFailed: () => 0
+  }
+}
+
+export interface ClientAppDeps {
+  link: HostLink
+  config: ConfigStore
+  discover(): Promise<FoundHost[]>
+  /** Opens the main computer's address in the system's web browser. */
+  openExternal(url: string): void
+  /** Back to keeping the data here: writes the file and starts the program again. */
+  leaveClient(): void
+  /**
+   * The read-only copy (P13b): answers the windows while the main computer cannot be reached; absent → the
+   * connection strip only, as before.
+   */
+  replica?: { client: ReplicaClient; store: Pick<ReplicaStore, 'call'> }
+}
+
+const json = (status: number, value: unknown): LinkAnswer => ({ status, body: JSON.stringify(value) })
+const identityChanged = (known: string, offered: string): LinkAnswer =>
+  json(409, {
+    error: {
+      code: 'CONFLICT',
+      messageKey: 'errors.hostIdentityChanged',
+      details: { known: fingerprintOf(known), offered: fingerprintOf(offered) }
+    }
+  })
+const failure = (status: number, code: ErrorCode, messageKey: string): LinkAnswer =>
+  json(status, { error: { code, messageKey } })
+
+export function createClientApp(deps: ClientAppDeps): Hono<ApiEnv> {
+  const { link, config } = deps
+
+  /** Until a main computer answers, the window shows the connection screen. */
+  const notConnectedState: AuthState = { setup: 'needed', mode: 'client', session: null }
+  const localSettings = (): SettingsValues => ({
+    ...SETTINGS_DEFAULTS,
+    ...config.get().display,
+    'app.mode': 'client'
+  })
+
+  const replica = deps.replica
+
+  /** The copy answers (status 203 = "from the read-only copy"). */
+  async function fromCopy(name: string, text: string): Promise<LinkAnswer | null> {
+    const userId = replica?.client.userId()
+    if (!replica || !userId || !replica.client.usable()) return null
+    replica.client.served()
+    return replica.store.call(name, text, userId)
+  }
+
+  /** The main computer is away (or speaks another version) and the copy can stand in. */
+  const copyStandsIn = (): boolean => {
+    if (!replica || !replica.client.usable() || !link.hostUrl()) return false
+    const state = link.status().state
+    return state === 'unreachable' || state === 'incompatible'
+  }
+
+  /**
+   * A window's call: to the main computer; while it cannot be reached, from the read-only copy. Right after start
+   * the copy answers when the main computer is slow to say anything (it keeps trying in the background).
+   */
+  async function forward(name: string, text: string, windowId: number): Promise<LinkAnswer> {
+    if (copyStandsIn()) return (await fromCopy(name, text)) ?? link.call(windowId, `/api/${name}`, text)
+    const live = link.call(windowId, `/api/${name}`, text)
+    let answer: LinkAnswer | null
+    if (!link.everReached() && replica?.client.usable()) {
+      answer = await Promise.race([
+        live,
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), FIRST_CONTACT_MS).unref?.())
+      ])
+      if (answer === null) return (await fromCopy(name, text)) ?? live
+    } else answer = await live
+    if (answer.status === 503 && (link.status().state !== 'connected' || !link.everReached())) {
+      const copy = await fromCopy(name, text)
+      if (copy) return copy
+    }
+    return answer
+  }
+
+  /** A signed-in answer from the main computer: the copy grant is asked for once (when the role allows). */
+  function afterSignedIn(windowId: number, session: unknown): void {
+    if (!replica) return
+    void replica.client.maybeGrant(
+      () => link.call(windowId, '/api/remote.replicaGrant', '{}'),
+      session as Parameters<ReplicaClient['maybeGrant']>[1]
+    )
+  }
+
+  async function replicaCall(name: string, body: unknown): Promise<LinkAnswer | null> {
+    if (!name.startsWith('remote.replica') && name !== 'remote.takeOver') return null
+    if (!replica) return failure(409, 'CONFLICT', 'errors.notClientMode')
+    const client = replica.client
+    try {
+      switch (name) {
+        case 'remote.replicaStatus':
+          return json(LOCAL, client.status())
+        case 'remote.replicaSync':
+          return json(LOCAL, client.syncNow())
+        case 'remote.replicaSetKey': {
+          const input = replicaKeyInputSchema.safeParse(body)
+          if (!input.success) return failure(400, 'VALIDATION', 'errors.backupRecoveryText')
+          return json(LOCAL, client.setKey(input.data.text, input.data.replace ?? false))
+        }
+        case 'remote.replicaSetFolder': {
+          const input = replicaFolderInputSchema.safeParse(body)
+          if (!input.success) return failure(400, 'VALIDATION', 'errors.replicaFolder')
+          return json(LOCAL, client.setFolder(input.data.folder))
+        }
+        case 'remote.replicaPickFolder':
+          return json(LOCAL, await client.pickFolder())
+        case 'remote.takeOver': {
+          const input = takeOverInputSchema.safeParse(body)
+          if (!input.success) return failure(400, 'VALIDATION', 'errors.validation')
+          await client.takeOver(input.data.password, input.data.force ?? false, input.data.keyText)
+          return json(LOCAL, { ok: true })
+        }
+        default:
+          return null
+      }
+    } catch (error) {
+      if (error instanceof AppError) return failure(error.status, error.code, error.messageKey)
+      throw error
+    }
+  }
+
+  async function local(name: string, body: unknown, windowId: number): Promise<LinkAnswer | null> {
+    const copyAnswer = await replicaCall(name, body)
+    if (copyAnswer) return copyAnswer
+    switch (name) {
+      case 'remote.clientStatus':
+        return json(LOCAL, link.status())
+      case 'remote.discover':
+        return json(LOCAL, await deps.discover())
+      case 'remote.connect': {
+        const parsed = connectInputSchema.safeParse(body)
+        const url = parsed.success ? normalizeHostUrl(parsed.data.url) : null
+        if (!url) return failure(400, 'VALIDATION', 'errors.hostAddress')
+        // N-7: the fingerprint the person saw; only a key with exactly that fingerprint is accepted.
+        const accept = parsed.success ? (parsed.data.acceptIdentity ?? null) : null
+        try {
+          let hello: ProbeResult
+          try {
+            hello = await link.probe(url)
+          } catch (error) {
+            // The saved address answers with another key: accepted only when the person said so, for that key.
+            if (!(error instanceof LinkError && error.reason === 'identityChanged' && accept)) throw error
+            if (!(await link.acceptOffered(accept))) throw error
+            hello = await link.probe(url)
+          }
+          const known = link.knownKey()
+          // K-45 (1): another computer than the one met before answers. Not connected until the person accepts it.
+          if (known && known !== hello.key && fingerprintOf(hello.key) !== accept)
+            return identityChanged(known, hello.key)
+          config.update({ hostUrl: url })
+          link.setHost(url, hello)
+          return json(LOCAL, link.status())
+        } catch (error) {
+          if (error instanceof LinkError && error.reason === 'identityChanged') {
+            const { known, offered } = link.status().identity
+            return json(409, {
+              error: {
+                code: 'CONFLICT',
+                messageKey: 'errors.hostIdentityChanged',
+                details: { known, offered }
+              }
+            })
+          }
+          return error instanceof LinkError && error.reason === 'notBismuth'
+            ? failure(400, 'VALIDATION', 'errors.notBismuth')
+            : failure(503, 'UNAVAILABLE', 'errors.hostUnreachable')
+        }
+      }
+      case 'remote.acceptHostIdentity': {
+        const parsed = acceptHostIdentitySchema.safeParse(body)
+        if (!parsed.success) return failure(400, 'VALIDATION', 'errors.validation')
+        // N-7: the key answering now must be the one the screen showed; otherwise show the new one first.
+        if (!(await link.acceptOffered(parsed.data.fingerprint))) {
+          const { known, offered } = link.status().identity
+          return json(409, {
+            error: { code: 'CONFLICT', messageKey: 'errors.hostIdentityChanged', details: { known, offered } }
+          })
+        }
+        return json(LOCAL, link.status())
+      }
+      case 'remote.forgetHost':
+        config.update({ hostUrl: null })
+        link.setHost(null)
+        return json(LOCAL, link.status())
+      case 'remote.leaveClient':
+        deps.leaveClient()
+        return json(LOCAL, { ok: true })
+      case 'remote.openInBrowser': {
+        const url = link.hostUrl()
+        if (!url) return failure(409, 'CONFLICT', 'errors.noHost')
+        deps.openExternal(url)
+        return json(LOCAL, { ok: true })
+      }
+      case 'auth.state': {
+        if (!link.usable() && !copyStandsIn()) return json(LOCAL, notConnectedState)
+        const answer = await forward('auth.state', '{}', windowId)
+        // Not reached once since start: the connection screen, which says what is wrong and retries.
+        if (answer.status === 503 && !link.everReached()) return json(LOCAL, notConnectedState)
+        if (answer.status === 503 && !link.usable()) return json(LOCAL, notConnectedState)
+        if (answer.status === 200) afterSignedIn(windowId, (JSON.parse(answer.body) as AuthState).session)
+        return answer
+      }
+      case 'settings.get': {
+        if (!link.usable() && !copyStandsIn()) return json(LOCAL, localSettings())
+        const answer = await forward('settings.get', '{}', windowId)
+        if (answer.status === 503) return json(LOCAL, localSettings())
+        if (answer.status !== 200 && answer.status !== 203) return answer
+        const values = JSON.parse(answer.body) as SettingsValues
+        // The look follows the person here as well when the main computer is away.
+        config.update({ display: { 'ui.language': values['ui.language'], 'ui.theme': values['ui.theme'] } })
+        return json(answer.status, { ...values, 'app.mode': 'client' })
+      }
+      default:
+        return null
+    }
+  }
+
+  const app = new Hono<ApiEnv>()
+  app.post('/api/:name', async (c) => {
+    const name = c.req.param('name')
+    const session = c.env?.session
+    if (!isProcedureName(name) || !isClientBinding(session)) {
+      const answer = failure(404, 'UNKNOWN_PROCEDURE', 'errors.unknownProcedure')
+      return c.body(answer.body, 404, { 'content-type': 'application/json' })
+    }
+    const text = await c.req.text()
+    let body: unknown = {}
+    try {
+      body = text ? JSON.parse(text) : {}
+    } catch {
+      body = null
+    }
+    const answer =
+      (await local(name, body, session.windowId)) ?? (await forward(name, text, session.windowId))
+    if (answer.status === 200 && SIGN_IN_ANSWERS.has(name))
+      afterSignedIn(session.windowId, JSON.parse(answer.body))
+    return c.body(answer.body, answer.status as 200, { 'content-type': 'application/json' })
+  })
+  app.notFound((c) => c.body(failure(404, 'UNKNOWN_PROCEDURE', 'errors.unknownProcedure').body, 404))
+  return app
+}

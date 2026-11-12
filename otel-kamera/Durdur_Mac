@@ -1,0 +1,21 @@
+#!/bin/zsh
+# =====================================================================
+# MANGO SUITES — OTEL KAMERA (macOS Durdurucu)
+# =====================================================================
+
+export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
+SESSION_NAME="hotel-sentinel"
+
+echo "🛑 Otel Kamera sistemi durduruluyor..."
+
+if command -v tmux >/dev/null 2>&1; then
+    tmux kill-session -t "$SESSION_NAME" >/dev/null 2>&1
+fi
+
+PIDS=$(lsof -t -i :8000 2>/dev/null)
+if [ -n "$PIDS" ]; then
+    kill -9 $PIDS 2>/dev/null
+fi
+
+echo "✅ Otel Kamera sistemi tamamen kapatıldı."
+sleep 1

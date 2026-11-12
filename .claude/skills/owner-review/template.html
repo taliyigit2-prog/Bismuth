@@ -1,0 +1,373 @@
+<title>__TITLE__</title>
+<style>
+/* Layout: a review desk — screen index on the left, the screenshot in the middle, the owner's verdict beside it. */
+:root {
+  --bg: #f6f5f9;
+  --surface: #ffffff;
+  --sunk: #eeecf3;
+  --fg: #1d1a24;
+  --muted: #625c70;
+  --line: #e0dce8;
+  --accent: #5a3ea6;
+  --accent-fg: #ffffff;
+  --ok: #1d7448;
+  --ok-bg: #e3f3ea;
+  --change: #a64a12;
+  --change-bg: #fbeadf;
+  --font-ui: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", "Cascadia Mono", Consolas, monospace;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #131118; --surface: #1c1923; --sunk: #25212e; --fg: #ece9f3; --muted: #a8a1b7; --line: #332e3f;
+    --accent: #b9a5f2; --accent-fg: #1d1530; --ok: #6fd3a0; --ok-bg: #173226; --change: #f3a66c; --change-bg: #3a2416;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #131118; --surface: #1c1923; --sunk: #25212e; --fg: #ece9f3; --muted: #a8a1b7; --line: #332e3f;
+  --accent: #b9a5f2; --accent-fg: #1d1530; --ok: #6fd3a0; --ok-bg: #173226; --change: #f3a66c; --change-bg: #3a2416;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-ui); font-size: 15px; line-height: 1.5; padding: 0 16px 48px; }
+h1, h2, h3 { text-wrap: balance; margin: 0; }
+button, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.wrap { max-width: 1480px; margin: 0 auto; display: grid; gap: 20px; }
+
+header.top { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px 24px; padding-block: 24px 4px; }
+.brand { display: grid; gap: 4px; min-width: 0; }
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+h1 { font-size: clamp(22px, 2.4vw, 30px); font-weight: 700; letter-spacing: -.01em; }
+.lede { color: var(--muted); max-width: 70ch; margin: 0; }
+.tally { display: flex; flex-wrap: wrap; gap: 8px; }
+.pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 13px; font-weight: 500; background: var(--sunk); color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pill.ok { background: var(--ok-bg); color: var(--ok); }
+.pill.change { background: var(--change-bg); color: var(--change); }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; flex: none; }
+
+.desk { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 20px; align-items: start; }
+nav.index { position: sticky; top: env(safe-area-inset-top, 0px); max-height: 100vh; overflow-y: auto; padding-block: 8px; }
+nav.index h2 { font-family: var(--font-mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 500; margin: 14px 8px 4px; }
+nav.index ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+nav.index button { width: 100%; display: flex; align-items: center; gap: 8px; padding: 7px 8px; border: 0; border-radius: 8px; background: transparent; text-align: start; cursor: pointer; font-size: 14px; }
+nav.index button:hover { background: var(--sunk); }
+nav.index button[aria-current="true"] { background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); font-weight: 600; }
+nav.index .name { flex: 1; min-width: 0; }
+.state { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--line); flex: none; }
+.state.ok { background: var(--ok); border-color: var(--ok); }
+.state.change { background: var(--change); border-color: var(--change); }
+.pick { display: none; }
+
+main.viewer { display: grid; gap: 16px; min-width: 0; }
+.head { display: flex; flex-wrap: wrap; align-items: start; justify-content: space-between; gap: 12px; }
+.head h2 { font-size: 22px; font-weight: 700; }
+.req { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.desc { margin: 4px 0 0; max-width: 75ch; }
+.controls { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
+.seg { display: inline-flex; padding: 3px; border-radius: 10px; background: var(--sunk); gap: 2px; }
+.seg button { border: 0; background: transparent; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 14px; color: var(--muted); min-height: 36px; }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--fg); font-weight: 600; box-shadow: 0 1px 2px rgb(0 0 0 / .08); }
+.seg button:disabled { opacity: .45; cursor: not-allowed; }
+.seglabel { font-size: 12px; color: var(--muted); margin-inline-end: 4px; }
+.nav-buttons { display: flex; gap: 8px; margin-inline-start: auto; }
+.btn { border: 1px solid var(--line); background: var(--surface); padding: 7px 14px; border-radius: 9px; cursor: pointer; font-size: 14px; min-height: 38px; }
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--accent); color: var(--accent-fg); border-color: transparent; font-weight: 600; }
+
+.stage { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 20px; align-items: start; }
+.shots { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; min-width: 0; }
+figure { margin: 0; display: grid; gap: 6px; min-width: 0; }
+figure.desktop { flex: 1 1 560px; }
+figure.mobile { flex: 0 1 300px; }
+figcaption { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.frame { border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; background: var(--surface); }
+figure.mobile .frame { border-radius: 22px; padding: 6px; background: var(--sunk); }
+figure.mobile .frame img { border-radius: 16px; }
+.frame img { display: block; width: 100%; height: auto; }
+.note-ok { font-size: 13px; color: var(--muted); margin: 0; }
+
+aside.verdict { position: sticky; top: env(safe-area-inset-top, 0px); display: grid; gap: 12px; padding: 16px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+aside.verdict h3 { font-size: 15px; }
+.choices { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.choice { border: 1.5px solid var(--line); background: var(--surface); border-radius: 9px; padding: 9px 8px; cursor: pointer; font-weight: 600; font-size: 14px; min-height: 44px; }
+.choice[aria-pressed="true"].ok { border-color: var(--ok); background: var(--ok-bg); color: var(--ok); }
+.choice[aria-pressed="true"].change { border-color: var(--change); background: var(--change-bg); color: var(--change); }
+textarea { width: 100%; min-height: 110px; resize: vertical; border: 1px solid var(--line); border-radius: 9px; padding: 9px 10px; background: var(--bg); }
+.saved { font-size: 13px; color: var(--muted); min-height: 1.5em; margin: 0; }
+.general { padding: 16px; border: 1px dashed var(--line); border-radius: var(--radius); display: grid; gap: 10px; }
+.general h3 { font-size: 15px; }
+.howto { margin: 0; padding-inline-start: 1.2em; color: var(--muted); max-width: 75ch; }
+
+@media (max-width: 1100px) {
+  .stage { grid-template-columns: minmax(0, 1fr); }
+  aside.verdict { position: static; }
+}
+@media (max-width: 760px) {
+  .desk { grid-template-columns: minmax(0, 1fr); }
+  nav.index { display: none; }
+  .pick { display: block; width: 100%; padding: 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); min-height: 44px; }
+  .nav-buttons { margin-inline-start: 0; }
+  figure.mobile { flex-basis: 100%; }
+  figure.mobile .frame { max-width: 360px; }
+}
+@media (prefers-reduced-motion: no-preference) { .frame img { transition: opacity .15s ease; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <span class="eyebrow">__EYEBROW__ · __DATE__</span>
+      <h1>__TITLE__</h1>
+      <p class="lede">__LEDE__</p>
+    </div>
+    <div class="tally" aria-live="polite">
+      <span class="pill ok"><span class="dot"></span><span id="count-ok">0</span> onaylandı</span>
+      <span class="pill change"><span class="dot"></span><span id="count-change">0</span> değişiklik</span>
+      <span class="pill"><span id="count-open">0</span> bekliyor</span>
+    </div>
+  </header>
+
+  <div class="desk">
+    <nav class="index" id="index" aria-label="Ekranlar"></nav>
+    <main class="viewer">
+      <label class="sr" for="pick" hidden>Ekran</label>
+      <select class="pick" id="pick" aria-label="Ekran"></select>
+      <div class="head">
+        <div>
+          <h2 id="title"></h2>
+          <span class="req" id="req"></span>
+          <p class="desc" id="desc"></p>
+        </div>
+      </div>
+      <div class="controls">
+        <span><span class="seglabel">Dil</span>
+          <span class="seg" role="group" aria-label="Dil">
+            <button type="button" data-lang="tr">Türkçe</button>
+            <button type="button" data-lang="en">İngilizce</button>
+            <button type="button" data-lang="ru">Rusça</button>
+          </span></span>
+        <span><span class="seglabel">Tema</span>
+          <span class="seg" role="group" aria-label="Tema">
+            <button type="button" data-theme-pick="light">Açık</button>
+            <button type="button" data-theme-pick="dark">Koyu</button>
+          </span></span>
+        <span><span class="seglabel">Görünüm</span>
+          <span class="seg" role="group" aria-label="Görünüm">
+            <button type="button" data-device="both">İkisi</button>
+            <button type="button" data-device="desktop">Masaüstü</button>
+            <button type="button" data-device="mobile">Telefon</button>
+          </span></span>
+        <span class="nav-buttons">
+          <button type="button" class="btn" id="prev">← Önceki</button>
+          <button type="button" class="btn" id="next">Sonraki →</button>
+        </span>
+      </div>
+      <p class="note-ok" id="ru-note" hidden>İngilizce ve Rusça görüntüler yalnızca açık temada çekildi.</p>
+
+      <div class="stage">
+        <div class="shots" id="shots"></div>
+        <aside class="verdict" aria-labelledby="verdict-title">
+          <h3 id="verdict-title">Bu ekran için kararınız</h3>
+          <div class="choices">
+            <button type="button" class="choice ok" id="pick-ok" aria-pressed="false">Onaylıyorum</button>
+            <button type="button" class="choice change" id="pick-change" aria-pressed="false">Değişiklik istiyorum</button>
+          </div>
+          <label for="note">Notunuz (isteğe bağlı)</label>
+          <textarea id="note" placeholder="Örn. ödenmedi rengi daha açık olsun; bu kart üstte dursun"></textarea>
+          <button type="button" class="btn primary" id="save">Kaydet</button>
+          <p class="saved" id="saved" aria-live="polite"></p>
+        </aside>
+      </div>
+
+      <section class="general" aria-labelledby="general-title">
+        <h3 id="general-title">Genel görüşünüz</h3>
+        <ol class="howto">
+          <li>Soldan bir ekran seçin; dili, temayı ve görünümü üstten değiştirin.</li>
+          <li>Her ekran için "Onaylıyorum" ya da "Değişiklik istiyorum" seçip isterseniz not yazın ve Kaydet'e basın.</li>
+          <li>Hepsi bitince bana sohbetten "baktım" demeniz yeterli; kararlarınızı buradan okurum.</li>
+        </ol>
+        <label for="general-note">Bütün ekranlar için not</label>
+        <textarea id="general-note" placeholder="Örn. renkler güzel; menü sırası şöyle olsun…"></textarea>
+        <div><button type="button" class="btn primary" id="save-general">Genel notu kaydet</button></div>
+        <p class="saved" id="saved-general" aria-live="polite"></p>
+      </section>
+    </main>
+  </div>
+</div>
+
+<script>
+const GROUPS = __SCREENS__
+const SCREENS = GROUPS.flatMap((g) => g.items.map((s) => ({ ...s, group: g.group })))
+const $ = (id) => document.getElementById(id)
+const store = {
+  get(k, d) { try { return localStorage.getItem(k) ?? d } catch { return d } },
+  set(k, v) { try { localStorage.setItem(k, v) } catch {} }
+}
+const state = {
+  key: (location.hash || '').slice(1) || store.get('screen', SCREENS[0].key),
+  lang: store.get('lang', 'tr'),
+  theme: store.get('theme', 'light'),
+  device: store.get('device', 'both'),
+  reviews: {},
+  draft: null
+}
+if (!SCREENS.some((s) => s.key === state.key)) state.key = SCREENS[0].key
+let db = null
+let dbState = 'pending' // 'pending' until the viewer answers, then 'ready' or 'none'
+
+function buildIndex() {
+  const nav = $('index')
+  const pick = $('pick')
+  for (const g of GROUPS) {
+    const h = document.createElement('h2'); h.textContent = g.group; nav.append(h)
+    const ul = document.createElement('ul')
+    const og = document.createElement('optgroup'); og.label = g.group
+    for (const s of g.items) {
+      const li = document.createElement('li')
+      const b = document.createElement('button')
+      b.type = 'button'; b.dataset.key = s.key
+      const dot = document.createElement('span'); dot.className = 'state'; dot.dataset.state = s.key
+      const name = document.createElement('span'); name.className = 'name'; name.textContent = s.title
+      b.append(dot, name)
+      b.addEventListener('click', () => go(s.key))
+      li.append(b); ul.append(li)
+      const o = document.createElement('option'); o.value = s.key; o.textContent = s.title; og.append(o)
+    }
+    nav.append(ul); pick.append(og)
+  }
+  pick.addEventListener('change', () => go(pick.value))
+}
+
+function shot(device) {
+  const theme = state.lang !== 'tr' ? 'light' : state.theme
+  const fig = document.createElement('figure'); fig.className = device
+  const cap = document.createElement('figcaption')
+  cap.textContent = device === 'desktop' ? 'Masaüstü · 1366 px' : 'Telefon · 390 px'
+  const frame = document.createElement('div'); frame.className = 'frame'
+  const img = document.createElement('img')
+  img.src = `img/${state.lang}/${state.key}-${device}-${theme}.webp`
+  img.alt = `${current().title} — ${cap.textContent}, ${theme === 'dark' ? 'koyu' : 'açık'} tema`
+  img.decoding = 'async'
+  frame.append(img); fig.append(cap, frame)
+  return fig
+}
+
+const current = () => SCREENS.find((s) => s.key === state.key)
+
+function render() {
+  const s = current()
+  $('title').textContent = s.title
+  $('req').textContent = `${s.group} · ${s.req}`
+  $('desc').textContent = s.desc
+  $('pick').value = s.key
+  for (const b of document.querySelectorAll('nav.index button')) b.setAttribute('aria-current', String(b.dataset.key === s.key))
+  for (const b of document.querySelectorAll('[data-lang]')) b.setAttribute('aria-pressed', String(b.dataset.lang === state.lang))
+  for (const b of document.querySelectorAll('[data-theme-pick]')) {
+    b.setAttribute('aria-pressed', String((state.lang !== 'tr' ? 'light' : state.theme) === b.dataset.themePick))
+    b.disabled = state.lang !== 'tr' && b.dataset.themePick === 'dark'
+  }
+  for (const b of document.querySelectorAll('[data-device]')) b.setAttribute('aria-pressed', String(b.dataset.device === state.device))
+  $('ru-note').hidden = state.lang === 'tr'
+  const shots = $('shots'); shots.replaceChildren()
+  if (state.device !== 'mobile') shots.append(shot('desktop'))
+  if (state.device !== 'desktop') shots.append(shot('mobile'))
+  renderVerdict()
+}
+
+function renderVerdict() {
+  const r = state.reviews[state.key]
+  const status = state.draft?.status ?? r?.status ?? null
+  $('pick-ok').setAttribute('aria-pressed', String(status === 'approved'))
+  $('pick-change').setAttribute('aria-pressed', String(status === 'changes'))
+  if (document.activeElement !== $('note')) $('note').value = state.draft?.note ?? r?.note ?? ''
+  $('saved').textContent = dbState === 'pending' ? 'Kayıt alanı açılıyor…'
+    : !db ? 'Kayıt bu görünümde açılamıyor; görüşlerinizi sohbete yazabilirsiniz.'
+    : r?.at ? `Kaydedildi: ${new Date(r.at).toLocaleString('tr-TR', { dateStyle: 'medium', timeStyle: 'short' })}` : ''
+  let ok = 0, change = 0
+  for (const s of SCREENS) {
+    const st = state.reviews[s.key]?.status
+    if (st === 'approved') ok++; else if (st === 'changes') change++
+    const dot = document.querySelector(`[data-state="${s.key}"]`)
+    if (dot) dot.className = 'state' + (st === 'approved' ? ' ok' : st === 'changes' ? ' change' : '')
+  }
+  $('count-ok').textContent = ok; $('count-change').textContent = change; $('count-open').textContent = SCREENS.length - ok - change
+  for (const id of ['pick-ok', 'pick-change', 'note', 'save', 'general-note', 'save-general']) $(id).disabled = !db
+}
+
+function go(key) {
+  state.key = key; state.draft = null; store.set('screen', key)
+  try { history.replaceState(null, '', '#' + key) } catch {}
+  render(); window.scrollTo({ top: 0 })
+}
+function step(d) {
+  const i = SCREENS.findIndex((s) => s.key === state.key)
+  go(SCREENS[(i + d + SCREENS.length) % SCREENS.length].key)
+}
+
+for (const b of document.querySelectorAll('[data-lang]')) b.addEventListener('click', () => { state.lang = b.dataset.lang; store.set('lang', state.lang); render() })
+for (const b of document.querySelectorAll('[data-theme-pick]')) b.addEventListener('click', () => { state.theme = b.dataset.themePick; store.set('theme', state.theme); render() })
+for (const b of document.querySelectorAll('[data-device]')) b.addEventListener('click', () => { state.device = b.dataset.device; store.set('device', state.device); render() })
+$('prev').addEventListener('click', () => step(-1))
+$('next').addEventListener('click', () => step(1))
+document.addEventListener('keydown', (e) => {
+  if (e.target.closest('textarea, input, select')) return
+  if (e.key === 'ArrowRight') step(1)
+  if (e.key === 'ArrowLeft') step(-1)
+})
+$('pick-ok').addEventListener('click', () => { state.draft = { status: 'approved', note: $('note').value }; renderVerdict() })
+$('pick-change').addEventListener('click', () => { state.draft = { status: 'changes', note: $('note').value }; renderVerdict() })
+$('note').addEventListener('input', () => { state.draft = { status: state.draft?.status ?? state.reviews[state.key]?.status ?? null, note: $('note').value } })
+
+$('save').addEventListener('click', async () => {
+  if (!db) return
+  const status = state.draft?.status ?? state.reviews[state.key]?.status ?? null
+  if (!status) { $('saved').textContent = 'Önce "Onaylıyorum" ya da "Değişiklik istiyorum" seçin.'; return }
+  $('save').disabled = true
+  try {
+    await db.doc(`reviews/${state.key}`).set({ status, note: $('note').value.trim(), title: current().title, at: new Date().toISOString() })
+    state.draft = null
+  } catch (e) {
+    $('saved').textContent = saveError(e)
+  } finally { $('save').disabled = !db }
+})
+$('save-general').addEventListener('click', async () => {
+  if (!db) return
+  $('save-general').disabled = true
+  try {
+    await db.doc('general/note').set({ note: $('general-note').value.trim(), at: new Date().toISOString() })
+    $('saved-general').textContent = 'Genel not kaydedildi.'
+  } catch (e) {
+    $('saved-general').textContent = saveError(e)
+  } finally { $('save-general').disabled = !db }
+})
+
+function saveError(e) {
+  const code = e?.code
+  if (code === 'not_granted' || code === 'revoked' || code === 'capability_disabled' || code === 'capability_removed')
+    return 'Bu görünümde kayıt yapılamıyor; görüşlerinizi sohbete yazabilirsiniz.'
+  if (code === 'quota_exceeded' || code === 'resource_exhausted') return 'Kayıt alanı doldu; görüşlerinizi sohbete yazın.'
+  return 'Kaydedilemedi; biraz sonra yeniden deneyin.'
+}
+
+buildIndex()
+render()
+
+;(async () => {
+  try { db = await window.claude?.use?.('db') } catch { db = null }
+  dbState = db ? 'ready' : 'none'
+  renderVerdict()
+  if (!db) return
+  db.collection('reviews').onSnapshot((snap) => {
+    const next = {}
+    for (const d of snap.docs) next[d.id] = d.data()
+    state.reviews = next
+    renderVerdict()
+  }, () => {})
+  db.doc('general/note').onSnapshot((d) => {
+    if (d.exists && document.activeElement !== $('general-note')) $('general-note').value = d.data().note ?? ''
+  }, () => {})
+})()
+</script>

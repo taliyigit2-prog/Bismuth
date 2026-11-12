@@ -1,0 +1,264 @@
+/* Bismuth theme. shadcn/ui v4 token layout (MIT) with a Bismuth accent; all colours are CSS variables
+   (.claude/rules/ui.md). Fonts are bundled (no CDN, CLAUDE.md yasak 1). */
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import '@fontsource-variable/inter';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-status-paid: var(--status-paid);
+  --color-status-unpaid: var(--status-unpaid);
+  --color-status-partial: var(--status-partial);
+  --color-status-dayuse: var(--status-dayuse);
+  --color-status-past-empty: var(--status-past-empty);
+  --color-status-empty: var(--status-empty);
+  --color-status-blocked: var(--status-blocked);
+  --color-status-paid-fg: var(--status-paid-fg);
+  --color-status-unpaid-fg: var(--status-unpaid-fg);
+  --color-status-partial-fg: var(--status-partial-fg);
+  --color-status-dayuse-fg: var(--status-dayuse-fg);
+  --color-status-past-empty-fg: var(--status-past-empty-fg);
+  --color-status-empty-fg: var(--status-empty-fg);
+  --color-status-blocked-fg: var(--status-blocked-fg);
+  --color-tag: var(--tag);
+  --color-tag-fg: var(--tag-fg);
+  --color-hk-clean: var(--hk-clean);
+  --color-hk-dirty: var(--hk-dirty);
+  --color-hk-inspected: var(--hk-inspected);
+  --color-hk-maintenance: var(--hk-maintenance);
+  --color-hk-ooo: var(--hk-ooo);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+:root {
+  --radius: 0.625rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.16 0.01 285);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.16 0.01 285);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.16 0.01 285);
+  --primary: oklch(0.44 0.15 292);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.966 0.006 286);
+  --secondary-foreground: oklch(0.24 0.02 285);
+  --muted: oklch(0.966 0.006 286);
+  --muted-foreground: oklch(0.5 0.016 286);
+  --accent: oklch(0.955 0.02 292);
+  --accent-foreground: oklch(0.3 0.08 292);
+  --destructive: oklch(0.52 0.22 27.325);
+  --border: oklch(0.915 0.006 286);
+  /* 3:1 against the card so unchecked switches, radios and field borders stay visible (WCAG 1.4.11). */
+  --input: oklch(0.66 0.012 286);
+  --ring: oklch(0.5 0.15 292);
+  --chart-1: oklch(0.56 0.16 292);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.72 0.15 75);
+  --chart-4: oklch(0.6 0.19 25);
+  --chart-5: oklch(0.55 0.12 240);
+  --sidebar: oklch(0.982 0.004 286);
+  --sidebar-foreground: oklch(0.2 0.012 285);
+  --sidebar-primary: oklch(0.44 0.15 292);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.945 0.016 292);
+  --sidebar-accent-foreground: oklch(0.28 0.06 292);
+  --sidebar-border: oklch(0.915 0.006 286);
+  --sidebar-ring: oklch(0.6 0.12 292);
+
+  /* Reservation status colours: Excel defaults (G-32), one set per theme. Kept equal to
+     STATUS_DEFAULT_COLORS in src/shared/contract/settings.ts (tests/unit/theme-defaults.test.ts). The owner
+     overrides them per theme in Settings → <style id="user-theme"> wins over these. */
+  --status-paid: #ef4444;
+  --status-unpaid: #facc15;
+  --status-partial: #fb923c;
+  --status-dayuse: #22d3ee;
+  --status-past-empty: #9ca3af;
+  --status-empty: #ffffff;
+  --status-blocked: #111827;
+  /* Text on a status fill: derived from the fill (src/shared/color.ts readableOn); user-theme overrides both. */
+  --status-paid-fg: #0a0a0a;
+  --status-unpaid-fg: #0a0a0a;
+  --status-partial-fg: #0a0a0a;
+  --status-dayuse-fg: #0a0a0a;
+  --status-past-empty-fg: #0a0a0a;
+  --status-empty-fg: #0a0a0a;
+  --status-blocked-fg: #ffffff;
+
+  /* Housekeeping status (floor plan, room list) and message tones. */
+  --hk-clean: oklch(0.62 0.15 155);
+  --hk-dirty: oklch(0.72 0.16 70);
+  --hk-inspected: oklch(0.6 0.13 240);
+  --hk-maintenance: oklch(0.66 0.17 45);
+  --hk-ooo: oklch(0.45 0.02 285);
+  /* Also used as text: ≥ 4.5:1 on white and on their own 15 % tint (status badges). */
+  --success: oklch(0.48 0.13 155);
+  --warning: oklch(0.52 0.12 70);
+  --info: oklch(0.5 0.13 240);
+
+  /* Tape chart geometry (Faz 5 keeps these): day column and row height follow the density setting. */
+  --density-row: 2.5rem;
+  --tape-day: 3.5rem;
+  --tape-room: 9.5rem;
+  color-scheme: light;
+}
+
+.dark {
+  --background: oklch(0.16 0.008 285);
+  --foreground: oklch(0.975 0.002 286);
+  --card: oklch(0.205 0.01 285);
+  --card-foreground: oklch(0.975 0.002 286);
+  --popover: oklch(0.205 0.01 285);
+  --popover-foreground: oklch(0.975 0.002 286);
+  --primary: oklch(0.78 0.11 292);
+  --primary-foreground: oklch(0.2 0.04 292);
+  --secondary: oklch(0.27 0.01 285);
+  --secondary-foreground: oklch(0.975 0.002 286);
+  --muted: oklch(0.27 0.01 285);
+  --muted-foreground: oklch(0.72 0.012 286);
+  --accent: oklch(0.3 0.04 292);
+  --accent-foreground: oklch(0.95 0.02 292);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  /* ≥ 3:1 against cards so field borders, unchecked radios and off switches stay visible (WCAG 1.4.11). */
+  --input: oklch(0.52 0.012 286);
+  --ring: oklch(0.62 0.1 292);
+  /* Chart series inside the dark band (OKLCH L 0.48–0.67), ≥ 3:1 on the card, told apart under colour blindness
+     (faz-15 madde 5; tests/unit/theme-contrast.test.ts). */
+  --chart-1: oklch(0.66 0.15 292);
+  --chart-2: oklch(0.66 0.16 162.48);
+  --chart-3: oklch(0.665 0.14 88);
+  --chart-4: oklch(0.55 0.2 20);
+  --chart-5: oklch(0.65 0.12 240);
+  --sidebar: oklch(0.19 0.009 285);
+  --sidebar-foreground: oklch(0.96 0.003 286);
+  --sidebar-primary: oklch(0.78 0.11 292);
+  --sidebar-primary-foreground: oklch(0.2 0.04 292);
+  --sidebar-accent: oklch(0.27 0.02 292);
+  --sidebar-accent-foreground: oklch(0.96 0.01 292);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.62 0.1 292);
+  --status-past-empty: #3f3f46;
+  --status-empty: #0d0d11;
+  --status-blocked: #71717a;
+  --status-past-empty-fg: #ffffff;
+  --status-empty-fg: #ffffff;
+  --status-blocked-fg: #ffffff;
+  --hk-clean: oklch(0.72 0.15 155);
+  --hk-dirty: oklch(0.8 0.15 75);
+  --hk-inspected: oklch(0.72 0.12 240);
+  --hk-maintenance: oklch(0.75 0.15 50);
+  --hk-ooo: oklch(0.6 0.02 285);
+  --success: oklch(0.8 0.14 155);
+  --warning: oklch(0.82 0.14 80);
+  --info: oklch(0.8 0.1 240);
+  color-scheme: dark;
+}
+
+:root[data-font-size='large'] {
+  /* Büyük yazı (faz-15 madde 5): every size in rem grows with the root, the calendar's cells too. */
+  font-size: 112.5%;
+}
+
+:root[data-font-size='larger'] {
+  font-size: 125%;
+}
+
+:root[data-density='compact'] {
+  --density-row: 2rem;
+  --tape-day: 2.75rem;
+  --tape-room: 8rem;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring;
+  }
+  html,
+  body,
+  #root {
+    @apply h-full;
+  }
+  html {
+    /* No sideways jump of the top bar between pages with and without a scrollbar. */
+    scrollbar-gutter: stable;
+  }
+  /* Phone: a field focused by Tab or "next" scrolls clear of the sticky top bar and of the sticky save bars and
+     bottom navigation, instead of stopping under them. */
+  @media (max-width: 767px) {
+    html {
+      scroll-padding-top: 4.5rem;
+      scroll-padding-bottom: 7rem;
+    }
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    /* Tabular digits only where numbers line up (amounts, dates, tables: `tabular-nums`), not globally —
+       'tnum' widens hyphens in names and paths. */
+    font-feature-settings: 'cv11';
+    /* User text (notes, names, a pasted link or number run) may have no space at all. Any word may break when it
+       cannot fit its box, so the box shrinks with the screen instead of pushing the page sideways (inherited by
+       every screen, dialog and sheet; a word that fits is never split). QA2b, tests/unit/user-text-wrap.test.ts. */
+    overflow-wrap: anywhere;
+  }
+  /* The kit's buttons, tabs, toggles and form labels carry the program's own words ("Bayramlar", "Kaydet"): a
+     tight tab keeps its word whole instead of splitting it. Card-like plain buttons with user text keep `anywhere`. */
+  [data-slot='button'],
+  [data-slot='tabs-trigger'],
+  [data-slot='toggle'],
+  [data-slot='toggle-group-item'],
+  [data-slot='label'] {
+    overflow-wrap: normal;
+  }
+  /* Setup, sign-in and lock: a tinted page behind the card, the scrollbar gutter included. */
+  body:has([data-bare-layout]) {
+    background-color: color-mix(in oklab, var(--muted) 40%, var(--background));
+  }
+}
+
+/* `break-words` marks user text on the screens. It follows the page's rule above (`anywhere`) instead of
+   Tailwind's `overflow-wrap: break-word`, which keeps a long word's full width in flex and grid cells and pushes
+   the page sideways (QA2b). Same layer as the generated utilities, later in the file: this one wins. */
+@layer utilities {
+  .break-words {
+    overflow-wrap: anywhere;
+  }
+}

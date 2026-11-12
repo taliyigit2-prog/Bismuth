@@ -1,0 +1,116 @@
+name: ci
+# Every push: typecheck, lint, unit tests, hook tests, build, e2e (Electron + phone view) on Linux;
+# Windows and macOS installers (smoke-tested, kept 14 days) only when started by hand ("Run workflow") or for a tag:
+# they use most of the free Actions minutes (macOS minutes count ten times).
+on:
+  push:
+    paths-ignore:
+      - 'docs/**'
+      - 'prototypes/**'
+      - '.github/workflows/faz0-*.yml'
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm test
+      - name: Claude hook tests
+        run: node .claude/hooks/test-hooks.mjs
+      - name: Third-party notices are up to date
+        run: |
+          npm run notices
+          git diff --exit-code -- THIRD_PARTY_NOTICES.md src/renderer/features/about/third-party.json
+      - run: npm run build
+      - name: Playwright browser (phone view)
+        run: npx playwright install --with-deps chromium
+      - name: E2E — Electron app and phone view
+        run: xvfb-run -a npx playwright test
+      - name: Packaged app smoke test (Linux, fuses on)
+        run: |
+          npx electron-builder --linux dir --publish never
+          xvfb-run -a release/linux-unpacked/bismuth --no-sandbox --smoke --smoke-out="$PWD/smoke.json"
+          node -e "const r=require('./smoke.json'); console.log(r); if(!r.ok||r.db.integrity!=='ok'||r.blockedRequests.length) process.exit(1)"
+      - uses: actions/upload-artifact@v6
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            playwright-report
+            test-results
+          retention-days: 7
+
+  package:
+    needs: verify
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run build
+      - name: Package
+        run: |
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            npx electron-builder --win nsis --x64 --publish never
+          else
+            npx electron-builder --mac dmg --arm64 --x64 --publish never
+          fi
+          node scripts/release-names.mjs release
+          ls -la release
+      - name: Smoke test (packaged app)
+        run: |
+          if [ "$RUNNER_OS" = "Windows" ]; then APP="release/win-unpacked/Bismuth.exe"; else APP="release/mac-arm64/Bismuth.app/Contents/MacOS/Bismuth"; fi
+          export BISMUTH_USER_DATA="$RUNNER_TEMP/bismuth-smoke"
+          set +e
+          "$APP" --smoke --smoke-out="$PWD/smoke.json" > smoke.log 2>&1
+          set -e
+          if [ ! -f smoke.json ]; then echo "no smoke result"; tail -60 smoke.log; exit 1; fi
+          node -e "const r=require('./smoke.json'); console.log(JSON.stringify(r,null,1)); if(!r.ok||r.db.integrity!=='ok'||r.blockedRequests.length) process.exit(1)"
+          {
+            echo "### ${{ matrix.os }}"
+            echo '```'
+            ls -l release/*.exe release/*.dmg 2>/dev/null || true
+            node -e "const r=require('./smoke.json'); console.log(JSON.stringify({startupMs:r.startupMs, versions:r.versions, platform:r.platform, db:r.db}, null, 1))"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v6
+        with:
+          name: Bismuth-${{ runner.os == 'Windows' && 'Windows' || 'Mac' }}
+          path: |
+            release/*.exe
+            release/*.dmg
+            release/SHA256SUMS.txt
+          retention-days: 14
+          compression-level: 0

@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self'" />
+    <title>Bismuth Proto</title>
+    <style>
+      @property --probe { syntax: "<color>"; inherits: false; initial-value: oklch(0.7 0.15 150); }
+      :root {
+        --paid: oklch(0.62 0.2 25);
+        --unpaid: oklch(0.88 0.17 95);
+        --mix: color-mix(in oklch, var(--paid) 60%, white);
+        color-scheme: light dark;
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      }
+      body { margin: 24px; background: Canvas; color: CanvasText; }
+      h1 { margin: 0 0 4px; font-size: 22px; }
+      .muted { opacity: 0.7; font-size: 13px; }
+      .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; margin-top: 16px; }
+      .card { container-type: inline-size; border: 1px solid color-mix(in oklch, CanvasText 20%, transparent); border-radius: 10px; padding: 12px 14px; }
+      .card h2 { font-size: 14px; margin: 0 0 8px; }
+      .row { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; padding: 2px 0; }
+      .ok { color: oklch(0.6 0.17 145); font-weight: 600; }
+      .bad { color: oklch(0.6 0.22 25); font-weight: 600; }
+      .swatches { display: flex; gap: 8px; margin-top: 8px; }
+      .sw { width: 64px; height: 28px; border-radius: 6px; }
+      .card:has(.bad) { border-color: var(--paid); }
+      @container (min-width: 300px) { .cq { font-weight: 600; } }
+      .nest { & .inner { text-decoration: underline; } }
+    </style>
+  </head>
+  <body>
+    <h1>Bismuth — paketleme prototipi (Faz 0)</h1>
+    <div class="muted">Bu pencere açıldıysa kurulum çalışıyor. Lütfen ekran görüntüsünü gönderin. · Привет · Çağrı İı Ğğ Şş</div>
+    <div class="grid">
+      <div class="card"><h2>Sürümler</h2><div id="versions">…</div></div>
+      <div class="card"><h2>Veritabanı (SQLite)</h2><div id="db">…</div></div>
+      <div class="card"><h2>Tailwind v4 için gereken CSS özellikleri</h2><div id="css">…</div>
+        <div class="swatches"><div class="sw" style="background: var(--paid)"></div><div class="sw" style="background: var(--unpaid)"></div><div class="sw" style="background: var(--mix)"></div></div>
+        <div class="nest"><span class="inner cq">iç içe CSS + container query</span></div>
+      </div>
+    </div>
+    <script>
+      const features = {
+        "oklch()": CSS.supports("color", "oklch(0.7 0.15 150)"),
+        "color-mix()": CSS.supports("color", "color-mix(in oklch, red 50%, white)"),
+        "@property": typeof CSS.registerProperty === "function",
+        ":has()": CSS.supports("selector(:has(*))"),
+        "container queries": CSS.supports("container-type: inline-size"),
+        "CSS nesting": CSS.supports("selector(&)"),
+        "@layer": typeof CSSLayerBlockRule !== "undefined",
+        "Intl.Collator tr": new Intl.Collator("tr").compare("ı", "i") !== 0,
+        "Intl.PluralRules ru": new Intl.PluralRules("ru").select(3) === "few",
+        "Intl TRY format": new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY", maximumFractionDigits: 0 }).format(2500).includes("2.500"),
+      };
+      const row = (k, v) => `<div class="row"><span>${k}</span><span class="${v === false ? "bad" : v === true ? "ok" : ""}">${v === true ? "✓" : v === false ? "✗" : v}</span></div>`;
+      document.getElementById("css").innerHTML = Object.entries(features).map(([k, v]) => row(k, v)).join("");
+      window.proto.info().then((info) => {
+        document.getElementById("versions").innerHTML = ["electron", "chrome", "node", "platform", "osRelease", "locale", "packaged", "startupMs"].map((k) => row(k, String(info[k]))).join("");
+        const d = info.db;
+        document.getElementById("db").innerHTML = d.ok
+          ? [row("açıldı", true), row("SQLite", d.sqliteVersion), row("10.000 satır yazma (ms)", d.writeMs10k), row("toplam satır", d.count), row("bütünlük", d.integrity), row("VACUUM INTO yedek (bayt)", d.backupBytes), row("Türkçe/Kiril", d.sample)].join("")
+          : row("hata", d.error);
+        window.proto.report({ info, features, allCss: Object.values(features).every(Boolean) });
+      });
+    </script>
+  </body>
+</html>
