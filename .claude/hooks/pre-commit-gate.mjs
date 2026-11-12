@@ -61,6 +61,41 @@ const missing = steps.filter((s) => typeof scripts[s.name] !== "string").map((s)
 if (missing.length > 0) skip(`package.json içinde ${missing.join(", ")} betiği yok`);
 if (!existsSync(join(root, "node_modules"))) skip("node_modules yok (önce npm ci)");
 
+// Docs-only commits: when nothing the toolchain looks at changed (code, tests, migrations, scripts, build config),
+// typecheck/lint/test cannot change outcome, so the commit proceeds without them (a 2-core machine needs ~10 min
+// for the full suite). Hook changes still run the hook self-test. Conservative: an unreadable git state runs everything.
+const CODE_PATH =
+  /^(src|tests|drizzle|scripts|build|resources)\/|^(package\.json|package-lock\.json|tsconfig[^/]*\.json|vitest\.config\.ts|playwright\.config\.ts|electron\.vite\.config\.ts|electron-builder\.yml|eslint\.config\.mjs|\.prettierrc\.yaml|\.prettierignore|drizzle\.config\.ts|\.npmrc)$/;
+const gitLines = (args) => {
+  try {
+    return execFileSync("git", args, { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], windowsHide: true })
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter(Boolean);
+  } catch {
+    return null;
+  }
+};
+const addsInCommand = /\bgit\b[^\n;&|]*\badd\b/.test(command) || /\bcommit\b[^\n;&|]*\s(-a|--all|-am|-[a-zA-Z]*a[a-zA-Z]*)\b/.test(command);
+const staged = gitLines(["diff", "--cached", "--name-only"]);
+const unstaged = addsInCommand ? gitLines(["diff", "--name-only"]) : [];
+const untracked = addsInCommand ? gitLines(["ls-files", "--others", "--exclude-standard"]) : [];
+const changed = staged && unstaged && untracked ? [...new Set([...staged, ...unstaged, ...untracked])] : null;
+if (changed && changed.length > 0 && !changed.some((f) => CODE_PATH.test(f))) {
+  const hooksChanged = changed.some((f) => /^\.claude\/hooks\/.*\.mjs$/.test(f));
+  const selfTest = join(root, ".claude", "hooks", "test-hooks.mjs");
+  if (hooksChanged && existsSync(selfTest)) {
+    const res = spawnSync(process.execPath, [selfTest], { cwd: root, encoding: "utf8", env: { ...process.env, FORCE_COLOR: "0" }, timeout: 300_000, maxBuffer: 16 * 1024 * 1024, windowsHide: true });
+    if (res.status !== 0) {
+      const tail = `${res.stdout ?? ""}${res.stderr ?? ""}`.trimEnd().split(/\r?\n/).slice(-40).join("\n");
+      process.stderr.write(`Commit engellendi: kanca testleri başarısız (node .claude/hooks/test-hooks.mjs).\n--- son 40 satır ---\n${tail}\n`);
+      process.exit(2);
+    }
+  }
+  process.stderr.write(`pre-commit-gate: yalnız belge/ayar dosyaları değişti (${changed.length} dosya); typecheck/lint/test atlandı${hooksChanged ? ", kanca testleri geçti" : ""}.\n`);
+  process.exit(0);
+}
+
 // The hook itself has a 600 s timeout in settings.json; keep a margin so a slow run blocks instead of timing out
 // (a timed-out hook is a non-blocking error and the commit would go through).
 const budgetMs = 570_000;
