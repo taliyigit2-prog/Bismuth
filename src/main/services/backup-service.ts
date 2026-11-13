@@ -36,6 +36,7 @@ import type {
 } from '@shared/contract/backup'
 import { keepDaysSchema, type BackupKind } from '@shared/contract/users'
 import { localDateOf } from '@shared/date'
+import { scrubBiometricData } from '../backup/biometric'
 import { ArchiveError, encryptFile, readArchive, sha256Of, writeArchive } from '../backup/archive'
 import { prepareDriveBackupDir, resolveDriveBackupDir, type DriveProbe } from '../backup/drive'
 import { PRE_MIGRATION_PREFIX, preMigrationFiles, prunePreMigration } from '../backup/pre-migration'
@@ -642,6 +643,7 @@ export function createBackupService(deps: BackupDeps) {
         copy,
         fast ? { pagesPerStep: 1 << 20, restMs: 0 } : { isBusy: deps.isBusy, ...deps.stepping }
       )
+      scrubBiometricData(copy) // K-51: face vectors and crops never ride in a backup (nor into Drive)
       // P14fix #6: the copy is checked in a worker thread (the windows keep answering meanwhile).
       if ((await integrityOfFileAsync(copy)) !== 'ok') throw backupFailed()
       const manifest = {

@@ -6,6 +6,7 @@
 import { mkdirSync, readdirSync, unlinkSync } from 'node:fs'
 import { join } from 'node:path'
 import type Database from 'better-sqlite3'
+import { scrubBiometricData } from './biometric'
 
 export const PRE_MIGRATION_PREFIX = 'bismuth-pre-migration_'
 const DEFAULT_KEEP = 10
@@ -40,6 +41,7 @@ export async function backupBeforeMigration(
   const safeVersion = appVersion.replace(/[^0-9A-Za-z.-]/g, '_')
   const path = join(backupDir, `${PRE_MIGRATION_PREFIX}${safeVersion}_${stamp(now)}.db`)
   await sqlite.backup(path)
+  scrubBiometricData(path) // K-51: no face vector or crop in a snapshot
   prunePreMigration(backupDir, preMigrationKeepOf(sqlite))
   return path
 }

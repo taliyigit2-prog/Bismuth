@@ -101,7 +101,7 @@ Harcama sütunu: başlatıcının yazdığı `$` (dalga toplamı, gerçek).
 | 7 | P20a Kamera yan süreç iskeleti + Python hijyeni + Telegram'ın Bismuth'a taşınması (K-50; kod bulguları `ekler/kamera-kod-bulgulari.md` §0) | 20 | main/camera, main/network/telegram, otel-kamera | camera-integrator | $12–20 | ~$25 | ✅ |
 | 8 | P20b Kamera sekmesi (canlı yayın yalnız ana bilgisayar; telefon alarm listesi) | 20 | features/camera | camera-integrator | $8–12 | ~$22 | ✅ |
 | 8 | P20d Model sabitleme ve çevrimdışı (K-57: mevcut modeller kalır, telemetri kapalı, lisans notu) | 20 | otel-kamera, resources/camera | camera-integrator | $4–6 | ~$15 | ✅ |
-| 9 | P20c Veri entegrasyonu (migrasyon 0021, şifreleme, alarm → bildirim; rıza alanı yok K-58) | 20 | camera, today | db-migration-builder → camera-integrator | $15–22 | | ⬜ |
+| 9 | P20c Veri entegrasyonu (migrasyon 0021, şifreleme, alarm → bildirim; rıza alanı yok K-58) | 20 | camera, today | db-migration-builder → camera-integrator | $15–22 | | 🔄 |
 | 10 | P20e KVKK paketi (aydınlatma şablonu, saklama/imha, personel dışlama) | 20 | camera settings | camera-integrator | $8–12 | | ⬜ |
 | 10 | P20g Kamera kurulum sihirbazı (K-59: donanım otomatik, Hikvision keşif + RTSP kalıbı + test) | 20 | features/setup, main/camera/discovery, otel-kamera/discovery | camera-integrator | $10–15 | | ⬜ |
 | 11 | P20f Kamera paketleme (torch dahil; gerekirse ayrı kamera eki kurulumu) | 20 | electron-builder, resources | packager | $12–18 | | ⬜ |
@@ -329,3 +329,4 @@ QA2b, akış testleri C/D) bu plana **Son** satırında katılır; ayrı yürüt
   Hallettim" düğme dili, `numberInvalid` ondalık biçimi, ru `crashedBody` çoğul anahtarları, P20d'nin 3 yeni ayarı için ayar alanı,
   canlı etiket yazı boyutu. 2805 test yeşil. **Dalga 8 bitti.**
 - 2026-11-13: Sadeleştirme (dalga 7–8, Ponytail lite): yalnız `camera-service.ts` `setSecrets` kısaltıldı (net −12 satır, 2805 test aynı); diğer dosyalarda değer bulunmadı.
+- 2026-11-13: Dalga 9 başladı (P20c: db-migration-builder → camera-integrator; taban 4a582db).

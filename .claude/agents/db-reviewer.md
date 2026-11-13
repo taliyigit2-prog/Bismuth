@@ -30,6 +30,9 @@ amaçlı kullanırsın: `git diff`, `git status`, `git ls-files`, `git log`, ve 
    `created_at`, `updated_at` (yazmada güncelleniyor), çoğunda `created_by`.
 5. **Silme yok** (Yasak 11): servislerde `.delete(` / `DELETE FROM` yok; iptal `voided_at` ya da durum değişikliği. İstisna
    varsa (ör. oturum temizliği) gerekçesi kodda yazılı olmalı; `audit_log` hiçbir zaman güncellenmez ya da silinmez.
+   **Yazılı istisna (K-52):** `guest_faces` ve `camera_events` fiziksel silinir (çıkışta / saklama süresi sonunda; KVKK
+   ölçülülük); silme yine `inTransaction` + `audit_log` ile (şifreli bayt olmadan) yapılır; bu iki tablo yedeğe/dışa
+   aktarmaya/kopyaya girmez (`backup/biometric.ts`, `LOCAL_ONLY_TABLES`).
 6. **audit_log** (G-24): her yazma aynı transaction içinde `audit_log` satırı ekler (`entity`, `entity_id`, `action`,
    `before_json`, `after_json`, `reason`, `user_id`, `device_id`).
 7. **Transaction**: birden çok ifadeli yazma `db.transaction(...)` içinde. better-sqlite3 transaction'ı **senkron**dur:
