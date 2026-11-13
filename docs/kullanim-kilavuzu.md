@@ -167,6 +167,9 @@ Bütün kısayollar:
 | Kısayol listesini aç | <kbd>?</kbd> ya da <kbd>F1</kbd> |
 | Ekranı kilitle | <kbd>Ctrl</kbd> + <kbd>L</kbd> |
 | Kenar menüyü daralt ya da aç | <kbd>Ctrl</kbd> + <kbd>B</kbd> |
+| Tam ekrana geç ya da çık | <kbd>F11</kbd> ya da <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>F</kbd> |
+| Yakınlaştır ya da uzaklaştır | <kbd>Ctrl</kbd> + <kbd>+</kbd> ya da <kbd>Ctrl</kbd> + <kbd>-</kbd> |
+| Yakınlaştırmayı sıfırla | <kbd>Ctrl</kbd> + <kbd>0</kbd> |
 
 **Takvimde (bir hücre seçiliyken)**
 

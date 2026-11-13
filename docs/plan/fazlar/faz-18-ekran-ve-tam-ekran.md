@@ -27,10 +27,10 @@ Yok (Ö-23 öneri; cevap gelmezse uygulanır).
       tek komutla çalışır; ölçüm dosyasını üretir.
 - [ ] `xvfb-run -a npm run e2e` Codespace'te yeşil (P18a).
 - [ ] `screen-auditor` tüm kombinasyonlarda Kritik/Yüksek bulgu vermez; 1280×720 ve 1536×864 @1.25'te yatay taşma yok.
-- [ ] F11 tam ekrana alır/çıkarır (Electron `before-input-event` ya da menü hızlandırıcı), durum `window-state.json`'da;
+- [x] F11 tam ekrana alır/çıkarır (`window-state.test.ts`, `window.spec.ts`) (Electron `before-input-event` ya da menü hızlandırıcı), durum `window-state.json`'da;
       yeniden açılışta tam ekran/maximize geri gelir (birim test `window-state`).
-- [ ] Yakınlaştırma kişisel ayar olarak kalıcı; Ayarlar → Görünüm'de de değiştirilebilir.
-- [ ] Çoklu monitörde pencere son bulunduğu ekranda açılır (kod incelemesi + `screen.getDisplayMatching` testi).
+- [x] Yakınlaştırma kişisel ayar olarak kalıcı (`window.spec.ts`); Ayarlar → Görünüm'de de değiştirilebilir.
+- [x] Çoklu monitörde pencere son bulunduğu ekranda açılır (`fitToScreens` testleri; `getDisplayMatching` yerine çalışma alanı kesişimi).
 - [ ] `flow-tester` yeniden koşunca P18d listesinde 0 Kritik/Yüksek.
 - [ ] `security-reviewer` pencere değişikliklerini onaylar (BrowserWindow seçenekleri değişmedi).
 
@@ -51,3 +51,8 @@ Kiosk modu; yeni tema; tablet düzeni.
   sessiz pasif Kaydet (alan altı hata + `aria-invalid`, ortak kalıp). H-16 çürütüldü (sheet kapanıyor; geri tuşu pürüzü P21e); Electron e2e doğrulaması P18a'da.
 
 ## Sonuç
+
+### P18c — Pencere ve tam ekran (2026-11-13)
+- Yapılan: F11 ve Ctrl/Cmd+Shift+F tam ekran, Ctrl/Cmd +/-/0 yakınlaştırma (ana süreçte `before-input-event`, metin alanında da çalışır; menü maddeleri aynı eylemi fareyle yapar). `ui.zoom` kişisel ayar (%80–150, adımlı; üst sınır 1280 px ekranda %150'de 853 CSS px'i, telefon kırılımının üstünde tutar); Ayarlar → Görünüm'de seçilebilir (telefonda gizli). Pencere durumu (boyut, konum, büyütülmüş, tam ekran) taşıma/boyutta 500 ms gecikmeyle ve kapanışta yazılır; açılışta pencere kaldığı ekranda, ekran yoksa birincil ekranın ortasında açılır. `minWidth` 960 ama ekran çalışma alanından geniş değil (853 DIP) ve yakınlaştırmayla telefon düzenine düşmeyecek kadar geniş.
+- Testler: `window-state.test.ts`, `window-keys.test.ts`, `registry.test.ts`, e2e `window.spec.ts`.
+- Kalanlar: menüden ya da tuşla değişen zoom, açık Ayarlar ekranındaki seçimi pencere yenilenene kadar güncellemez; istemci modunda zoom kalıcı değil (yerel ayar yok); 853 px düzen kırılımı P18b kapsamında.

@@ -1253,7 +1253,10 @@
       "turnoverInvalid": "Enter a number from 0 to 240.",
       "turnoverSaved": "Cleaning time saved",
       "title": "Hourly sales"
-    }
+    },
+    "zoom": "Zoom",
+    "zoomValue": "{{percent}}%",
+    "zoomHelp": "You can also change it with Ctrl and + or - (⌘ on a Mac). It applies to you only."
   },
   "status": {
     "paid": "Paid",
@@ -6766,7 +6769,10 @@
       "search": "Quick search",
       "list": "Open the shortcut list",
       "lock": "Lock the screen",
-      "sidebar": "Fold or open the side menu"
+      "sidebar": "Fold or open the side menu",
+      "fullscreen": "Enter or leave full screen",
+      "zoom": "Zoom in or out",
+      "zoomReset": "Reset zoom"
     },
     "calendar": {
       "move": "Move between cells",

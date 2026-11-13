@@ -114,6 +114,7 @@ const SETTING_LABELS = {
   'ui.startScreen': 'settings.startScreen',
   'ui.sidebarCollapsed': 'topbar.toggleSidebar',
   'ui.fontSize': 'settings.fontSize',
+  'ui.zoom': 'settings.zoom',
   'ui.accentColor': 'themePreview.accent.title',
   'ui.accentColorDark': 'themePreview.accent.title',
   'hotel.name': 'settings.hotelName',

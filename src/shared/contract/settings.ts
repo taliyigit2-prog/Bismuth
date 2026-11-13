@@ -4,6 +4,7 @@ import * as z from 'zod'
 import { APP_LOCALES } from '../format'
 import { DEFAULT_FX_SOURCES, FX_PROVIDERS } from '../domain/external'
 import { CALENDAR_MIN_START_YEAR } from '../domain/calendar-range'
+import { MAX_ZOOM, MIN_ZOOM } from '../window-zoom'
 
 export const currencyCode = z.string().regex(/^[A-Z]{3}$/, 'ISO 4217 code')
 /** Most currencies a hotel can accept at once (the setup draft and `hotel.currencies` share it). */
@@ -76,6 +77,8 @@ export const settingsShape = {
   'ui.accentColorDark': hexColor.nullable(),
   /** Larger text for everyone who wants it (faz-15 madde 5, "büyük yazı modu"): the whole interface scales. */
   'ui.fontSize': z.enum(['normal', 'large', 'larger']),
+  /** Page zoom of this computer's window in percent (Ctrl +/-/0, Ayarlar → Görünüm); each person's own choice. */
+  'ui.zoom': z.number().int().min(MIN_ZOOM).max(MAX_ZOOM),
   /** The person has seen (or skipped) the first-run tour (G-18); "Tanıtım turunu yeniden başlat" shows it again. */
   'ui.tourDone': z.boolean(),
   /** The desktop menu is folded to its icons (each person's own choice, kept across restarts; faz-15 madde 7). */
@@ -235,6 +238,7 @@ export const SETTINGS_DEFAULTS: SettingsValues = {
   'ui.accentColor': null,
   'ui.accentColorDark': null,
   'ui.fontSize': 'normal',
+  'ui.zoom': 100,
   'ui.tourDone': false,
   'ui.sidebarCollapsed': false,
   'guide.tourForNewUsers': true,

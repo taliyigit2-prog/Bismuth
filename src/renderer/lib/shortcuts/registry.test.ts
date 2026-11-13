@@ -68,6 +68,16 @@ describe('kısayol listesi (tek kaynak)', () => {
     expect(globalShortcutFor(key('l', { metaKey: true }))?.action).toBe('lock')
   })
 
+  it('tam ekran ve yakınlaştırma pencerenin kendi tuşları olarak listelenir (Ö-23)', () => {
+    expect(shortcutById('fullscreen')?.keys).toEqual(['F11', 'mod+shift+f'])
+    expect(shortcutById('zoom')?.keys).toEqual(['mod+plus', 'mod+-'])
+    expect(shortcutById('zoom-reset')?.keys).toEqual(['mod+0'])
+    // Pencere yanıtladığı için sayfa dinleyicisi bunları ikinci kez çalıştırmaz.
+    for (const id of ['fullscreen', 'zoom', 'zoom-reset']) expect(shortcutById(id)?.action).toBeUndefined()
+    expect(comboCaps('mod+plus', false)).toEqual(['Ctrl', '+'])
+    expect(comboCaps('mod+shift+f', true)).toEqual(['⌘', '⇧', 'F'])
+  })
+
   it('takvim satırları ızgaranın gerçekten kullandığı tuşlar', () => {
     const cursor = { row: 2, col: 10 }
     for (const id of ['calendar-move', 'calendar-week'])

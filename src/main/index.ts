@@ -15,6 +15,8 @@ import { isDamagedDatabaseError } from './backup/startup-recovery'
 import { buildMenu } from './app/menu'
 import { applySecurityPolicy, enforceSingleInstance, isAppUrl } from './security/policy'
 import { createMainWindow } from './windows/main-window'
+import { applyZoom, setZoomHandler } from './windows/window-actions'
+import { nextZoom } from '@shared/window-zoom'
 import { MigrationError, openDatabase, type DatabaseHandle } from './db/client'
 import { applyPendingRestore, createServices, localOwnerCtx, systemCtx } from './services'
 import { guardedCtx } from './services/context'
@@ -241,6 +243,7 @@ async function start(): Promise<void> {
     }
   }
   nativeTheme.themeSource = initial['ui.theme']
+  applyZoom(initial['ui.zoom'])
   buildMenu()
   // Menu language and native theme follow the person at the window (their own choices, K-37), else the hotel's.
   let menuLocale = initial['ui.language']
@@ -250,6 +253,7 @@ async function start(): Promise<void> {
     values: {
       'ui.language': typeof menuLocale
       'ui.theme': typeof nativeTheme.themeSource
+      'ui.zoom': number
     },
     remember = true
   ) => {
@@ -260,9 +264,24 @@ async function start(): Promise<void> {
       buildMenu()
     }
     nativeTheme.themeSource = values['ui.theme']
+    applyZoom(values['ui.zoom'])
   }
   // Only the person signed in at this window (or the setup wizard) changes it: another device's choice stays there.
   let windowUserId: string | null = null
+  // Ctrl +/-/0 and the View menu: the next step is saved as the person's own `ui.zoom` and then applied to every
+  // window like any other display setting. Nobody signed in (sign-in screen): applied only, nothing to save for.
+  setZoomHandler((direction, win) => {
+    const next = nextZoom(Math.round(win.webContents.getZoomFactor() * 100), direction)
+    if (client) return applyZoom(next)
+    const ctx = desktop.ctxFor(win.webContents.id)
+    if (ctx.userId === null) return applyZoom(next)
+    try {
+      services.settings.set(ctx, { 'ui.zoom': next })
+    } catch (error) {
+      log.warn('zoom could not be saved', error)
+      applyZoom(next)
+    }
+  })
   services.settings.onChange((values, changed, by) => {
     if (displayFollows(changed, by, windowUserId)) applyDisplay(values)
   })

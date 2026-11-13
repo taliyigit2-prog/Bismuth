@@ -91,7 +91,7 @@ Harcama sütunu: başlatıcının yazdığı `$` (dalga toplamı, gerçek).
 | 2 | P17d Gündüz kullanımı 2.0 + ikinci tur hatası + H-06 (migrasyon **0019**) | 17 | booking, reservations, settings | db-migration-builder → calendar-specialist | $15–22 | ~$45 | ✅ |
 | 2 | P18a ui-shot çoklu boyut/ölçek/dil + ölçüm JSON; Electron e2e Codespace'te yeşil | 18 | scripts, tests/e2e | feature-builder-lite | $2–4 | ~$3 | ✅ |
 | 3 | P17b Grup rezervasyonu + toplu giriş (migrasyon **0020**) | 17 | booking, reservations | db-migration-builder → calendar-specialist | $15–22 | | ⬜ |
-| 3 | P18c Pencere: F11, tam ekran/zoom hatırlama, çoklu monitör | 18 | main/windows, main/app | feature-builder | $6–10 | | ⬜ |
+| 3 | P18c Pencere: F11, tam ekran/zoom hatırlama, çoklu monitör | 18 | main/windows, main/app | feature-builder | $6–10 | ~$10 | ✅ |
 | 4 | P17c Hızlı takvim: sağ tık, hızlı çubuk, çoklu seçim (+ toplu ödeme), bugün şeridi, son iptaller listesi, park nedeni etiketi | 17 | calendar | feature-builder | $8–12 | | ⬜ |
 | 4 | P17e Yüksek/Orta hata düzeltmeleri (02 raporu; H-05, H-07, H-08, H-09, H-19, H-21, H-24, H-25, H-44) | 17 | bulguya göre | feature-builder / calendar-specialist | $10–14 | | ⬜ |
 | 5 | P18b Düzen düzeltmeleri (05 raporu) | 18 | features/*, layouts | feature-builder | $8–12 | | ⬜ |
@@ -257,3 +257,8 @@ QA2b, akış testleri C/D) bu plana **Son** satırında katılır; ayrı yürüt
   anahtarları kaldırıldı, telefon düğme taşması, sihirbaz "Atla" 44 px. Kontroller: db-reviewer, decision-auditor,
   turkish-ui-copy, ui-reviewer — Kritik/Yüksek yok. Sahip onay paketine: G-196 metni eski (fiyat modu/doluluk ayarı) →
   `/requirement-change` sahipte.
+- 2026-11-13: Sadeleştirme (dalga 1–2) atlandı: kapsamda yalnız −6 satır bulundu, değmez. P18c ✅ — F11 / Ctrl+Shift+F tam
+  ekran (ana süreçte), pencere durumu (boyut/konum/maximize/tam ekran) 500 ms debounce ile, kaldığı ekranda açılış (ekran
+  yoksa birincil), `minWidth` çalışma alanıyla sınırlı, `ui.zoom` %80–150 kişisel ve kalıcı; e2e `window.spec.ts` ✓.
+  Açık: açık Ayarlar ekranındaki zoom seçimi menüyle değişince yenilenmiyor (Düşük → P18b); `large-data` süre testi yük
+  altında sınırda (903/900 ms) — tek başına geçiyor.

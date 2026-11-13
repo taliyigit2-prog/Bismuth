@@ -16,6 +16,9 @@ export type ShortcutLabelKey =
   | 'shortcuts.action.list'
   | 'shortcuts.action.lock'
   | 'shortcuts.action.sidebar'
+  | 'shortcuts.action.fullscreen'
+  | 'shortcuts.action.zoom'
+  | 'shortcuts.action.zoomReset'
   | 'shortcuts.calendar.move'
   | 'shortcuts.calendar.week'
   | 'shortcuts.calendar.today'
@@ -95,6 +98,28 @@ export const SHORTCUTS: readonly ShortcutDef[] = [
     group: 'global',
     labelKey: 'shortcuts.action.sidebar',
     keys: ['mod+b'],
+    whileTyping: true
+  },
+  // Answered by the window itself (main/app/window-keys.ts, before the page sees the key): full screen and zoom.
+  {
+    id: 'fullscreen',
+    group: 'global',
+    labelKey: 'shortcuts.action.fullscreen',
+    keys: ['F11', 'mod+shift+f'],
+    whileTyping: true
+  },
+  {
+    id: 'zoom',
+    group: 'global',
+    labelKey: 'shortcuts.action.zoom',
+    keys: ['mod+plus', 'mod+-'],
+    whileTyping: true
+  },
+  {
+    id: 'zoom-reset',
+    group: 'global',
+    labelKey: 'shortcuts.action.zoomReset',
+    keys: ['mod+0'],
     whileTyping: true
   },
   // The calendar grid (features/calendar/calendar-grid.tsx), once a cell has the focus.
@@ -179,6 +204,7 @@ const KEY_CAPS: Record<string, string> = {
   ArrowDown: '↓',
   PageUp: 'Page Up',
   PageDown: 'Page Down',
+  plus: '+',
   Escape: 'Esc',
   Enter: 'Enter',
   Home: 'Home',

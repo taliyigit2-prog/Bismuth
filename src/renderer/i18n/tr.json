@@ -1253,7 +1253,10 @@
       "turnoverInvalid": "0 ile 240 arasında bir sayı yazın.",
       "turnoverSaved": "Temizlik süresi kaydedildi",
       "title": "Saatlik satış"
-    }
+    },
+    "zoom": "Yakınlaştırma",
+    "zoomValue": "%{{percent}}",
+    "zoomHelp": "Ctrl ve + ya da - tuşlarıyla da değiştirebilirsiniz (Mac'te ⌘). Yalnız sizin için geçerlidir."
   },
   "status": {
     "paid": "Ödendi",
@@ -6766,7 +6769,10 @@
       "search": "Hızlı arama",
       "list": "Kısayol listesini aç",
       "lock": "Ekranı kilitle",
-      "sidebar": "Kenar menüyü daralt ya da aç"
+      "sidebar": "Kenar menüyü daralt ya da aç",
+      "fullscreen": "Tam ekrana geç ya da çık",
+      "zoom": "Yakınlaştır ya da uzaklaştır",
+      "zoomReset": "Yakınlaştırmayı sıfırla"
     },
     "calendar": {
       "move": "Hücreden hücreye geç",
