@@ -216,5 +216,18 @@ Bütçe küçükse öncelik sırası dalga sırasıdır: dalga 1–5 ($110–210
 | S-112 Hikvision, otomatik donanım | yeni **P20g** kamera kurulum sihirbazı (dalga 10) |
 | S-114…S-117 iki otel, ayrı bilgisayar, bağlanabilir | P21b öne (dalga 11), P21c portföy takvimli (dalga 12), P21a isteğe bağlı (dalga 13) |
 | S-118 21st.dev kullanılacak | `12-21st-tasarim-secimi.md`; Faz 17/18 paketlerine bağlanan tasarım alımları (§9) |
-| B.1 Rust | `11-rust-gecisi.md`; karar ve paketler (§9) |
+| B.1 Rust | `11-rust-gecisi.md`; karar ve paketler (§10) |
 | B.2 Ponytail | `/ponytail` becerisi + `/orkestra` sadeleştirme adımı (`09-ajan-sistemi.md`) |
+
+## 9. 21st.dev tasarım alımları (K-60; ayrıntı `12-21st-tasarim-secimi.md`)
+
+| Alım | Bileşen (MIT, @uvain / klyv-ui) | Paket | Not |
+|---|---|---|---|
+| A1 | Charts & KPI Cards (33507) | P18b (raporlar + bugün), P21c (portföy) | recharts projede var; gizli veri tablosu korunur |
+| A2 | Data Table bulk bar + boş durum (33506) | P18b (listeler), P17c (toplu seçim çubuğu dili) | `@tanstack/react-table` eklenmez, kalıp mevcut `table.tsx`'e taşınır |
+| A3 | Command Menu (33510) | P17c | mevcut `command.tsx` + kısayol kaydı |
+| A4 | Notification Panel (27135) | P20b | framer-motion yerine CSS geçişi; "görüldü/halledildi" ayrımı |
+| A5 | Combobox multi/create (34820) | P17b, P21e | misafir seçici "yazarken oluştur", grup oda seçimi |
+| A6 | Gantt Chart (38523) — yalnız kalıp | P17c, P18b #3 | bugün işareti, zoom |
+
+Her alım §6 adımlarıyla (lisans → bağımlılık → i18n/CSS dönüşümü → ui-reviewer) yapılır; paket tahminlerine +$1–2.

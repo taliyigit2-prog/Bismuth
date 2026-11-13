@@ -77,7 +77,8 @@ Ekran denetimi 24 diyalog/menüyü açtı. Tam etkileşim taraması (`flow-teste
 - **P18c** pencere: F11/Ctrl+Shift+F, tam ekran + zoom hatırlama, debounce kayıt, zoom üst sınırı, çoklu monitör sığdırma.
 - **P18d** akış testindeki çalışmayan öğeler.
 
-## 7. 21st.dev görsel geliştirme (isteğe bağlı; araştırma `ekler/kamera-kaynaklar.md` §D)
+## 7. 21st.dev görsel geliştirme — **güncelleme 2026-11-13:** sahip ücretli üyelikle kullanılmasını istedi (S-118, K-60); bağlantı
+## kuruldu ve seçimler `12-21st-tasarim-secimi.md`'de. Aşağısı ilk değerlendirmedir (araştırma `ekler/kamera-kaynaklar.md` §D).
 
 - **Ne sunuyor:** shadcn/ui uyumlu React + Tailwind bileşen kataloğu (12.000+), shadcn CLI ile kurulum; "21st MCP"
   (eski Magic MCP) barındırılan sunucu `https://21st.dev/api/mcp`, hesap + API anahtarı ister; ücretsiz planda bileşen
