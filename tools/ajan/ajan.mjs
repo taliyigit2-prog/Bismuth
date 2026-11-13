@@ -128,6 +128,10 @@ async function runTurn(prompt) {
   })
 
   let lastText = ''
+  // result.total_cost_usd is cumulative per query() call, and background sub-agents can emit several result
+  // messages in one turn: take the largest value seen and add it to the running total exactly once.
+  const spentBefore = spent
+  let turnCost = 0
   for await (const msg of current) {
     if (msg.session_id) sessionId = msg.session_id
     if (msg.type === 'system' && msg.subtype === 'init') {
@@ -148,7 +152,8 @@ async function runTurn(prompt) {
         }
       }
     } else if (msg.type === 'result') {
-      spent += msg.total_cost_usd ?? 0
+      turnCost = Math.max(turnCost, Number(msg.total_cost_usd) || 0)
+      spent = spentBefore + turnCost
       if (sessionId) writeFileSync(lastSessionFile, JSON.stringify({ sessionId, model: args.model, spent }, null, 2))
       const status =
         msg.subtype === 'success'
@@ -158,7 +163,7 @@ async function runTurn(prompt) {
             : `hata (${msg.subtype})`
       if (msg.subtype !== 'success' && msg.errors?.length) say(`⚠️  ${msg.errors.join(' | ')}`)
       say(
-        `\n── Tur ${status} · bu tur $${(msg.total_cost_usd ?? 0).toFixed(2)} · toplam $${spent.toFixed(2)} / $${args.budget} · ` +
+        `\n── Tur ${status} · bu tur $${turnCost.toFixed(2)} · toplam $${spent.toFixed(2)} / $${args.budget} · ` +
           `${Math.round((msg.duration_ms ?? 0) / 60000)} dk ──`,
       )
     }
