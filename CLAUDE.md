@@ -65,7 +65,7 @@ Faz durumu: `docs/plan/fazlar/DURUM.md` · Yürütme (dalgalar): `docs/plan/fazl
   `calendar-specialist` (sonnet/high; takvim, rezervasyon, iptal/iade, gündüz kullanımı), `db-migration-builder`
   (sonnet/high; şema + migrasyon), `camera-integrator` (sonnet/high; Python yan süreç + Kamera sekmesi), `packager`
   (sonnet; electron-builder, iş akışı dosyaları, kurulum belgeleri), `feature-builder-lite` (haiku; küçük/mekanik),
-  `researcher` (haiku; hukuk/lisans için sonnet).
+  `researcher` (haiku; hukuk/lisans için sonnet), `rust-shell-builder` (sonnet/high; Faz 22 Tauri 2 prototipi ve ölçüm).
 - **Kontrol ajanları:** `bug-hunter`, `flow-tester`, `security-reviewer`, `db-reviewer` (sonnet/high); `ui-reviewer`,
   `screen-auditor` (çözünürlük/ölçek/tam ekran), `privacy-auditor` (KVKK) (sonnet/medium); `decision-auditor`
   (opus/medium); `turkish-ui-copy`, `requirements-tracer` (haiku). Her ajan raporunu `.tmp/<ad>/REPORT.md`'ye yazar,

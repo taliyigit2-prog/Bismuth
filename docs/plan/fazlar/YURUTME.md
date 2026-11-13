@@ -110,11 +110,15 @@ Harcama sütunu: başlatıcının yazdığı `$` (dalga toplamı, gerçek).
 | 12 | P21d Geç çıkış, no-show bedeli, hasar depozitosu kalemi, gece raporu | 21 | booking, reports | feature-builder | $6–9 | | ⬜ |
 | 13 | P21e Orta/Düşük bulgular (02 + 04 listesi, faz-21) | 21 | bulguya göre | feature-builder-lite / feature-builder | $4–6 | | ⬜ |
 | 13 | P21a Profil altyapısı (isteğe bağlı; tek makinede iki otel) | 21 | main/app/paths, auth, settings | feature-builder | $10–15 | | ⬜ |
+| 14 | P22a Ölç ve hafiflet (perf betiği, Electron denemeleri, hafif mod) | 22 | scripts, main/windows, main/app | feature-builder | $15–30 | | ⬜ |
+| 14 | P22b Kabuk soyutlaması `lib/shell` (Electron + tarayıcı) | 22 | renderer/lib/shell, preload | feature-builder | $20–40 | | ⬜ |
+| 15 | P22c Tauri 2 prototipi + aynı ölçümle karşılaştırma + sahip karar sayfası (**durma noktası**) | 22 | shell-tauri/ (ürün dışı) | rust-shell-builder | $60–120 | | ⬜ |
+| 16 | P22d Tauri ürünleştirme (yalnız sahip "devam" derse); P22e Rust servis pilotu (yalnız darboğazda) | 22 | shell-tauri, .github, docs | rust-shell-builder + packager | $80–160 (+$100–200) | | ⬜ |
 | Son | Tam kontrol sürüsü (bug-hunter + flow-tester modül başına, decision, security, db, ui, screen, privacy, copy, tracer) → **modül başına Ponytail `full` sadeleştirme turu (K-61; testler aynı)** → düzeltme turu → `/owner-review` | — | — | hepsi | $50–75 | | ⬜ |
 
 Dalga sırası kuralları: bir paket bağımlı olduğu paketten **sonraki** dalgada (P17c → P17b, P18b → P17c, P20b/P20d → P20a,
 P20c → P20b, P21b/P21c → P21a); aynı dalgadaki iki paket aynı dizine dokunmaz. Migrasyon numarası dalga sırasıyla verilir
-(`db:generate` sıradakini üretir): P17d 0019 → P17b 0020 → P20c 0021; çakışırsa yeniden üretilir. Kamera dalgaları 7–11, çoklu otel 11–13.
+(`db:generate` sıradakini üretir): P17d 0019 → P17b 0020 → P20c 0021; çakışırsa yeniden üretilir. Kamera dalgaları 7–11, çoklu otel 11–13, performans/kabuk (Faz 22) 14–16 — dalga 15 sonunda sahip kararı (K-62).
 
 Dalga toplamları (paket + kontrol ajanları $3–8 + orkestra Opus $3–8): 1: $20–38 · 2: $23–42 · 3: $27–48 · 4: $22–40 ·
 5: $20–38 · 6: $15–32 · 7: $18–36 · 8: $18–34 · 9: $21–38 · 10: $24–43 · 11: $26–46 · 12: $20–37 · 13: $20–37 ·

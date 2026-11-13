@@ -231,3 +231,15 @@ Bütçe küçükse öncelik sırası dalga sırasıdır: dalga 1–5 ($110–210
 | A6 | Gantt Chart (38523) — yalnız kalıp | P17c, P18b #3 | bugün işareti, zoom |
 
 Her alım §6 adımlarıyla (lisans → bağımlılık → i18n/CSS dönüşümü → ui-reviewer) yapılır; paket tahminlerine +$1–2.
+
+## 10. Faz 22 — Performans ve kabuk (K-62 taslağı; ayrıntı `11-rust-gecisi.md`, faz dosyası `faz-22-performans-ve-kabuk.md`)
+
+| Paket | İçerik | Ajan | Büyüklük | Bağımlılık / dalga |
+|---|---|---|---|---|
+| P22a | Ölçüm betiği `scripts/perf-measure.mjs`, gerçek PC talimatı, Electron hafifletme denemeleri, "hafif mod" (tepsi + tarayıcı) | `feature-builder` | M | Faz 21 sonrası; dalga 14 |
+| P22b | `src/renderer/lib/shell/` kabuk soyutlaması (Electron + tarayıcı) | `feature-builder` | M | dalga 14 |
+| P22c | `shell-tauri/` Tauri 2 prototipi (Node yan süreç = Hono), aynı ölçüm, karar sayfası → **sahip kararı** | `rust-shell-builder` (yeni; sonnet/high) | L | P22a, P22b; dalga 15 |
+| P22d | Tauri ürünleştirme (yalnız "devam") | `rust-shell-builder` + `packager` | L | dalga 16 |
+| P22e | Rust servis pilotu `axum` + `rusqlite` (yalnız ölçülmüş darboğaz) | `rust-shell-builder` | L | dalga 16 |
+
+Tahmin: R0–R2 $95–190 (+ kontrol/orkestra ≈ $20–40); R3/R4 yalnız kararla. Tam Rust yeniden yazım ($1.200–2.500) yapılmaz.
