@@ -69,6 +69,28 @@ tablosu, 2 ajan sınırı), `token-economy` (model tablosu tek kaynağa atıf), 
 `/qa`, `/owner-review`, `/add-migration`, `/release`, `/requirement-change`, `/code-graph`, `/electron-security`,
 `/tr-copy-guide` değişmedi.
 
+### 3.2a Ponytail sadeleştirme becerisi (2026-11-13, sahip B.2; K-61)
+
+- **Ne:** `dietrichgebert/ponytail` — "tembel kıdemli geliştirici" istemi: görevi çözen en küçük tam değişiklik; gereksiz
+  soyutlama/seçenek/bağımlılık yok; yazar ölçümü (39 görev × 5 koşu): kod −%53, süre −%41, maliyet −%26, token −%45
+  (`benchmarks/results/2026-10-07-agentic.md`, ikincil). Seviyeler `lite/full/ultra`. MIT; sürüm 5.3.3; son commit
+  `96608e0` (2026-10-29); etiket yok.
+- **Güvenlik incelemesi:** `package.json`'da `preinstall/postinstall` yok, bağımlılık yok. Eklenti modu üç kanca kurar
+  (SessionStart, SubagentStart, UserPromptSubmit → `node -e` ile `hooks/*.js`), `~/.claude/settings.json`'u okur,
+  `~/.claude/` altına durum çubuğu betiği ve `.ponytail-active` yazar; `ponytail-activate.js` ağ çağrısı yapmıyor,
+  `child_process` ile yalnız yerel `ponytail-map.js`'i çalıştırıyor (o dosya incelenemedi). **Karar:** eklenti **kurulmadı**;
+  yalnız `SKILL.md` proje becerisi olarak kopyalandı (`.claude/skills/ponytail/SKILL.md`, sha256 ön bilgide), böylece ağ
+  ve kanca riski sıfır.
+- **Kural çatışmaları ve çözüm (beceri dosyasındaki "Bismuth notu"):** "değeri platformun verdiği biçimde tut" ↔ para tam
+  sayı (`money.ts`); "gereksiz seçenek/ayar yok" ↔ otele özel kural = ayar (G-09); "native widget" ↔ yalnız shadcn;
+  "kısa diff" ↔ i18n anahtarı + üç dil, mantıksal CSS, yetki `ctx`, audit, silme yok. Proje kuralları önce gelir.
+- **Akışa yerleşimi:** `/orkestra` §3 adım 5a — her dalgada kod commit'inden sonra tek `feature-builder` (sonnet; haiku
+  bu yargıyı taşıyamaz, opus pahalı) `lite` seviyede dalganın `src` diff'ini sadeleştirir; test/migrasyon/i18n dosyaları
+  dokunulmaz; `npm run check` aynı test sayısıyla yeşil değilse ya da diff küçülmediyse atılır; ayrı `refactor(...)`
+  commit'i. Maliyet dalga başına $2–4 (toplam ≈ $30–55; §6 tahminine dahil değil, `08` §6 notu).
+- **Ne zaman daha yoğun:** Sahip "diğer otonom işler bittikten sonra bolca kullansın" dedi → "Son" dalgasında modül başına
+  `full` seviye sadeleştirme turu (bug-hunter/flow-tester sonrası, düzeltme turundan önce) eklendi (`YURUTME.md` Son satırı).
+
 ### 3.3 Kancalar (13; 89 test)
 Yeni: `workflow-guard` (gh workflow/run/release yazma komutları, `gh api` POST/dispatches, `git tag v*`),
 `camera-data-guard` (kamera klasörleri, görüntü dosyaları izinli yollar dışında, ağırlık/vektör uzantıları, `.env`,
@@ -108,6 +130,8 @@ sonunda). Durunca `YURUTME.md` günlüğü + `❓ SORULARIM`.
   permission settings"); deny kuralları bu modda da uygulanıyor. Kancalar da bu modda çalıştı (gözlendi).
 
 ## 6. Açık işler (plan P19d "ajan sistemi bakımı")
+`ponytail` sürüm takibi: üç ayda bir raw `SKILL.md` sha256 karşılaştırması (elle; otomatik indirme yok).
+
 `protect-files` kaçış değişkenini kaldır; `stop-gate` izleme kapsamına `drizzle/`, `scripts/`, `package.json`;
 `deps-guard` yarn eşleşmesi; `prototypes/` istisnaları prototipler silinince kaldır; `owner-review` becerisinde
 scratchpad yerine kalıcı yol.

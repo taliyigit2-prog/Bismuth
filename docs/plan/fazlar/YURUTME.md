@@ -110,7 +110,7 @@ Harcama sütunu: başlatıcının yazdığı `$` (dalga toplamı, gerçek).
 | 12 | P21d Geç çıkış, no-show bedeli, hasar depozitosu kalemi, gece raporu | 21 | booking, reports | feature-builder | $6–9 | | ⬜ |
 | 13 | P21e Orta/Düşük bulgular (02 + 04 listesi, faz-21) | 21 | bulguya göre | feature-builder-lite / feature-builder | $4–6 | | ⬜ |
 | 13 | P21a Profil altyapısı (isteğe bağlı; tek makinede iki otel) | 21 | main/app/paths, auth, settings | feature-builder | $10–15 | | ⬜ |
-| Son | Tam kontrol sürüsü (bug-hunter + flow-tester modül başına, decision, security, db, ui, screen, privacy, copy, tracer) → düzeltme turu → `/owner-review` | — | — | hepsi | $40–60 | | ⬜ |
+| Son | Tam kontrol sürüsü (bug-hunter + flow-tester modül başına, decision, security, db, ui, screen, privacy, copy, tracer) → **modül başına Ponytail `full` sadeleştirme turu (K-61; testler aynı)** → düzeltme turu → `/owner-review` | — | — | hepsi | $50–75 | | ⬜ |
 
 Dalga sırası kuralları: bir paket bağımlı olduğu paketten **sonraki** dalgada (P17c → P17b, P18b → P17c, P20b/P20d → P20a,
 P20c → P20b, P21b/P21c → P21a); aynı dalgadaki iki paket aynı dizine dokunmaz. Migrasyon numarası dalga sırasıyla verilir
@@ -118,7 +118,7 @@ P20c → P20b, P21b/P21c → P21a); aynı dalgadaki iki paket aynı dizine dokun
 
 Dalga toplamları (paket + kontrol ajanları $3–8 + orkestra Opus $3–8): 1: $20–38 · 2: $23–42 · 3: $27–48 · 4: $22–40 ·
 5: $20–38 · 6: $15–32 · 7: $18–36 · 8: $18–34 · 9: $21–38 · 10: $24–43 · 11: $26–46 · 12: $20–37 · 13: $20–37 ·
-Son: $45–70 → **toplam $320–580** (dalga 1–5 = Faz 17 + ekran ≈ $110–210). Model başına: Opus $50–130 · Sonnet $255–420 ·
+Son: $55–85 → **toplam $330–595** (dalga 1–5 = Faz 17 + ekran ≈ $110–210; her dalgaya Ponytail sadeleştirme $2–4 dahil değil, +$30–55). Model başına: Opus $50–130 · Sonnet $255–420 ·
 Haiku $15–30. Sahip cevapları (2026-11-13) işlendi: `08` §8. Ölçüm: Codespace 2026-11-12'de 4 çekirdek / 15 GB (paralel kodlayan ajan sınırı yine 2; üçüncü çekirdekler
 test/paketleme için).
 

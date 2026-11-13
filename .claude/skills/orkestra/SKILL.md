@@ -53,6 +53,14 @@ Beklerken: sonraki dalganın ortak altyapısını hazırla, belgeleri güncelle;
    önem ≥ Yüksek olanlar aynı dalgada düzeltme paketi (`<paket>fix`) olur; Orta/Düşük sonraki dalgaya not.
 5. Yeşil → tek commit (paketleri satır satır say), push `claude/…` dalına; faz dosyasında kabul kutuları ve Sonuç;
    `YURUTME.md` paket ✅ + günlük satırı + harcama; `DURUM.md` faz satırı.
+5a. **Sadeleştirme turu (Ponytail, K-61)** — commit'ten **sonra**, aynı dalgada, tek `feature-builder` (sonnet) ajanı,
+   worktree'de: görev metni "`/ponytail lite` ile bu dalganın commit'inde değişen kaynak dosyaları (`git diff --name-only
+   <önceki>..HEAD -- src`) sadeleştir; test dosyalarına, migrasyonlara, i18n json'larına, `01-gereksinimler.md`'ye
+   dokunma; davranış değişmez; CLAUDE.md kuralları Ponytail'den önce gelir (`.claude/skills/ponytail/SKILL.md` Bismuth
+   notu); `npm run check` aynı test sayısıyla yeşil". Diff satır sayısı azalmadıysa ya da herhangi bir test
+   değiştiyse/kırıldıysa sadeleştirme **atılır** (worktree silinir), günlüğe "sadeleştirme atlandı: neden" yazılır.
+   Başarılıysa ayrı commit `refactor(<kapsam>): simplify wave N changes (ponytail)`; `decision-auditor` koşmaz (davranış
+   değişmedi), yalnız `npm run check`. Dalga maliyetine $2–4 eklenir. Bütçe sıradaki dalganın tahmininin altındaysa atlanır.
 
 ## 4. Başarısızlıkta yeniden deneme
 

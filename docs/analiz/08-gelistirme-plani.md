@@ -189,8 +189,8 @@ $3–9/paket, kontrol $1–6, orkestra opus $8–15/dalga; 09 §2).
 | 11 | P20f (paketleme), P21b (çoklu ana bilgisayar) | security-reviewer, decision-auditor | $26–46 | 4–5 sa |
 | 12 | P21c, P21d | ui-reviewer, db-reviewer, turkish-ui-copy | $20–37 | 3–4 sa |
 | 13 | P21e, P21a (isteğe bağlı) | ui-reviewer, requirements-tracer | $20–37 | 3–4 sa |
-| Son | Tam kontrol: modül başına bug-hunter + flow-tester, decision-auditor, security, db, ui, screen, privacy, copy, tracer → düzeltme turu → `/owner-review` | hepsi | $45–70 | 6–8 sa |
-| **Toplam** | paketler $236–361 + dalga başına kontrol $3–8 + orkestra $3–8 | | **$320–580** | ~55–65 sa ajan süresi |
+| Son | Tam kontrol: modül başına bug-hunter + flow-tester, decision-auditor, security, db, ui, screen, privacy, copy, tracer → modül başına Ponytail `full` sadeleştirme (K-61) → düzeltme turu → `/owner-review` | hepsi | $55–85 | 7–9 sa |
+| **Toplam** | paketler $236–361 + dalga başına kontrol $3–8 + orkestra $3–8 (+ her dalga Ponytail `lite` turu $2–4 ≈ $30–55 ayrıca) | | **$330–595** (+$30–55 Ponytail) | ~60–70 sa ajan süresi |
 
 Model başına kabaca: Opus (orkestra + decision-auditor) $50–130 · Sonnet (kodlayan + kontrol) $255–420 · Haiku (lite
 paketler + haiku kontroller) $15–30. Dalga sırası kuralı: bağımlı paket bir sonraki dalgada; aynı dalgada aynı dizine
