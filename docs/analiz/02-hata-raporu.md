@@ -42,7 +42,32 @@
 | H-17 | Düşük | 2×/3× zoom'da araç çubuğu düğmeleri üst üste biniyor | Nadir | 05 #7 | Zoom üst sınırı 1.5 ya da katlanan araç çubuğu | S | P18c |
 | H-18 | Düşük | 1–2 gecelik çubuklarda ad "…" ile kısalıyor (her çözünürlükte) | Okunabilirlik | 05 #3 | Gün sütunu genişliği çözünürlüğe göre | S | P18b |
 
-**Çalıştığı doğrulananlar (akış testi):** takvim araç çubuğu (bugün, ok, ay/yıl, tarihe git, misafir ara, boş oda, toplu not,
+**2. oturum akış testi, 1. grup (2026-11-13; gerçek Electron 1440×900 + telefon 390×844; defter, raporlar, ay sonu,
+vardiya, döviz, firmalar, rehber, turizm, denetim; ~180 öğe; `pageerror`/`console.error`/başarısız istek yok; Kritik/Yüksek yok):**
+
+| # | Önem | Bulgu | Etki | Kanıt (`.tmp/flow-tester/modules-1/`) | Çözüm | Büyüklük | Paket |
+|---|---|---|---|---|---|---|---|
+| H-19 | Orta | Serbest metin alanlarında üst sınır yok: ödeme notu 5000, gider açıklaması 3000, gün notu 6000, teslim/devir notu 4000–6000, "kendime not" 3000 karakter kaydediliyor | Veri şişer; listeler/raporlar bozulur | `ledger.out`, `shift.out` | zod `max(500)`/`max(2000)` + alan altı sayaç (H-07 ile aynı kalıp) | S | P17e |
+| H-20 | Orta | Denetim kaydı ayrıntı paneli ham alan adları gösteriyor (`method/password/expiresAt`, `folioId`, `titleI18n`…); kimlikler kesik | Sahip için okunaksız | `shots/audit-row-2.png` | Alan adı → Türkçe etiket eşlemesi; kimlik yerine ad/oda | S | P21e |
+| H-21 | Orta | Firmalar: telefon denetlenmiyor ("telefon" kaydedildi); aynı unvan + vergi no ikinci kez kaydedilebiliyor; 500 karakter unvan toast'la reddediliyor ama alan işaretlenmiyor | Bozuk/mükerrer firma kaydı | `companies2.out` | Telefon maskesi (H-05 ile), benzersizlik uyarısı, alan altı hata | S | P17e |
+| H-22 | Düşük | Denetim "İşlem" filtresinde "İptal etti" iki kez listeleniyor | Hangisi seçildiği belirsiz | `audit2.out` | Etiketleri ayır | S | P21e |
+| H-23 | Düşük | Turizm "Excel/CSV indir" sonrası bildirim yok; Raporlar ve Ay sonu aynı işte "Dosya kaydedildi: yol" gösteriyor | Tutarsız | `tourism2.out`, `result-card.tsx:173` | Aynı toast | S | P21e |
+| H-24 | Düşük | Ödeme tutarı 99999999999999999 için hata "Tutar sayı olmalı" (asıl sorun üst sınır) | Yanıltıcı | `shots/ledger-pay-amt-cokbyk.png` | Üst sınır anahtarı (H-08 ile) | S | P17e |
+| H-25 | Düşük | Rehber: çok uzun telefon kabul; ad 400 karakter sessizce 120'ye kesiliyor | Sessiz veri kaybı | `contacts3.out` | Telefon üst sınırı; sayaç | S | P17e |
+| H-26 | Düşük | Döviz çevirici negatif tutar kabul; "1.000,555" ve çok büyük sayıda "—" açıklamasız; 500 karakter API anahtarında Kaydet sessizce pasif | Küçük | `currency4.out`, `currency5.out` | ≥0 denetimi + metin | S | P21e |
+| H-27 | Düşük | Aynı gün "bu ay" doluluğu Raporlar'da %10,3 (bugüne kadar), Ay sonunda %11,3 (gelecek geceler dahil) | Sahip karıştırır | `shots/reports-tab-summary.png`, `monthend.out` | Ay sonunda "ayın tamamı" ibaresi ya da aynı tanım | S | P21e |
+| H-28 | Düşük | Telefonda 44 px altı hedefler: Defter teslim onay kutuları 20×20, Ay sonu onay kutuları, Döviz anahtarı 32×18 | Dokunma zorluğu | `mobile.out` | Satır tıklanabilir (05 #4 ile) | S | P18b |
+| H-29 | Düşük | "Notu kapat" düğmesinin `aria-label`'ı notun tamamını içeriyor | Erişilebilirlik | `shift.out` | İlk 40 karakter | S | P21e |
+| H-30 | Düşük | Vardiya: "Devri kaydet" boş notla ve her tıklamada yeni satır; kendi devrin "Okunmamış" | Gereksiz kayıt | `shots/shift-saved.png` | Boş notta uyarı; aynı vardiyada tek kayıt; kendi devrin okundu | S | P21e |
+| H-31 | Düşük | Defterde gelecek güne "Ödeme ekle" açılabiliyor, uyarı yok ("Sonraki gün" sınırsız) | Bilinçli olabilir | `shots/ledger-future-pay.png` | Gelecek gün uyarısı (sahip kararı; varsayılan uyarı) | S | P21e |
+| H-32 | Düşük | Art arda işlemde eski toast'lar birikiyor; dışa aktarma toast'ı tam yol gösteriyor | Gürültü | `ledger.out` | Aynı türü tek toast'a indir | S | P21e |
+
+Denenemeyenler (1. grup): gerçek yazdırma penceresi (otomasyonu kilitliyor; `window.print` çağrısı doğrulandı), Raporlar
+ters tarih aralığı (betik zaman aşımı; Denetim'de eşdeğeri doğru), Defter "Ek satış" ve EUR/USD ödeme, gider ürün satırı
+(tohumda ürün yok), maaş/personel tabloları dolu hali, en/ru görünümü. **Çalışan akışlar:** kayıt/düzenleme/iptal/teslim
+alma/dışa aktarma/filtre/içe aktarma/kopyalama; telefonda 9 ekranda yatay taşma 0.
+
+**Çalıştığı doğrulananlar (1. oturum akış testi):** takvim araç çubuğu (bugün, ok, ay/yıl, tarihe git, misafir ara, boş oda, toplu not,
 yeni rezervasyon), panel düğmeleri, sürükle-bırak (dolu odaya 409 + anlaşılır toast; Esc iptal), kısayollar N/T/"/"/Ctrl K/F1/ok
 tuşları, çok odalı rezervasyon (oda başına giriş/çıkış/iptal menüsü), çift kayıt uyarısı ve birleştirme yolu, Otelde kalanlar
 (yazdır, kişi ekle, KBS işaretleri), Misafirler, Bugün bağlantıları, Genel/Görünüm ayarları (dil anında değişiyor), telefon gün

@@ -28,7 +28,8 @@ takvim, gelir-gider, bugünkü doluluk, kasa; ortak personel yok. K-54 kesin.
    (iade edilecek emanet) kalemi, yazdırılabilir tek sayfa gece raporu (gelen/giden/kalan/kasa).
 5. **P21e Orta/Düşük bulgular** — 02 raporunda "P21e" işaretli bulgular: H-13 telefon "çıkış yaptı" rozeti; H-16 telefon
    sheet'i geri tuşuyla kapanmıyor; 04 §3: mükerrer misafir kartı uyarısı (ad yazılınca mevcut kart önerisi), Ayarlar
-   "sık kullanılan" sekmesi; akış testi 2. oturum Orta/Düşük maddeleri (02 §2 "P21e").
+   "sık kullanılan" sekmesi; akış testi 2. oturum Orta/Düşük maddeleri (02 §2 "P21e": H-20 denetim paneli etiketleri,
+   H-22, H-23, H-26, H-27, H-29, H-30, H-31, H-32).
 
 ## Kabul ölçütleri
 - [ ] (P21a yapılırsa) tek otel kurulumu veri kaybı olmadan `hotels/<kod>/` altına taşınır; iki profil arasında geçiş ≤ 3 sn; veri sızmaz.

@@ -43,7 +43,7 @@ Kiosk modu; yeni tema; tablet düzeni.
 
 ## Bulgu listesi
 - **P18b (05 §3):** #1 takvim üç kaydırma çubuğu / tam yükseklik düzeni; #2 panel genişliği ve üst düğmeler; #3 çubuk ad
-  kısaltma / gün sütunu genişliği; #4 telefon 44 px hedefler (ayarlar radyoları, görev anahtarları); #5 kenar çubuğu alt
+  kısaltma / gün sütunu genişliği; #4 telefon 44 px hedefler (ayarlar radyoları, görev anahtarları, H-28 defter/ay sonu onay kutuları, döviz anahtarı); #5 kenar çubuğu alt
   grupları 768 px; #6 bugün/kılavuz/ayarlar tek kaydırma, yedek uyarısı tek satır.
 - **P18c (05 §3):** #7 zoom üst sınırı; #8 tam ekran durumu hatırlama + debounce kayıt; #9 F11 / Ctrl+Shift+F; #10 `ui.zoom`
   kalıcı; #11 çoklu monitör sığdırma (isteğe bağlı).
