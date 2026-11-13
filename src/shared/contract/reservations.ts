@@ -110,6 +110,25 @@ export type ChangeRoomInput = z.input<typeof changeRoomSchema>
 /** Why a reservation or one of its rooms is cancelled (kept with it, G-24). */
 export const cancelReasonSchema = z.string().trim().min(3).max(200)
 
+/**
+ * What happens to the money when a reservation is cancelled (K-55): give it back now (a refund row on the folio
+ * in the same step; needs `payments.refund`) or keep it with a reason (cancellation fee). "Refund pending" is a
+ * park (`booking.park`), not a cancellation.
+ */
+export const cancelRefundSchema = z.discriminatedUnion('mode', [
+  z.object({
+    mode: z.literal('refund'),
+    methodId: idSchema,
+    amountMinor: amountSchema.positive(),
+    /** Default: the folio currency. */
+    currency: currencyCode.optional(),
+    note: z.string().max(500).nullish(),
+    dayClosedReason: z.string().trim().min(3).max(200).optional()
+  }),
+  z.object({ mode: z.literal('keep'), note: z.string().trim().min(3).max(200) })
+])
+export type CancelRefundInput = z.input<typeof cancelRefundSchema>
+
 export const parkSchema = z.object({
   reason: z.enum(['no_show_paid', 'refund_pending', 'postponed', 'other']),
   note: z.string().max(500).nullish()

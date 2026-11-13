@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { eq } from 'drizzle-orm'
+import { defaultPermissions } from '@shared/permissions'
 import { depsOf, roleCtx, testClock } from '../../../tests/factories/ctx'
 import { seededDatabase } from '../../../tests/factories/db'
 import type { DatabaseHandle } from '../db/client'
@@ -82,7 +83,12 @@ describe('rezervasyon → ödeme → gece durumu (§6.3, kabul ölçütü)', () 
     expect(statuses(res.get(owner, r.reservation.id))).toEqual(['paid', 'paid', 'partial'])
     p(100_000)
     expect(statuses(res.get(owner, r.reservation.id))).toEqual(['paid', 'paid', 'paid'])
-    expect(() => p(100_000, 'refund')).toThrow(/PERMISSION_DENIED/) // reception has no refund right
+    // S-100: reception may refund by default; the owner can switch the right off in the role editor.
+    const noRefund = ctxFromPermissions('user-reception-2', 'test-device', 'ipc', {
+      ...defaultPermissions('reception'),
+      'payments.refund': 'none'
+    })
+    expect(() => p(100_000, 'refund', noRefund)).toThrow(/PERMISSION_DENIED/)
     p(100_000, 'refund', manager)
     const after = res.get(owner, r.reservation.id)
     expect(statuses(after)).toEqual(['paid', 'paid', 'partial'])

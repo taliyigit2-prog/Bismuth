@@ -25,6 +25,7 @@ import {
   reservationUpdateSchema
 } from '../booking'
 import {
+  cancelRefundSchema,
   changeDatesSchema,
   changeRoomSchema,
   moveDatesSchema,
@@ -106,7 +107,19 @@ export const bookingProcedures = {
       .strict(),
     bookingViewSchema
   ),
-  'booking.cancel': proc(z.object({ id: idSchema, reason }).strict(), bookingViewSchema),
+  /** Cancel; `refund` settles the money in the same step (K-55): a refund row or "keep the payments" with a note. */
+  'booking.cancel': proc(
+    z.object({ id: idSchema, reason, refund: cancelRefundSchema.optional() }).strict(),
+    bookingViewSchema
+  ),
+  /**
+   * Take a check-in back (K-55): only on the check-in day; the stay is planned again. A person already reported to
+   * KBS needs `kbsConfirmed` (the report itself stays; the KBS check-out is made there).
+   */
+  'booking.undoCheckIn': proc(
+    z.object({ stayId: idSchema, reason, kbsConfirmed: z.boolean().optional() }).strict(),
+    bookingViewSchema
+  ),
   /** One room of the reservation that is still to come (G-35, G-42). */
   'booking.cancelStay': proc(z.object({ stayId: idSchema, reason }).strict(), bookingViewSchema),
   /** "Gelmedi" (G-42): the nights are freed, payments stay; also from the park area. */

@@ -4,6 +4,7 @@
 import { and, asc, eq, gte, inArray, isNull, lt, ne } from 'drizzle-orm'
 import {
   cancelReasonSchema,
+  cancelRefundSchema,
   changeDatesSchema,
   changeRoomSchema,
   dateRangeSchema,
@@ -14,6 +15,8 @@ import {
   reservationStatusSchema,
   type stayInputSchema,
   unparkSchema,
+  type CancelRefundInput,
+  type PaymentCreateInput,
   type ChangeDatesInput,
   type ChangeRoomInput,
   type MoveDatesInput,
@@ -101,6 +104,14 @@ export type StayRow = typeof reservationRooms.$inferSelect
 export interface ReservationHooks {
   /** After a check-out: opens "every N stays" tasks (tasks service, §6.8). */
   onCheckout?: (ctx: Ctx, roomId: string, date: LocalDate) => void
+  /** A refund row written inside the caller's transaction (the cancellation that gives the money back, K-55). */
+  recordRefund?: (
+    ctx: Ctx,
+    tx: Tx,
+    audit: (entry: AuditEntry) => void,
+    now: Date,
+    input: PaymentCreateInput
+  ) => void
 }
 
 export interface NightView {
@@ -721,7 +732,9 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
     id: string,
     status: 'cancelled' | 'no_show' | 'parked',
     extra: Partial<typeof reservations.$inferInsert>,
-    reason: string
+    reason: string,
+    /** Runs in the same transaction after the status change (cancel: the refund; a failure undoes everything). */
+    settle?: (tx: Tx, audit: AuditFn, now: Date, before: ReservationDetail) => Record<string, unknown> | void
   ): ReservationDetail {
     requirePermission(ctx, 'calendar', 'edit')
     return inTransaction(deps, ctx, (tx, audit, now) => {
@@ -755,13 +768,14 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
         })
         .where(eq(reservations.id, id))
         .run()
+      const money = settle?.(tx, audit, now, before)
       const after = detail(tx, id)
       audit({
         entity: 'reservation',
         entityId: id,
         action: status === 'parked' ? 'park' : status === 'no_show' ? 'no_show' : 'cancel',
         before,
-        after: after.reservation,
+        after: money ? { ...after.reservation, ...money } : after.reservation,
         reason
       })
       return after
@@ -1145,13 +1159,37 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
       })
     },
 
-    cancel(ctx: Ctx, id: string, reason: string): ReservationDetail {
+    /**
+     * Cancel (nothing is deleted). `refund` settles the money in the same transaction (K-55): "refund" writes a
+     * refund row dated today on the folio (needs `payments.refund`; never more than the net collected amount),
+     * "keep" records why the payments stay (a cancellation fee). A guest in the house is refused: take the
+     * check-in back first (`undoCheckIn`) or check out.
+     */
+    cancel(ctx: Ctx, id: string, reason: string, refund?: CancelRefundInput): ReservationDetail {
+      const money = refund ? parseInput(cancelRefundSchema, refund) : undefined
       return endReservation(
         ctx,
         id,
         'cancelled',
         { cancelledAt: deps.clock().toISOString(), cancelReason: reason },
-        reason
+        reason,
+        money
+          ? (tx, audit, now, before) => {
+              if (money.mode === 'keep') return { paymentsKept: money.note }
+              if (!deps.hooks?.recordRefund) throw invalid('errors.internal')
+              deps.hooks.recordRefund(ctx, tx, audit, now, {
+                reservationId: id,
+                date: today(now),
+                kind: 'refund',
+                methodId: money.methodId,
+                amountMinor: money.amountMinor,
+                currency: money.currency ?? before.folio.currency,
+                note: money.note ?? null,
+                ...(money.dayClosedReason ? { dayClosedReason: money.dayClosedReason } : {})
+              })
+              return { refundedMinor: money.amountMinor }
+            }
+          : undefined
       )
     },
 
@@ -1338,6 +1376,93 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
       })
       if (result.movedFromRoomId) deps.hooks?.onCheckout?.(ctx, result.movedFromRoomId, today(deps.clock()))
       return result.detail
+    },
+
+    /**
+     * Take a check-in back (K-55: "girişi geri al"): the guest changed their mind on the check-in day. The stay is
+     * planned again (the nights and charges were never touched), the people lose their arrival time, the
+     * reservation goes back to "confirmed" unless another room is in the house or was stayed in. A person already
+     * reported to KBS needs `kbsConfirmed`: the report stays on record, the KBS check-out is made on the KBS side.
+     * Nothing is deleted; the audit row is `check_in_undo`.
+     */
+    undoCheckIn(
+      ctx: Ctx,
+      stayId: string,
+      opts: { reason: string; kbsConfirmed?: boolean | undefined }
+    ): ReservationDetail {
+      requirePermission(ctx, 'calendar', 'edit')
+      requirePermission(ctx, 'booking.undoCheckIn', 'edit')
+      const why = parseInput(cancelReasonSchema, opts.reason)
+      return inTransaction(deps, ctx, (tx, audit, now) => {
+        const stay = stayOf(tx, stayId)
+        if (stay.status !== 'in_house') throw invalid('errors.invalidStayState', { status: stay.status })
+        const checkedInDay = stay.checkedInAt ? localDateOf(new Date(stay.checkedInAt)) : null
+        if (checkedInDay !== today(now))
+          throw invalid('errors.undoCheckInNotToday', { checkedInAt: stay.checkedInAt ?? '' })
+        // A room-move day: the people came from another room, so there is nothing to give back to "planned".
+        const movedFrom = tx
+          .select({ id: reservationRooms.id })
+          .from(reservationRooms)
+          .where(
+            and(
+              eq(reservationRooms.reservationId, stay.reservationId),
+              eq(reservationRooms.status, 'done'),
+              eq(reservationRooms.checkOut, stay.checkIn),
+              ne(reservationRooms.roomId, stay.roomId)
+            )
+          )
+          .get()
+        if (movedFrom) throw invalid('errors.undoCheckInMoved')
+        const people = tx
+          .select()
+          .from(stayOccupants)
+          .where(eq(stayOccupants.reservationRoomId, stayId))
+          .all()
+        const reported = people.filter((o) => o.kbsReportedAt && !o.kbsCheckoutAt)
+        if (reported.length && !opts.kbsConfirmed)
+          throw invalid('errors.undoCheckInKbs', { names: reported.map((o) => o.fullName).join(', ') })
+        const iso = now.toISOString()
+        tx.update(reservationRooms)
+          .set({ status: 'planned', checkedInAt: null, updatedAt: iso })
+          .where(eq(reservationRooms.id, stayId))
+          .run()
+        for (const o of people) {
+          if (!o.arrivedAt) continue
+          tx.update(stayOccupants)
+            .set({ arrivedAt: null, updatedAt: iso })
+            .where(eq(stayOccupants.id, o.id))
+            .run()
+          audit({
+            entity: 'stay_occupant',
+            entityId: o.id,
+            action: 'update',
+            before: { arrivedAt: o.arrivedAt },
+            after: { arrivedAt: null }
+          })
+        }
+        const others = tx
+          .select({ status: reservationRooms.status })
+          .from(reservationRooms)
+          .where(and(eq(reservationRooms.reservationId, stay.reservationId), ne(reservationRooms.id, stayId)))
+          .all()
+        const started = others.some((x) => x.status === 'in_house' || x.status === 'done')
+        tx.update(reservations)
+          .set({ status: started ? 'checked_in' : 'confirmed', updatedAt: iso })
+          .where(eq(reservations.id, stay.reservationId))
+          .run()
+        audit({
+          entity: 'reservation_room',
+          entityId: stayId,
+          action: 'check_in_undo',
+          before: { status: 'in_house', checkedInAt: stay.checkedInAt },
+          after: {
+            status: 'planned',
+            ...(reported.length ? { kbsReportedPeople: reported.map((o) => o.fullName) } : {})
+          },
+          reason: why
+        })
+        return detail(tx, stay.reservationId)
+      })
     },
 
     /**

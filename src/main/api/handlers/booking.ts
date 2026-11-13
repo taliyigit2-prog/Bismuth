@@ -107,7 +107,15 @@ export const bookingHandlers = (services: Services): HandlersFor<keyof typeof bo
         }).reservation.id
       ),
     'booking.cancel': (ctx, input) =>
-      view(ctx, services.reservations.cancel(ctx, input.id, input.reason).reservation.id),
+      view(ctx, services.reservations.cancel(ctx, input.id, input.reason, input.refund).reservation.id),
+    'booking.undoCheckIn': (ctx, input) =>
+      view(
+        ctx,
+        services.reservations.undoCheckIn(ctx, input.stayId, {
+          reason: input.reason,
+          kbsConfirmed: input.kbsConfirmed
+        }).reservation.id
+      ),
     'booking.cancelStay': (ctx, input) =>
       view(ctx, services.reservations.cancelStay(ctx, input.stayId, input.reason).reservation.id),
     'booking.noShow': (ctx, input) => view(ctx, services.reservations.noShow(ctx, input.id).reservation.id),

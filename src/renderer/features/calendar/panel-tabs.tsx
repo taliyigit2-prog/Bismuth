@@ -53,7 +53,16 @@ import { useCustomTags } from './use-custom-tags'
 
 const FOLIO_KEYS = ['charges', 'credited', 'balance'] as const
 
-export function SummaryTab({ view, editable }: { view: BookingView; editable: boolean }) {
+export function SummaryTab({
+  view,
+  editable,
+  notesEditable = editable
+}: {
+  view: BookingView
+  editable: boolean
+  /** The notes log stays writable on a closed reservation for whoever may edit the calendar (K-55). */
+  notesEditable?: boolean
+}) {
   const { t } = useTranslation()
   const f = useFormat()
   const options = useBookingOptions()
@@ -255,7 +264,7 @@ export function SummaryTab({ view, editable }: { view: BookingView; editable: bo
         ) : null}
       </section>
       <GuestSummaryCard guestId={view.guest.id} showNote={false} excludeReservationId={r.id} />
-      <NotesLog view={view} editable={editable} />
+      <NotesLog view={view} editable={notesEditable} />
     </div>
   )
 }

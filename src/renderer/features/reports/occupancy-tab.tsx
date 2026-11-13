@@ -3,6 +3,7 @@
 // by room type and room, repeat guests and — with the finance and guest permissions — the guests who brought most.
 import { useTranslation } from 'react-i18next'
 import {
+  BanIcon,
   BedDoubleIcon,
   BuildingIcon,
   CalendarDaysIcon,
@@ -12,6 +13,8 @@ import {
   Grid3x3Icon,
   RepeatIcon,
   StoreIcon,
+  Undo2Icon,
+  UserXIcon,
   UsersIcon
 } from 'lucide-react'
 import type { OccupancyReport, ReportSummary } from '@shared/contract/procedures/reports'
@@ -91,6 +94,37 @@ function OccupancyKpis({
         hint={t('reports.kpi.repeatHint', { repeat: report.guests.repeat, total: report.guests.total })}
         icon={<RepeatIcon className="size-3.5" aria-hidden />}
       />
+    </KpiRow>
+  )
+}
+
+/** Cancelled, no-show and refunded each on its own line (K-55): none of them hides inside a net total. */
+function OutcomeKpis({ report }: { report: OccupancyReport }) {
+  const { t } = useTranslation()
+  const f = useFormat()
+  const o = report.outcomes
+  return (
+    <KpiRow testId="outcome-kpis">
+      <KpiCard
+        label={t('reports.outcomes.cancelled')}
+        value={f.number(o.cancelled)}
+        hint={t('reports.outcomes.cancelledHint')}
+        icon={<BanIcon className="size-3.5" aria-hidden />}
+      />
+      <KpiCard
+        label={t('reports.outcomes.noShow')}
+        value={f.number(o.noShow)}
+        hint={t('reports.outcomes.noShowHint')}
+        icon={<UserXIcon className="size-3.5" aria-hidden />}
+      />
+      {o.refundRows !== null && o.refundMinor !== null ? (
+        <KpiCard
+          label={t('reports.outcomes.refund')}
+          value={f.money(o.refundMinor, report.baseCurrency)}
+          hint={t('reports.outcomes.refundHint', { count: o.refundRows })}
+          icon={<Undo2Icon className="size-3.5" aria-hidden />}
+        />
+      ) : null}
     </KpiRow>
   )
 }
@@ -182,6 +216,7 @@ function OccupancyView({
     <div className="grid gap-4">
       <DataNotes missingNights={report.missingNightRates} />
       <OccupancyKpis data={summary} prev={prev} report={report} />
+      <OutcomeKpis report={report} />
       <DayUseSwitch report={report} />
       <div className="grid items-start gap-4 lg:grid-cols-2 print:grid-cols-1">
         <ChartCard

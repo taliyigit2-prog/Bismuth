@@ -48,11 +48,11 @@ konaklama türü filtresi + aylık saatlik sayısı; S-106 tek hesap (varsayıla
    için yeniden üretim testi.
 
 ## Kabul ölçütleri
-- [ ] `in_house` rezervasyonda "Vazgeçme ve iade" menüsü üç seçeneği sunar; `checked_out` rezervasyonda üç nokta menüsü
+- [x] `in_house` rezervasyonda "Vazgeçme ve iade" menüsü üç seçeneği sunar; `checked_out` rezervasyonda üç nokta menüsü
       görünür (vitest `reservation-panel` durum × menü matrisi, 7 durum).
-- [ ] `undoCheckIn`: yalnız giriş günü, yetki, audit; yetkisiz rol reddi (servis testi).
-- [ ] İptal penceresi tahsilat varsa tutar + üç seçenek; iade satırı `ledger.day`'de ve kasa tesliminde (servis + e2e).
-- [ ] "Girdi, vazgeçti, iade" e2e masaüstü + telefon yeşil.
+- [x] `undoCheckIn`: yalnız giriş günü, yetki, audit; yetkisiz rol reddi (servis testi).
+- [x] İptal penceresi tahsilat varsa tutar + üç seçenek; iade satırı `ledger.day`'de ve kasa tesliminde (servis + e2e).
+- [x] "Girdi, vazgeçti, iade" e2e masaüstü + telefon yeşil.
 - [ ] 3 odalı grup: oda başına ad, toplu giriş atomik, takvimde desen (migrasyon + servis + grid + e2e).
 - [ ] Sağ tık menüsü ve hızlı çubuk klavyeyle erişilebilir; telefonda uzun basma (e2e).
 - [ ] Betik C senaryosu: ikinci tur çıkışından sonra oda o gece satılabilir (servis testi, kırmızıdan yeşile).

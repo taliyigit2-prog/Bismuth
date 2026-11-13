@@ -71,6 +71,7 @@ import {
   firstDataDay,
   fxSourceFacts,
   nightFacts,
+  outcomeFacts,
   paymentFacts,
   repeatGuests,
   roomRevenueByRoom,
@@ -389,6 +390,7 @@ export function createReportsService(deps: ReportsDeps) {
       .filter((t) => t.rooms > 0)
       .map(({ rooms: _rooms, ...t }) => t)
     const g = repeatGuests(db, p)
+    const outcomes = outcomeFacts(db, p, (iso) => localDateOf(new Date(iso)))
     let topGuests: OccupancyReport['topGuests'] = null
     if (finance && can(ctx, 'guests')) {
       const signed = sql`case when ${payments.kind} = 'refund' then -1 else 1 end`
@@ -442,6 +444,12 @@ export function createReportsService(deps: ReportsDeps) {
       })),
       guests: { ...g, repeatBp: basisPoints(g.repeat, g.total) },
       topGuests,
+      outcomes: {
+        cancelled: outcomes.cancelled,
+        noShow: outcomes.noShow,
+        refundRows: finance ? outcomes.refundRows : null,
+        refundMinor: finance ? outcomes.refundBaseMinor : null
+      },
       missingNightRates: rooms?.missing ?? 0
     }
   }

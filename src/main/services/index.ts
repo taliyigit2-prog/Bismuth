@@ -98,6 +98,7 @@ export function createServices(handle: DatabaseHandle, runtime: RuntimeInfo, sto
   }
   const tasks = createTasksService(deps)
   const onBackgroundError = storage.onBackgroundError ?? (() => undefined)
+  const payments = createPaymentsService(deps)
   const reservations = createReservationsService({
     ...deps,
     hooks: {
@@ -108,6 +109,9 @@ export function createServices(handle: DatabaseHandle, runtime: RuntimeInfo, sto
         } catch (error) {
           onBackgroundError(error, 'tasks.onCheckout')
         }
+      },
+      recordRefund: (ctx, tx, audit, now, input) => {
+        payments.createIn(ctx, tx, audit, now, input)
       }
     }
   })
@@ -138,7 +142,6 @@ export function createServices(handle: DatabaseHandle, runtime: RuntimeInfo, sto
     settings,
     appVersion: runtime.version
   })
-  const payments = createPaymentsService(deps)
   const expenses = createExpensesService(deps)
   const setup = createSetupService(deps, {
     settings,

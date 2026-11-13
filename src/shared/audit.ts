@@ -11,6 +11,8 @@ export const AUDIT_ACTIONS = [
   'restore',
   'check_in',
   'check_out',
+  /** A check-in taken back on its day (K-55): the stay is planned again. */
+  'check_in_undo',
   'handover',
   'handover_revert',
   'merge',

@@ -123,9 +123,23 @@ If the guest never came, open the reservation, choose **More actions → Mark as
 
 1. Open the reservation; choose **More actions → Cancel reservation**.
 2. Type the **Reason for cancelling** (required).
-3. Confirm with **Cancel reservation**.
+3. If **money was collected**, the window shows the amount ("This reservation has ₺1,500 collected") and asks what happens to it:
+   - **Enter a refund**: choose the amount and the method; the refund is written to the ledger day and the cash drawer together with the cancellation. It cannot exceed what was collected.
+   - **Park as refund pending**: shown only to people who may not refund. The reservation is not cancelled; it waits in the park area under the calendar as "Refund pending" until someone with the right enters the refund and cancels it.
+   - **Keep the payments**: for example a cancellation fee; the reason is required and kept on record.
+4. Confirm with **Cancel reservation**.
 
-The nights are freed; payments stay on record. The reservation is not deleted; it is kept as "Cancelled". If the guest is in the hotel (checked in), check them out first.
+The nights are freed; payments stay on record. The reservation is not deleted; it is kept as "Cancelled". If the guest is in the hotel (checked in), use **Gave up and refund** instead of cancelling (below).
+
+## The guest checked in and gave up: give up and refund {#give-up}
+
+When a guest gave up after entering the room, choose **More actions → Gave up and refund**. There are three ways:
+
+- **Check out the same day**: the guest leaves on the check-in day. The first night stays as a "same-day stay"; fix its price in the check-out window. When the check-out is saved the refund window opens and you refund the surplus.
+- **Take the check-in back and cancel**: the stay counts as if it never happened. Only on the check-in day, and it needs the **Taking a check-in back** right (default: owner and manager; the owner can allow reception in Settings → Roles). Type the reason and choose one of the three money options above. If someone in the room is reported to KBS the program warns you; the report stays on record and you make the KBS check-out on the KBS side.
+- **Check out early**: the nights left are freed, the nights stayed remain.
+
+A reservation that is closed (checked out, cancelled or no-show) keeps its **More actions** menu too: **Enter a refund** (when money was collected), **History** and **Add note**. Reception can enter refunds; the owner can switch this right off in Settings → Roles.
 
 If the reservation has several rooms, you can cancel just one of them: choose **More actions → Room 102: cancel** and confirm with **Cancel the room**. That room's nights are freed; the other rooms and the payments stay on record.
 

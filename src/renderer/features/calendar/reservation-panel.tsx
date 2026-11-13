@@ -44,6 +44,7 @@ import {
   type BookingView
 } from './booking-api'
 import { StandingNoteAlert } from './guest-summary-card'
+import { GiveUpDialog } from './giveup-dialog'
 import { MoneyTab, StaysTab, SummaryTab } from './panel-tabs'
 import { OccupantsEditor } from './occupants-editor'
 import { PaymentDialog } from './payment-dialog'
@@ -129,6 +130,11 @@ function Panel({ view, scope }: { view: BookingView; scope: RefObject<HTMLDivEle
   const [noShowOpen, setNoShowOpen] = useState(false)
   const [cancelStayId, setCancelStayId] = useState<string | null>(null)
   const [checkoutStay, setCheckoutStay] = useState<string | null>(null)
+  const [giveUpStay, setGiveUpStay] = useState<string | null>(null)
+  const [refundOpen, setRefundOpen] = useState(false)
+  // Check-out chosen from "Vazgeçme ve iade": the refund window opens after it is saved (K-55).
+  const [refundAfter, setRefundAfter] = useState(false)
+  const [tab, setTab] = useState('summary')
   const r = view.reservation
   const today = localDateOf(new Date())
   const editable = can('calendar', 'edit') && OPEN_STATUSES.has(r.status)
@@ -141,6 +147,7 @@ function Panel({ view, scope }: { view: BookingView; scope: RefObject<HTMLDivEle
   const checkIn = useBookingMutation('booking.checkIn', { success: t('booking.toast.checkedIn') })
   const stayToCheckOut = view.stays.find((s) => s.id === checkoutStay)
   const stayToCancel = view.stays.find((s) => s.id === cancelStayId)
+  const stayToGiveUp = view.stays.find((s) => s.id === giveUpStay)
   const stayed = live.some((s) => s.status === 'done')
   const planned = live.filter((s) => s.status === 'planned')
   // Nobody in the house: the whole reservation can be cancelled (rooms stayed in keep their nights); park and
@@ -152,6 +159,12 @@ function Panel({ view, scope }: { view: BookingView; scope: RefObject<HTMLDivEle
   const arrivalAhead = planned.length > 0 && planned.every((s) => s.checkIn > today)
   const roomCancels = editable && live.length > 1 ? planned : []
   const mayPay = can('payments', 'edit') && !!view.payments
+  // What the folio holds after the refunds (null: the user may not see payments).
+  const collected = view.folio.creditedMinor
+  // A closed reservation (stayed out, cancelled, no-show) keeps its menu: refund, history, note (K-55).
+  const closed = r.status === 'checked_out' || r.status === 'cancelled' || r.status === 'no_show'
+  const mayRefund = can('payments.refund', 'edit') && !!view.payments && (collected ?? 0) > 0
+  const giveUps = editable ? inHouse : []
   useShortcutAction('addPayment', () => setPayOpen(true), { scope, enabled: mayPay })
 
   return (
@@ -219,7 +232,7 @@ function Panel({ view, scope }: { view: BookingView; scope: RefObject<HTMLDivEle
               {t('calendar.panel.takePayment')}
             </Button>
           ) : null}
-          {editable || parked ? (
+          {editable || parked || closed ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -256,6 +269,17 @@ function Panel({ view, scope }: { view: BookingView; scope: RefObject<HTMLDivEle
                     {t('booking.cancelStay.menu', { room: s.roomNumber })}
                   </DropdownMenuItem>
                 ))}
+                {giveUps.map((s) => (
+                  <DropdownMenuItem
+                    key={s.id}
+                    onSelect={() => setGiveUpStay(s.id)}
+                    data-testid={giveUps.length > 1 ? `panel-giveup-${s.roomNumber}` : 'panel-giveup'}
+                  >
+                    {giveUps.length > 1
+                      ? t('booking.giveup.menuRoom', { room: s.roomNumber })
+                      : t('booking.giveup.menu')}
+                  </DropdownMenuItem>
+                ))}
                 {canCancel || parked ? (
                   <DropdownMenuItem
                     variant="destructive"
@@ -264,9 +288,24 @@ function Panel({ view, scope }: { view: BookingView; scope: RefObject<HTMLDivEle
                   >
                     {t('booking.cancel.confirm')}
                   </DropdownMenuItem>
-                ) : (
-                  <DropdownMenuItem disabled>{t('errors.guestInHouse')}</DropdownMenuItem>
-                )}
+                ) : null}
+                {closed ? (
+                  <>
+                    {mayRefund ? (
+                      <DropdownMenuItem onSelect={() => setRefundOpen(true)} data-testid="panel-refund">
+                        {t('booking.refund.menu')}
+                      </DropdownMenuItem>
+                    ) : null}
+                    <DropdownMenuItem onSelect={() => setTab('summary')} data-testid="panel-history">
+                      {t('booking.panel.history')}
+                    </DropdownMenuItem>
+                    {can('calendar', 'edit') ? (
+                      <DropdownMenuItem onSelect={() => setTab('summary')} data-testid="panel-note">
+                        {t('booking.notes.add')}
+                      </DropdownMenuItem>
+                    ) : null}
+                  </>
+                ) : null}
               </DropdownMenuContent>
             </DropdownMenu>
           ) : null}
@@ -306,7 +345,7 @@ function Panel({ view, scope }: { view: BookingView; scope: RefObject<HTMLDivEle
         </div>
       ) : null}
 
-      <Tabs defaultValue="summary" className="gap-4 p-4">
+      <Tabs value={tab} onValueChange={setTab} className="gap-4 p-4">
         <TabsList className="w-full">
           <TabsTrigger value="summary">{t('calendar.panel.tabSummary')}</TabsTrigger>
           <TabsTrigger value="stay">{t('calendar.panel.tabStay')}</TabsTrigger>
@@ -319,7 +358,7 @@ function Panel({ view, scope }: { view: BookingView; scope: RefObject<HTMLDivEle
           </TabsTrigger>
         </TabsList>
         <TabsContent value="summary">
-          <SummaryTab view={view} editable={editable} />
+          <SummaryTab view={view} editable={editable} notesEditable={can('calendar', 'edit')} />
         </TabsContent>
         <TabsContent value="stay">
           <StaysTab view={view} editable={editable} />
@@ -359,7 +398,44 @@ function Panel({ view, scope }: { view: BookingView; scope: RefObject<HTMLDivEle
         balanceMinor={view.folio.balanceMinor}
       />
       <ParkDialog reservationId={r.id} open={parkOpen} onOpenChange={setParkOpen} />
-      <CancelDialog reservationId={r.id} open={cancelOpen} onOpenChange={setCancelOpen} />
+      {cancelOpen ? (
+        <CancelDialog
+          reservationId={r.id}
+          open
+          onOpenChange={setCancelOpen}
+          collectedMinor={collected}
+          currency={view.folio.currency}
+          allowPark={canPark}
+        />
+      ) : null}
+      {refundOpen ? (
+        <PaymentDialog
+          open
+          onOpenChange={setRefundOpen}
+          reservationId={r.id}
+          defaultMinor={Math.max(0, collected ?? 0)}
+          folioCurrency={view.folio.currency}
+          channelId={r.channelId}
+          defaultKind="refund"
+        />
+      ) : null}
+      {stayToGiveUp ? (
+        <GiveUpDialog
+          key={stayToGiveUp.id}
+          stay={stayToGiveUp}
+          reservationId={r.id}
+          rooms={live.length}
+          collectedMinor={collected}
+          currency={view.folio.currency}
+          open
+          onOpenChange={(o) => !o && setGiveUpStay(null)}
+          onCheckout={(stayId, after) => {
+            setGiveUpStay(null)
+            setRefundAfter(after)
+            setCheckoutStay(stayId)
+          }}
+        />
+      ) : null}
       <NoShowDialog reservationId={r.id} open={noShowOpen} onOpenChange={setNoShowOpen} />
       {stayToCancel ? (
         <CancelStayDialog
@@ -376,6 +452,10 @@ function Panel({ view, scope }: { view: BookingView; scope: RefObject<HTMLDivEle
           currency={view.folio.currency}
           open
           onOpenChange={(o) => !o && setCheckoutStay(null)}
+          onCheckedOut={() => {
+            if (refundAfter && can('payments.refund', 'edit') && (collected ?? 0) > 0) setRefundOpen(true)
+            setRefundAfter(false)
+          }}
         />
       ) : null}
     </>

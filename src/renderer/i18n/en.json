@@ -1518,7 +1518,10 @@
     "expenseSectionInvalid": "This expense section does not exist or is not in use. Choose an active section in Settings → Lists.",
     "ownHoursDay": "You can enter your own hours only for today and the last few days, never for a future day. For an older day, ask the manager or the hotel owner.",
     "nameTaken": "This name is already in use. Enter a different name.",
-    "noShowTooEarly": "A reservation cannot be marked as a no-show before its arrival day. If the guest cancelled, cancel the reservation."
+    "noShowTooEarly": "A reservation cannot be marked as a no-show before its arrival day. If the guest cancelled, cancel the reservation.",
+    "undoCheckInNotToday": "A check-in can only be taken back on the day it was made. Check out instead or ask the hotel owner.",
+    "undoCheckInMoved": "This room was opened by a room move; it cannot be taken back. Check out first.",
+    "undoCheckInKbs": "{{names}} is reported to KBS. Confirm to take it back."
   },
   "common": {
     "close": "Close",
@@ -2079,7 +2082,8 @@
       "settings_backup": "Backup",
       "remote_settings": "Remote access",
       "devices": "Devices",
-      "audit_log": "Audit log"
+      "audit_log": "Audit log",
+      "booking_undoCheckIn": "Taking a check-in back"
     }
   },
   "setup": {
@@ -4268,7 +4272,16 @@
       "missing_one": "{{count}} purchase with no known rate is not in the total.",
       "missing_other": "{{count}} purchases with no known rate are not in the total."
     },
-    "emptyAction": "Go to the ledger"
+    "emptyAction": "Go to the ledger",
+    "outcomes": {
+      "cancelled": "Cancelled",
+      "cancelledHint": "Reservations cancelled in the period",
+      "noShow": "No-show",
+      "noShowHint": "Reservations marked no-show in the period",
+      "refund": "Refunded",
+      "refundHint_one": "{{count}} refund; already taken off the revenue",
+      "refundHint_other": "{{count}} refunds; already taken off the revenue"
+    }
   },
   "currency": {
     "description": "Market mid rates, the hotel's own rate, a converter, the weather and holiday dates.",
@@ -5306,7 +5319,8 @@
       "export": "Exported",
       "park": "Parked",
       "no_show": "Marked as no-show",
-      "reauth_failed": "Wrong password entered"
+      "reauth_failed": "Wrong password entered",
+      "check_in_undo": "Took the check-in back"
     },
     "entity": {
       "attachment": "Attachment",
@@ -5507,7 +5521,9 @@
       "roomChanged": "Room changed",
       "roomAdded": "Room added",
       "noShow": "Reservation marked as a no-show",
-      "stayCancelled": "Room {{room}} cancelled"
+      "stayCancelled": "Room {{room}} cancelled",
+      "checkInUndone": "Room {{room}}: check-in taken back",
+      "refundPending": "Reservation parked as refund pending"
     },
     "form": {
       "needGuest": "Choose a guest or type the new guest's name.",
@@ -5614,7 +5630,8 @@
       "parkedLine": "Parked: {{reason}}",
       "cancelledLine": "Reason for cancelling: {{reason}}",
       "noContact": "No contact details.",
-      "noStays": "This reservation has no room on the calendar (parked or cancelled)."
+      "noStays": "This reservation has no room on the calendar (parked or cancelled).",
+      "history": "History"
     },
     "kbs": {
       "badge": "KBS missing: {{count}}",
@@ -5666,6 +5683,47 @@
       "title": "Cancel room {{room}}?",
       "description": "This room's nights are freed. The other rooms, the nights already stayed and the payments stay on record.",
       "confirm": "Cancel the room"
+    },
+    "giveup": {
+      "menu": "Gave up and refund",
+      "menuRoom": "Room {{room}}: gave up and refund",
+      "title": "Room {{room}}: guest gave up",
+      "description": "Choose how to go on when the guest gave up while in the room. Nothing is deleted.",
+      "sameDay": "Check out the same day",
+      "sameDayHint": "The first night stays as a same-day stay; fix its price at check-out and refund the rest.",
+      "sameDayNo": "Not available: the guest did not check in today.",
+      "undo": "Take the check-in back and cancel",
+      "undoHint": "The stay counts as if it never happened; you refund the payments.",
+      "undoNoRight": "You are not allowed to do this. Ask the hotel owner.",
+      "undoNotToday": "It cannot be taken back after the check-in day.",
+      "early": "Check out early",
+      "earlyHint": "The nights left are freed, the nights stayed remain.",
+      "earlyNo": "No nights left.",
+      "undoConfirm": "Take check-in back",
+      "checkoutConfirm": "Go to check-out",
+      "otherRooms": "The reservation has other rooms; only this room is cancelled. Use the payment window for a refund.",
+      "kbsTitle": "A person is reported to KBS",
+      "kbsBody": "{{names}} was reported to KBS. The report stays on record; make the check-out on the KBS side yourself.",
+      "kbsConfirm": "Understood, take the check-in back anyway",
+      "refundAfter": "After the check-out the refund window opens for the payments.",
+      "refundNeedsManager": "Ask the hotel owner or the manager for the refund."
+    },
+    "refund": {
+      "collected": "This reservation has {{amount}} collected",
+      "choose": "What happens to the payments",
+      "enter": "Enter a refund",
+      "needManager": "You may not refund.",
+      "amount": "Refund amount",
+      "needAmount": "Write the refund amount.",
+      "tooMuch": "The refund cannot exceed what was collected.",
+      "park": "Park as refund pending",
+      "parkHint": "The reservation waits below the calendar; the manager or owner enters the refund.",
+      "keep": "Keep the payments",
+      "keepHint": "For example a cancellation fee; the reason is written and kept on record.",
+      "keepReason": "Reason (e.g. cancellation fee)",
+      "needNote": "Write the reason.",
+      "parkConfirm": "Park as refund pending",
+      "menu": "Enter a refund"
     }
   },
   "holidayCheck": {

@@ -434,9 +434,25 @@ Misafir hiç gelmediyse rezervasyonu açın ve **Diğer işlemler → Gelmedi ol
 
 1. Rezervasyonu açın; **Diğer işlemler → Rezervasyonu iptal et**'i seçin.
 2. **İptal nedeni**ni yazın (zorunlu).
-3. **Rezervasyonu iptal et** ile onaylayın.
+3. Rezervasyonda **tahsilat varsa** pencere tutarı yazar ("Bu rezervasyonda ₺1.500 tahsilat var") ve parayı ne yapacağınızı sorar:
+   - **İade gir**: tutarı ve yöntemi seçin; iade, iptalle aynı anda defterin o gününe ve kasaya yazılır. Tutar tahsilatı geçemez.
+   - **İade bekliyor olarak park et**: yalnız iade yetkisi olmayanlara görünür. Rezervasyon iptal edilmez, takvimin altındaki park alanında "İade bekliyor" olarak bekler; iadeyi yetkili kişi girer ve kaydı iptal eder.
+   - **Tahsilat kalsın**: örneğin iptal bedeli; nedeni yazmak zorunludur ve kayda geçer.
+4. **Rezervasyonu iptal et** ile onaylayın.
 
-Geceler boşalır; ödemeler kayıtta kalır. Rezervasyon silinmez, "İptal edildi" olarak saklanır. Misafir otelde ise (giriş yapılmışsa) önce çıkış yapılmalıdır.
+Geceler boşalır; ödemeler kayıtta kalır. Rezervasyon silinmez, "İptal edildi" olarak saklanır. Misafir otelde ise (giriş yapılmışsa) iptal yerine **Vazgeçme ve iade** kullanılır (aşağıda).
+
+<a id="give-up"></a>
+
+### Misafir girdi, vazgeçti: vazgeçme ve iade
+
+Misafir odaya girdikten sonra vazgeçerse rezervasyonun **Diğer işlemler → Vazgeçme ve iade** satırını seçin. Üç yol vardır:
+
+- **Aynı gün çıkış yap**: misafir giriş günü ayrılıyor. İlk gece "aynı gün giriş‑çıkış" olarak kalır; çıkış penceresinde ücreti düzeltebilirsiniz. Çıkış kaydedilince iade penceresi açılır ve alınan paranın fazlasını iade edersiniz.
+- **Girişi geri al ve iptal et**: konaklama hiç olmamış sayılır. Yalnız giriş yapılan gün yapılabilir ve **Girişi geri alma** yetkisi ister (varsayılan: sahip ve müdür; sahip Ayarlar → Roller'den resepsiyona da açabilir). İptal nedenini yazın, tahsilat için yukarıdaki üç seçenekten birini seçin. Odada KBS'ye bildirilmiş biri varsa program uyarır; bildirim kayıtta kalır, çıkışı KBS tarafında ayrıca yapmanız gerekir.
+- **Erken çıkış yap**: kalan geceler boşalır, kalınan geceler kalır.
+
+Çıkış yapılmış, iptal edilmiş ya da gelmedi olarak kapanmış bir rezervasyonda da **Diğer işlemler** görünür: **İade gir** (tahsilat varsa), **Geçmiş** ve **Not ekle**. Resepsiyon rolü iade girebilir; bu yetkiyi sahip Ayarlar → Roller'den kapatabilir.
 
 Rezervasyonun birden çok odası varsa yalnız bir odayı da iptal edebilirsiniz: **Diğer işlemler → Oda 102: iptal et**'i seçip **Odayı iptal et** ile onaylayın. O odanın geceleri boşalır; diğer odalar ve ödemeler kayıtta kalır.
 

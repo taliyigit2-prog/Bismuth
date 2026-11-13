@@ -88,6 +88,8 @@ export interface FakeAccount {
   pin?: string | null
   /** The password was set by someone else (auth.changePassword first). */
   mustChange?: boolean
+  /** Levels the owner changed in the role editor on top of the role's defaults. */
+  permissionOverrides?: Partial<Record<PermissionKey, PermissionLevel>>
 }
 
 export const FAKE_ACCOUNTS: readonly FakeAccount[] = [
@@ -127,7 +129,9 @@ export function fakeMe(account: FakeAccount, locked = false): Me {
       hasPin: Boolean(account.pin),
       mustChange: Boolean(account.mustChange)
     },
-    permissions: account.mustChange ? allNone() : defaultPermissions(account.roleCode),
+    permissions: account.mustChange
+      ? allNone()
+      : { ...defaultPermissions(account.roleCode), ...account.permissionOverrides },
     locked
   }
 }

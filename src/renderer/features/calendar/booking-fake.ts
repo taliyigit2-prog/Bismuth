@@ -260,6 +260,39 @@ export function bookingTransport(
     return g ? `${g.firstName} ${g.lastName}` : ''
   }
 
+  /** A payment, deposit or refund on a reservation: the nights repaint and the folio totals follow. */
+  function addPayment(
+    id: string,
+    kind: 'payment' | 'deposit' | 'refund',
+    amountMinor: number,
+    methodId: string
+  ) {
+    const list = (state.payments[id] ??= [])
+    list.push({ kind, amountMinor })
+    const view = repaint(state.views[id]!, list)
+    state.views[id] = {
+      ...view,
+      payments: list.map((p, n) => ({
+        id: `pay-${n}`,
+        date: TODAY,
+        kind: p.kind,
+        methodId,
+        channelId: null,
+        amountMinor: p.amountMinor,
+        currency: 'TRY',
+        amountFolioMinor: p.amountMinor,
+        rateStale: false,
+        rateObservedAt: null,
+        voided: false,
+        collected: false,
+        reference: null,
+        note: null,
+        createdAt: '2026-10-04T10:00:00.000Z'
+      }))
+    }
+    return state.views[id]
+  }
+
   const handle = (name: ProcedureName, input: unknown): unknown => {
     const i = input as Record<string, unknown>
     switch (name) {
@@ -338,8 +371,25 @@ export function bookingTransport(
         state.parked = state.parked.filter((p) => p.id !== id)
         const view = state.views[id]
         if (!view) throw new ApiError('NOT_FOUND', 404, 'errors.notFound')
-        view.reservation.status = name === 'booking.noShow' ? 'no_show' : 'cancelled'
-        for (const s of view.stays) if (s.status === 'planned') s.status = 'cancelled'
+        const refund = i['refund'] as { mode: string; methodId?: string; amountMinor?: number } | undefined
+        if (refund?.mode === 'refund')
+          addPayment(id, 'refund', Number(refund.amountMinor), String(refund.methodId))
+        const current = state.views[id]!
+        current.reservation.status = name === 'booking.noShow' ? 'no_show' : 'cancelled'
+        for (const s of current.stays) if (s.status === 'planned') s.status = 'cancelled'
+        return structuredClone(current)
+      }
+      case 'booking.undoCheckIn': {
+        const view = Object.values(state.views).find((v) => v.stays.some((s) => s.id === i['stayId']))
+        if (!view) throw new ApiError('NOT_FOUND', 404, 'errors.notFound')
+        for (const s of view.stays)
+          if (s.id === i['stayId']) {
+            s.status = 'planned'
+            s.checkedInAt = null
+          }
+        view.reservation.status = view.stays.some((s) => s.status === 'in_house' || s.status === 'done')
+          ? 'checked_in'
+          : 'confirmed'
         return structuredClone(view)
       }
       case 'booking.cancelStay': {
@@ -400,33 +450,13 @@ export function bookingTransport(
           }
         return { ok: true }
       }
-      case 'booking.addPayment': {
-        const id = String(i['reservationId'])
-        const list = (state.payments[id] ??= [])
-        list.push({ kind: i['kind'] as 'payment', amountMinor: Number(i['amountMinor']) })
-        const view = repaint(state.views[id]!, list)
-        state.views[id] = {
-          ...view,
-          payments: list.map((p, n) => ({
-            id: `pay-${n}`,
-            date: TODAY,
-            kind: p.kind,
-            methodId: String(i['methodId']),
-            channelId: null,
-            amountMinor: p.amountMinor,
-            currency: 'TRY',
-            amountFolioMinor: p.amountMinor,
-            rateStale: false,
-            rateObservedAt: null,
-            voided: false,
-            collected: false,
-            reference: null,
-            note: null,
-            createdAt: '2026-10-04T10:00:00.000Z'
-          }))
-        }
-        return state.views[id]
-      }
+      case 'booking.addPayment':
+        return addPayment(
+          String(i['reservationId']),
+          i['kind'] as 'payment',
+          Number(i['amountMinor']),
+          String(i['methodId'])
+        )
       default:
         return undefined
     }

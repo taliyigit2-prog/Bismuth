@@ -246,6 +246,16 @@ export const occupancyReportSchema = z.object({
   topGuests: z
     .array(z.object({ guestId: idSchema, name: z.string(), stays: count, revenueMinor: minorSchema }))
     .nullable(),
+  /**
+   * Bookings that did not happen and money that went back, each on its own line (K-55): cancelled and "gelmedi"
+   * reservations of the period; refund rows and their base-currency total (null without `reports.finance`).
+   */
+  outcomes: z.object({
+    cancelled: count,
+    noShow: count,
+    refundRows: count.nullable(),
+    refundMinor: minorSchema.nullable()
+  }),
   /** Room-night charges in another currency with no rate known yet: left out of the room revenue. */
   missingNightRates: count
 })

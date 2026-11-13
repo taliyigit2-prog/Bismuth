@@ -155,6 +155,12 @@ beforeAll(async () => {
       run: (c) => res.addNote(c, r.reservation.id, 'not')
     },
     {
+      name: 'girişi geri al',
+      permission: 'booking.undoCheckIn',
+      level: 'edit',
+      run: (c) => res.undoCheckIn(c, r.stays[0]!.id, { reason: 'vazgeçti' })
+    },
+    {
       name: 'ödeme gir',
       permission: 'payments',
       level: 'edit',

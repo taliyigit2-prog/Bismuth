@@ -22,6 +22,8 @@ import { deferForPendingAmount } from '@/features/settings/use-admin'
 import { useApiQuery } from '@/lib/api/hooks'
 import { useCan } from '@/lib/view-as'
 import { useBookingMutation, useBookingOptions, type BookingStay } from './booking-api'
+import { MoneyChoiceFields } from './giveup-dialog'
+import { cancelRefundOf, initialMoneyChoice, moneyChoiceProblem, type MoneyChoice } from './money-choice'
 import { useBlockOverride } from './override'
 import { OverrideDialog } from './override-dialog'
 import { RoomMultiPicker } from './room-multi-picker'
@@ -62,13 +64,16 @@ export function CheckoutDialog({
   stay,
   open,
   onOpenChange,
-  currency
+  currency,
+  onCheckedOut
 }: {
   stay: BookingStay
   open: boolean
   onOpenChange: (open: boolean) => void
   /** The folio's currency (the day-use price of a same-day departure). */
   currency: string
+  /** After the check-out is saved (the panel then offers the refund of a guest who gave up, K-55). */
+  onCheckedOut?: () => void
 }) {
   const { t } = useTranslation()
   const people = stay.occupants.filter((o) => !o.kbsCheckoutAt)
@@ -82,7 +87,10 @@ export function CheckoutDialog({
   })
   const checkOut = useBookingMutation('booking.checkOut', {
     success: t('booking.toast.checkedOut', { room: stay.roomNumber }),
-    onSuccess: () => onOpenChange(false)
+    onSuccess: () => {
+      onOpenChange(false)
+      onCheckedOut?.()
+    }
   })
   const toggle = (id: string, on: boolean): void => {
     const next = new Set(ticked)
@@ -255,24 +263,48 @@ export function ParkDialog({
   )
 }
 
-/** Cancel (no delete): the nights are freed, payments stay in the record; a reason is required. */
+/**
+ * Cancel (no delete): the nights are freed, a reason is required. When money was collected the dialog says how
+ * much and asks what happens to it (K-55): enter the refund (needs `payments.refund`), park the reservation as
+ * "refund pending" (for whoever may not refund) or keep it with a reason.
+ */
 export function CancelDialog({
   reservationId,
   open,
-  onOpenChange
+  onOpenChange,
+  collectedMinor = null,
+  currency = 'TRY',
+  allowPark = true
 }: {
   reservationId: string
   open: boolean
   onOpenChange: (open: boolean) => void
+  /** Net collected on the folio; null/0 = nothing to settle (or the user may not see payments). */
+  collectedMinor?: number | null
+  currency?: string
+  /** False for a parked reservation and one somebody stayed in. */
+  allowPark?: boolean
 }) {
   const { t } = useTranslation()
+  const can = useCan()
+  const options = useBookingOptions()
   const id = useId()
+  const collected = collectedMinor ?? 0
   const [reason, setReason] = useState('')
   const [error, setError] = useState(false)
+  const [tried, setTried] = useState(false)
+  const [money, setMoney] = useState<MoneyChoice>(() =>
+    initialMoneyChoice(collected, currency, { canRefund: can('payments.refund', 'edit'), allowPark })
+  )
   const cancel = useBookingMutation('booking.cancel', {
     success: t('booking.toast.cancelled'),
     onSuccess: () => onOpenChange(false)
   })
+  const park = useBookingMutation('booking.park', {
+    success: t('booking.toast.refundPending'),
+    onSuccess: () => onOpenChange(false)
+  })
+  const parking = collected > 0 && money.mode === 'park'
   return (
     <ResponsiveDialog
       open={open}
@@ -282,30 +314,49 @@ export function CancelDialog({
       footer={
         <DialogButtons
           form="cancel-form"
-          label={t('booking.cancel.confirm')}
+          label={parking ? t('booking.refund.parkConfirm') : t('booking.cancel.confirm')}
           onCancel={() => onOpenChange(false)}
-          destructive
+          destructive={!parking}
+          testId="cancel-confirm"
         />
       }
     >
       <form
         id="cancel-form"
-        className="grid gap-1.5"
+        className="grid gap-4"
+        noValidate
         onSubmit={(e) => {
           e.preventDefault()
-          if (reason.trim().length < 3) return setError(true)
-          cancel.mutate({ id: reservationId, reason: reason.trim() })
+          if (deferForPendingAmount(e.currentTarget)) return
+          setTried(true)
+          const bad = reason.trim().length < 3
+          setError(bad)
+          if (bad || (collected > 0 && moneyChoiceProblem(money, collected))) return
+          if (parking)
+            return park.mutate({ id: reservationId, park: { reason: 'refund_pending', note: reason.trim() } })
+          const refund = collected > 0 ? cancelRefundOf(money, options.data?.methods ?? []) : undefined
+          cancel.mutate({ id: reservationId, reason: reason.trim(), ...(refund ? { refund } : {}) })
         }}
       >
-        <Label htmlFor={id}>{t('booking.cancel.reason')}</Label>
-        <Textarea
-          id={id}
-          rows={2}
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-          aria-invalid={error || undefined}
+        <div className="grid gap-1.5">
+          <Label htmlFor={id}>{t('booking.cancel.reason')}</Label>
+          <Textarea
+            id={id}
+            rows={2}
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            aria-invalid={error || undefined}
+          />
+          {error ? <p className="text-destructive text-xs">{t('errors.reasonRequired')}</p> : null}
+        </div>
+        <MoneyChoiceFields
+          value={money}
+          onChange={setMoney}
+          collectedMinor={collected}
+          currency={currency}
+          allowPark={allowPark}
+          tried={tried}
         />
-        {error ? <p className="text-destructive text-xs">{t('errors.reasonRequired')}</p> : null}
       </form>
     </ResponsiveDialog>
   )

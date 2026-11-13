@@ -26,6 +26,7 @@ import {
   reservations,
   salesChannels
 } from '../db/schema'
+import type { AuditEntry } from './audit'
 import type { Ctx } from './context'
 import { chargeBaseMinor, convertViaBase } from './currency-service'
 import { assertDayWritable, sectionAccess } from './expenses-service'
@@ -180,24 +181,40 @@ export function createPaymentsService(deps: ServiceDeps) {
     if (refundFolioMinor > net) throw invalid('errors.refundExceedsPaid', { paidMinor: Math.max(0, net) })
   }
 
+  function createIn(
+    ctx: Ctx,
+    tx: Tx,
+    audit: (entry: AuditEntry) => void,
+    now: Date,
+    input: PaymentCreateInput
+  ): PaymentRow {
+    const data = parsePayment(input)
+    requirePermission(ctx, data.kind === 'refund' ? 'payments.refund' : 'payments', 'edit')
+    guardDay(tx, ctx, data.date, data.dayClosedReason)
+    const folio = folioFor(tx, data)
+    const row = insertPayment(tx, ctx, now, data, folio)
+    audit({
+      entity: 'payment',
+      entityId: row.id,
+      action: 'create',
+      after: row,
+      reason: data.dayClosedReason
+    })
+    return paymentOf(tx, row.id)
+  }
+
   return {
     create(ctx: Ctx, input: PaymentCreateInput): PaymentRow {
       const data = parsePayment(input)
       requirePermission(ctx, data.kind === 'refund' ? 'payments.refund' : 'payments', 'edit')
-      return inTransaction(deps, ctx, (tx, audit, now) => {
-        guardDay(tx, ctx, data.date, data.dayClosedReason)
-        const folio = folioFor(tx, data)
-        const row = insertPayment(tx, ctx, now, data, folio)
-        audit({
-          entity: 'payment',
-          entityId: row.id,
-          action: 'create',
-          after: row,
-          reason: data.dayClosedReason
-        })
-        return paymentOf(tx, row.id)
-      })
+      return inTransaction(deps, ctx, (tx, audit, now) => createIn(ctx, tx, audit, now, input))
     },
+
+    /**
+     * The same write inside a transaction the caller owns (a cancellation that gives the money back in one
+     * step, K-55): permission, closed-day guard, refund cap and audit row are the ones of `create`.
+     */
+    createIn,
 
     /** S-32: the frozen rate changes only when the amount or the currency changes. */
     update(ctx: Ctx, id: string, input: PaymentUpdateInput): PaymentRow {

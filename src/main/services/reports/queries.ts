@@ -10,6 +10,7 @@ import type { ExpenseForTop } from '@shared/domain/reports'
 import type { BlockSpan, CapacityChange, Period, RoomCapacity } from '@shared/domain/reports-period'
 import { money, multiplyRatio } from '@shared/money'
 import {
+  auditLog,
   charges,
   expenseItems,
   expenses,
@@ -615,4 +616,62 @@ export function firstDataDay(db: Reader): LocalDate | null {
       .get()?.d
   ].filter((d): d is string => !!d)
   return days.length ? (days.sort()[0] as LocalDate) : null
+}
+
+export interface OutcomeFacts {
+  /** Reservations cancelled in the period (the reservation's own cancellation time, hotel-local day). */
+  cancelled: number
+  /** Reservations marked "gelmedi" in the period (audit log; the reservation row keeps no time for it). */
+  noShow: number
+  /** Live refund rows of the period and their base-currency total (positive); rows without a rate count 0. */
+  refundRows: number
+  refundBaseMinor: number
+}
+
+/** `YYYY-MM-DDT00:00:00` moved by whole days (a padded bound for UTC instants). */
+function wideDay(iso: string, days: number): string {
+  const d = new Date(`${iso}Z`)
+  d.setUTCDate(d.getUTCDate() + days)
+  return d.toISOString().slice(0, 19)
+}
+
+/**
+ * Cancelled, no-show and refunded as their own figures (K-55): a refund is already inside the revenue as a minus,
+ * so these rows show how much went back and how many bookings did not happen. The instants are UTC and the period
+ * is in hotel days: they are read a day wide on both sides, then `localDayOf` decides.
+ */
+export function outcomeFacts(db: Reader, p: Period, localDayOf: (iso: string) => string): OutcomeFacts {
+  const from = `${p.from}T00:00:00`
+  const to = `${p.to}T00:00:00`
+  const inRange = (iso: string | null): boolean => {
+    if (!iso) return false
+    const day = localDayOf(iso)
+    return day >= p.from && day < p.to
+  }
+  const wide = (column: AnySQLiteColumn): SQL | undefined =>
+    and(gte(column, wideDay(from, -1)), lt(column, wideDay(to, 1)))
+  const cancelled = db
+    .select({ at: reservations.cancelledAt })
+    .from(reservations)
+    .where(and(eq(reservations.status, 'cancelled'), wide(reservations.cancelledAt)))
+    .all()
+    .filter((r) => inRange(r.at)).length
+  const noShow = new Set(
+    db
+      .select({ id: auditLog.entityId, ts: auditLog.ts })
+      .from(auditLog)
+      .where(and(eq(auditLog.entity, 'reservation'), eq(auditLog.action, 'no_show'), wide(auditLog.ts)))
+      .all()
+      .filter((r) => inRange(r.ts))
+      .map((r) => r.id)
+  ).size
+  const refunds = db
+    .select({
+      rows: sql<number>`count(*)`,
+      base: sql<number>`coalesce(sum(coalesce(${payments.amountBaseMinor}, 0)), 0)`
+    })
+    .from(payments)
+    .where(and(isNull(payments.voidedAt), eq(payments.kind, 'refund'), inPeriod(payments.date, p)))
+    .get()
+  return { cancelled, noShow, refundRows: refunds?.rows ?? 0, refundBaseMinor: refunds?.base ?? 0 }
 }

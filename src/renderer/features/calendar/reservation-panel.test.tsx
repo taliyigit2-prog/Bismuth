@@ -179,7 +179,7 @@ describe('rezervasyon paneli', () => {
     expect(screen.queryByTestId('checkout-kbs-warning')).not.toBeInTheDocument()
   })
 
-  it('Resepsiyon iade türünü görmez (iade yetkisi yok); sahip görür', async () => {
+  it('Resepsiyon iade türünü görür (S-100: iade yetkisi varsayılan açık)', async () => {
     const transport = bookingTransport({ fake: { signedIn: 'u-deniz', accounts: FAKE_ACCOUNTS } })
     const id = await seeded(transport)
     const user = userEvent.setup()
@@ -188,7 +188,7 @@ describe('rezervasyon paneli', () => {
     })
     await user.click(await screen.findByTestId('panel-pay'))
     expect(await screen.findByTestId('pay-kind-deposit')).toBeInTheDocument()
-    expect(screen.queryByTestId('pay-kind-refund')).not.toBeInTheDocument()
+    expect(screen.getByTestId('pay-kind-refund')).toBeInTheDocument()
   })
 
   it('varışı daha gelmemiş rezervasyonda "Gelmedi olarak işaretle" seçeneği kapalıdır (QA3c1 #3)', async () => {

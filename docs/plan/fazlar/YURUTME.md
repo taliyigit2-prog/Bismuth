@@ -86,10 +86,10 @@ Harcama sütunu: başlatıcının yazdığı `$` (dalga toplamı, gerçek).
 
 | Dalga | Paket | Faz | Modül dosyası / ad alanı | Ajan | Tahmin | Harcama | Durum |
 |---|---|---|---|---|---|---|---|
-| 1 | P17a Vazgeçme ve iade akışı (undoCheckIn, iptal/çıkışta ödeme + iade, kapalı rezervasyonda menü, raporda iptal/gelmedi/iade satırları) | 17 | booking, calendar, reports | calendar-specialist | $12–18 | | 🔄 |
+| 1 | P17a Vazgeçme ve iade akışı (undoCheckIn, iptal/çıkışta ödeme + iade, kapalı rezervasyonda menü, raporda iptal/gelmedi/iade satırları) | 17 | booking, calendar, reports | calendar-specialist | $12–18 | ~$15 | ✅ |
 | 1 | P19c Depo temizliği (prototypes arşiv, faz0 iş akışları, icon, yerel yollar, kanca istisnaları) | 19 | — | feature-builder-lite | $2–4 | ~$3 | ✅ |
 | 2 | P17d Gündüz kullanımı 2.0 + ikinci tur hatası + H-06 (migrasyon **0019**) | 17 | booking, reservations, settings | db-migration-builder → calendar-specialist | $15–22 | | ⬜ |
-| 2 | P18a ui-shot çoklu boyut/ölçek/dil + ölçüm JSON; Electron e2e Codespace'te yeşil | 18 | scripts, tests/e2e | feature-builder-lite | $2–4 | | ⬜ |
+| 2 | P18a ui-shot çoklu boyut/ölçek/dil + ölçüm JSON; Electron e2e Codespace'te yeşil | 18 | scripts, tests/e2e | feature-builder-lite | $2–4 | | 🔄 |
 | 3 | P17b Grup rezervasyonu + toplu giriş (migrasyon **0020**) | 17 | booking, reservations | db-migration-builder → calendar-specialist | $15–22 | | ⬜ |
 | 3 | P18c Pencere: F11, tam ekran/zoom hatırlama, çoklu monitör | 18 | main/windows, main/app | feature-builder | $6–10 | | ⬜ |
 | 4 | P17c Hızlı takvim: sağ tık, hızlı çubuk, çoklu seçim (+ toplu ödeme), bugün şeridi, son iptaller listesi, park nedeni etiketi | 17 | calendar | feature-builder | $8–12 | | ⬜ |
@@ -235,3 +235,10 @@ QA2b, akış testleri C/D) bu plana **Son** satırında katılır; ayrı yürüt
 - 2026-11-13: P19c ✅ — `prototypes/`, `faz0-*.yml`, `resources/icon.png` kaldırıldı (arşiv etiketi `archive/faz0`), kanca istisnaları
   ve testleri (87/87), yerel/şifreli örnek yollar temizlendi, `fable-talimati.md` → `tools/ajan/talimatlar/`. P17a ajanı oturum
   kapanınca yarım kaldı; worktree'den devam ediliyor.
+- 2026-11-13: `archive/faz0` etiketi yerelde atıldı; uzak depoya push kanca tarafından engellendi (yalnız `claude/…`) — sahip
+  isterse `git push origin archive/faz0` (sahip onay paketine). P18a (dalga 2) P17a'ya bağımlı olmadığı için öne alındı.
+- 2026-11-13: P17a ✅ — `booking.undoCheckIn` (yalnız giriş günü, yeni `booking.undoCheckIn` yetkisi, audit, KBS uyarısı),
+  iptalde iade/park/"tahsilat kalsın", kapalı rezervasyonda menü, raporlarda iptal/gelmedi/iade ayrı satır, resepsiyon iade
+  yetkisi varsayılan E (S-100). `npm run check` 2459 test ✓; e2e giveup masaüstü + telefon ✓. Ajan oturum kapanışında iki kez
+  yarım kaldı; ana oturumda birleştirildi. Not → P17d: mevcut kurulumlarda resepsiyon `payments.refund` satırı tohumla
+  güncellenmez (onConflictDoNothing) → 0019'da veri güncellemesi.

@@ -1518,7 +1518,10 @@
     "expenseSectionInvalid": "Bu gider bölümü yok ya da kullanımda değil. Ayarlar → Listeler'den açık bir bölüm seçin.",
     "ownHoursDay": "Kendi saatinizi yalnız bugün ve son birkaç gün için yazabilirsiniz; gelecek güne yazılmaz. Daha eski bir gün için müdüre ya da otel sahibine başvurun.",
     "nameTaken": "Bu ad zaten kullanılıyor. Başka bir ad yazın.",
-    "noShowTooEarly": "Varış gününden önce \"Gelmedi\" işaretlenemez. Rezervasyondan vazgeçildiyse iptal edin."
+    "noShowTooEarly": "Varış gününden önce \"Gelmedi\" işaretlenemez. Rezervasyondan vazgeçildiyse iptal edin.",
+    "undoCheckInNotToday": "Giriş yalnız giriş yapılan gün geri alınır. Çıkış yaptırın ya da otel sahibine başvurun.",
+    "undoCheckInMoved": "Bu oda, oda değişikliği günü girişle açıldı; geri alınamaz. Önce çıkış yaptırın.",
+    "undoCheckInKbs": "{{names}} KBS'ye bildirilmiş. Onaylayarak geri alabilirsiniz."
   },
   "common": {
     "close": "Kapat",
@@ -2079,7 +2082,8 @@
       "settings_backup": "Yedek",
       "remote_settings": "Uzaktan erişim",
       "devices": "Cihazlar",
-      "audit_log": "Denetim kaydı"
+      "audit_log": "Denetim kaydı",
+      "booking_undoCheckIn": "Girişi geri alma"
     }
   },
   "setup": {
@@ -4268,7 +4272,16 @@
       "missing_one": "Kuru bilinmeyen {{count}} alım toplama katılmadı.",
       "missing_other": "Kuru bilinmeyen {{count}} alım toplama katılmadı."
     },
-    "emptyAction": "Deftere git"
+    "emptyAction": "Deftere git",
+    "outcomes": {
+      "cancelled": "İptal edilen",
+      "cancelledHint": "Dönemde iptal edilen rezervasyon",
+      "noShow": "Gelmedi",
+      "noShowHint": "Dönemde gelmedi işaretlenen rezervasyon",
+      "refund": "İade edilen",
+      "refundHint_one": "{{count}} iade kaydı; gelirden düşülmüştür",
+      "refundHint_other": "{{count}} iade kaydı; gelirden düşülmüştür"
+    }
   },
   "currency": {
     "description": "Piyasa orta kuru, otel kuru, çevirici, hava durumu ve bayram tarihleri.",
@@ -5306,7 +5319,8 @@
       "export": "Dışa aktardı",
       "park": "Park etti",
       "no_show": "Gelmedi olarak işaretledi",
-      "reauth_failed": "Şifreyi yanlış girdi"
+      "reauth_failed": "Şifreyi yanlış girdi",
+      "check_in_undo": "Girişi geri aldı"
     },
     "entity": {
       "attachment": "Dosya eki",
@@ -5507,7 +5521,9 @@
       "roomChanged": "Oda değiştirildi",
       "roomAdded": "Oda eklendi",
       "noShow": "Rezervasyon gelmedi olarak işaretlendi",
-      "stayCancelled": "Oda {{room}} iptal edildi"
+      "stayCancelled": "Oda {{room}} iptal edildi",
+      "checkInUndone": "Oda {{room}}: giriş geri alındı",
+      "refundPending": "Rezervasyon iade bekliyor olarak park edildi"
     },
     "form": {
       "needGuest": "Bir misafir seçin ya da yeni misafirin adını yazın.",
@@ -5614,7 +5630,8 @@
       "parkedLine": "Park edilmiş: {{reason}}",
       "cancelledLine": "İptal nedeni: {{reason}}",
       "noContact": "İletişim bilgisi yok.",
-      "noStays": "Bu rezervasyonun takvimde odası yok (park edilmiş ya da iptal edilmiş)."
+      "noStays": "Bu rezervasyonun takvimde odası yok (park edilmiş ya da iptal edilmiş).",
+      "history": "Geçmiş"
     },
     "kbs": {
       "badge": "KBS eksik: {{count}}",
@@ -5666,6 +5683,47 @@
       "title": "Oda {{room}} iptal edilsin mi?",
       "description": "Bu odanın geceleri boşalır. Rezervasyonun diğer odaları, kalınmış geceler ve ödemeler kayıtta kalır.",
       "confirm": "Odayı iptal et"
+    },
+    "giveup": {
+      "menu": "Vazgeçme ve iade",
+      "menuRoom": "Oda {{room}}: vazgeçme ve iade",
+      "title": "Oda {{room}}: misafir vazgeçti",
+      "description": "Misafir odadayken vazgeçtiyse nasıl devam edeceğinizi seçin. Hiçbir kayıt silinmez.",
+      "sameDay": "Aynı gün çıkış yap",
+      "sameDayHint": "İlk gece aynı gün giriş-çıkış olarak kalır; ücreti çıkışta düzeltir, fazlasını iade edersiniz.",
+      "sameDayNo": "Misafir bugün girmediği için seçilemez.",
+      "undo": "Girişi geri al ve iptal et",
+      "undoHint": "Konaklama hiç olmamış sayılır; tahsilatı iade edersiniz.",
+      "undoNoRight": "Bunun için yetkiniz yok. Otel sahibine başvurun.",
+      "undoNotToday": "Giriş yapılan günden sonra geri alınamaz.",
+      "early": "Erken çıkış yap",
+      "earlyHint": "Kalan geceler boşalır, kalınan geceler kalır.",
+      "earlyNo": "Kalan gece yok.",
+      "undoConfirm": "Girişi geri al",
+      "checkoutConfirm": "Çıkışa geç",
+      "otherRooms": "Rezervasyonda başka odalar var; yalnız bu oda iptal edilir. İade için ödeme penceresini kullanın.",
+      "kbsTitle": "KBS'ye bildirilmiş kişi var",
+      "kbsBody": "{{names}} KBS'ye bildirildi. Bildirim kayıtta kalır; çıkışı KBS tarafında ayrıca yapmanız gerekir.",
+      "kbsConfirm": "Anladım, girişi yine de geri al",
+      "refundAfter": "Çıkış kaydedilince tahsilatı iade etmeniz için iade penceresi açılır.",
+      "refundNeedsManager": "İade için otel sahibine ya da müdüre başvurun."
+    },
+    "refund": {
+      "collected": "Bu rezervasyonda {{amount}} tahsilat var",
+      "choose": "Tahsilat ne olsun",
+      "enter": "İade gir",
+      "needManager": "İade yetkiniz yok.",
+      "amount": "İade tutarı",
+      "needAmount": "İade tutarını yazın.",
+      "tooMuch": "İade, alınan tutarı geçemez.",
+      "park": "İade bekliyor olarak park et",
+      "parkHint": "Rezervasyon takvimin altında bekler; iadeyi müdür ya da sahip girer.",
+      "keep": "Tahsilat kalsın",
+      "keepHint": "Örneğin iptal bedeli; nedeni yazılır ve kayda geçer.",
+      "keepReason": "Neden (örn. iptal bedeli)",
+      "needNote": "Nedeni yazın.",
+      "parkConfirm": "İade bekliyor olarak park et",
+      "menu": "İade gir"
     }
   },
   "holidayCheck": {

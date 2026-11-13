@@ -233,6 +233,7 @@ export const OCCUPANCY: OccupancyReport = {
   ],
   guests: { total: 3, repeat: 1, repeatBp: 3333 },
   topGuests: [{ guestId: 'g1', name: 'Deniz Arslan', stays: 1, revenueMinor: 2_630_000 }],
+  outcomes: { cancelled: 2, noShow: 1, refundRows: 1, refundMinor: 150_000 },
   missingNightRates: 0
 }
 
