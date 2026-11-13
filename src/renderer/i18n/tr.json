@@ -3532,7 +3532,9 @@
       "voidTitle": "Alım iptal edilsin mi?",
       "voidBody": "{{date}} tarihli {{amount}} tutarındaki gider iptal edilir; defterde iptal olarak kalır, ürünler fiyat geçmişinden düşer.",
       "reason": "İptal nedeni",
-      "voided": "Alım iptal edildi"
+      "voided": "Alım iptal edildi",
+      "emptyBodyPhone": "Alımlar bilgisayardan girilir; girilenler burada listelenir.",
+      "emptyBodyViewOnly": "Henüz alım yok. Alımları yetkili bir kullanıcı girer."
     },
     "summary": {
       "month": "Ay",
@@ -3543,7 +3545,9 @@
       "bySupplier": "Tedarikçi bazında",
       "slips": "Fiş",
       "note": "Tutarlar alım giderlerinden gelir; ürün satırı toplamı, fişteki taşıma gibi kalemler nedeniyle gider toplamından az olabilir."
-    }
+    },
+    "emptyBodyPhone": "Ürünler ve alımlar bilgisayardan girilir; telefonda yalnız görüntülenir.",
+    "emptyBodyViewOnly": "Henüz ürün yok. Ürünleri yetkili bir kullanıcı ekler."
   },
   "laundry": {
     "description": "Temiz fişi ve kirli teslim kayıtları; tür bazında bekleyen, eksik ve lekeli parçalar; ay sonu fatura kontrolü.",
@@ -6137,7 +6141,8 @@
     "driveFolderDesktopOnly": "Klasör yalnız ana bilgisayardaki program penceresinde seçilir.",
     "driveFolderFailed": "Klasör kaydedilmedi",
     "foldersDesktopOnly": "Klasörlerin yeri yalnız ana bilgisayarda gösterilir.",
-    "restoreDesktopOnly": "Geri yükleme ana bilgisayarda yönetilir."
+    "restoreDesktopOnly": "Geri yükleme ana bilgisayarda yönetilir.",
+    "timeInvalid": "Saati 04:00 gibi yazın."
   },
   "dataTransfer": {
     "title": "Dışa ve içe aktarma",

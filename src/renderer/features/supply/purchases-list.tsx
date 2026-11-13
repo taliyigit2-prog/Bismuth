@@ -75,11 +75,13 @@ function VoidDialog({ purchase, onClose }: { purchase: PurchaseView; onClose: ()
 export function PurchasesList({
   today,
   products,
-  canEdit
+  canEdit,
+  isMobile = false
 }: {
   today: LocalDate
   products: readonly ProductOverview[]
   canEdit: boolean
+  isMobile?: boolean
 }) {
   const { t } = useTranslation()
   const f = useFormat()
@@ -104,7 +106,13 @@ export function PurchasesList({
       <EmptyState
         icon={ReceiptTextIcon}
         title={t('supply.purchases.emptyTitle')}
-        body={t('supply.purchases.emptyBody')}
+        body={
+          canEdit
+            ? t('supply.purchases.emptyBody')
+            : isMobile
+              ? t('supply.purchases.emptyBodyPhone')
+              : t('supply.purchases.emptyBodyViewOnly')
+        }
       />
     )
   const productOf = (id: string) => products.find((p) => p.id === id)

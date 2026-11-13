@@ -94,8 +94,8 @@ Harcama sütunu: başlatıcının yazdığı `$` (dalga toplamı, gerçek).
 | 3 | P18c Pencere: F11, tam ekran/zoom hatırlama, çoklu monitör | 18 | main/windows, main/app | feature-builder | $6–10 | ~$10 | ✅ |
 | 4 | P17c Hızlı takvim: sağ tık, hızlı çubuk, çoklu seçim (+ toplu ödeme), bugün şeridi, son iptaller listesi, park nedeni etiketi | 17 | calendar | feature-builder | $8–12 | ~$30 | ✅ |
 | 4 | P17e Yüksek/Orta hata düzeltmeleri (02 raporu; H-05, H-07, H-08, H-09, H-19, H-21, H-24, H-25, H-44) | 17 | bulguya göre | feature-builder / calendar-specialist | $10–14 | ~$14 | ✅ |
-| 5 | P18b Düzen düzeltmeleri (05 raporu) | 18 | features/*, layouts | feature-builder | $8–12 | | ⬜ |
-| 5 | P18d Çalışmayan öğeler (akış testi) | 18 | bulguya göre | feature-builder | $6–10 | | ⬜ |
+| 5 | P18b Düzen düzeltmeleri (05 raporu) | 18 | features/*, layouts | feature-builder | $8–12 | | 🔄 |
+| 5 | P18d Çalışmayan öğeler (akış testi) | 18 | bulguya göre | feature-builder | $6–10 | ~$8 | ✅ |
 | 6 | P19a Sürüm iş akışı tekleştirme (tetikleme sahipte) | 19 | .github, electron-builder | packager | $5–8 | | ⬜ |
 | 6 | P19b Kurulum belgeleri + kılavuz + sihirbaz tek kâğıt adımı + belge çelişkileri (Ç-01/02/04/05); P19d ajan bakımı | 19 | docs, guide, setup, .claude | feature-builder-lite (+ feature-builder sihirbaz) | $4–8 | | ⬜ |
 | 7 | P20a Kamera yan süreç iskeleti + Python hijyeni + Telegram'ın Bismuth'a taşınması (K-50; kod bulguları `ekler/kamera-kod-bulgulari.md` §0) | 20 | main/camera, main/network/telegram, otel-kamera | camera-integrator | $12–20 | | ⬜ |
@@ -276,3 +276,8 @@ QA2b, akış testleri C/D) bu plana **Son** satırında katılır; ayrı yürüt
   sözlesmede (`contract/text.ts`) + alan sayacı (`char-counter.tsx`), H-08/H-24 fiyat/tutar doğrulaması, H-09 yetkisiz
   ayar sekmesi gizli, H-21 firma telefonu + tekrar uyarısı. Ajan iki kez oturum kapanışında yarım kaldı; ana oturumda
   tamamlandı (sayaç ile alan hatasının çift mesajı düzeltildi). **Dalga 4 bitti.**
+- 2026-11-13: Dalga 5 başladı (P18b + P18d, taban c2cd43d). P18d ✅ — H-34 (telefonda tedarik boş durum metni), H-36
+  (Ayarlar → Yedek sessiz kaydet: tarayıcı doğrulaması kapatıldı, alan hataları), H-04 yeniden üretilemedi (takvim
+  açılır penceresi genişliği sınırlandı, e2e koruma); H-26, H-30, H-37, H-39…H-42, H-46 → P21e. Dalga 4 denetimi:
+  Kritik/Yüksek yok; Orta 4 (hızlı çubuk ad sınırı ve 0 fiyat onayı, `payGroup` servis tarafında folyo kipi denetimi,
+  `+86` gibi bilinmeyen ülke kodu) + Rusça çoğullar → P17fix.

@@ -110,7 +110,7 @@ export function MonthCalendar({
         onKeyDown={onKeyDown}
         className="grid gap-1"
       >
-        <div role="row" className="grid grid-cols-7 gap-1">
+        <div role="row" className="grid grid-cols-[repeat(7,minmax(0,1fr))] gap-1">
           {weekdays.map((d) => (
             <span
               role="columnheader"
@@ -125,7 +125,7 @@ export function MonthCalendar({
           ))}
         </div>
         {[0, 1, 2, 3, 4, 5].map((row) => (
-          <div role="row" key={row} className="grid grid-cols-7 gap-1">
+          <div role="row" key={row} className="grid grid-cols-[repeat(7,minmax(0,1fr))] gap-1">
             {grid.slice(row * 7, row * 7 + 7).map((d) => {
               const inMonth = d.slice(0, 7) === month.slice(0, 7)
               const selected = d === value
@@ -142,7 +142,7 @@ export function MonthCalendar({
                   disabled={disabled(d)}
                   onClick={() => onPick(d)}
                   className={cn(
-                    'focus-visible:ring-ring grid size-9 place-items-center rounded-md text-sm tabular-nums outline-none focus-visible:ring-[3px] max-md:size-11',
+                    'focus-visible:ring-ring grid size-9 place-items-center rounded-md text-sm tabular-nums outline-none focus-visible:ring-[3px] max-md:h-11 max-md:w-full max-md:min-w-0',
                     !inMonth && 'text-muted-foreground/60',
                     highlight.includes(weekday(d)) && inMonth && !selected && 'bg-accent/60',
                     d === today && !selected && 'ring-primary ring-1',
@@ -216,7 +216,7 @@ export function DateInput({
             ) : null}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-3" align="start">
+        <PopoverContent className="w-auto max-w-[calc(100vw-1rem)] p-3" align="start" collisionPadding={8}>
           <MonthCalendar
             value={value}
             min={min}

@@ -214,4 +214,12 @@ describe('Tedarik', () => {
     expect(screen.queryByTestId('purchase-open')).toBeNull()
     expect(screen.queryByTestId('product-add')).toBeNull()
   })
+
+  it('telefonda boş durum metni olmayan düğmelere göndermez', async () => {
+    phone()
+    await renderWithProviders(<SupplyPage today={TODAY} />, { transport: faz12Transport(emptyFaz12()) })
+    expect(await screen.findByText('Henüz ürün yok')).toBeInTheDocument()
+    expect(screen.queryByText(/Ürün ekle|Alım gir/)).toBeNull()
+    expect(screen.getByText(/bilgisayardan/)).toBeInTheDocument()
+  })
 })

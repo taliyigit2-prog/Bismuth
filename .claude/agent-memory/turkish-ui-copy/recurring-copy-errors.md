@@ -41,5 +41,27 @@ Bismuth arayüz metinlerinde tekrar eden hatalar:
 - Kabul edilen terimler: "Toplu giriş / Toplu çıkış / Toplu not", "Grubu iptal et" (düğme) + "Vazgeç" (diyalog),
   "Grup lideri", "Tek hesap" / "Oda başına hesap", "Grup: {{name}}" rozeti, rooms_one/few/many/other (ru) tam.
 
+## Dalga 4 (P17c/P17e: sağ tık, hızlı çubuk, seçim çubuğu, grup ödeme, form sayacı) incelemesinden
+
+- Ru çoğul hatası: sayılı isim taşıyan düz anahtarlar (`bulk.checkInDone`, `checkOutDone`, `noteDone`, `payDone`,
+  `attachDone`, `today.inHouse`, `bulk.noteBody`, `attachBody*`) ru'da `_one/_few/_many/_other` olmadan yazılmış.
+  "номеров" / "бронирований" sayıya göre değişmez. Kalıp: sayı + isim (`{{count}} номер заселён`) ile çoğul dört biçim.
+- Hardcoded sayı metinde: `calendar.quick.errors.nights` ("1 ile 400") ve `…people` (50) — `{{max}}` ile değişken
+  verilmeli (`MAX_STAY_NIGHTS`). Kod tarafı `t(key, {max})` ister.
+- Eylem adı sapması: menü `noShow` "Gelmedi" (işlem değil durum). Düzeltme "Gelmedi olarak işaretle" / "Mark as no-show" /
+  "Отметить неявку". ru menü öğeleri emir kipinde (Заселить, Выселить); "Неявка" bunu bozar.
+- Aynı işlem iki adla: `calendar.quick.detail` "Ayrıntı" (düğme) vs menü `quick.menu.detail` "Ayrıntılı rezervasyon"
+  (ru "Подробнее" / "Подробная бронь"). Düğme menü adına göre eşitlendi.
+- Düğmede sayı birleştirme: selection-bar.tsx `{t('…checkIn')} ({n})` (G-08 + "parça birleştirme" yasağı). Anahtar `checkInCount` gerekir.
+- Hata birleştirme: `t('bulk.partial') + ' ' + bookingErrorText(...)` üç yerde (selection-bar.tsx 92, 245, 350).
+- Ayrıntı (kullanıcı kabul): "Vazgeçme ve iade" menü adı kabul (plan terimi) ama "Vazgeç" diyalog kapatma olduğu için
+  başka anlamda kullanılmamalı; sahip kararı.
+- `form.limitReached` ve `form.tooLong` tr/en/ru'da aynı metin (ru'da kelime farkı); tek anahtar kalmalı, kod tarafı sahip kararı.
+- Kabul edilen: "Grup ödemesi al" (grup) / "Toplu ödeme" (seçim) ayrımı; "Gruba bağla" hem tetikleyici hem kayıt düğmesi;
+  "Bugün gelecekler / Gidecekler" (tr departures için "Bugün" eklendi); "Giriş yap"/"Çıkış yap" eylem adları.
+
+**Why:** P17c/P17e (dalga 4) incelemesi; spec `.tmp/turkish-ui-copy/i18n-spec/wave4-copy-fix.json`.
+**How to apply:** ru'da her sayılı metin için dört biçim; eylem adı emir kipi; düğme ve menü aynı kelime.
+
 **Why:** P17b ve P18c incelemesi.
 **How to apply:** Grup ve pencere metinlerinde "gelmedi" yalnız no-show için; menü terimleri ayar ve kısayol ile aynı kelimeyi kullansın.

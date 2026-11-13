@@ -3532,7 +3532,9 @@
       "voidTitle": "Cancel this purchase?",
       "voidBody": "The {{amount}} expense of {{date}} is cancelled: it stays in the ledger as cancelled and its products leave the price history.",
       "reason": "Reason",
-      "voided": "Purchase cancelled"
+      "voided": "Purchase cancelled",
+      "emptyBodyPhone": "Purchases are entered on the computer; they are listed here.",
+      "emptyBodyViewOnly": "No purchases yet. An authorised user enters them."
     },
     "summary": {
       "month": "Month",
@@ -3543,7 +3545,9 @@
       "bySupplier": "By supplier",
       "slips": "Slips",
       "note": "Amounts come from the purchase expenses; product lines may add up to less than the expense (delivery and the like on the slip)."
-    }
+    },
+    "emptyBodyPhone": "Products and purchases are entered on the computer; the phone is view only.",
+    "emptyBodyViewOnly": "No products yet. An authorised user adds them."
   },
   "laundry": {
     "description": "Clean slips and dirty hand-overs; pieces waiting, missing and stained per item; the month-end invoice check.",
@@ -6137,7 +6141,8 @@
     "driveFolderDesktopOnly": "The folder is chosen only in the program window on the main computer.",
     "driveFolderFailed": "Folder not saved",
     "foldersDesktopOnly": "Folder locations are shown only on the main computer.",
-    "restoreDesktopOnly": "Restores are managed on the main computer."
+    "restoreDesktopOnly": "Restores are managed on the main computer.",
+    "timeInvalid": "Enter the time like 04:00."
   },
   "dataTransfer": {
     "title": "Export and import",
