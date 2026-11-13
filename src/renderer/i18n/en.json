@@ -1252,7 +1252,7 @@
       "turnoverHelp": "A new hourly sale inside this time after the previous one shows a warning; it never blocks the sale.",
       "turnoverInvalid": "Enter a number from 0 to 240.",
       "turnoverSaved": "Cleaning time saved",
-      "title": "Hourly stays"
+      "title": "Hourly sales"
     }
   },
   "status": {

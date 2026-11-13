@@ -1252,7 +1252,7 @@
       "turnoverHelp": "Önceki satıştan sonra bu süre dolmadan yeni saatlik satışta uyarı çıkar; satışı engellemez.",
       "turnoverInvalid": "0 ile 240 arasında bir sayı yazın.",
       "turnoverSaved": "Temizlik süresi kaydedildi",
-      "title": "Saatlik konaklama"
+      "title": "Saatlik satış"
     }
   },
   "status": {
@@ -5764,7 +5764,7 @@
     "hourly": {
       "button": "Saatlik satış",
       "title": "Saatlik satış",
-      "description": "Bir odayı aynı gün içinde belirli saatler için satın. Tutarı siz yazarsınız.",
+      "description": "Bir odayı aynı gün içinde belirli saatler için satışa çıkarın. Tutarı siz yazarsınız.",
       "room": "Oda",
       "roomPlaceholder": "Oda seçin",
       "date": "Tarih",
