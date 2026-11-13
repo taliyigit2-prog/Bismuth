@@ -228,3 +228,59 @@ test('Kişiler kartı: "Kameradan yüz al" kaydeder, "Yüz kaydını sil" siler,
   const after = (await api<FaceStatus>(page, 'camera.faceStatus', { guestId })).body
   expect(after).toMatchObject({ count: 0, inHouse: false })
 })
+
+test("KVKK paketi: aydınlatma metni açılır ve dili seçilir; personel dışlama listesi ve imha raporu Ayarlar → Kamera'da (P20e)", async ({
+  launch
+}) => {
+  const { page } = await launch({ env })
+  expect(
+    (await api(page, 'camera.setSecrets', { source: 'rtsp:' + '//kamera:gizli@192.168.1.64:554/s' })).status
+  ).toBe(200)
+  expect(
+    (await api(page, 'settings.set', { 'camera.enabled': true, 'camera.privacyContact': 'Örnek Sk. 1' }))
+      .status
+  ).toBe(200)
+  await expect
+    .poll(async () => (await api<{ state: string }>(page, 'camera.status')).body.state, { timeout: 30_000 })
+    .toBe('running')
+
+  // The notice: from the Kamera screen, in the program's language first, then another one; the hotel's contact is in it.
+  await reload(page, '#/camera')
+  await page.getByTestId('privacy-notice-open').click()
+  const dialog = page.getByRole('dialog', { name: 'Aydınlatma metni' })
+  await expect(dialog.getByTestId('privacy-sign')).toHaveText('Bu otelde kamera ile kayıt alınmaktadır')
+  await expect(dialog.getByTestId('privacy-notice')).toContainText('Örnek Sk. 1')
+  await dialog.getByTestId('privacy-lang-ru').click()
+  await expect(dialog.getByTestId('privacy-sign')).toHaveText('В этом отеле ведётся видеонаблюдение')
+  await expect(dialog.getByTestId('privacy-print-button')).toBeEnabled()
+  await dialog.getByRole('button', { name: 'Kapat' }).first().click()
+
+  // The staff list: a person from the staff records is added by taking a face from the camera.
+  const created = await api<{ id: string }>(page, 'staff.createEmployee', {
+    firstName: 'Hasan',
+    lastName: 'Personel',
+    position: 'Resepsiyon',
+    startDate: '2026-01-01'
+  })
+  expect(created.status, JSON.stringify(created.body)).toBe(200)
+  await reload(page, '#/settings?tab=camera')
+  const staff = page.getByTestId('camera-staff')
+  await expect(staff).toBeVisible()
+  const keyStore = (await api<{ keyStore: boolean }>(page, 'camera.staff')).body.keyStore
+  if (keyStore) {
+    await staff.getByTestId('camera-staff-pick').click()
+    await page.getByRole('option', { name: /Hasan Personel/ }).click()
+    await staff.getByTestId('camera-staff-take').click()
+    await expect(staff.getByTestId('camera-staff-row')).toContainText('Hasan Personel')
+    await staff.getByTestId('camera-staff-remove').click()
+    await page.getByTestId('camera-staff-remove-confirm').click()
+    await expect(staff.getByTestId('camera-staff-row')).toHaveCount(0)
+  }
+
+  // The report: the removal above is counted (when a face could be kept on this machine).
+  const report = page.getByTestId('camera-report')
+  await expect(report.getByTestId('camera-report-rows')).toBeVisible()
+  await expect(report.getByTestId('camera-report-total')).toContainText(keyStore ? '1' : '0')
+  expect(await page.evaluate(overflowReport)).toEqual([])
+  if (shots) await page.screenshot({ path: `${shots}/camera-privacy-desktop.png`, fullPage: true })
+})

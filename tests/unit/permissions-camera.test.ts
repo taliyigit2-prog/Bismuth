@@ -139,6 +139,27 @@ describe('camera yetkisi (G-23)', () => {
         run: (c) => service.saveAlertAsGuest(c, { id: '0'.repeat(26), guestId: 'none' }),
         ok: 'NOT_FOUND'
       },
+      // P20e (S-107, K-52): the staff exclusion list (biometric: `camera.enroll`) and the destruction report (`camera`).
+      { name: 'camera.staff', level: 'view', key: 'camera.enroll', run: (c) => service.staffList(c) },
+      {
+        name: 'camera.enrollStaff',
+        level: 'edit',
+        key: 'camera.enroll',
+        run: (c) => service.enrollStaff(c, { employeeId: 'none' }),
+        ok: 'NOT_FOUND'
+      },
+      {
+        name: 'camera.removeStaff',
+        level: 'edit',
+        key: 'camera.enroll',
+        run: (c) => service.removeStaff(c, { employeeId: 'none' }),
+        ok: 'NOT_FOUND'
+      },
+      {
+        name: 'camera.retentionReport',
+        level: 'view',
+        run: (c) => service.retentionReport(c, { from: '2026-10-01', to: '2026-10-02' })
+      },
       {
         name: 'camera.setAlarmsPaused',
         level: 'edit',
@@ -191,6 +212,15 @@ describe('camera yetkisi (G-23)', () => {
 })
 
 describe('camera sırları (K-49, K-51)', () => {
+  it('otel ağı dışındaki bir RTSP adresi kaydedilmez (K-49)', async () => {
+    const { service } = await setup()
+    const owner = ctxFromPermissions('u', 'owner', 'ipc', defaultPermissions('owner'))
+    const outside = 'rtsp:' + '//admin:pw@8.8.8.8:554/x'
+    await expect(service.setSecrets(owner, { source: outside })).rejects.toMatchObject({
+      messageKey: 'errors.cameraSourceInvalid'
+    })
+  })
+
   it('sırlar durum yanıtında, denetim kaydında ve hata metninde değer olarak hiç görünmez', async () => {
     const { service, deps } = await setup()
     service.attach(fakeRuntime().runtime)

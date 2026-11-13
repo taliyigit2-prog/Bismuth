@@ -46,6 +46,7 @@ import {
   type WizardDraft
 } from './draft'
 import { RecoveryCodes } from './recovery-codes'
+import { CameraStep } from './camera-step'
 import { CalendarStep } from './step-calendar'
 import { CurrenciesStep } from './step-currencies'
 import { EmployeesStep } from './step-employees'
@@ -77,6 +78,7 @@ const BODIES: Record<Step, (props: StepProps) => ReactNode> = {
   staff: StaffStep,
   employees: EmployeesStep,
   calendar: CalendarStep,
+  camera: CameraStep,
   owner: OwnerStep,
   summary: SummaryStep
 }

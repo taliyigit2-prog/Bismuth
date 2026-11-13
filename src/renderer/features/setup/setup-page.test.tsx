@@ -52,14 +52,14 @@ describe('kurulum sihirbazı: düzen', () => {
     expect(screen.getByTestId('setup-loading-progress')).toHaveClass('md:hidden')
   })
 
-  it('on üç adım sırayla listelenir; zorunlu olmayan adımda "Atla" ve "İsteğe bağlı" görünür', async () => {
+  it('on dört adım sırayla listelenir; zorunlu olmayan adımda "Atla" ve "İsteğe bağlı" görünür', async () => {
     const user = userEvent.setup()
     await renderSetup({ path: '/setup?step=8' })
     expect(await heading('Ödeme ve satış')).toBeInTheDocument()
     expect(screen.getByText('İsteğe bağlı')).toBeInTheDocument()
     expect(
       screen.getAllByRole('listitem').filter((li) => li.querySelector('[data-testid^="setup-goto-"]'))
-    ).toHaveLength(13)
+    ).toHaveLength(14)
     await user.click(screen.getByTestId('setup-skip'))
     expect(await heading('Personel ve vardiyalar')).toBeInTheDocument()
   })
@@ -76,12 +76,25 @@ describe('kurulum sihirbazı: düzen', () => {
     expect(await heading('Ödeme ve satış')).toBeInTheDocument()
   })
 
+  it('kamera adımı isteğe bağlıdır: akış görünür, "Atla" ve boş "İleri" kamera eklemeden geçer (P20g)', async () => {
+    const user = userEvent.setup()
+    const { transport } = await renderSetup({ path: '/setup?step=12' })
+    expect(await heading('Kamera')).toBeInTheDocument()
+    expect(screen.getByText('İsteğe bağlı')).toBeInTheDocument()
+    expect(await screen.findByTestId('setup-camera-flow')).toBeInTheDocument()
+    expect(screen.getByTestId('setup-goto-camera')).toBeInTheDocument()
+    await user.click(screen.getByTestId('setup-skip'))
+    expect(await heading('Sahip hesabı')).toBeInTheDocument()
+    // Nothing about the camera is part of the wizard's saved answers (the address is a secret).
+    expect(JSON.stringify(transport.saves)).not.toMatch(/camera|rtsp/i)
+  })
+
   it('telefonda odaklanan alan yapışkan Geri / İleri çubuğunun altında kalmaz', async () => {
     const media = window.matchMedia
     window.matchMedia = ((query: string) => ({ ...media(query), matches: true })) as typeof window.matchMedia
     try {
       await renderSetup({ path: '/setup?step=3' })
-      expect(await screen.findByTestId('setup-step-of')).toHaveTextContent('Adım 3 / 13')
+      expect(await screen.findByTestId('setup-step-of')).toHaveTextContent('Adım 3 / 14')
       const field = screen.getByLabelText('Çıkış saati')
       vi.spyOn(screen.getByTestId('setup-footer'), 'getBoundingClientRect').mockReturnValue({
         top: 775
@@ -585,7 +598,7 @@ describe('kurulum sihirbazı: adımlar', () => {
 
   it('sahip: şifreler aynı olmalı, kolay PIN kabul edilmez; şifreler ilerleme kaydına girmez', async () => {
     const user = userEvent.setup()
-    const { transport } = await renderSetup({ path: '/setup?step=12' })
+    const { transport } = await renderSetup({ path: '/setup?step=13' })
     expect(await heading('Sahip hesabı')).toBeInTheDocument()
     await user.type(screen.getByLabelText('Adınız'), 'Otel Sahibi')
     await user.type(screen.getByLabelText('Kullanıcı adı'), 'sahip')
@@ -609,7 +622,7 @@ describe('kurulum sihirbazı: adımlar', () => {
 
   it('şifre göster düğmesi alanı düz metne çevirir', async () => {
     const user = userEvent.setup()
-    await renderSetup({ path: '/setup?step=12' })
+    await renderSetup({ path: '/setup?step=13' })
     const password = await screen.findByTestId('setup-owner-password')
     expect(password).toHaveAttribute('type', 'password')
     await user.click(screen.getAllByRole('button', { name: 'Şifreyi göster' })[0]!)
@@ -656,7 +669,7 @@ describe('kurulum sihirbazı: devam, bitirme, kurtarma kodları', () => {
 
   it('"Kurulumu bitir": eksik adım varsa oraya gider ve uyarır', async () => {
     const user = userEvent.setup()
-    const { transport } = await renderSetup({ path: '/setup?step=13' })
+    const { transport } = await renderSetup({ path: '/setup?step=14' })
     expect(await screen.findByTestId('setup-summary-hotel')).toHaveTextContent('Eksik')
     await user.click(screen.getByTestId('setup-finish'))
     expect(await heading('Otel')).toBeInTheDocument()
@@ -700,6 +713,9 @@ describe('kurulum sihirbazı: devam, bitirme, kurtarma kodları', () => {
     expect(await heading('Çalışanlar')).toBeInTheDocument()
     await next(user)
     expect(await heading('Takvim')).toBeInTheDocument()
+    await next(user)
+    // The optional camera step (P20g, K-59): nothing is added when it is passed by.
+    expect(await heading('Kamera')).toBeInTheDocument()
     await next(user)
     expect(await heading('Sahip hesabı')).toBeInTheDocument()
     await fillOwner(user)
@@ -779,7 +795,7 @@ describe('kurulum sihirbazı: devam, bitirme, kurtarma kodları', () => {
     const transport = setupTransport({
       finishError: new ApiError('CONFLICT', 409, 'errors.usernameTaken', { username: 'sahip' }),
       progress: {
-        step: 12,
+        step: 13,
         draft: {
           hotel: {
             name: 'Martı Otel',

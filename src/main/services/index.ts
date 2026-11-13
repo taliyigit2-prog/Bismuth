@@ -12,7 +12,9 @@ import { createCalendarService } from './calendar-service'
 import { createContactsService } from './contacts-service'
 import { createCurrencyService } from './currency-service'
 import { createCameraService } from './camera-service'
+import type { CameraDiscovery, CameraProbe } from '@shared/contract/camera'
 import { createFaceCrypto } from '../camera/crypto'
+import type { Hardware } from '../camera/hardware'
 import { createSecretStore } from '../camera/secrets'
 import { createExpensesService } from './expenses-service'
 import { createExternalService } from './external-service'
@@ -96,6 +98,10 @@ export interface ServiceStorage {
     /** The Telegram text of an alarm (no guest name) and the program's window notice for it. */
     alertMessage?: (info: { time: string; location: string }) => string
     onAlert?: (notice: { eventId: string; time: string; location: string }) => void
+    /** P20g: the setup wizard's one-picture test, the search of the local network and (tests) another computer's facts. */
+    probe?: (source: string) => Promise<CameraProbe>
+    discover?: () => Promise<CameraDiscovery>
+    hardware?: () => Hardware
     /** Tests: the face key (default: a file in the data folder sealed by the key store). */
     faceCrypto?: ReturnType<typeof createFaceCrypto>
   }
@@ -185,7 +191,10 @@ export function createServices(handle: DatabaseHandle, runtime: RuntimeInfo, sto
     },
     ...(storage.camera?.testMessage ? { testMessage: storage.camera.testMessage } : {}),
     ...(storage.camera?.alertMessage ? { alertMessage: storage.camera.alertMessage } : {}),
-    ...(storage.camera?.onAlert ? { onAlert: storage.camera.onAlert } : {})
+    ...(storage.camera?.onAlert ? { onAlert: storage.camera.onAlert } : {}),
+    ...(storage.camera?.probe ? { probe: storage.camera.probe } : {}),
+    ...(storage.camera?.discover ? { discover: storage.camera.discover } : {}),
+    ...(storage.camera?.hardware ? { hardware: storage.camera.hardware } : {})
   })
   const setup = createSetupService(deps, {
     settings,

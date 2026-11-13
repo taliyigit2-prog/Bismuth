@@ -12,6 +12,7 @@ import {
   notifications,
   roles,
   roomTypes,
+  staffFaces,
   stayOccupants,
   users
 } from '../../src/main/db/schema'
@@ -161,11 +162,11 @@ async function setup(opts: { sealer?: boolean } = {}) {
   })
   const channel = services.lists.list(owner, 'salesChannels').find((c) => c.code === 'direct')!
   /** A guest staying in room 204 from today. */
-  const stay = (first = 'Ayşe', last = 'Gizlikişi') => {
+  const stay = (first = 'Ayşe', last = 'Gizlikişi', roomId = room.id) => {
     const d = services.reservations.create(reception, {
       guest: { firstName: first, lastName: last, phone: '0532 000 00 00' },
       channelId: channel.id,
-      stays: [{ roomId: room.id, checkIn: '2026-10-01', checkOut: '2026-10-04', nightlyPriceMinor: 200_000 }]
+      stays: [{ roomId, checkIn: '2026-10-01', checkOut: '2026-10-04', nightlyPriceMinor: 200_000 }]
     })
     const stayId = d.stays[0]!.id
     services.reservations.checkIn(reception, stayId)
@@ -176,6 +177,9 @@ async function setup(opts: { sealer?: boolean } = {}) {
       .get()!
     return { stayId, guestId: occupant.guestId as string }
   }
+  /** Another free room, for a second guest in the house. */
+  const spareRoom = (number: string): string =>
+    services.rooms.createRoom(owner, { number, roomTypeId: standard.id, beds: 2, validFrom: '2026-01-01' }).id
   const settings = (patch: Record<string, unknown>) => services.settings.set(owner, patch as never)
   const phone: Ctx = ctxFromPermissions('user-owner', 'phone', 'http', defaultPermissions('owner'))
   return {
@@ -189,6 +193,7 @@ async function setup(opts: { sealer?: boolean } = {}) {
     reception,
     phone,
     stay,
+    spareRoom,
     settings,
     room
   }
@@ -331,10 +336,10 @@ describe('çıkışta silme (K-52)', () => {
     expect(row!.expiresAt).toBe('2026-10-03T15:00:00.000Z')
 
     clock.set('2026-10-03T14:00:00.000Z')
-    expect(services.camera.purge(systemCtx())).toEqual({ faces: 0, crops: 0 })
+    expect(services.camera.purge(systemCtx())).toEqual({ faces: 0, crops: 0, staff: 0 })
     expect(faces()).toHaveLength(1)
     clock.set('2026-10-03T15:00:01.000Z')
-    expect(services.camera.purge(systemCtx())).toEqual({ faces: 1, crops: 0 })
+    expect(services.camera.purge(systemCtx())).toEqual({ faces: 1, crops: 0, staff: 0 })
     expect(faces()).toHaveLength(0)
     expect(
       audit('guest_face')
@@ -521,9 +526,9 @@ describe('alarm → Bismuth (K-50, K-52)', () => {
     sidecar.s.alerts = [alert(1, '2026-10-01T11:30:00')]
     await services.camera.tick(systemCtx())
     clock.set(new Date(new Date('2026-10-01T11:30:00').getTime() + 2 * 86_400_000).toISOString())
-    expect(services.camera.purge(systemCtx())).toEqual({ faces: 0, crops: 0 })
+    expect(services.camera.purge(systemCtx())).toEqual({ faces: 0, crops: 0, staff: 0 })
     clock.set(new Date(new Date('2026-10-01T11:30:00').getTime() + 3 * 86_400_000 + 1000).toISOString())
-    expect(services.camera.purge(systemCtx())).toEqual({ faces: 0, crops: 1 })
+    expect(services.camera.purge(systemCtx())).toEqual({ faces: 0, crops: 1, staff: 0 })
     expect(events()).toHaveLength(1)
     expect(events()[0]!.cropEnc).toBeNull()
     expect(
@@ -626,5 +631,225 @@ describe('yan sürece eşitleme', () => {
     const { services } = await setup()
     services.camera.attach(null)
     expect(await services.camera.tick(systemCtx())).toEqual({ alerts: 0, pushed: false })
+  })
+})
+
+describe('geri dönen misafirin yüzü (P21e, K-52)', () => {
+  it('saklama süresi > 0: önceki konaklamadan kalan bitiş tarihi, yeniden içeride olan misafirin yüzünü silmez; yeni çıkışta yeni tarih konur', async () => {
+    const { services, settings, owner, reception, stay, room, clock } = await setup()
+    settings({ 'camera.faceRetentionDays': 2 })
+    const { guestId, stayId } = stay()
+    await services.camera.enrollFace(owner, { guestId })
+    clock.set('2026-10-01T15:00:00.000Z')
+    services.reservations.checkOut(reception, stayId)
+    expect(faces()[0]!.expiresAt).toBe('2026-10-03T15:00:00.000Z')
+
+    // The same guest is back in the house (another stay) before the old date comes.
+    const standard = handle.db.select().from(roomTypes).where(eq(roomTypes.code, 'standard')).get()!
+    const room2 = services.rooms.createRoom(owner, {
+      number: '205',
+      roomTypeId: standard.id,
+      beds: 2,
+      validFrom: '2026-01-01'
+    })
+    const channel = services.lists.list(owner, 'salesChannels').find((c) => c.code === 'direct')!
+    const back = services.reservations.create(reception, {
+      guest: { id: guestId },
+      channelId: channel.id,
+      stays: [{ roomId: room2.id, checkIn: '2026-10-01', checkOut: '2026-10-06', nightlyPriceMinor: 200_000 }]
+    })
+    services.reservations.checkIn(reception, back.stays[0]!.id)
+    expect(room.id).not.toBe(room2.id)
+
+    clock.set('2026-10-03T16:00:00.000Z')
+    expect(services.camera.purge(systemCtx())).toEqual({ faces: 0, crops: 0, staff: 0 })
+    expect(faces()).toHaveLength(1)
+    expect(faces()[0]!.expiresAt).toBeNull()
+    expect(
+      audit('guest_face').filter((r) => r.action === 'update' && r.reason === 'back in house')
+    ).toHaveLength(1)
+
+    clock.set('2026-10-04T10:00:00.000Z')
+    services.reservations.checkOut(reception, back.stays[0]!.id)
+    expect(faces()[0]!.expiresAt).toBe('2026-10-06T10:00:00.000Z')
+  })
+})
+
+describe('personel dışlama listesi (S-107, K-58)', () => {
+  const employee = (services: Awaited<ReturnType<typeof setup>>['services'], owner: Ctx, last = 'Personel') =>
+    services.staff.createEmployee(owner, {
+      firstName: 'Hasan',
+      lastName: last,
+      position: 'Resepsiyon',
+      startDate: '2026-01-01'
+    })
+
+  it('kameradan yüz alınır: vektör şifreli, kırpma yok, denetimde bayt yok; yan sürece adsız ve odasız "personel" yüzü gider', async () => {
+    const { services, sidecar, faceCrypto, owner } = await setup()
+    const person = employee(services, owner)
+    expect(services.camera.staffList(owner)).toMatchObject({ listed: [], keyStore: true, max: 3 })
+    expect(services.camera.staffList(owner).others.map((p) => p.employeeId)).toEqual([person.id])
+
+    const out = await services.camera.enrollStaff(owner, { employeeId: person.id })
+    expect(out.listed).toEqual([
+      { employeeId: person.id, name: 'Hasan Personel', position: 'Resepsiyon', faces: 1 }
+    ])
+    expect(out.others).toEqual([])
+    const [row] = handle.db.select().from(staffFaces).all()
+    expect(row).toMatchObject({ employeeId: person.id, model: 'buffalo_s', enrolledBy: 'user-owner' })
+    expect(row!.embeddingEnc.includes(vector(3))).toBe(false)
+    expect(faceCrypto.decrypt(row!.embeddingEnc, `staff_faces:embedding:${row!.id}`).equals(vector(3))).toBe(
+      true
+    )
+    // A guest's context does not open it.
+    expect(() => faceCrypto.decrypt(row!.embeddingEnc, `guest_faces:embedding:${row!.id}`)).toThrow()
+    const rows = audit('staff_face')
+    expect(rows.map((r) => [r.action, r.reason])).toEqual([['create', 'camera']])
+    expect(JSON.stringify(rows)).not.toContain(vector(3).toString('base64').slice(0, 40))
+    expect(JSON.stringify(rows)).not.toContain('LIVE-CROP')
+
+    expect(sidecar.s.puts.at(-1)!.faces).toEqual([
+      { id: `staff:${row!.id}`, name: '', room: '', embedding: vector(3).toString('base64') }
+    ])
+  })
+
+  it('listeden çıkarınca satırlar gerçekten silinir (denetim: staff-removed), yan sürecin listesi boşalır', async () => {
+    const { services, sidecar, owner } = await setup()
+    const person = employee(services, owner)
+    await services.camera.enrollStaff(owner, { employeeId: person.id })
+    await services.camera.enrollStaff(owner, { employeeId: person.id })
+    const out = await services.camera.removeStaff(owner, { employeeId: person.id })
+    expect(out.listed).toEqual([])
+    expect(handle.db.select().from(staffFaces).all()).toHaveLength(0)
+    expect(
+      audit('staff_face')
+        .filter((r) => r.action === 'delete')
+        .map((r) => r.reason)
+    ).toEqual(['staff-removed', 'staff-removed'])
+    expect(sidecar.s.puts.at(-1)!.faces).toEqual([])
+  })
+
+  it('işten ayrılan personelin yüzü saklama işiyle silinir ve yan sürece gitmez; yüz sınırı 3', async () => {
+    const { services, sidecar, owner, clock } = await setup()
+    const person = employee(services, owner)
+    for (let i = 0; i < 3; i++) await services.camera.enrollStaff(owner, { employeeId: person.id })
+    expect(await code(() => services.camera.enrollStaff(owner, { employeeId: person.id }))).toBe(
+      'CONFLICT:errors.cameraFaceLimit'
+    )
+    handle.sqlite.prepare("update employees set end_date = '2026-10-02' where id = ?").run(person.id)
+    // The day the person leaves is still employed; the day after, the face is not sent and the job deletes it.
+    await services.camera.tick(systemCtx())
+    expect(sidecar.s.puts.at(-1)!.faces).toHaveLength(3)
+    clock.set('2026-10-03T09:00:00.000Z')
+    await services.camera.tick(systemCtx(), { force: true })
+    expect(sidecar.s.puts.at(-1)!.faces).toEqual([])
+    expect(services.camera.purge(systemCtx())).toEqual({ faces: 0, crops: 0, staff: 3 })
+    expect(handle.db.select().from(staffFaces).all()).toHaveLength(0)
+    expect(
+      audit('staff_face')
+        .filter((r) => r.action === 'delete')
+        .map((r) => r.reason)
+    ).toEqual(['staff-left', 'staff-left', 'staff-left'])
+    expect(await code(() => services.camera.enrollStaff(owner, { employeeId: person.id }))).toBe(
+      'CONFLICT:errors.cameraStaffLeft'
+    )
+    expect(services.camera.staffList(owner).others).toEqual([])
+  })
+
+  it('pasif yapılan personelin yüzü yan sürece gitmez ve saklama işiyle silinir', async () => {
+    const { services, sidecar, owner } = await setup()
+    const person = employee(services, owner)
+    await services.camera.enrollStaff(owner, { employeeId: person.id })
+    handle.sqlite.prepare('update employees set active = 0 where id = ?').run(person.id)
+    await services.camera.tick(systemCtx(), { force: true })
+    expect(sidecar.s.puts.at(-1)!.faces).toEqual([])
+    expect(services.camera.purge(systemCtx())).toMatchObject({ staff: 1 })
+    expect(handle.db.select().from(staffFaces).all()).toHaveLength(0)
+  })
+
+  it('bilinmeyen personel, telefon, anahtar deposu yok, kamerada yüz yok, yetkisiz rol: açık hata, satır yok', async () => {
+    const { services, sidecar, owner, phone } = await setup()
+    const person = employee(services, owner)
+    expect(await code(() => services.camera.enrollStaff(owner, { employeeId: 'none' }))).toBe(
+      'NOT_FOUND:errors.notFound'
+    )
+    expect(await code(() => services.camera.enrollStaff(phone, { employeeId: person.id }))).toBe(
+      'PERMISSION_DENIED:errors.remoteLocalOnly'
+    )
+    sidecar.s.captureStatus = 400
+    expect(await code(() => services.camera.enrollStaff(owner, { employeeId: person.id }))).toBe(
+      'CONFLICT:errors.cameraNoFace'
+    )
+    const hk = roleCtx('housekeeping')
+    for (const run of [
+      () => services.camera.staffList(hk),
+      () => services.camera.enrollStaff(hk, { employeeId: person.id }),
+      () => services.camera.removeStaff(hk, { employeeId: person.id })
+    ])
+      expect(await code(run)).toMatch(/^PERMISSION_DENIED/)
+    expect(handle.db.select().from(staffFaces).all()).toHaveLength(0)
+    const none = await setup({ sealer: false })
+    const p2 = employee(none.services, none.owner)
+    expect(await code(() => none.services.camera.enrollStaff(none.owner, { employeeId: p2.id }))).toBe(
+      'CONFLICT:errors.cameraNoKeyStore'
+    )
+  })
+})
+
+describe('imha raporu (K-52, K-58)', () => {
+  it('seçilen günlerdeki silmeleri nedenine göre sayar (çıkış, süre sonu, elle, personel, alarm resmi); aralık dışı ve sonrası sayılmaz; elde kalanlar ve kurallar yazılır', async () => {
+    const { services, settings, owner, reception, stay, spareRoom, clock, sidecar } = await setup()
+    const first = stay('Ayşe', 'Gizlikişi')
+    await services.camera.enrollFace(owner, { guestId: first.guestId })
+    // Check-out deletes at once (retention 0): one "checkout".
+    clock.set('2026-10-01T15:00:00.000Z')
+    services.reservations.checkOut(reception, first.stayId)
+    // A face deleted by hand.
+    const second = stay('Can', 'Örnek', spareRoom('301'))
+    await services.camera.enrollFace(owner, { guestId: second.guestId })
+    await services.camera.deleteFaces(owner, { guestId: second.guestId })
+    // A staff face taken off the list.
+    const person = services.staff.createEmployee(owner, {
+      firstName: 'Hasan',
+      lastName: 'P',
+      startDate: '2026-01-01'
+    })
+    await services.camera.enrollStaff(owner, { employeeId: person.id })
+    await services.camera.removeStaff(owner, { employeeId: person.id })
+    // An alarm picture past its time.
+    sidecar.s.alerts = [
+      { id: 1, alert_time: '2026-10-01T11:30:00', track: 41, crop: jpeg().toString('base64') }
+    ]
+    await services.camera.tick(systemCtx())
+    clock.set('2026-10-05T12:00:00.000Z')
+    services.camera.purge(systemCtx())
+    // One more face, still held, with retention on.
+    settings({ 'camera.faceRetentionDays': 7 })
+    const third = stay('Zeynep', 'Kalan', spareRoom('302'))
+    await services.camera.enrollFace(owner, { guestId: third.guestId })
+
+    const day1 = services.camera.retentionReport(reception, { from: '2026-10-01', to: '2026-10-01' })
+    expect(day1).toMatchObject({
+      faces: { checkout: 1, retention: 0, manual: 1 },
+      staff: { removed: 1, left: 0 },
+      crops: 0,
+      held: { guestFaces: 1, waitingForDeletion: 0, staffFaces: 0, alarmCrops: 0 },
+      policy: { faceRetentionDays: 7, alertRetentionDays: 3 }
+    })
+    const day5 = services.camera.retentionReport(reception, { from: '2026-10-02', to: '2026-10-05' })
+    expect(day5).toMatchObject({ faces: { checkout: 0, retention: 0, manual: 0 }, crops: 1 })
+    const all = services.camera.retentionReport(owner, { from: '2026-10-01', to: '2026-10-31' })
+    expect(all.crops).toBe(1)
+    expect(all.faces).toEqual({ checkout: 1, retention: 0, manual: 1 })
+    // Nothing about a guest or a face goes into the report: counts only.
+    expect(JSON.stringify(all)).not.toContain('Gizlikişi')
+    expect(
+      await code(() => services.camera.retentionReport(owner, { from: '2026-10-05', to: '2026-10-01' }))
+    ).toMatch(/^VALIDATION/)
+    expect(
+      await code(() =>
+        services.camera.retentionReport(roleCtx('housekeeping'), { from: '2026-10-01', to: '2026-10-02' })
+      )
+    ).toMatch(/^PERMISSION_DENIED/)
   })
 })

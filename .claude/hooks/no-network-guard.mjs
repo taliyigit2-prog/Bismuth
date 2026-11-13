@@ -23,9 +23,13 @@ if (/(^|\/)src\/renderer\/lib\/transport\//.test(fp)) process.exit(0);
 if (/(^|\/)(tests?|__tests__|e2e|scripts|\.github|docs|\.claude)\//.test(fp)) process.exit(0);
 if (/\.(test|spec)\.(ts|tsx|js)$/.test(fp)) process.exit(0);
 
-const text = String(input.tool_input?.new_string ?? input.tool_input?.content ?? "");
+let text = String(input.tool_input?.new_string ?? input.tool_input?.content ?? "");
 if (!text) process.exit(0);
 const inCamera = /(^|\/)src\/main\/camera\//.test(fp);
+// The camera search file (P20g, K-59) writes ONVIF/WS-Discovery messages: their XML namespace identifiers look like
+// outside addresses but are names nothing connects to. Only this file, only these three name spaces.
+if (/(^|\/)src\/main\/camera\/discovery\.ts$/.test(fp))
+  text = text.replace(/\bhttp:\/\/(?:www\.w3\.org\/2003\/05\/soap-envelope|schemas\.xmlsoap\.org\/ws\/\d{4}\/\d{2}\/(?:addressing|discovery)|www\.onvif\.org\/ver10\/network\/wsdl)\b[^\s"'`)<>]*/g, "");
 
 const patterns = [
   { re: /\bfetch\s*\(/, what: "fetch(" },

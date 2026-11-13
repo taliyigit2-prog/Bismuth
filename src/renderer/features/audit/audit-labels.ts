@@ -66,6 +66,7 @@ export const AUDIT_ENTITIES = [
   'setup',
   'shift_definition',
   'shift_handover',
+  'staff_face',
   'staff_transaction',
   'stay_occupant',
   'status_tag',

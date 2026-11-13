@@ -45,6 +45,14 @@ def test_aynı_kişinin_açıları_tek_misafir_sayılır():
     assert store.guest_count() == 2
 
 
+def test_adsız_odasız_yüzler_personel_sayılır_misafir_sayılmaz():
+    store = FaceStore()
+    emb = encode_embedding(unit_embedding(1))
+    store.replace([("staff:1", "", "", emb), ("staff:2", " ", "", emb), ("a", "Ayşe Örnek", "12", emb)])
+    assert len(store.snapshot()) == 3
+    assert store.guest_count() == 1
+
+
 def test_alarm_kuyruğu_numara_verir_after_ile_yalnız_yenileri_döner():
     queue = AlertQueue(clock=FakeClock())
     ids = [queue.add(track, b"\xff\xd8" + bytes([track])) for track in (5, 6, 7)]

@@ -17,6 +17,8 @@ import { Label } from '@/components/ui/label'
 import { useTransport } from '@/lib/api/api-context'
 import { useApiMutation, useApiQuery } from '@/lib/api/hooks'
 import { useCan } from '@/lib/view-as'
+import { PrivacySettings } from '../camera/privacy-settings'
+import { CameraRescan } from './camera-rescan'
 import { numberValid, parseNumber, type NumberRule } from './camera-numbers'
 import { SwitchRow } from './room-dialogs'
 
@@ -334,6 +336,7 @@ export function CameraSection({ values, onSave }: Props) {
             saving={setSecrets.isPending}
             onSave={(v) => saveSecret({ source: v })}
           />
+          {canSecrets ? <CameraRescan /> : null}
           {canEdit && !canSecrets ? (
             <p className="text-muted-foreground text-xs">{t('settings.camera.secretsHostOnly')}</p>
           ) : null}
@@ -411,6 +414,8 @@ export function CameraSection({ values, onSave }: Props) {
         </CardHeader>
         <CardContent className="grid gap-5">{BASIC.map(number)}</CardContent>
       </Card>
+
+      <PrivacySettings values={values} onSave={onSave} />
 
       <Collapsible asChild>
         <Card>

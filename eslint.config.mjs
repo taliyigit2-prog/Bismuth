@@ -96,6 +96,24 @@ export default tseslint.config(
     rules: { 'no-restricted-globals': 'off' }
   },
   {
+    // The one file that opens UDP sockets: the camera search of the setup wizard (ONVIF WS-Discovery, Hikvision SADP; P20g,
+    // K-49, K-59). It starts only on request and keeps to the computer's private interfaces and private answer addresses.
+    files: ['src/main/camera/discovery.ts', 'src/main/camera/discovery.test.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: ['http', 'https', 'http2', 'net', 'tls', 'dns'].flatMap((m) =>
+            [m, `node:${m}`].map((name) => ({
+              name,
+              message: 'Only UDP (node:dgram) is allowed in the camera search.'
+            }))
+          )
+        }
+      ]
+    }
+  },
+  {
     files: ['src/renderer/**/*.{ts,tsx}', 'tests/unit/setup-dom.ts'],
     languageOptions: { globals: { ...globals.browser } },
     settings: { react: { version: 'detect' } },

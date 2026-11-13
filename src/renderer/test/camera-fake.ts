@@ -9,8 +9,13 @@ import {
 import type {
   CameraAlert,
   CameraCandidate,
+  CameraDiscovery,
   CameraFaceStatus,
+  CameraHardware,
   CameraLive,
+  CameraRetentionReport,
+  CameraStaffList,
+  CameraProbe,
   CameraStatus
 } from '@shared/contract/camera'
 import { ApiError, type Transport } from '@/lib/transport'
@@ -65,6 +70,14 @@ export interface CameraFakeState {
   candidates: CameraCandidate[]
   /** The opened alarm crop (`data:` URL), null = the picture is gone. */
   crop: string | null
+  /** The staff exclusion list (P20e). */
+  staff: CameraStaffList
+  /** The destruction report (P20e): the same answer for every range. */
+  report: CameraRetentionReport
+  /** P20g: the setup wizard's computer facts, network search and one-picture test. */
+  hardware: CameraHardware
+  discovery: CameraDiscovery
+  probe: CameraProbe
 }
 
 export const emptyCamera = (): CameraFakeState => ({
@@ -76,7 +89,28 @@ export const emptyCamera = (): CameraFakeState => ({
   telegramTest: { ok: true, reason: null },
   face: { inHouse: true, count: 0, max: 5, enrolledAt: null, crop: null, keyStore: true },
   candidates: [],
-  crop: 'data:image/jpeg;base64,/9j/'
+  crop: 'data:image/jpeg;base64,/9j/',
+  staff: { listed: [], others: [], max: 3, keyStore: true },
+  report: {
+    from: '2026-11-01',
+    to: '2026-11-13',
+    faces: { checkout: 0, retention: 0, manual: 0 },
+    staff: { removed: 0, left: 0 },
+    crops: 0,
+    held: { guestFaces: 0, waitingForDeletion: 0, staffFaces: 0, alarmCrops: 0 },
+    policy: { faceRetentionDays: 0, alertRetentionDays: 3 }
+  },
+  hardware: {
+    cpuModel: 'Test CPU',
+    cores: 8,
+    ramGb: 7.8,
+    platform: 'win32',
+    osRelease: '10.0.19045',
+    arch: 'x64',
+    recommended: 'standard'
+  },
+  discovery: { devices: [], problem: null },
+  probe: { ok: true, reason: null, image: 'data:image/jpeg;base64,/9j/', width: 1280, height: 720 }
 })
 
 export function cameraTransport(
@@ -147,6 +181,31 @@ export function cameraTransport(
           alert.state = 'handled'
           return { ok: true } as never
         }
+        case 'camera.staff':
+          return structuredClone(state.staff) as never
+        case 'camera.enrollStaff': {
+          write()
+          desktopOnly()
+          const person =
+            state.staff.others.find((p) => p.employeeId === i.employeeId) ??
+            state.staff.listed.find((p) => p.employeeId === i.employeeId)
+          if (!person) throw new ApiError('NOT_FOUND', 404, 'errors.notFound')
+          person.faces += 1
+          state.staff.others = state.staff.others.filter((p) => p !== person)
+          if (!state.staff.listed.includes(person)) state.staff.listed.push(person)
+          return structuredClone(state.staff) as never
+        }
+        case 'camera.removeStaff': {
+          write()
+          const person = state.staff.listed.find((p) => p.employeeId === i.employeeId)
+          if (!person) throw new ApiError('NOT_FOUND', 404, 'errors.notFound')
+          person.faces = 0
+          state.staff.listed = state.staff.listed.filter((p) => p !== person)
+          state.staff.others.push(person)
+          return structuredClone(state.staff) as never
+        }
+        case 'camera.retentionReport':
+          return { ...structuredClone(state.report), from: i.from, to: i.to } as never
         case 'camera.setAlarmsPaused':
           write()
           desktopOnly()
@@ -163,6 +222,18 @@ export function cameraTransport(
           if ('telegramToken' in i) state.status.secrets.telegramToken = i.telegramToken !== null
           if ('telegramChatIds' in i) state.status.secrets.telegramChats = i.telegramChatIds !== null
           return { ok: true } as never
+        case 'camera.hardware':
+          write()
+          desktopOnly()
+          return structuredClone(state.hardware) as never
+        case 'camera.discover':
+          write()
+          desktopOnly()
+          return structuredClone(state.discovery) as never
+        case 'camera.probe':
+          write()
+          desktopOnly()
+          return structuredClone(state.probe) as never
         case 'camera.testTelegram':
           write()
           desktopOnly()

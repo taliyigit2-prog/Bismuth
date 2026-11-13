@@ -5,11 +5,11 @@
 // while the sidecar runs. Nothing here writes a file: the sealed bytes live only in the database.
 import { ulid } from '@shared/ids'
 import { eq, inArray } from 'drizzle-orm'
-import { cameraEvents, guestFaces, notifications } from '../db/schema'
+import { cameraEvents, guestFaces, notifications, staffFaces } from '../db/schema'
 import type { Bridge } from '../camera/bridge'
 import { FaceCryptoError, type FaceCrypto } from '../camera/crypto'
 import type { TelegramClient } from '../network/telegram'
-import { activeFaces } from './camera-faces'
+import { activeFaces, activeStaffFaces } from './camera-faces'
 import type { Ctx } from './context'
 import { inTransaction, stamps, type ServiceDeps } from './kit'
 import { readSetting } from './settings-service'
@@ -17,6 +17,7 @@ import { readSetting } from './settings-service'
 /** Sealing contexts: a blob copied into another row or column does not open (`crypto.ts`, AAD). */
 export const faceContext = (kind: 'embedding' | 'crop', id: string): string => `guest_faces:${kind}:${id}`
 export const eventCropContext = (id: string): string => `camera_events:crop:${id}`
+export const staffFaceContext = (id: string): string => `staff_faces:embedding:${id}`
 
 export const EMBEDDING_BYTES = 512 * 4
 const MAX_CROP_BYTES = 400_000
@@ -198,7 +199,11 @@ export function createCameraSync(deps: CameraSyncDeps, bridge: () => Bridge | nu
   /** Sends the faces of the guests in the house to the sidecar, when they changed or the sidecar started over. */
   async function pushFaces(b: Bridge, force: boolean): Promise<boolean> {
     const rows = activeFaces(db)
-    const digest = rows.map((r) => `${r.id}|${r.name}|${r.room}`).join('\n')
+    const staffRows = activeStaffFaces(db, deps.clock())
+    const digest =
+      rows.map((r) => `${r.id}|${r.name}|${r.room}`).join('\n') +
+      '\n#staff\n' +
+      staffRows.map((r) => r.id).join('\n')
     if (!force && pushed && pushed.boot === cursor.boot && pushed.digest === digest) return false
     const faces: { id: string; name: string; room: string; embedding: string }[] = []
     if (rows.length > 0) {
@@ -222,6 +227,29 @@ export function createCameraSync(deps: CameraSyncDeps, bridge: () => Bridge | nu
             faces.push({ id: r.id, name: r.name, room: r.room, embedding: plain.toString('base64') })
         } catch {
           // A vector this computer cannot open (another computer's key) is skipped; the retention job removes it.
+        }
+      }
+    }
+    // S-107: staff are known to the sidecar as faces with no name and no room, so they raise no alarm and are not
+    // told apart from one another; the live picture marks them "Personel" (the screen's word for a known face without a label).
+    if (staffRows.length > 0) {
+      const sealed = db
+        .select({ id: staffFaces.id, blob: staffFaces.embeddingEnc })
+        .from(staffFaces)
+        .where(
+          inArray(
+            staffFaces.id,
+            staffRows.map((r) => r.id)
+          )
+        )
+        .all()
+      for (const s of sealed) {
+        try {
+          const plain = faceCrypto.decrypt(s.blob, staffFaceContext(s.id))
+          if (plain.length === EMBEDDING_BYTES)
+            faces.push({ id: `staff:${s.id}`, name: '', room: '', embedding: plain.toString('base64') })
+        } catch {
+          // Sealed by another computer's key: skipped, like a guest's.
         }
       }
     }

@@ -73,9 +73,9 @@ class FaceStore:
             self._faces = []
 
     def guest_count(self) -> int:
-        """Aynı kişinin birkaç açısı tek sayılır (ad + oda)."""
+        """Aynı kişinin birkaç açısı tek sayılır (ad + oda). Adı ve odası boş yüzler (personel, S-107) misafir sayılmaz."""
         with self._lock:
-            return len({(n.strip().lower(), r.strip().lower()) for _, n, r, _ in self._faces})
+            return len({(n.strip().lower(), r.strip().lower()) for _, n, r, _ in self._faces if n.strip() or r.strip()})
 
 
 @dataclass(frozen=True)

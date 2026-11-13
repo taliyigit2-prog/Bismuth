@@ -4,6 +4,7 @@ import * as z from 'zod'
 import { APP_LOCALES } from '../format'
 import { DEFAULT_FX_SOURCES, FX_PROVIDERS } from '../domain/external'
 import { CALENDAR_MIN_START_YEAR } from '../domain/calendar-range'
+import { cameraProfileSchema, DEFAULT_PROFILE_TABLE_JSON, parseProfileTable } from '../domain/camera-profile'
 import { MAX_ZOOM, MIN_ZOOM } from '../window-zoom'
 
 export const currencyCode = z.string().regex(/^[A-Z]{3}$/, 'ISO 4217 code')
@@ -246,7 +247,16 @@ export const settingsShape = {
   /** Alarms also go to Telegram (K-50, the one outside service; needs `network.enabled`). */
   'camera.telegram.enabled': z.boolean(),
   /** The Telegram message carries the alarm photo (otherwise text only). */
-  'camera.telegram.photo': z.boolean()
+  'camera.telegram.photo': z.boolean(),
+  /** The data controller's address and phone for the notice (K-58, KVKK m.10); '' = the notice shows a blank line to fill in. */
+  'camera.privacyContact': z.string().trim().max(200),
+  /** The performance profile the setup wizard chose for this computer (K-59); it fills the three settings it governs. */
+  'camera.profile': cameraProfileSchema,
+  /** JSON: the memory/thread limits that pick a profile and each profile's values (`domain/camera-profile.ts`). */
+  'camera.profiles': z
+    .string()
+    .max(1500)
+    .refine((v) => parseProfileTable(v) !== null, 'camera profile table')
 } as const
 
 export type SettingsKey = keyof typeof settingsShape
@@ -345,7 +355,10 @@ export const SETTINGS_DEFAULTS: SettingsValues = {
   'camera.alertRetentionDays': 3,
   'camera.faceRetentionDays': 0,
   'camera.telegram.enabled': false,
-  'camera.telegram.photo': true
+  'camera.telegram.photo': true,
+  'camera.privacyContact': '',
+  'camera.profile': 'standard',
+  'camera.profiles': DEFAULT_PROFILE_TABLE_JSON
 }
 
 /** The hotel's status and accent colours (G-33): shared by everyone, so they need the colour right, not just a session. */

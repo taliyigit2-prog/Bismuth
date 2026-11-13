@@ -156,6 +156,28 @@ describe('Ayarlar → Kamera', () => {
     expect(screen.getByRole('switch', { name: 'Kamera sistemini aç' })).toBeEnabled()
   })
 
+  it('"Yeniden tara" kurulum akışını diyalogda açar ve Kapat ile kapanır; telefonda ve yalnız görende düğme yoktur (P20g)', async () => {
+    const { transport, user } = await open()
+    await user.click(screen.getByTestId('camera-rescan'))
+    const dialog = await screen.findByRole('dialog', { name: 'Kamera kurulumu' })
+    expect(await within(dialog).findByTestId('setup-camera-flow')).toBeInTheDocument()
+    await user.click(within(dialog).getByTestId('setup-camera-scan'))
+    await waitFor(() => expect(transport.callsTo('camera.discover')).toHaveLength(1))
+    await user.click(within(dialog).getByTestId('camera-rescan-close'))
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+  })
+
+  it('"Yeniden tara" HTTP istemcisinde (telefon) görünmez (P20g)', async () => {
+    await open({ kind: 'http' })
+    expect(screen.queryByTestId('camera-rescan')).toBeNull()
+  })
+
+  it('"Yeniden tara" yalnız görüntüleyen rolde görünmez (P20g)', async () => {
+    act(() => setViewAs('reception'))
+    await open()
+    expect(screen.queryByTestId('camera-rescan')).toBeNull()
+  })
+
   it('Resepsiyon (yalnız görür): her alan kapalı, kaydet düğmesi yok', async () => {
     act(() => setViewAs('reception'))
     await open()

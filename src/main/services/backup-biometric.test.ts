@@ -33,6 +33,9 @@ function fillBiometric(h: DatabaseHandle): void {
   s.prepare(
     "insert into camera_events (id, kind, occurred_at, crop_enc, created_at, updated_at) values ('e1', 'alarm', 'x', ?, 'x', 'x')"
   ).run(Buffer.from(MARK))
+  s.prepare(
+    "insert into staff_faces (id, employee_id, embedding_enc, model, enrolled_at, enrolled_by, created_at, updated_at) values ('sf1', 'emp1', ?, 'sface', 'x', 'u1', 'x', 'x')"
+  ).run(Buffer.from(MARK.repeat(30)))
   s.pragma('foreign_keys = ON')
 }
 
@@ -72,6 +75,7 @@ describe('biyometrik tablolar yedeğe girmez (K-51)', () => {
     expect(readFileSync(copy).includes(Buffer.from(MARK))).toBe(false)
     expect(count(join(root, 'bismuth.db'), 'guest_faces')).toBe(40)
     expect(count(join(root, 'bismuth.db'), 'camera_events')).toBe(1)
+    expect(count(join(root, 'bismuth.db'), 'staff_faces')).toBe(1)
   })
 
   it('migrasyon öncesi anlık kopya da yüz verisi taşımaz', async () => {
@@ -92,7 +96,7 @@ describe('biyometrik tablolar yedeğe girmez (K-51)', () => {
     const file = join(root, 'copy.db')
     handle = await openDatabase({ file, migrationsFolder: MIGRATIONS })
     fillBiometric(handle)
-    handle.sqlite.exec('delete from guest_faces; delete from camera_events')
+    handle.sqlite.exec('delete from guest_faces; delete from camera_events; delete from staff_faces')
     handle.close()
     handle = undefined
     expect(scrubBiometricData(file)).toBe(0)

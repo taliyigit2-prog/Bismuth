@@ -21,6 +21,7 @@ import { useCan } from '@/lib/view-as'
 import { AlertList } from './alert-list'
 import { cameraStateView, type CameraTone } from './camera-state'
 import { LiveView } from './live-view'
+import { PrivacyNoticeButton } from './privacy-notice'
 
 const TONE_BADGE: Record<CameraTone, 'default' | 'secondary' | 'destructive' | 'outline'> = {
   running: 'default',
@@ -194,7 +195,7 @@ export function CameraPage() {
   const { t } = useTranslation()
   const status = useApiQuery('camera.status', {}, { refetchInterval: 5_000 })
   return (
-    <Page title={t('camera.title')} description={t('camera.description')}>
+    <Page title={t('camera.title')} description={t('camera.description')} actions={<PrivacyNoticeButton />}>
       <QueryView query={status}>{(data) => <Body status={data} />}</QueryView>
     </Page>
   )

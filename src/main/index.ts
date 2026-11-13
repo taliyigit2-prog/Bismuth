@@ -31,7 +31,7 @@ import { closingBackupNeeded, createBackupScheduler } from './backup/scheduler'
 import { readSetting } from './services/settings-service'
 import { processImage, startAttachmentRetention } from './attachments'
 import { createTaskScheduler, showOsNotice } from './notifications'
-import { createCameraRuntime, createFaceCrypto } from './camera'
+import { createCameraRuntime, createDiscoverer, createFaceCrypto, createProbeRunner } from './camera'
 import { removeLegacyCameraFiles } from './camera/legacy'
 import { LOCAL_CONFIG, readConnectionConfig, writeConnectionConfig } from './server/connection-config'
 import {
@@ -58,6 +58,10 @@ let mainWindow: BrowserWindow | null = null
 /** How often alarms are taken from the sidecar and the face list is sent to it, and how often the retention job runs. */
 const CAMERA_ROUND_MS = 3_000
 const CAMERA_PURGE_MS = 3_600_000
+
+/** The folder with the camera's Python files: `<app>/otel-kamera` in development, `resources/camera` once packaged. */
+const cameraScriptDir = (): string =>
+  app.isPackaged ? join(process.resourcesPath, 'camera') : join(app.getAppPath(), 'otel-kamera')
 
 /** The camera sidecar's runtime once built (Faz 20): the request filter reads its address for the live picture. */
 let cameraRuntime: ReturnType<typeof createCameraRuntime> | null = null
@@ -209,6 +213,9 @@ async function start(): Promise<void> {
         ...(!app.isPackaged && process.env['BISMUTH_FACE_KEY'] === 'memory'
           ? { faceCrypto: createFaceCrypto(null, null) }
           : {}),
+        // P20g: the wizard's one-picture test and its search of the local network (both only on request).
+        probe: createProbeRunner({ scriptDir: cameraScriptDir(), packaged: app.isPackaged }),
+        discover: createDiscoverer({ packaged: app.isPackaged }),
         testMessage: () => tMain('main.camera.telegramTest'),
         // K-50: the Telegram text and the window notice of an alarm carry the time and the camera's place, never a name.
         alertMessage: ({ time, location }) =>
@@ -390,9 +397,7 @@ async function start(): Promise<void> {
   if (!smoke && initial['app.mode'] !== 'client') {
     const camera = createCameraRuntime({
       packaged: app.isPackaged,
-      scriptDir: app.isPackaged
-        ? join(process.resourcesPath, 'camera')
-        : join(app.getAppPath(), 'otel-kamera'),
+      scriptDir: cameraScriptDir(),
       dataDir: paths.root,
       modelsDir: app.isPackaged
         ? join(process.resourcesPath, 'camera', 'models')
@@ -425,6 +430,15 @@ async function start(): Promise<void> {
     let camBusy = false
     const camRound = (): void => {
       if (camBusy || !services.setup.isDone() || hostRuntime.guard.replaced() !== null) return
+      // P20g: the setup wizard's camera step switches the camera on while the hotel is still being set up, when the
+      // sidecar is not started yet (a settings change then starts nothing); the first round after setup does it.
+      const snap = camera.snapshot()
+      if (
+        snap.state === 'stopped' &&
+        snap.blocked === null &&
+        services.settings.get(localOwnerCtx())['camera.enabled']
+      )
+        void camera.apply({ restart: false }).catch((error: unknown) => log.warn('camera sidecar', error))
       camBusy = true
       services.camera
         .tick(systemCtx())
@@ -452,7 +466,13 @@ async function start(): Promise<void> {
     const apply = (restart: boolean): void =>
       void camera.apply({ restart }).catch((error: unknown) => log.warn('camera sidecar', error))
     services.settings.onChange((_values, changed) => {
-      if (changed.some((key) => key.startsWith('camera.'))) apply(true)
+      // Not while the hotel is being set up (the wizard's camera step): the first round after setup starts it.
+      // The notice's contact line is read by the screen only; the sidecar does not care.
+      if (
+        services.setup.isDone() &&
+        changed.some((key) => key.startsWith('camera.') && key !== 'camera.privacyContact')
+      )
+        apply(true)
     })
     app.on('will-quit', () => void camera.stop())
     if (services.setup.isDone() && hostRuntime.guard.replaced() === null) apply(false)

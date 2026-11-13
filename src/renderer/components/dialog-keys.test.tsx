@@ -112,9 +112,11 @@ const SHOW_ONLY = new Set([
   'components/cash-drawer/handover-history.tsx', // past handovers; the filter form has no save
   'features/laundry/laundry-cards.tsx', // the slip's photos
   'features/supply/purchases-list.tsx', // a purchase's photos
+  'features/camera/privacy-notice.tsx', // the privacy notice: a text with "Kapat" and "Yazdır"
   'features/contacts/import-dialog.tsx', // a file picker and a preview: "Ekle" runs on the parsed rows
   'features/data-transfer/import-wizard.tsx', // steps of an import, each a button
-  'features/theme-preview/component-gallery.tsx' // the theme preview's sample dialog
+  'features/theme-preview/component-gallery.tsx', // the theme preview's sample dialog
+  'features/settings/camera-rescan.tsx' // the camera setup flow: its own "Kamerayı kaydet"; Enter in a field tries the connection
 ])
 
 describe('programdaki her pencere', () => {

@@ -27,8 +27,15 @@ export const cameraHandlers = (services: Services): HandlersFor<keyof typeof cam
   'camera.deleteFaces': (ctx, input) => services.camera.deleteFaces(ctx, input),
   'camera.candidates': (ctx) => services.camera.candidates(ctx),
   'camera.alertCrop': (ctx, input) => services.camera.alertCrop(ctx, input),
+  'camera.staff': (ctx) => services.camera.staffList(ctx),
+  'camera.enrollStaff': (ctx, input) => services.camera.enrollStaff(ctx, input),
+  'camera.removeStaff': (ctx, input) => services.camera.removeStaff(ctx, input),
+  'camera.retentionReport': (ctx, input) => services.camera.retentionReport(ctx, input),
   'camera.saveAlertAsGuest': async (ctx, input) => {
     await services.camera.saveAlertAsGuest(ctx, input)
     return { ok: true as const }
-  }
+  },
+  'camera.hardware': (ctx) => services.camera.hardware(ctx),
+  'camera.discover': (ctx) => services.camera.discover(ctx),
+  'camera.probe': (ctx, input) => services.camera.probe(ctx, input)
 })

@@ -102,8 +102,8 @@ Harcama sütunu: başlatıcının yazdığı `$` (dalga toplamı, gerçek).
 | 8 | P20b Kamera sekmesi (canlı yayın yalnız ana bilgisayar; telefon alarm listesi) | 20 | features/camera | camera-integrator | $8–12 | ~$22 | ✅ |
 | 8 | P20d Model sabitleme ve çevrimdışı (K-57: mevcut modeller kalır, telemetri kapalı, lisans notu) | 20 | otel-kamera, resources/camera | camera-integrator | $4–6 | ~$15 | ✅ |
 | 9 | P20c Veri entegrasyonu (migrasyon 0021, şifreleme, alarm → bildirim; rıza alanı yok K-58) | 20 | camera, today | db-migration-builder → camera-integrator | $15–22 | | 🔄 |
-| 10 | P20e KVKK paketi (aydınlatma şablonu, saklama/imha, personel dışlama) | 20 | camera settings | camera-integrator | $8–12 | | ⬜ |
-| 10 | P20g Kamera kurulum sihirbazı (K-59: donanım otomatik, Hikvision keşif + RTSP kalıbı + test) | 20 | features/setup, main/camera/discovery, otel-kamera/discovery | camera-integrator | $10–15 | | ⬜ |
+| 10 | P20e KVKK paketi (aydınlatma şablonu, saklama/imha, personel dışlama) | 20 | camera settings | camera-integrator | $8–12 | ~$25 | ✅ |
+| 10 | P20g Kamera kurulum sihirbazı (K-59: donanım otomatik, Hikvision keşif + RTSP kalıbı + test) | 20 | features/setup, main/camera/discovery, otel-kamera/discovery | camera-integrator | $10–15 | ~$25 | ✅ |
 | 11 | P20f Kamera paketleme (torch dahil; gerekirse ayrı kamera eki kurulumu) | 20 | electron-builder, resources | packager | $12–18 | | ⬜ |
 | 11 | P21b İstemci çoklu ana bilgisayar (K-54: kayıtlı otel listesi) | 21 | remote | feature-builder | $8–12 | | ⬜ |
 | 12 | P21c Portföy özeti (iki otelin takvimi, gelir-gider, doluluk, kasa) | 21 | portfolio | feature-builder | $8–12 | | ⬜ |
@@ -330,3 +330,20 @@ QA2b, akış testleri C/D) bu plana **Son** satırında katılır; ayrı yürüt
   canlı etiket yazı boyutu. 2805 test yeşil. **Dalga 8 bitti.**
 - 2026-11-13: Sadeleştirme (dalga 7–8, Ponytail lite): yalnız `camera-service.ts` `setSecrets` kısaltıldı (net −12 satır, 2805 test aynı); diğer dosyalarda değer bulunmadı.
 - 2026-11-13: Dalga 9 başladı (P20c: db-migration-builder → camera-integrator; taban 4a582db).
+- 2026-11-13: Dalga 9 sadeleştirme dalga 10 ile birlikte. Dalga 10 başladı (P20e + P20g, camera-integrator ×2; taban c44ba3c).
+- 2026-11-13: P20e ✅ — aydınlatma metni şablonu (`features/camera/privacy-notice.tsx`, tr/en/ru, m.10 unsurları, otel bilgisi ve saklama
+  süreleri ayardan, Telegram açıksa yurt dışı aktarım notu, tek A4 yazdırma; Kamera ekranı + sihirbazın Kamera adımı), ayar
+  `camera.privacyContact`, imha raporu (`camera.retentionReport`, audit'ten sayılar), personel dışlama listesi: migrasyon **0022**
+  `staff_faces` (yalnız şifreli vektör, kırpma yok, kişi başı en çok 3; yan sürece ad/oda olmadan "personel, alarm yok"; listeden çıkınca /
+  işten ayrılınca / pasif yapılınca fiziksel silme + audit; yedek/kopya dışı) (otonom varsayılan: alarm üretmemesi için vektör şart),
+  konaklayan misafirin süreli yüzü silinmez. P20g ✅ — sihirbazın isteğe bağlı Kamera adımı + Ayarlar "Yeniden tara": donanım →
+  `camera.profile`/`camera.profiles`, ONVIF + SADP keşfi `src/main/camera/discovery.ts` (`node:dgram`, yalnız özel IPv4, 5 sn, elle
+  başlar; ESLint/kanca istisnası yalnız bu dosya), Hikvision RTSP kalıbı, `probe_camera.py` ile tek kare testi (önizleme `data:`),
+  şifre `safeStorage`; kurulum bitmeden yan süreç başlamaz; 122 pytest. Birleştirme: 8 dosyada iki tarafın eklemesi birleştirildi.
+  Düzeltmeler (privacy/security): pasif personelin yüzü de silinir; otel ağı dışı RTSP adresi kaydedilmez (K-49); keşif dosyasında
+  ESLint yalnız `dgram`'a izin verir. Geçersiz bulgular: "rıza sütunu yok" (K-58 sahip kararı), "koyu temada yazdırma" (`usePrint`
+  yazdırırken `.dark`'ı kaldırıyor). **Sahip onay paketine (avukat):** aydınlatma metnindeki hukuki sebep (m.5/2-f; biyometri için m.6/3
+  şartı) ve personel yüz kaydı tasarımı (Kurul notu `06` §6.1). P21e'ye: probe'da ffmpeg yönlendirmesi/URL yeniden kurma, Python özel IP
+  listesi eşitleme, RTSP kullanıcı adında CR/LF reddi, keşifte paket/sonuç sınırı ve tek tarama kilidi, önizleme `image` `.max()`,
+  `camera.staff` `desktopOnly`, `BISMUTH_CAMERA_PYTHON` paketli sürümde kapalı, telefonda personel satırı düğmeleri, ru yazdırma tek
+  A4 doğrulaması, aydınlatma metninde toplama yöntemi/alıcı grupları. 2958 test yeşil. **Dalga 10 bitti.**

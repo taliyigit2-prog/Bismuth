@@ -56,9 +56,10 @@ Cevaplandı (2026-11-13): S-107 personel dışlama (varsayılan); S-108 canlı y
 - [x] Yan süreç `0.0.0.0`'a bağlanamaz; belirteçsiz istek 401; Origin dışı POST 403 (Python testi) —
       `tests/test_config_and_bridge.py` (`WEB_HOST=0.0.0.0` → `ConfigError`, 401, 403 Origin, 403 Host).
 - [ ] Kamera sekmesi 1366×768 ve 390×844 açık/koyu görüntüleri `ui-reviewer` + `turkish-ui-copy` temiz.
-- [ ] Çıkışta `guest_faces` silinir + audit; yedek/dışa aktarma/kopyada yüz verisi yok (birim test + `privacy-auditor`); aydınlatma
+- [x] Çıkışta `guest_faces` silinir + audit; yedek/dışa aktarma/kopyada yüz verisi yok (birim test + `privacy-auditor`); aydınlatma
       metni sihirbazda ve Kamera sekmesinde üç dilde yazdırılabilir.
-      _P20c kısmı hazır (kutu `privacy-auditor` ve P20e aydınlatma metniyle kapanır):_ çıkışta fiziksel silme + audit, bayt audit'te yok
+      _Kapandı (dalga 10): aydınlatma metni Kamera ekranında ve sihirbazın Kamera adımında (`PrivacyNoticeButton`), privacy-auditor dalga 9–10 temiz (Yüksekler düzeltildi)._
+      _P20c kısmı:_ çıkışta fiziksel silme + audit, bayt audit'te yok
       (`tests/unit/camera-data.test.ts`: "çıkış yapınca yüz satırı fiziksel silinir…"), yedek/dışa aktarma/kopya dışı
       (`migrations-0021.test.ts`, `backup-biometric.test.ts`, adım 1).
 - [x] Alarm → bildirim merkezi ve telefon listesi; `camera.telegram.enabled` açıkken Telegram'a da gider, ağ yokken program
@@ -74,8 +75,10 @@ Cevaplandı (2026-11-13): S-107 personel dışlama (varsayılan); S-108 canlı y
       (`otel-kamera/tests/test_models_offline.py::test_yolo_yerel_yoldan_yüklenir_ve_telemetri_önce_kapatılır`), ağ yamalı
       ortamda açılış-tanıma-alarm (`…test_ağ_kapalıyken_hizmet_gerçek_yükleyicilerle_açılır…`), dosya yoksa açık hata (indirme yok),
       `THIRD_PARTY_NOTICES` K-57 (`tests/unit/camera-notices.test.ts`).
-- [ ] Kamera sihirbazı: sahte ONVIF/SADP yanıtıyla keşif listesi; RTSP kalıbı önerisi; görüntü testi başarısız/başarılı
-      durumları; donanım profili otomatik (e2e).
+- [x] Kamera sihirbazı: sahte ONVIF/SADP yanıtıyla keşif listesi; RTSP kalıbı önerisi; görüntü testi başarısız/başarılı
+      durumları; donanım profili otomatik (e2e) — `tests/e2e/electron/camera-wizard.spec.ts` (keşif listesi, yanlış/doğru şifre,
+      önizleme, kayıt, kurulum bitince kamera açılır); ayrıştırıcılar `src/main/camera/discovery.test.ts` (ONVIF ProbeMatch + SADP
+      örnek yanıtları), profil `src/shared/domain/camera-profile.test.ts`, Python `otel-kamera/tests/test_probe_camera.py`.
 - [ ] i5-8 GB sınıfında ≥ 4 analiz/sn (gerçek makine: sahip onay paketi); CPU/RSS ölçümü raporda.
 - [ ] `security-reviewer` (CSP, köprü, belirteç, Telegram istemcisi) ve `privacy-auditor` Kritik/Yüksek yok; `decision-auditor`
       K-49…K-53, K-57…K-59 uyumu.
@@ -246,3 +249,72 @@ kaydı (Codespace'te anahtar deposu yok: e2e bellek anahtarıyla koştu); alarm 
 
 **Kalanlar:** `privacy-auditor` ve `db-reviewer` turu; `otel-kamera/static/index.html` (eski panel, ölü) P20f'de
 silinir; bildirim merkezi ekranı yok (satırlar yazılır, pencere bildirimi çıkar).
+
+### P20e — KVKK paketi (2026-11-13)
+
+**Yapılanlar**
+- **Aydınlatma metni (K-58):** `features/camera/privacy-notice.tsx` — `PrivacyNotice` (metin), `PrivacyNoticeDialog` (görüntüle + dil seç + yazdır),
+  `PrivacyNoticeButton` (giriş düğmesi); KVKK m.10 unsurları (veri sorumlusu, işlenen veri, amaç, hukuki sebep, aktarım, saklama, çalışanlar,
+  m.11 hakları) + tabela satırı; tr/en/ru; tek A4 yazdırma. Otel adı/şehir/e-posta, saklama günleri ve Telegram durumu ayarlardan türetilir
+  (Telegram açık ve ağ açıksa yurt dışı aktarım notu; fotoğraf ayarına göre). Kamera ekranında sayfa başlığında "Aydınlatma metni".
+  Yeni ayar `camera.privacyContact` (başvuru adresi/telefon; boşsa e-posta, o da yoksa elle doldurulacak çizgi); değişince yan süreç yeniden başlamaz.
+- **Ayarlar → Kamera → "Gizlilik ve saklama"** (`privacy-settings.tsx`, `camera-section.tsx`'e tek satır): başvuru adresi, aydınlatma metni, personel
+  listesi, imha raporu. Saklama süresi alanları (`faceRetentionDays`, `alertRetentionDays`) mevcut "Alarm ve saklama" kartında.
+- **İmha raporu** (`camera.retentionReport`, `camera` view): tarih aralığında `audit_log` silme kayıtlarından sayılar (çıkışta / süre sonunda / elle silinen
+  misafir yüzü; listeden çıkarılan / ayrılan personel yüzü; süresi dolan alarm görüntüsü) + elde kalanlar + geçerli kurallar; ad ve görüntü yok; yazdırılabilir.
+- **Personel dışlama listesi (S-107):** yeni tablo `staff_faces` (migrasyon 0022; mühürlü vektör, kırpma yok), yordamlar `camera.staff` /
+  `camera.enrollStaff` / `camera.removeStaff` (`camera.enroll`); personel Personel kaydından seçilir (tek giriş), yüz kameradan alınır; yan sürece
+  ad ve odası boş "bilinen" yüz olarak gider (alarm üretmez, canlı görüntüde "Personel"); listeden çıkarınca ya da işten ayrılınca (saklama işi) fiziksel
+  silme + audit (`staff-removed` / `staff-left`). Biyometrik tablo listelerine (`BIOMETRIC_TABLES`, `LOCAL_ONLY_TABLES`) eklendi: yedek/dışa aktarma/kopya dışı.
+- **P21e Orta (saklama):** `purgeExpired` içerideki misafirin yüzüne dokunmaz ve önceki konaklamadan kalan `expires_at`'ı temizler
+  (`camera-data.test.ts`: "geri dönen misafirin yüzü"). Python: `FaceStore.guest_count` adsız/odasız (personel) yüzleri saymaz.
+
+**Karşılanan:** K-51, K-52, K-58, S-107, G-23, G-60.
+
+**Varsayılanlar (otonom varsayılan)**
+- Personel dışlama = personelin yüzü "alarm vermeyen bilinen yüz" olarak tutulur (tanınmadan alarm vermemek mümkün değil); ad/oda yan sürece gitmez, kırpma
+  tutulmaz, mesai takibi yok; en çok 3 yüz/kişi; yalnız ana bilgisayar penceresinde alınır. Sahibin avukatı değerlendirmeli (Kurul 2026/921 notu `06` §6.1).
+- Hukuki sebep metni: 6698 m.5/2-f (meşru menfaat); aydınlatma metni şablondur, iletişim ekranında "avukatınıza gösterin" uyarısı.
+- Rıza alanı yok (K-58). `camera.view` imha raporunu görür (yalnız sayı); personel listesi `camera.enroll` ister.
+- Çalışan "ayrıldı" = `employees.end_date` bugünden önce.
+
+**Sahip onay paketine:** aydınlatma metninin avukat onayı; gerçek kamerada personel yüzünün tanınıp alarm vermemesi; A4 yazdırma görünümü.
+**Kalanlar:** kurulum sihirbazına aydınlatma metni bağlama (ana oturum; `PrivacyNoticeButton facts={{…}}`); alarmdan "personel olarak kaydet" kısayolu yapılmadı.
+### P20g — Kamera kurulum sihirbazı (2026-11-13; K-59)
+- **Donanım:** `src/main/camera/hardware.ts` (`node:os`: işlemci modeli, iş parçacığı, bellek, işletim sistemi) → `camera.hardware`
+  (+ ayardaki eşiklere göre önerilen profil). Profil ayarları: `camera.profile` (`light/standard/high`) ve `camera.profiles` (JSON:
+  profili seçen bellek/iş parçacığı eşikleri + her profilin `processEveryN`, `streamMaxWidth`, `idleFaceScanEvery` değerleri);
+  kurallar `src/shared/domain/camera-profile.ts` (saf, testli). Koda gömülü eşik yok; tablo ayardır (G-09).
+- **Keşif (otonom varsayılan: Node tarafı yapar, `discovery.py` yazılmadı):** Python yan süreci kurulum sırasında henüz çalışmıyor ve
+  paketli Python'a bağımlılık getirmemek için `src/main/camera/discovery.ts` (`node:dgram`; ESLint ve `no-network-guard` istisnası yalnız
+  bu dosyaya) ONVIF WS-Discovery (239.255.255.250:3702) ve Hikvision SADP (37020) sorgusunu **yalnız istenince** gönderir, 5 sn dinler,
+  kapatır. Sorgu yalnız bilgisayarın özel IPv4 arayüzlerinden çıkar; yalnız özel adresten gelen ve özel adres bildiren cevap sayılır
+  (10/8, 172.16/12, 192.168/16, 169.254/16); XML motoru yok (etiket eşleme, varlık/dış başvuru çözülmez); paket ≤ 16 KB, ≤ 50 cihaz.
+  `network.enabled`'dan bağımsız (yerel ağ). SADP yanıt biçimi bilinen alanlardan yazıldı, gerçek cihazla doğrulanmadı.
+- **Deneme:** `otel-kamera/probe_camera.py` tek seferlik süreç (adres ortam değişkeniyle, komut satırında yok): yalnız özel/loopback IPv4
+  kabul eder, RTSP DESCRIBE (Digest/Basic) ile *zaman aşımı / ulaşılamıyor / kimlik / yol* ayrımı yapar, OpenCV ile bir kare alır,
+  ≤ 640 px JPEG döner. Node tarafı `src/main/camera/probe.ts` çıktıyı alan alan doğrular, 20 sn'de öldürür. Önizleme yanıtta `data:` adresi
+  olarak gelir (CSP `img-src data:` zaten var; yeni loopback/CSP istisnası gerekmedi).
+- **Sözleşme:** `camera.hardware`, `camera.discover`, `camera.probe` (+ `camera.status` ve `camera.setSecrets` kurulum penceresine de açıldı);
+  erişim `['setup','user']`; servis: `camera` edit + yalnız ana pencere (`desktopOnly`); adres/şifre audit'e, günlüğe, ayara yazılmaz.
+- **Arayüz:** `features/setup/camera-flow.tsx` (akış), `camera-step.tsx` (sihirbazın 12. adımı, isteğe bağlı, "Atla"), Ayarlar → Kamera →
+  "Yeniden tara" (`settings/camera-rescan.tsx`, aynı akış diyalogda). Hikvision adresi `buildHikvisionRtsp` ile kurulur (kullanıcı/şifre
+  yüzde kodlu); ekranda şifre maskeli. Profil "Profili uygula" ile ya da kamera kaydedilirken yazılır.
+- **Kurulum sırasında sidecar başlamaz:** ayar değişikliği kurulum bitmeden yan süreci başlatmaz; kurulum bitince ilk kamera turu
+  (3 sn) `camera.enabled` ise başlatır (`src/main/index.ts`, e2e'de doğrulandı).
+
+**Karşılanan:** K-49, K-51 (şifre yalnız mühürlü depo), K-59, G-01, G-09, G-23.
+
+**Varsayılanlar (otonom varsayılan)**
+- Kanal sayısı yalnız kanal seçimini sınırlar; yan süreç tek kaynak okur, seçilen kanalın adresi kaydedilir (çok kameralı analiz bu paketin dışı).
+- Wizard'da adres "Kamerayı kaydet" ile hemen mühürlenir (sihirbazın taslağına girmez); kaydetmeden "İleri" kamera eklemez, ekranda söylenir.
+- Port alanı varsayılan 554; kullanıcı adı varsayılan `admin`; boş şifre kabul.
+- Profil tablosundaki varsayılan değerler: hafif 5/640/6, standart 3/960/3, yüksek 2/1280/2; eşikler 6 GB / 4 iş parçacığı altı hafif, 16 GB ve 8 iş parçacığı ve üstü yüksek.
+
+**Ölçümler:** keşif ve deneme birim/e2e testleri (sahte soket, sahte RTSP sunucusu, Node sahte süreç); Python `pytest` 122 test geçti
+(`test_probe_camera.py` 21), `ruff check` temiz. Gerçek ağ/kamera ölçümü yok.
+
+**Sahip onay paketine:** gerçek Hikvision kamerada ONVIF/SADP keşfi (SADP yanıt alanları), Digest kimlik doğrulaması, görüntü önizlemesi;
+Windows güvenlik duvarı ilk UDP isteğinde soru sorabilir; kamera ekranı 1366×768 / 390×844 görüntüleri (`ui-reviewer`).
+
+**Kalanlar:** gömülü Python'da `probe_camera.py` paketlenmesi (P20f: `extraResources` listesine `otel-kamera/*.py` zaten giriyorsa ek iş yok, kontrol edilmeli).

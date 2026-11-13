@@ -10,27 +10,51 @@ import {
   cameraGuestInputSchema,
   cameraMarkAlertInputSchema,
   cameraPauseInputSchema,
+  cameraRetentionReportInputSchema,
+  cameraProbeInputSchema,
   cameraSaveAlertInputSchema,
   cameraSecretsInputSchema,
+  cameraStaffInputSchema,
   type CameraAlertCrop,
   type CameraAlerts,
   type CameraCandidate,
+  type CameraDiscovery,
   type CameraFaceStatus,
   type CameraGuestInput,
+  type CameraHardware,
   type CameraLive,
   type CameraMarkAlertInput,
+  type CameraRetentionReport,
+  type CameraRetentionReportInput,
+  type CameraProbe,
+  type CameraProbeInput,
   type CameraSaveAlertInput,
   type CameraSecretsInput,
+  type CameraStaffInput,
+  type CameraStaffList,
   type CameraStatus,
   type CameraStream,
   type CameraTelegramTest
 } from '@shared/contract/camera'
+import { parseProfileTable, recommendProfile } from '@shared/domain/camera-profile'
+import { isCameraHost, rtspHost } from '@shared/domain/camera-source'
 import { ulid } from '@shared/ids'
-import { desc, eq } from 'drizzle-orm'
-import { cameraEvents, guestFaces, guests, notifications } from '../db/schema'
+import { localDateOf } from '@shared/date'
+import { and, count as countRows, desc, eq, gte, inArray, isNotNull, lt } from 'drizzle-orm'
+import {
+  auditLog,
+  cameraEvents,
+  employees,
+  guestFaces,
+  guests,
+  notifications,
+  staffFaces
+} from '../db/schema'
 import type { CameraRuntime } from '../camera'
 import type { Bridge } from '../camera/bridge'
 import { FaceCryptoError, type FaceCrypto } from '../camera/crypto'
+import { discoverCameras } from '../camera/discovery'
+import { readHardware, type Hardware } from '../camera/hardware'
 import type { SecretStore } from '../camera/secrets'
 import type { SidecarNotice } from '../camera/sidecar'
 import {
@@ -46,8 +70,11 @@ import type { Ctx } from './context'
 import {
   activeFaces,
   deleteFaceRow,
+  deleteStaffFaceRow,
+  employedOn,
   inHouseGuests,
   MAX_FACES_PER_GUEST,
+  MAX_FACES_PER_STAFF,
   purgeExpired,
   type PurgeResult
 } from './camera-faces'
@@ -56,6 +83,7 @@ import {
   decodeBase64,
   eventCropContext,
   faceContext,
+  staffFaceContext,
   EMBEDDING_BYTES,
   localIso,
   type AlertNotice,
@@ -86,6 +114,12 @@ export interface CameraServiceDeps extends ServiceDeps {
   alertMessage?: (info: { time: string; location: string }) => string
   /** The program's window notice for a new alarm (the main process passes it). */
   onAlert?: (notice: AlertNotice) => void
+  /** P20g. Tests: another computer's facts (default: this one's). */
+  hardware?: () => Hardware
+  /** P20g. Tests: a stand-in for the search of the local network (default: ONVIF + SADP, 5 s). */
+  discover?: () => Promise<CameraDiscovery>
+  /** P20g. The one-picture test of an rtsp:// address (the main process passes the Python one; none = unavailable). */
+  probe?: (source: string) => Promise<CameraProbe>
 }
 
 /** A webcam number ("0") or an RTSP address: the only camera targets (K-49). */
@@ -175,6 +209,38 @@ export function createCameraService(deps: CameraServiceDeps) {
   const guestOrThrow = (guestId: string): void => {
     if (!db.select({ id: guests.id }).from(guests).where(eq(guests.id, guestId)).get())
       throw notFound('guest', guestId)
+  }
+
+  /** The staff exclusion list: employed people, with how many faces each has (names in Turkish order). */
+  function staffListOf(now: Date): CameraStaffList {
+    const people = db
+      .select({
+        id: employees.id,
+        first: employees.firstName,
+        last: employees.lastName,
+        position: employees.position
+      })
+      .from(employees)
+      .where(employedOn(localDateOf(now)))
+      .all()
+    const faceCount = new Map<string, number>()
+    for (const r of db.select({ employeeId: staffFaces.employeeId }).from(staffFaces).all())
+      faceCount.set(r.employeeId, (faceCount.get(r.employeeId) ?? 0) + 1)
+    const collator = new Intl.Collator('tr')
+    const all = people
+      .map((p) => ({
+        employeeId: p.id,
+        name: `${p.first} ${p.last}`.trim(),
+        position: p.position,
+        faces: faceCount.get(p.id) ?? 0
+      }))
+      .sort((a, b) => collator.compare(a.name, b.name))
+    return {
+      listed: all.filter((p) => p.faces > 0),
+      others: all.filter((p) => p.faces === 0),
+      max: MAX_FACES_PER_STAFF,
+      keyStore: faceCrypto.available()
+    }
   }
 
   /** What the sidecar's face endpoints answer: a vector and a crop, checked field by field. */
@@ -285,6 +351,11 @@ export function createCameraService(deps: CameraServiceDeps) {
       desktopOnly(ctx)
       const input = parseInput(cameraSecretsInputSchema, raw)
       if (input.source && !isValidSource(input.source)) throw invalid('errors.cameraSourceInvalid')
+      // An RTSP camera must be inside the hotel's own network (K-49), the same rule as the connection test.
+      if (input.source && /^rtsp:/i.test(input.source)) {
+        const host = rtspHost(input.source)
+        if (!host || !isCameraHost(host)) throw invalid('errors.cameraSourceInvalid')
+      }
       if (input.telegramToken && !isValidToken(input.telegramToken))
         throw invalid('errors.cameraTelegramInvalid')
       let chats: string | null | undefined
@@ -318,6 +389,44 @@ export function createCameraService(deps: CameraServiceDeps) {
       desktopOnly(ctx)
       const out = await telegram.sendAlert({ text: deps.testMessage?.() ?? 'Bismuth Telegram test' })
       return out.ok ? { ok: out.sent > 0, reason: null } : { ok: false, reason: out.reason }
+    },
+
+    /**
+     * Setup wizard (P20g, K-59): this computer's processor, memory and system, and the profile the hotel's limits
+     * (`camera.profiles`) suggest. Read only, nothing is stored.
+     */
+    hardware(ctx: Ctx): CameraHardware {
+      requirePermission(ctx, 'camera', 'edit')
+      desktopOnly(ctx)
+      const facts = (deps.hardware ?? readHardware)()
+      const table = parseProfileTable(readSetting(db, 'camera.profiles'))
+      return { ...facts, recommended: recommendProfile(facts, table) }
+    },
+
+    /**
+     * Looks for cameras on the hotel's own network (ONVIF WS-Discovery, Hikvision SADP; private addresses only).
+     * Starts only on this call (the wizard's "Ağı tara", Ayarlar → "Yeniden tara"), takes 5 seconds, independent of
+     * `network.enabled` (the local network is not the internet). Nothing is stored.
+     */
+    discover(ctx: Ctx): Promise<CameraDiscovery> {
+      requirePermission(ctx, 'camera', 'edit')
+      desktopOnly(ctx)
+      return (deps.discover ?? (() => discoverCameras()))()
+    },
+
+    /**
+     * Opens one picture from an rtsp:// address before it is saved (the address carries the camera's password: it is
+     * never stored, logged or audited here). An address that is not a camera of this network is refused unopened.
+     */
+    async probe(ctx: Ctx, raw: CameraProbeInput): Promise<CameraProbe> {
+      requirePermission(ctx, 'camera', 'edit')
+      desktopOnly(ctx)
+      const { source } = parseInput(cameraProbeInputSchema, raw)
+      const host = rtspHost(source)
+      if (!host || !isCameraHost(host))
+        return { ok: false, reason: 'badAddress', image: null, width: 0, height: 0 }
+      if (!deps.probe) return { ok: false, reason: 'unavailable', image: null, width: 0, height: 0 }
+      return deps.probe(source)
     },
 
     /**
@@ -578,6 +687,160 @@ export function createCameraService(deps: CameraServiceDeps) {
           reason: 'saved as guest'
         })
       })
+    },
+
+    // --- Staff exclusion list (S-107, K-58): staff are known to the sidecar as "staff", so they raise no alarm ---
+
+    /** Employed people, those on the list (a sealed face) and those who are not yet. */
+    staffList(ctx: Ctx): CameraStaffList {
+      requirePermission(ctx, 'camera.enroll', 'view')
+      return staffListOf(deps.clock())
+    },
+
+    /** "Kameradan yüz al" for a staff member: the face now in front of the camera, sealed, no picture kept. */
+    async enrollStaff(ctx: Ctx, raw: CameraStaffInput): Promise<CameraStaffList> {
+      requirePermission(ctx, 'camera.enroll', 'edit')
+      desktopOnly(ctx)
+      const { employeeId } = parseInput(cameraStaffInputSchema, raw)
+      const person = db.select({ id: employees.id }).from(employees).where(eq(employees.id, employeeId)).get()
+      if (!person) throw notFound('employee', employeeId)
+      const employed = db
+        .select({ id: employees.id })
+        .from(employees)
+        .where(and(eq(employees.id, employeeId), employedOn(localDateOf(deps.clock()))))
+        .get()
+      if (!employed) throw conflict('errors.cameraStaffLeft')
+      if (!faceCrypto.available()) throw conflict('errors.cameraNoKeyStore')
+      const bridge = running()
+      if (!bridge) throw new AppError('CONFLICT', 'errors.cameraUnavailable')
+      const res = await bridge.request('POST', '/api/faces/capture').catch(() => null)
+      if (!res) throw new AppError('CONFLICT', 'errors.cameraUnavailable')
+      if (res.status !== 200) throw conflict('errors.cameraNoFace')
+      const face = readFace(res.json)
+      if (!face) throw conflict('errors.cameraNoFace')
+      try {
+        inTransaction(deps, ctx, (tx, audit, now) => {
+          const have = tx
+            .select({ id: staffFaces.id })
+            .from(staffFaces)
+            .where(eq(staffFaces.employeeId, employeeId))
+            .all()
+          if (have.length >= MAX_FACES_PER_STAFF) throw conflict('errors.cameraFaceLimit')
+          const id = newId(now)
+          tx.insert(staffFaces)
+            .values({
+              id,
+              employeeId,
+              embeddingEnc: faceCrypto.encrypt(face.embedding, staffFaceContext(id)),
+              model: face.model,
+              enrolledAt: now.toISOString(),
+              enrolledBy: ctx.userId as string,
+              ...stamps(now)
+            })
+            .run()
+          // No picture is kept for staff and no bytes go to the audit log (K-51).
+          audit({
+            entity: 'staff_face',
+            entityId: id,
+            action: 'create',
+            after: { employeeId, model: face.model },
+            reason: 'camera'
+          })
+        })
+      } catch (error) {
+        if (error instanceof FaceCryptoError) throw conflict('errors.cameraNoKeyStore')
+        throw error
+      }
+      await sync.pushNow()
+      return staffListOf(deps.clock())
+    },
+
+    /** Takes a person off the list: every face row of theirs is deleted for real (K-52). */
+    async removeStaff(ctx: Ctx, raw: CameraStaffInput): Promise<CameraStaffList> {
+      requirePermission(ctx, 'camera.enroll', 'edit')
+      const { employeeId } = parseInput(cameraStaffInputSchema, raw)
+      if (!db.select({ id: employees.id }).from(employees).where(eq(employees.id, employeeId)).get())
+        throw notFound('employee', employeeId)
+      inTransaction(deps, ctx, (tx, audit) => {
+        const rows = tx
+          .select({ id: staffFaces.id, employeeId: staffFaces.employeeId, model: staffFaces.model })
+          .from(staffFaces)
+          .where(eq(staffFaces.employeeId, employeeId))
+          .all()
+        for (const row of rows) deleteStaffFaceRow(tx, audit, row, 'staff-removed')
+      })
+      await sync.pushNow()
+      return staffListOf(deps.clock())
+    },
+
+    /**
+     * The destruction report (K-52, K-58): what the retention rules deleted between two days, counted from the audit
+     * log (the deletes write rows without the sealed bytes), what is still kept and the rules in force. Counts only.
+     */
+    retentionReport(ctx: Ctx, raw: CameraRetentionReportInput): CameraRetentionReport {
+      requirePermission(ctx, 'camera', 'view')
+      const { from, to } = parseInput(cameraRetentionReportInputSchema, raw)
+      // The log's time is UTC; the days are the hotel's. A day-and-a-half margin each side, then the hotel's own day decides.
+      const lo = new Date(`${from}T00:00:00.000Z`).getTime() - 36 * 3_600_000
+      const hi = new Date(`${to}T00:00:00.000Z`).getTime() + 60 * 3_600_000
+      const rows = db
+        .select({
+          ts: auditLog.ts,
+          entity: auditLog.entity,
+          reason: auditLog.reason,
+          after: auditLog.afterJson
+        })
+        .from(auditLog)
+        .where(
+          and(
+            eq(auditLog.action, 'delete'),
+            inArray(auditLog.entity, ['guest_face', 'staff_face', 'camera_event']),
+            gte(auditLog.ts, new Date(lo).toISOString()),
+            lt(auditLog.ts, new Date(hi).toISOString())
+          )
+        )
+        .all()
+      const report: CameraRetentionReport = {
+        from,
+        to,
+        faces: { checkout: 0, retention: 0, manual: 0 },
+        staff: { removed: 0, left: 0 },
+        crops: 0,
+        held: { guestFaces: 0, waitingForDeletion: 0, staffFaces: 0, alarmCrops: 0 },
+        policy: {
+          faceRetentionDays: readSetting(db, 'camera.faceRetentionDays'),
+          alertRetentionDays: readSetting(db, 'camera.alertRetentionDays')
+        }
+      }
+      for (const r of rows) {
+        const day = localDateOf(new Date(r.ts))
+        if (day < from || day > to) continue
+        if (r.entity === 'guest_face') {
+          if (r.reason === 'checkout') report.faces.checkout++
+          else if (r.reason === 'retention') report.faces.retention++
+          else report.faces.manual++
+        } else if (r.entity === 'staff_face') {
+          if (r.reason === 'staff-left') report.staff.left++
+          else report.staff.removed++
+        } else {
+          // One summary row per purge with the number of pictures emptied.
+          try {
+            const n = (JSON.parse(r.after ?? '{}') as { crops?: unknown }).crops
+            if (typeof n === 'number' && Number.isInteger(n) && n > 0) report.crops += n
+          } catch {
+            // A row that is not ours: ignored.
+          }
+        }
+      }
+      const total = (table: typeof guestFaces | typeof staffFaces): number =>
+        db.select({ n: countRows() }).from(table).get()?.n ?? 0
+      report.held.guestFaces = total(guestFaces)
+      report.held.staffFaces = total(staffFaces)
+      report.held.waitingForDeletion =
+        db.select({ n: countRows() }).from(guestFaces).where(isNotNull(guestFaces.expiresAt)).get()?.n ?? 0
+      report.held.alarmCrops =
+        db.select({ n: countRows() }).from(cameraEvents).where(isNotNull(cameraEvents.cropEnc)).get()?.n ?? 0
+      return report
     },
 
     /** One round with the sidecar: new alarms in (notification, Telegram), the face list out. */

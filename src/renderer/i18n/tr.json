@@ -1428,7 +1428,12 @@
       "advancedTitle": "Tanıma ayarları",
       "advancedHelp": "Ne yaptığınızı bilmiyorsanız değiştirmeyin; varsayılanlar çoğu otel için uygundur.",
       "zone": "İzleme bölgesi",
-      "zoneHelp": "Boş bırakırsanız tüm görüntü izlenir. Biçim: x1,y1;x2,y2;… (0 ile 1 arası oran ya da piksel)."
+      "zoneHelp": "Boş bırakırsanız tüm görüntü izlenir. Biçim: x1,y1;x2,y2;… (0 ile 1 arası oran ya da piksel).",
+      "rescan": {
+        "button": "Yeniden tara",
+        "title": "Kamera kurulumu",
+        "description": "Ağdaki kameraları yeniden arayın, yeni bilgileri deneyin ve kaydedin. Kayıtlı şifre gösterilmez."
+      }
     }
   },
   "status": {
@@ -1726,7 +1731,8 @@
     "cameraNoKeyStore": "Bu bilgisayar yüz bilgisini güvenle saklayamıyor (sistemin anahtar deposu yok). Yüz kaydı alınamaz.",
     "cameraNoFace": "Kamerada net bir yüz görünmüyor. Misafiri kameraya doğru çevirip yeniden deneyin.",
     "cameraFaceLimit": "Bu misafirin yüz kayıtları dolu. Önce eski kaydı silin.",
-    "cameraCropGone": "Bu alarmın resmi, saklama süresi dolduğu için silindi."
+    "cameraCropGone": "Bu alarmın resmi, saklama süresi dolduğu için silindi.",
+    "cameraStaffLeft": "Bu çalışan işten ayrılmış; listeye eklenemez."
   },
   "common": {
     "close": "Kapat",
@@ -2367,6 +2373,10 @@
       "hourly": {
         "title": "Saatlik satış",
         "body": "Odaları saatle de satıyorsanız oda tipi başına bir saat ücreti yazın. Boş bırakabilirsiniz."
+      },
+      "camera": {
+        "title": "Kamera",
+        "body": "Otelde güvenlik kamerası varsa burada bağlayın. Bu adım isteğe bağlıdır; atlayıp sonra Ayarlar → Kamera'dan da ekleyebilirsiniz."
       }
     },
     "hotel": {
@@ -2680,6 +2690,83 @@
       "noTypes": "Önce oda tiplerini seçin.",
       "price": "Saat ücreti",
       "optional": "Saatlik satış yapmıyorsanız bu adımı boş geçin. Ücretleri sonra Ayarlar → Odalar ve tipler bölümünden de yazabilirsiniz."
+    },
+    "camera": {
+      "computer": {
+        "title": "Bu bilgisayar",
+        "summary": "Bilgisayarınız: {{cpu}}, {{cores}} çekirdek, {{ram}} GB bellek, {{os}}.",
+        "unknownCpu": "işlemci",
+        "failed": "Bilgisayar bilgileri okunamadı. Profili aşağıdan kendiniz seçebilirsiniz.",
+        "profile": "Performans profili",
+        "recommended": "Önerilen",
+        "apply": "Profili uygula",
+        "applied": "Profil uygulandı"
+      },
+      "profile": {
+        "light": "Hafif",
+        "lightHelp": "Görüntüyü daha seyrek çözümler, canlı görüntüyü küçültür. Yavaş ya da az belleği olan bilgisayarlar için.",
+        "standard": "Standart",
+        "standardHelp": "Çoğu otel bilgisayarı için dengeli ayar.",
+        "high": "Yüksek",
+        "highHelp": "Görüntüyü sık çözümler, canlı görüntü daha büyük olur. Güçlü bilgisayarlar için."
+      },
+      "find": {
+        "title": "Kamerayı bul",
+        "help": "Aynı ağdaki kameraları arar; yaklaşık 5 saniye sürer. Bulunamazsa IP adresini kendiniz yazabilirsiniz.",
+        "scan": "Ağı tara",
+        "rescan": "Yeniden tara",
+        "scanning": "Aranıyor…",
+        "empty": "Kamera bulunamadı. Kameranın açık ve aynı ağa bağlı olduğunu kontrol edin ya da IP adresini aşağıya yazın.",
+        "noNetwork": "Bu bilgisayar bir yerel ağa bağlı görünmüyor. Ağ bağlantısını kontrol edin.",
+        "failed": "Arama yapılamadı. Yeniden deneyin.",
+        "found_one": "{{count}} kamera bulundu",
+        "found_other": "{{count}} kamera bulundu",
+        "use": "Bunu kullan",
+        "notActivated": "Etkinleştirilmemiş",
+        "onvif": "ONVIF",
+        "sadp": "SADP"
+      },
+      "form": {
+        "title": "Kamera bilgileri",
+        "help": "Hikvision kameralarda adres hazır kalıpla kurulur: yalnızca aşağıdaki bilgileri yazın, adresi Bismuth oluşturur.",
+        "ip": "IP adresi",
+        "ipHint": "Örnek: 192.168.1.64",
+        "ipInvalid": "Geçerli bir IP adresi yazın (örneğin 192.168.1.64).",
+        "port": "Port",
+        "portInvalid": "Port 1 ile 65535 arasında olmalı.",
+        "user": "Kullanıcı adı",
+        "userRequired": "Kullanıcı adını yazın.",
+        "password": "Şifre",
+        "passwordHint": "Şifre bu bilgisayarda şifreli saklanır, ayarlarda görünmez.",
+        "channels": "Kanal sayısı",
+        "channelsHint": "Tek kamerada 1 yazın. Kamera bir kayıt cihazına (NVR) bağlıysa kamera sayısını yazın.",
+        "channelsInvalid": "Kanal sayısı 1 ile 32 arasında olmalı.",
+        "channel": "Kullanılacak kanal",
+        "channelN": "Kanal {{n}}",
+        "address": "Bağlantı adresi"
+      },
+      "test": {
+        "title": "Bağlantı ve görüntü denemesi",
+        "run": "Bağlantıyı dene",
+        "running": "Deneniyor…",
+        "ok": "Bağlantı kuruldu, kameradan görüntü alındı ({{width}}×{{height}}).",
+        "preview": "Kameradan alınan deneme görüntüsü",
+        "failed": "Deneme yapılamadı. Yeniden deneyin.",
+        "timeout": "Kamera zamanında yanıt vermedi. Kameranın açık ve aynı ağda olduğunu kontrol edin.",
+        "unreachable": "Bu adreste kamera bulunamadı. IP adresini ve portu kontrol edin.",
+        "auth": "Kullanıcı adı ya da şifre yanlış. Kameranın etkinleştirildiğinden ve şifrenin doğru olduğundan emin olun.",
+        "path": "Kamera bu kanalı tanımıyor. Kanal numarasını kontrol edin.",
+        "noFrame": "Kameraya bağlanıldı ama görüntü alınamadı. Birkaç saniye sonra yeniden deneyin.",
+        "badAddress": "Bu adres otelin kendi ağındaki bir kamera gibi görünmüyor.",
+        "unavailable": "Kamera bölümü bu bilgisayarda çalışmıyor. Kurulum kılavuzundaki kamera bölümüne bakın."
+      },
+      "save": {
+        "run": "Kamerayı kaydet",
+        "saving": "Kaydediliyor…",
+        "done": "Kamera kaydedildi ve açıldı.",
+        "failed": "Kamera kaydedilemedi. Yeniden deneyin.",
+        "note": "Kaydetmeden devam ederseniz kamera eklenmez. Sonradan Ayarlar → Kamera'dan ekleyebilirsiniz."
+      }
     }
   },
   "auth": {
@@ -5644,7 +5731,8 @@
       "camera": "Kamera sistemi",
       "camera_alert": "Kamera alarmı",
       "guest_face": "Yüz kaydı",
-      "camera_event": "Kamera olayı"
+      "camera_event": "Kamera olayı",
+      "staff_face": "Personel yüz kaydı"
     },
     "fieldName": {
       "name": "Ad",
@@ -7185,7 +7273,8 @@
       "alt": "Kameranın canlı görüntüsü",
       "failed": "Görüntü alınamadı.",
       "retry": "Yeniden dene",
-      "noPicture": "Görüntü adresi alınamadı. Kamera sistemi çalışıyorsa birkaç saniye sonra kendiliğinden gelir."
+      "noPicture": "Görüntü adresi alınamadı. Kamera sistemi çalışıyorsa birkaç saniye sonra kendiliğinden gelir.",
+      "staff": "Personel"
     },
     "alerts": {
       "title": "Alarmlar",
@@ -7253,6 +7342,116 @@
       "deleteFailed": "Yüz kaydı silinemedi",
       "confirmTitle": "Yüz kaydı silinsin mi?",
       "confirmBody": "Bu misafirin tüm yüz kayıtları kalıcı olarak silinir. Kamera onu bir daha tanımaz."
+    },
+    "notice": {
+      "entry": "Aydınlatma metni",
+      "title": "Kamera ile kayıt ve yüz tanıma aydınlatma metni",
+      "sign": "Bu otelde kamera ile kayıt alınmaktadır",
+      "help": "Misafirlere göstermek ya da girişe asmak için yazdırın. Metin bir şablondur; kullanmadan önce avukatınıza gösterin.",
+      "language": "Metnin dili",
+      "print": "Yazdır",
+      "controller": {
+        "title": "Veri sorumlusu",
+        "body": "{{hotel}}. İletişim: {{contact}}"
+      },
+      "data": {
+        "title": "İşlenen veriler",
+        "body": "Kameraların gördüğü alandaki görüntünüz. Otelde konaklıyorsanız ayrıca yüzünüzün küçük bir fotoğrafı ve sayısal bir şablonu (biyometrik veri) tutulur. Otelde konaklamayan biri algılanırsa o anın yüz görüntüsü alarm kaydı olarak tutulur."
+      },
+      "purpose": {
+        "title": "Amaç",
+        "body": "Otelin, misafirlerin ve çalışanların güvenliği; kayıtlı olmayan kişilerin girişini fark etmek."
+      },
+      "basis": {
+        "title": "Hukuki sebep",
+        "body": "6698 sayılı Kişisel Verilerin Korunması Kanunu m.5/2-f: veri sorumlusunun meşru menfaati (otel ve misafir güvenliği)."
+      },
+      "transfer": {
+        "title": "Aktarım",
+        "local": "Veriler otelin kendi bilgisayarında kalır; üçüncü kişilere verilmez.",
+        "telegram": "Kayıtsız biri algılandığında otel yetkililerine Telegram ile kısa bir bildirim gider. Bildirim yurt dışındaki Telegram sunucularından geçer.",
+        "telegramPhoto": "Bildirime algılanan kişinin yüz görüntüsü de eklenir."
+      },
+      "retention": {
+        "title": "Saklama süresi",
+        "faceNow": "Konaklayan misafirin yüz bilgisi, çıkış yapınca silinir.",
+        "faceDays_one": "Konaklayan misafirin yüz bilgisi, çıkıştan {{count}} gün sonra silinir.",
+        "faceDays_other": "Konaklayan misafirin yüz bilgisi, çıkıştan {{count}} gün sonra silinir.",
+        "alerts_one": "Alarm anında alınan görüntüler {{count}} gün sonra silinir.",
+        "alerts_other": "Alarm anında alınan görüntüler {{count}} gün sonra silinir.",
+        "final": "Silinen veri geri getirilemez."
+      },
+      "staff": {
+        "title": "Çalışanlar",
+        "body": "Çalışanların yüzü mesai takibi için kullanılmaz. Alarm verilmemesi için yüzü tanıtılan çalışanın şablonu yalnızca bu amaçla tutulur ve işten ayrılınca silinir."
+      },
+      "rights": {
+        "title": "Haklarınız",
+        "body": "6698 sayılı Kanun'un 11. maddesi uyarınca; verilerinizin işlenip işlenmediğini öğrenme, işlenmişse bilgi isteme, amacına uygun kullanılıp kullanılmadığını öğrenme, yanlış ya da eksikse düzeltilmesini ve silinmesini isteme, itiraz etme ve zararın giderilmesini isteme haklarına sahipsiniz. Başvurunuzu şuraya iletebilirsiniz: {{contact}}"
+      }
+    },
+    "privacy": {
+      "title": "Gizlilik ve saklama",
+      "help": "Aydınlatma metni, silme kuralları ve alarm vermeyen personel (KVKK).",
+      "contact": "Başvuru adresi ve telefonu",
+      "contactHelp": "Aydınlatma metninde iletişim bilgisi olarak yazılır. Boş bırakırsanız e-posta adresi, o da yoksa elle doldurulacak bir boşluk yazılır.",
+      "contactPlaceholder": "Adres ve telefon",
+      "retentionHint": "Yüzlerin ve alarm görüntülerinin kaç gün saklanacağını yukarıdaki Alarm ve saklama bölümünden ayarlayın."
+    },
+    "report": {
+      "title": "İmha raporu",
+      "help": "Seçilen günlerde silinen yüz ve alarm görüntülerinin sayısı. Ad ya da görüntü içermez.",
+      "from": "Başlangıç",
+      "to": "Bitiş",
+      "invalidRange": "Bitiş tarihi başlangıçtan önce olamaz.",
+      "column": {
+        "what": "Silinen",
+        "count": "Adet"
+      },
+      "rows": {
+        "checkout": "Çıkışta silinen misafir yüzü",
+        "retention": "Süresi dolduğu için silinen misafir yüzü",
+        "manual": "Elle silinen misafir yüzü",
+        "staffRemoved": "Listeden çıkarılan personelin yüzü",
+        "staffLeft": "İşten ayrılan personelin yüzü",
+        "crops": "Süresi dolan alarm görüntüsü"
+      },
+      "total": "Toplam",
+      "none": "Bu aralıkta silinen bir şey yok.",
+      "held": {
+        "title": "Şu anda saklanan",
+        "guestFaces": "Misafir yüzü",
+        "waiting": "Silinmeyi bekleyen misafir yüzü",
+        "staffFaces": "Personel yüzü",
+        "alarmCrops": "Alarm görüntüsü"
+      },
+      "policy": "Geçerli kurallar",
+      "print": "Yazdır",
+      "printTitle": "Kamera verisi imha raporu",
+      "printRange": "{{from}} – {{to}}"
+    },
+    "staff": {
+      "title": "Alarm vermeyen personel",
+      "help": "Kamera personeli de görür. Buraya eklediğiniz çalışan için alarm verilmez. Yüzü kameradan alınır ve şifreli saklanır; fotoğrafı tutulmaz, adı kamera sistemine gönderilmez. Çalışan işten ayrılınca ya da listeden çıkarılınca silinir.",
+      "emptyTitle": "Listede kimse yok",
+      "emptyBody": "Alarm verilmesini istemediğiniz bir çalışanı eklemek için aşağıdan seçin.",
+      "faces_one": "{{count}} yüz",
+      "faces_other": "{{count}} yüz",
+      "pick": "Çalışan seçin",
+      "pickLabel": "Eklenecek çalışan",
+      "pickEmpty": "Eklenecek başka çalışan yok.",
+      "take": "Kameradan yüz al",
+      "takeAnother": "Bir yüz daha al",
+      "takeHint": "Çalışan kameraya baksın, sonra düğmeye basın.",
+      "hostOnly": "Yüz yalnızca otelin ana bilgisayarındaki pencereden alınır.",
+      "noKeyStore": "Bu bilgisayarda anahtar deposu yok; yüz saklanamaz.",
+      "remove": "Listeden çıkar",
+      "removeTitle": "{{name}} listeden çıkarılsın mı?",
+      "removeBody": "Yüz bilgisi silinir ve geri getirilemez. Bu kişi kameraya girince yeniden alarm verilir.",
+      "added": "Yüz alındı",
+      "addFailed": "Yüz alınamadı",
+      "removed": "Listeden çıkarıldı",
+      "removeFailed": "Listeden çıkarılamadı"
     }
   }
 }

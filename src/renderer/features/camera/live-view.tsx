@@ -23,6 +23,7 @@ export function FaceBoxes({
   frame: { width: number; height: number }
   boxes: readonly CameraBox[]
 }) {
+  const { t } = useTranslation()
   const size = Math.max(12, Math.round(frame.height / 34))
   return (
     <svg
@@ -34,6 +35,8 @@ export function FaceBoxes({
     >
       {boxes.map((box, i) => {
         const above = box.y >= size * 1.4
+        // S-107: a known face with no name and no room is a staff member on the exclusion list.
+        const label = box.kind === 'known' && !box.label ? t('camera.live.staff') : box.label
         return (
           <g key={i} data-testid="camera-box" data-kind={box.kind}>
             <rect
@@ -46,7 +49,7 @@ export function FaceBoxes({
               vectorEffect="non-scaling-stroke"
               className={box.kind === 'known' ? 'stroke-primary' : 'stroke-destructive'}
             />
-            {box.label ? (
+            {label ? (
               <text
                 x={box.x}
                 y={above ? box.y - size * 0.35 : box.y + box.h + size * 1.1}
@@ -56,7 +59,7 @@ export function FaceBoxes({
                 className="fill-foreground stroke-background [paint-order:stroke]"
                 strokeLinejoin="round"
               >
-                {box.label}
+                {label}
               </text>
             ) : null}
           </g>

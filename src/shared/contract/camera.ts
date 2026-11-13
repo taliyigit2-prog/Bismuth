@@ -1,6 +1,7 @@
 // Camera module contract (Faz 20 P20a; K-49…K-53, K-57…K-59): the sidecar's state for the Kamera screen, the secrets
 // (camera address, Telegram) and the Telegram test. Secrets only go IN; a reply says whether one is set, never what it is.
 import * as z from 'zod'
+import { cameraProfileSchema } from '../domain/camera-profile'
 import { ULID_PATTERN } from '../ids'
 
 export const CAMERA_RUNTIME_STATES = [
@@ -170,3 +171,138 @@ export const cameraSaveAlertInputSchema = z
   .object({ id: z.string().regex(ULID_PATTERN), guestId: z.string().min(1).max(40) })
   .strict()
 export type CameraSaveAlertInput = z.infer<typeof cameraSaveAlertInputSchema>
+
+// --- Personel dışlama listesi (Faz 20 P20e; S-107, K-58) -------------------------------------------------------------
+// The cameras see staff too. A staff member on the list has a sealed face vector so the sidecar knows "staff" and raises
+// no alarm; no name or room goes to the sidecar and no picture is kept. Picked from the staff records (one entry, G-60).
+export const cameraStaffInputSchema = z.object({ employeeId: z.string().min(1).max(40) }).strict()
+export type CameraStaffInput = z.infer<typeof cameraStaffInputSchema>
+
+export const cameraStaffPersonSchema = z.object({
+  employeeId: z.string(),
+  name: z.string(),
+  position: z.string().nullable(),
+  /** How many face rows the person has (angles); 0 = not on the list. */
+  faces: z.number().int().min(0)
+})
+export type CameraStaffPerson = z.infer<typeof cameraStaffPersonSchema>
+
+export const cameraStaffListSchema = z.object({
+  /** On the list: employed people with at least one face. */
+  listed: z.array(cameraStaffPersonSchema).max(500),
+  /** Employed people not on the list yet (the picker). */
+  others: z.array(cameraStaffPersonSchema).max(500),
+  max: z.number().int().positive(),
+  /** This computer has no operating-system key store: a face cannot be kept. */
+  keyStore: z.boolean()
+})
+export type CameraStaffList = z.infer<typeof cameraStaffListSchema>
+
+// --- İmha raporu (Faz 20 P20e; K-52): what the retention rules deleted, counted from the audit log ---------------------
+const reportDaySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
+export const cameraRetentionReportInputSchema = z
+  .object({ from: reportDaySchema, to: reportDaySchema })
+  .strict()
+  .refine((v) => v.from <= v.to, { message: 'range' })
+export type CameraRetentionReportInput = z.infer<typeof cameraRetentionReportInputSchema>
+
+export const cameraRetentionReportSchema = z.object({
+  from: z.string(),
+  to: z.string(),
+  /** Guests' face rows deleted: at check-out, at the end of the keep time, by hand. */
+  faces: z.object({
+    checkout: z.number().int().min(0),
+    retention: z.number().int().min(0),
+    manual: z.number().int().min(0)
+  }),
+  /** Staff face rows deleted: taken off the list, or the person left. */
+  staff: z.object({ removed: z.number().int().min(0), left: z.number().int().min(0) }),
+  /** Alarm pictures deleted after `camera.alertRetentionDays`. */
+  crops: z.number().int().min(0),
+  /** What is still kept today (counts only) and the rules in force. */
+  held: z.object({
+    guestFaces: z.number().int().min(0),
+    waitingForDeletion: z.number().int().min(0),
+    staffFaces: z.number().int().min(0),
+    alarmCrops: z.number().int().min(0)
+  }),
+  policy: z.object({
+    faceRetentionDays: z.number().int().min(0),
+    alertRetentionDays: z.number().int().min(1)
+  })
+})
+export type CameraRetentionReport = z.infer<typeof cameraRetentionReportSchema>
+// --- Kamera kurulum sihirbazı (Faz 20 P20g; K-59) ------------------------------------------------------------------
+// The wizard reads the computer, looks for cameras on the hotel's own network (only when the person asks) and opens one
+// picture from an address before it is saved. Hotel computer's own window only; the password goes in, never back.
+export const cameraHardwareSchema = z.object({
+  /** Processor model as the operating system names it ("" when unknown). */
+  cpuModel: z.string().max(120),
+  /** Processor threads. */
+  cores: z.number().int().min(1),
+  /** Installed memory in gigabytes (one decimal). */
+  ramGb: z.number().min(0),
+  /** `win32`, `darwin`, `linux` … and the system's version text. */
+  platform: z.string().max(20),
+  osRelease: z.string().max(60),
+  arch: z.string().max(20),
+  /** The profile the hotel's `camera.profiles` limits suggest for this computer. */
+  recommended: cameraProfileSchema
+})
+export type CameraHardware = z.infer<typeof cameraHardwareSchema>
+
+export const CAMERA_DISCOVERY_PROTOCOLS = ['onvif', 'sadp'] as const
+export const cameraDeviceSchema = z.object({
+  /** A private IPv4 address (10/8, 172.16/12, 192.168/16, 169.254/16). */
+  ip: z.string().max(15),
+  protocols: z.array(z.enum(CAMERA_DISCOVERY_PROTOCOLS)).min(1).max(2),
+  /** Model or name the device told, "" when it said nothing. */
+  model: z.string().max(80),
+  serial: z.string().max(40),
+  mac: z.string().max(20),
+  /** SADP only: a camera nobody has set a password on yet cannot be opened. */
+  activated: z.boolean().nullable()
+})
+export type CameraDevice = z.infer<typeof cameraDeviceSchema>
+
+export const cameraDiscoverySchema = z.object({
+  devices: z.array(cameraDeviceSchema).max(50),
+  /** `network`: this computer has no private network address to ask from. */
+  problem: z.enum(['network']).nullable()
+})
+export type CameraDiscovery = z.infer<typeof cameraDiscoverySchema>
+
+export const cameraProbeInputSchema = z
+  .object({
+    /** An rtsp:// address of a camera on this computer's own network. */
+    source: z
+      .string()
+      .trim()
+      .min(8)
+      .max(500)
+      .regex(/^rtsp:\/\/[^\s]+$/i)
+  })
+  .strict()
+export type CameraProbeInput = z.infer<typeof cameraProbeInputSchema>
+
+export const CAMERA_PROBE_REASONS = [
+  'timeout',
+  'unreachable',
+  'auth',
+  'path',
+  'noFrame',
+  'badAddress',
+  'unavailable'
+] as const
+export const cameraProbeSchema = z.object({
+  ok: z.boolean(),
+  /** Why no picture came: timeout, unreachable (nothing answers there), auth (user or password), path, noFrame
+   *  (it answers but sends no picture), badAddress (not a camera address of this network), unavailable (this
+   *  computer cannot run the camera part). */
+  reason: z.enum(CAMERA_PROBE_REASONS).nullable(),
+  /** `data:image/jpeg;base64,…` of the picture. */
+  image: z.string().nullable(),
+  width: z.number().int().min(0),
+  height: z.number().int().min(0)
+})
+export type CameraProbe = z.infer<typeof cameraProbeSchema>

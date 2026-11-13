@@ -5,7 +5,7 @@
 import Database from 'better-sqlite3'
 
 /** Camera tables holding sealed face vectors and crops (schema/camera.ts). */
-export const BIOMETRIC_TABLES = ['guest_faces', 'camera_events'] as const
+export const BIOMETRIC_TABLES = ['guest_faces', 'camera_events', 'staff_faces'] as const
 
 /**
  * Empties the biometric tables of a database file copy (a backup). A table the file does not have (a copy of an older

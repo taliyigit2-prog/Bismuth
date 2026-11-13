@@ -1428,7 +1428,12 @@
       "advancedTitle": "Recognition settings",
       "advancedHelp": "Leave these alone unless you know what you are doing; the defaults suit most hotels.",
       "zone": "Watched area",
-      "zoneHelp": "Leave empty to watch the whole picture. Format: x1,y1;x2,y2;… (a fraction from 0 to 1, or pixels)."
+      "zoneHelp": "Leave empty to watch the whole picture. Format: x1,y1;x2,y2;… (a fraction from 0 to 1, or pixels).",
+      "rescan": {
+        "button": "Scan again",
+        "title": "Camera setup",
+        "description": "Search the network for cameras again, test the new details and save them. The saved password is not shown."
+      }
     }
   },
   "status": {
@@ -1726,7 +1731,8 @@
     "cameraNoKeyStore": "This computer cannot keep face data safely (no system key store). A face cannot be saved.",
     "cameraNoFace": "The camera does not see a clear face. Ask the guest to face the camera and try again.",
     "cameraFaceLimit": "This guest has the most face records allowed. Delete an old one first.",
-    "cameraCropGone": "The picture of this alarm was deleted because its keep time ran out."
+    "cameraCropGone": "The picture of this alarm was deleted because its keep time ran out.",
+    "cameraStaffLeft": "This staff member has left; they cannot be added to the list."
   },
   "common": {
     "close": "Close",
@@ -2367,6 +2373,10 @@
       "hourly": {
         "title": "Hourly sales",
         "body": "If you also sell rooms by the hour, enter an hourly price per room type. You can leave it empty."
+      },
+      "camera": {
+        "title": "Camera",
+        "body": "If the hotel has a security camera, connect it here. This step is optional; you can skip it and add the camera later in Settings → Camera."
       }
     },
     "hotel": {
@@ -2680,6 +2690,83 @@
       "noTypes": "Choose the room types first.",
       "price": "Hourly price",
       "optional": "If you do not sell by the hour, skip this step. You can also enter the prices later in Settings → Rooms and types."
+    },
+    "camera": {
+      "computer": {
+        "title": "This computer",
+        "summary": "Your computer: {{cpu}}, {{cores}} cores, {{ram}} GB memory, {{os}}.",
+        "unknownCpu": "processor",
+        "failed": "The computer's details could not be read. You can pick the profile below yourself.",
+        "profile": "Performance profile",
+        "recommended": "Suggested",
+        "apply": "Apply profile",
+        "applied": "Profile applied"
+      },
+      "profile": {
+        "light": "Light",
+        "lightHelp": "Analyses the picture less often and shows a smaller live picture. For slow computers or ones with little memory.",
+        "standard": "Standard",
+        "standardHelp": "A balanced setting for most hotel computers.",
+        "high": "High",
+        "highHelp": "Analyses the picture often and shows a larger live picture. For powerful computers."
+      },
+      "find": {
+        "title": "Find the camera",
+        "help": "Looks for cameras on the same network; it takes about 5 seconds. If none is found, you can type the IP address yourself.",
+        "scan": "Scan the network",
+        "rescan": "Scan again",
+        "scanning": "Searching…",
+        "empty": "No camera found. Check that the camera is on and on the same network, or type its IP address below.",
+        "noNetwork": "This computer does not seem to be on a local network. Check the network connection.",
+        "failed": "The search could not run. Try again.",
+        "found_one": "{{count}} camera found",
+        "found_other": "{{count}} cameras found",
+        "use": "Use this one",
+        "notActivated": "Not activated",
+        "onvif": "ONVIF",
+        "sadp": "SADP"
+      },
+      "form": {
+        "title": "Camera details",
+        "help": "A Hikvision camera's address follows a fixed pattern: just fill in the details below and Bismuth builds the address.",
+        "ip": "IP address",
+        "ipHint": "Example: 192.168.1.64",
+        "ipInvalid": "Enter a valid IP address (for example 192.168.1.64).",
+        "port": "Port",
+        "portInvalid": "The port must be between 1 and 65535.",
+        "user": "User name",
+        "userRequired": "Enter the user name.",
+        "password": "Password",
+        "passwordHint": "The password is stored encrypted on this computer and never shown in the settings.",
+        "channels": "Number of channels",
+        "channelsHint": "Enter 1 for a single camera. If the cameras are on a recorder (NVR), enter how many there are.",
+        "channelsInvalid": "The number of channels must be between 1 and 32.",
+        "channel": "Channel to use",
+        "channelN": "Channel {{n}}",
+        "address": "Connection address"
+      },
+      "test": {
+        "title": "Connection and picture test",
+        "run": "Test the connection",
+        "running": "Testing…",
+        "ok": "Connected and a picture was received from the camera ({{width}}×{{height}}).",
+        "preview": "Test picture taken from the camera",
+        "failed": "The test could not run. Try again.",
+        "timeout": "The camera did not answer in time. Check that it is on and on the same network.",
+        "unreachable": "No camera was found at this address. Check the IP address and the port.",
+        "auth": "The user name or password is wrong. Make sure the camera is activated and the password is correct.",
+        "path": "The camera does not know this channel. Check the channel number.",
+        "noFrame": "The camera answered but no picture came. Try again in a few seconds.",
+        "badAddress": "This address does not look like a camera on the hotel's own network.",
+        "unavailable": "The camera part does not run on this computer. See the camera section of the installation guide."
+      },
+      "save": {
+        "run": "Save the camera",
+        "saving": "Saving…",
+        "done": "The camera was saved and switched on.",
+        "failed": "The camera could not be saved. Try again.",
+        "note": "If you go on without saving, no camera is added. You can add it later in Settings → Camera."
+      }
     }
   },
   "auth": {
@@ -5644,7 +5731,8 @@
       "camera": "Camera system",
       "camera_alert": "Camera alarm",
       "guest_face": "Face record",
-      "camera_event": "Camera event"
+      "camera_event": "Camera event",
+      "staff_face": "Staff face record"
     },
     "fieldName": {
       "name": "Name",
@@ -7185,7 +7273,8 @@
       "alt": "Live picture from the camera",
       "failed": "The picture could not be loaded.",
       "retry": "Try again",
-      "noPicture": "The picture address could not be fetched. If the camera system is running it will come back in a few seconds."
+      "noPicture": "The picture address could not be fetched. If the camera system is running it will come back in a few seconds.",
+      "staff": "Staff"
     },
     "alerts": {
       "title": "Alarms",
@@ -7253,6 +7342,116 @@
       "deleteFailed": "The face record could not be deleted",
       "confirmTitle": "Delete the face record?",
       "confirmBody": "All face records of this guest are deleted for good. The camera will no longer know them."
+    },
+    "notice": {
+      "entry": "Privacy notice",
+      "title": "Notice on camera recording and face recognition",
+      "sign": "Camera recording is in use at this hotel",
+      "help": "Print it to show guests or to put up at the entrance. The text is a template; show it to your lawyer before you use it.",
+      "language": "Language of the text",
+      "print": "Print",
+      "controller": {
+        "title": "Data controller",
+        "body": "{{hotel}}. Contact: {{contact}}"
+      },
+      "data": {
+        "title": "Data we process",
+        "body": "Your image in the area the cameras cover. If you stay at the hotel, a small photo of your face and a numeric template of it (biometric data) are also kept. If someone who is not staying at the hotel is detected, a picture of their face at that moment is kept as an alarm record."
+      },
+      "purpose": {
+        "title": "Purpose",
+        "body": "The safety of the hotel, its guests and its staff, and noticing when someone who is not registered comes in."
+      },
+      "basis": {
+        "title": "Legal basis",
+        "body": "Law no. 6698 on the Protection of Personal Data, art. 5/2(f): the controller's legitimate interest (safety of the hotel and its guests)."
+      },
+      "transfer": {
+        "title": "Transfer",
+        "local": "The data stays on the hotel's own computer and is not given to third parties.",
+        "telegram": "When an unregistered person is detected, a short alarm message is sent to the hotel's staff through Telegram. The message passes through Telegram servers abroad.",
+        "telegramPhoto": "The message also carries a picture of the detected person's face."
+      },
+      "retention": {
+        "title": "Retention",
+        "faceNow": "A guest's face data is deleted when the guest checks out.",
+        "faceDays_one": "A guest's face data is deleted {{count}} day after check-out.",
+        "faceDays_other": "A guest's face data is deleted {{count}} days after check-out.",
+        "alerts_one": "Pictures taken at an alarm are deleted after {{count}} day.",
+        "alerts_other": "Pictures taken at an alarm are deleted after {{count}} days.",
+        "final": "Deleted data cannot be recovered."
+      },
+      "staff": {
+        "title": "Staff",
+        "body": "Staff faces are not used to track working hours. The template of a staff member added so that no alarm is raised is kept for that purpose only and is deleted when the person leaves."
+      },
+      "rights": {
+        "title": "Your rights",
+        "body": "Under article 11 of Law no. 6698 you may find out whether your data is processed and ask for information about it, learn whether it is used for its purpose, ask for it to be corrected or deleted, object, and ask for damages to be made good. You can apply to: {{contact}}"
+      }
+    },
+    "privacy": {
+      "title": "Privacy and retention",
+      "help": "Privacy notice, deletion rules and staff who raise no alarm.",
+      "contact": "Address and phone for requests",
+      "contactHelp": "Written in the privacy notice as the contact. If you leave it empty, the e-mail address is used; with none, a blank is left to fill in by hand.",
+      "contactPlaceholder": "Address and phone",
+      "retentionHint": "Set how many days faces and alarm pictures are kept in the Alarms and retention section above."
+    },
+    "report": {
+      "title": "Deletion report",
+      "help": "How many faces and alarm pictures were deleted on the chosen days. It holds no names or pictures.",
+      "from": "From",
+      "to": "To",
+      "invalidRange": "The end date cannot be before the start date.",
+      "column": {
+        "what": "Deleted",
+        "count": "Count"
+      },
+      "rows": {
+        "checkout": "Guest faces deleted at check-out",
+        "retention": "Guest faces deleted after the keep time",
+        "manual": "Guest faces deleted by hand",
+        "staffRemoved": "Staff faces deleted when taken off the list",
+        "staffLeft": "Faces of staff who left",
+        "crops": "Alert pictures deleted after the keep time"
+      },
+      "total": "Total",
+      "none": "Nothing was deleted in this range.",
+      "held": {
+        "title": "Kept right now",
+        "guestFaces": "Guest faces",
+        "waiting": "Guest faces waiting to be deleted",
+        "staffFaces": "Staff faces",
+        "alarmCrops": "Alert pictures"
+      },
+      "policy": "Rules in force",
+      "print": "Print",
+      "printTitle": "Camera data deletion report",
+      "printRange": "{{from}} – {{to}}"
+    },
+    "staff": {
+      "title": "Staff who raise no alarm",
+      "help": "The cameras see staff too. No alarm is raised for a staff member you add here. Their face is taken from the camera and kept encrypted; no photo is kept and their name is not sent to the camera system. It is deleted when they leave or are taken off the list.",
+      "emptyTitle": "Nobody on the list",
+      "emptyBody": "To add a staff member who should raise no alarm, pick them below.",
+      "faces_one": "{{count}} face",
+      "faces_other": "{{count}} faces",
+      "pick": "Pick a staff member",
+      "pickLabel": "Staff member to add",
+      "pickEmpty": "There is nobody else to add.",
+      "take": "Take face from camera",
+      "takeAnother": "Take another face",
+      "takeHint": "Ask the staff member to look at the camera, then press the button.",
+      "hostOnly": "A face can only be taken from the window on the hotel's main computer.",
+      "noKeyStore": "This computer has no key store; a face cannot be kept.",
+      "remove": "Take off the list",
+      "removeTitle": "Take {{name}} off the list?",
+      "removeBody": "Their face data is deleted and cannot be recovered. An alarm is raised again when this person enters the camera's view.",
+      "added": "Face taken",
+      "addFailed": "The face could not be taken",
+      "removed": "Taken off the list",
+      "removeFailed": "Could not take off the list"
     }
   }
 }

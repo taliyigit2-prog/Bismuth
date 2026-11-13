@@ -12,6 +12,7 @@ export const STEPS = [
   'staff',
   'employees',
   'calendar',
+  'camera',
   'owner',
   'summary'
 ] as const
