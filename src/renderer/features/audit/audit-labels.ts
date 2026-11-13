@@ -13,6 +13,7 @@ export const AUDIT_ENTITIES = [
   'business_day',
   'calendar_day',
   'calendar_generation',
+  'camera',
   'cash_handover',
   'charge',
   'folio',

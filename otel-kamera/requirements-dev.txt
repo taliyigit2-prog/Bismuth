@@ -1,0 +1,5 @@
+# Geliştirme ve test (pakete girmez). Ağır modeller gerekmez: testler sahte tespit/yüz bileşenleriyle çalışır.
+-r requirements.txt
+pytest==9.2.0
+httpx==0.28.1
+ruff==0.17.5

@@ -16,9 +16,7 @@ echo "🏨 MANGO SUITES — OTEL KAMERA BAŞLATILIYOR (macOS)"
 echo "================================================================="
 
 PYTHON_BIN="./venv/bin/python"
-if [ ! -x "$PYTHON_BIN" ] && [ -x "$DIR/../deneme/venv/bin/python" ]; then
-    PYTHON_BIN="$DIR/../deneme/venv/bin/python"
-elif [ ! -x "$PYTHON_BIN" ]; then
+if [ ! -x "$PYTHON_BIN" ]; then
     echo "📦 Sanal ortam (venv) hazırlanıyor..."
     python3 -m venv venv
     ./venv/bin/pip install --upgrade pip

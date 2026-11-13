@@ -1,17 +1,30 @@
+import logging
+from typing import List, Optional, Tuple
+
 import cv2
 import numpy as np
-from typing import List, Tuple, Optional
-from insightface.app import FaceAnalysis
-from config import config
+
+from config import Config
+from config import config as default_config
+
+log = logging.getLogger("otel-kamera.face")
+
 
 class FaceEngine:
-    def __init__(self, model_name: Optional[str] = None):
-        model = model_name or config.INSIGHTFACE_MODEL_NAME
-        print(f"[FaceEngine] InsightFace '{model}' CPU sağlayıcısıyla yükleniyor...")
+    def __init__(self, model_name: Optional[str] = None, settings: Config = default_config, app=None):
+        """`app`: hazır bir InsightFace uygulaması (testlerde sahtesi). Yoksa model yüklenir; insightface yalnız
+        burada içe aktarılır, böylece ağır bağımlılık olmadan birim testler çalışır."""
+        self.settings = settings
+        if app is not None:
+            self.app = app
+            return
+        from insightface.app import FaceAnalysis
 
+        model = model_name or settings.INSIGHTFACE_MODEL_NAME
+        log.info("InsightFace '%s' CPU sağlayıcısıyla yükleniyor...", model)
         self.app = FaceAnalysis(name=model, providers=["CPUExecutionProvider"])
         self.app.prepare(ctx_id=0, det_size=(640, 640))
-        print("[FaceEngine] Model hazır.")
+        log.info("Model hazır.")
 
     def detect_faces(
         self,
@@ -23,8 +36,8 @@ class FaceEngine:
         Karedeki yüzleri tespit eder, kalite ve boyut filtresinden geçirir.
         Çok uzaktaki veya bulanık yüzlerin yanlış alarm üretmesini engeller.
         """
-        score_thresh = min_score if min_score is not None else config.MIN_FACE_DET_SCORE
-        size_thresh = min_size if min_size is not None else config.MIN_FACE_SIZE_PX
+        score_thresh = min_score if min_score is not None else self.settings.MIN_FACE_DET_SCORE
+        size_thresh = min_size if min_size is not None else self.settings.MIN_FACE_SIZE_PX
 
         raw_faces = self.app.get(frame)
         valid_faces = []
@@ -55,9 +68,7 @@ class FaceEngine:
         faces = self.detect_faces(frame, min_score=min_score, min_size=min_size)
         if not faces:
             pad = 64
-            padded = cv2.copyMakeBorder(
-                frame, pad, pad, pad, pad, cv2.BORDER_CONSTANT, value=(20, 20, 20)
-            )
+            padded = cv2.copyMakeBorder(frame, pad, pad, pad, pad, cv2.BORDER_CONSTANT, value=(20, 20, 20))
             padded_faces = self.detect_faces(padded, min_score=0.38, min_size=24)
             results = []
             h, w = frame.shape[:2]
@@ -111,7 +122,7 @@ class FaceEngine:
         Eşleşirse: (guest_id, name, room_number, similarity_score) döner.
         Eşleşmezse: None döner (Kayıtsız / Yabancı kişi).
         """
-        min_thresh = threshold if threshold is not None else config.FACE_SIMILARITY_THRESHOLD
+        min_thresh = threshold if threshold is not None else self.settings.FACE_SIMILARITY_THRESHOLD
         best_match = None
         best_score = -1.0
 

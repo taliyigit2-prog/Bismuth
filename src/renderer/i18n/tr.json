@@ -1648,7 +1648,10 @@
     "groupAttachClosed": "Kapanmış ya da iptal edilmiş rezervasyon gruba bağlanamaz.",
     "groupTooLarge": "Bir grupta en çok 30 oda olabilir.",
     "groupAttachTooFew": "Yeni grup için en az iki rezervasyon seçin.",
-    "groupPayPerRoom": "Bu grupta her oda kendi hesabını öder. Ödemeyi odanın rezervasyonundan alın."
+    "groupPayPerRoom": "Bu grupta her oda kendi hesabını öder. Ödemeyi odanın rezervasyonundan alın.",
+    "cameraSourceInvalid": "Kamera adresi rtsp:// ile başlamalı (kamera kullanıcı adı ve şifresi adresin başında yer alır) ya da bir web kamerası numarası olmalı.",
+    "cameraTelegramInvalid": "Telegram bilgisi geçersiz. Bot belirtecini ve sohbet numaralarını kontrol edin.",
+    "cameraUnavailable": "Kamera sistemi bu bilgisayarda çalışmıyor. Otelin ana bilgisayarını kullanın."
   },
   "common": {
     "close": "Kapat",
@@ -1752,6 +1755,13 @@
       "hide": "Bismuth'u gizle",
       "hideOthers": "Diğerlerini gizle",
       "quit": "Bismuth'tan çık"
+    },
+    "camera": {
+      "crashedTitle": "Kamera sistemi durdu",
+      "crashedBody": "Kamera sistemi {{count}} kez durdu; kendiliğinden yeniden başlatılıyor.",
+      "gaveUpTitle": "Kamera sistemi kapalı",
+      "gaveUpBody": "Kamera sistemi tekrar tekrar durdu ve artık yeniden başlatılmıyor. Kamera ekranından yeniden başlatın.",
+      "telegramTest": "Bismuth: Telegram bağlantısı çalışıyor"
     }
   },
   "companies": {
@@ -2211,7 +2221,9 @@
       "remote_settings": "Uzaktan erişim",
       "devices": "Cihazlar",
       "audit_log": "Denetim kaydı",
-      "booking_undoCheckIn": "Girişi geri alma"
+      "booking_undoCheckIn": "Girişi geri alma",
+      "camera": "Kamera",
+      "camera_enroll": "Kameradan yüz alma"
     }
   },
   "setup": {
@@ -5548,7 +5560,8 @@
       "import_batch": "İçe aktarma",
       "guest_tag": "Misafir etiketi",
       "room_capacity_change": "Oda kapasitesi",
-      "reservation_groups": "Grup rezervasyonu"
+      "reservation_groups": "Grup rezervasyonu",
+      "camera": "Kamera sistemi"
     },
     "fieldName": {
       "name": "Ad",

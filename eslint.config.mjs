@@ -35,7 +35,9 @@ export default tseslint.config(
       '.claude/**',
       'playwright-report/**',
       'test-results/**',
-      '.tmp/**'
+      '.tmp/**',
+      // The Python camera project (own toolchain: ruff/pytest); its venv holds third-party JS.
+      'otel-kamera/**'
     ]
   },
   js.configs.recommended,
@@ -75,7 +77,8 @@ export default tseslint.config(
   },
   {
     // The three network folders of CLAUDE.md yasak 1; src/main/discovery is the server mode's local-network
-    // announcement (mDNS, never the internet, faz-13 madde 1). Tests and scripts start fake servers.
+    // announcement (mDNS, never the internet, faz-13 madde 1). src/main/camera is the camera sidecar's bridge: only
+    // 127.0.0.1 and rtsp:// (K-49; the `no-network-guard` hook checks the targets). Tests and scripts start fake servers.
     files: [
       'src/main/network/**',
       'src/main/server/**',
@@ -85,6 +88,12 @@ export default tseslint.config(
       'scripts/**'
     ],
     rules: { 'no-restricted-globals': 'off', 'no-restricted-imports': 'off' }
+  },
+  {
+    // The camera bridge needs only fetch (loopback HTTP to the sidecar) and node:net (free port); other network
+    // modules stay forbidden there (K-49).
+    files: ['src/main/camera/**'],
+    rules: { 'no-restricted-globals': 'off' }
   },
   {
     files: ['src/renderer/**/*.{ts,tsx}', 'tests/unit/setup-dom.ts'],

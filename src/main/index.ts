@@ -31,6 +31,7 @@ import { closingBackupNeeded, createBackupScheduler } from './backup/scheduler'
 import { readSetting } from './services/settings-service'
 import { processImage, startAttachmentRetention } from './attachments'
 import { createTaskScheduler, showOsNotice } from './notifications'
+import { createCameraRuntime } from './camera'
 import { LOCAL_CONFIG, readConnectionConfig, writeConnectionConfig } from './server/connection-config'
 import {
   bundledSchemaVersion,
@@ -194,6 +195,7 @@ async function start(): Promise<void> {
       writeGate: () => (replacedNow() ? 'replaced' : null),
       // Development and e2e only (ignored in a packaged build): optional online data goes to a local fake server.
       network: { origin: process.env['BISMUTH_EXTERNAL_ORIGIN'] ?? null, secrets: safeStorage },
+      camera: { testMessage: () => tMain('main.camera.telegramTest') },
       // Exported tables: the usual "Save as" dialog, starting in Documents with the suggested name.
       saveExport: saveAs,
       backup: {
@@ -359,6 +361,43 @@ async function start(): Promise<void> {
       t: tMain,
       onError: (error) => log.warn('task round failed', error)
     }).start()
+
+  // Camera (Faz 20 P20a, K-49): the Python sidecar runs only on the hotel's own computer and only while
+  // `camera.enabled` is on; Bismuth closing (even by a crash) ends it. Smoke runs and client devices never start it.
+  if (!smoke && initial['app.mode'] !== 'client') {
+    const camera = createCameraRuntime({
+      scriptDir: app.isPackaged
+        ? join(process.resourcesPath, 'camera')
+        : join(app.getAppPath(), 'otel-kamera'),
+      dataDir: paths.root,
+      settings: () => services.settings.get(localOwnerCtx()),
+      source: () => services.camera.sidecarSource(),
+      log: { info: (...a) => log.info(...a), warn: (...a) => log.warn(...a) },
+      onNotice: (notice) => {
+        try {
+          services.camera.noticeProblem(systemCtx(), notice)
+        } catch (error) {
+          log.warn('camera notice not saved', error)
+        }
+        showOsNotice(
+          notice.kind === 'gaveUp'
+            ? { title: tMain('main.camera.gaveUpTitle'), body: tMain('main.camera.gaveUpBody') }
+            : {
+                title: tMain('main.camera.crashedTitle'),
+                body: tMain('main.camera.crashedBody', { count: String(notice.crashes) })
+              }
+        )
+      }
+    })
+    services.camera.attach(camera)
+    const apply = (restart: boolean): void =>
+      void camera.apply({ restart }).catch((error: unknown) => log.warn('camera sidecar', error))
+    services.settings.onChange((_values, changed) => {
+      if (changed.some((key) => key.startsWith('camera.'))) apply(true)
+    })
+    app.on('will-quit', () => void camera.stop())
+    if (services.setup.isDone() && hostRuntime.guard.replaced() === null) apply(false)
+  }
 
   const api = createApiApp({
     handlers: createHandlers(services),

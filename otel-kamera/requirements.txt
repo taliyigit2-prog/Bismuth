@@ -1,12 +1,14 @@
-fastapi>=0.110.0
-uvicorn>=0.29.0
-python-multipart>=0.0.9
-pydantic>=2.6.0
-python-dotenv>=1.0.1
-requests>=2.31.0
-numpy>=1.26.0
-opencv-python>=4.9.0
-supervision>=0.20.0
-ultralytics>=8.3.0
-insightface>=0.7.3
-onnxruntime>=1.17.0
+# Kamera yan süreci — tüm sürümler `==` ile sabit (CLAUDE.md yasak 4 ruhu; docs/plan/bagimliliklar.md "Kamera" bölümü).
+# Python 3.12. `requests` ve `python-dotenv` kaldırıldı: Python tarafında ağ çağrısı ve .env yoktur (K-49, K-50).
+fastapi==0.115.6
+uvicorn==0.34.0
+python-multipart==0.0.33
+pydantic==2.14.3
+numpy==2.5.4
+opencv-python-headless==5.0.0.93
+supervision==0.31.7
+# Aşağıdakiler Codespace'te kurulmadı (torch ~1 GB); sürümler bilinen en güncel kararlı. P20d/P20f'de ayrıca doğrulanır.
+# `ultralytics` AGPL-3.0 ve `insightface` model ağırlıkları ticari olmayan: K-57 sahip kararı, lisans notu 06 §6.3.
+ultralytics==8.4.212
+insightface==0.7.3
+onnxruntime==1.32.0

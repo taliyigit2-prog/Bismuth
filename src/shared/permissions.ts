@@ -81,6 +81,8 @@ const CATALOG = {
   contacts: ['operations', [E, E, E, V, V, N]],
   supplies: ['operations', [E, E, E, E, N, N]],
   laundry: ['operations', [E, E, E, E, V, N]], // faz-12 madde 5: Muhasebeci edits (invoice, "Ödendi")
+  camera: ['operations', [E, E, V, N, N, N]], // Faz 20 (K-49…K-53): view = status and alarms, edit = settings and secrets
+  'camera.enroll': ['operations', [E, E, E, N, N, N]], // K-51: take a guest's face from the camera (biometric)
   // Reports
   'reports.operations': ['reports', [E, E, N, E, N, N]],
   'reports.finance': ['reports', [E, V, N, E, N, N]],

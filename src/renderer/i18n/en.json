@@ -1648,7 +1648,10 @@
     "groupAttachClosed": "A closed or cancelled reservation cannot be linked to a group.",
     "groupTooLarge": "A group can hold at most 30 rooms.",
     "groupAttachTooFew": "Choose at least two reservations for a new group.",
-    "groupPayPerRoom": "In this group every room pays on its own account. Take the payment from the room's reservation."
+    "groupPayPerRoom": "In this group every room pays on its own account. Take the payment from the room's reservation.",
+    "cameraSourceInvalid": "The camera address must start with rtsp:// (the camera's user name and password come first in the address) or be a webcam number.",
+    "cameraTelegramInvalid": "The Telegram details are not valid. Check the bot token and the chat numbers.",
+    "cameraUnavailable": "The camera system does not run on this computer. Use the hotel's main computer."
   },
   "common": {
     "close": "Close",
@@ -1752,6 +1755,13 @@
       "hide": "Hide Bismuth",
       "hideOthers": "Hide others",
       "quit": "Quit Bismuth"
+    },
+    "camera": {
+      "crashedTitle": "Camera system stopped",
+      "crashedBody": "The camera system stopped {{count}} times; it is restarting by itself.",
+      "gaveUpTitle": "Camera system is off",
+      "gaveUpBody": "The camera system kept stopping and is no longer restarted. Restart it from the Camera screen.",
+      "telegramTest": "Bismuth: the Telegram connection works"
     }
   },
   "companies": {
@@ -2211,7 +2221,9 @@
       "remote_settings": "Remote access",
       "devices": "Devices",
       "audit_log": "Audit log",
-      "booking_undoCheckIn": "Taking a check-in back"
+      "booking_undoCheckIn": "Taking a check-in back",
+      "camera": "Camera",
+      "camera_enroll": "Face capture from the camera"
     }
   },
   "setup": {
@@ -5548,7 +5560,8 @@
       "import_batch": "Import",
       "guest_tag": "Guest tag",
       "room_capacity_change": "Room capacity",
-      "reservation_groups": "Group reservation"
+      "reservation_groups": "Group reservation",
+      "camera": "Camera system"
     },
     "fieldName": {
       "name": "Name",

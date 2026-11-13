@@ -98,6 +98,31 @@ kontrol maddesi bu dağıtım hedeflerini kapsar.
 | @axe-core/playwright | 4.13.0 | MPL-2.0 | Erişilebilirlik taraması e2e'de (Faz 15 madde 5): `tests/e2e/electron/a11y.spec.ts`, `tests/e2e/mobile/a11y.spec.ts`; kurulum paketine girmez. Bağımlılığı `axe-core` 4.13.0 (MPL-2.0) |
 | @vitest/coverage-v8 | 5.0.3 | MIT | Test kapsamı ölçümü (`domain/` + `services/` ≥ %85, faz-02) |
 
+## Kamera yan süreci (Python; Faz 20, `otel-kamera/`)
+
+npm bağımlılığı eklenmedi: Telegram istemcisi (`src/main/network/telegram/`) ve köprü (`src/main/camera/`) Node'un
+yerleşik `fetch`, `child_process`, `crypto` ve `net` modüllerini kullanır. Python tarafı `otel-kamera/requirements.txt`'te
+**`==` ile sabittir** (Python 3.12); geliştirme araçları `requirements-dev.txt`'tedir ve pakete girmez. Kamera eki ayrı
+kurulur ve yalnız `camera.enabled` açıksa çalışır (P20f paketleme). Lisans bildirimi: P20d (`THIRD_PARTY_NOTICES.md`).
+
+| Paket | Sürüm | Lisans | Ne için | Not |
+|---|---|---|---|---|
+| fastapi | 0.115.6 | MIT | Yan sürecin HTTP yüzü | `127.0.0.1`, belirteç zorunlu |
+| uvicorn | 0.34.0 | BSD-3 | ASGI sunucusu | yalnız loopback |
+| python-multipart | 0.0.33 | Apache-2.0 | Fotoğraf yükleme formu (P20c'de kalkabilir) | |
+| pydantic | 2.14.3 | MIT | İstek doğrulama | |
+| numpy | 2.5.4 | BSD-3 | Görüntü ve vektör işlemleri | |
+| opencv-python-headless | 5.0.0.93 | Apache-2.0 (FFmpeg LGPL-2.1 dinamik) | RTSP okuma, JPEG, CLAHE | `opencv-python` yerine headless (arayüz yok, daha küçük) |
+| supervision | 0.31.7 | MIT | `Detections`, `PolygonZone` | |
+| ultralytics | 8.4.212 | **AGPL-3.0** | YOLO11n kişi tespiti | K-57 sahip kararı; telemetri kapatma ve lisans notu P20d. Codespace'te kurulmadı |
+| insightface | 0.7.3 | MIT (kod) · **ağırlıklar yalnız ticari olmayan araştırma** | `buffalo_s` yüz tanıma | K-57 sahip kararı; `06` §6.3–6.4 (izin e-postası). Kaynaktan derlenir. Codespace'te kurulmadı |
+| onnxruntime | 1.32.0 | MIT | InsightFace çıkarımı | Codespace'te kurulmadı |
+| pytest 9.2.0 · httpx 0.28.1 · ruff 0.17.5 | — | MIT / BSD-3 / MIT | Python testleri ve lint | yalnız geliştirme |
+
+Kaldırılanlar: `requests` (Python tarafında ağ çağrısı yok, K-50), `python-dotenv` (ayarlar Bismuth'tan JSON gelir).
+Python bağımlılıkları Codespace'te `otel-kamera/venv` içine kurulur (gitignore'da); `ultralytics` + `insightface`
+sürümleri sahibin makinesinde/P20d'de gerçek modellerle doğrulanır.
+
 ## Pakete kopyalanmış kaynaklar (npm paketi değil)
 
 Dosya başında kaynak satırı var; lisans metinleri `THIRD_PARTY_NOTICES.md`'de (`npm run notices`).

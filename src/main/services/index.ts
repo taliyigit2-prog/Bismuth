@@ -11,6 +11,8 @@ import { createDiagnosticsService, type DiagnosticsDeps } from './diagnostics-se
 import { createCalendarService } from './calendar-service'
 import { createContactsService } from './contacts-service'
 import { createCurrencyService } from './currency-service'
+import { createCameraService } from './camera-service'
+import { createSecretStore } from '../camera/secrets'
 import { createExpensesService } from './expenses-service'
 import { createExternalService } from './external-service'
 import { createHttpClient, type FetchLike } from '../network/http'
@@ -86,6 +88,8 @@ export interface ServiceStorage {
     /** The operating system's key store (Electron `safeStorage`): seals the rate providers' API keys (N-10). */
     secrets?: SecretStorage | null
   }
+  /** Camera (Faz 20): the sealed secrets file (default `camera-secrets.json` in the data folder) and the Telegram test text. */
+  camera?: { secretsFile?: string | null; testMessage?: () => string }
 }
 
 /** Wire every service to one database handle. No Electron imports below this line (03-mimari.md §1.3). */
@@ -148,6 +152,22 @@ export function createServices(handle: DatabaseHandle, runtime: RuntimeInfo, sto
     appVersion: runtime.version
   })
   const expenses = createExpensesService(deps)
+  const camera = createCameraService({
+    ...deps,
+    secrets: createSecretStore(
+      storage.camera?.secretsFile !== undefined
+        ? storage.camera.secretsFile
+        : runtime.dataDir
+          ? join(runtime.dataDir, 'camera-secrets.json')
+          : null,
+      systemSealer(storage.network?.secrets ?? null)
+    ),
+    telegram: {
+      fetch: storage.network?.fetch,
+      origin: runtime.packaged ? null : (storage.network?.origin ?? null)
+    },
+    ...(storage.camera?.testMessage ? { testMessage: storage.camera.testMessage } : {})
+  })
   const setup = createSetupService(deps, {
     settings,
     rooms,
@@ -168,6 +188,7 @@ export function createServices(handle: DatabaseHandle, runtime: RuntimeInfo, sto
     lists,
     currency,
     external,
+    camera,
     reservations,
     payments,
     occupants: createOccupantsService(deps),

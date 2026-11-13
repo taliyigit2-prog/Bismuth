@@ -49,13 +49,19 @@ Cevaplandı (2026-11-13): S-107 personel dışlama (varsayılan); S-108 canlı y
    gerekirse ayrı "kamera eki" kurulum dosyası; kurulum belgesine "Kamera" bölümü; `THIRD_PARTY_NOTICES`. Dalga 11.
 
 ## Kabul ölçütleri
-- [ ] Bismuth kapanınca yan süreç ölür; 3 çökme → bildirim; e2e sahte sidecar ile (P20a).
-- [ ] Yan süreç `0.0.0.0`'a bağlanamaz; belirteçsiz istek 401; Origin dışı POST 403 (Python testi).
+- [x] Bismuth kapanınca yan süreç ölür; 3 çökme → bildirim; sahte sidecar ile (P20a) — `src/main/camera/camera.test.ts`
+      (gerçek alt süreç: "durdurulunca süreç ölür", "ebeveyn borusu kapanınca çıkar", "3. çökmede bildirim, 5.'de vazgeçme");
+      Python tarafı `tests/test_grabber_health_parent.py::test_stdin_kapanınca_yan_süreç_gerçekten_çıkar`. Playwright e2e değil,
+      vitest bütünleşme testi (Electron penceresi gerekmez).
+- [x] Yan süreç `0.0.0.0`'a bağlanamaz; belirteçsiz istek 401; Origin dışı POST 403 (Python testi) —
+      `tests/test_config_and_bridge.py` (`WEB_HOST=0.0.0.0` → `ConfigError`, 401, 403 Origin, 403 Host).
 - [ ] Kamera sekmesi 1366×768 ve 390×844 açık/koyu görüntüleri `ui-reviewer` + `turkish-ui-copy` temiz.
 - [ ] Çıkışta `guest_faces` silinir + audit; yedek/dışa aktarma/kopyada yüz verisi yok (birim test + `privacy-auditor`); aydınlatma
       metni sihirbazda ve Kamera sekmesinde üç dilde yazdırılabilir.
 - [ ] Alarm → bildirim merkezi ve telefon listesi; `camera.telegram.enabled` açıkken Telegram'a da gider, ağ yokken program
       bildirimi yine düşer (sahte sunucu testi, 5 sn zaman aşımı); "misafir olarak kaydet" mevcut kişi akışını açar (e2e).
+      _P20a kısmı hazır (kutu P20c'de kapanır):_ Telegram istemcisi, 5 sn zaman aşımı, `network.enabled=false` → 0 istek,
+      sahte yerel sunucu testi (`src/main/network/telegram/telegram.test.ts`, `tests/unit/permissions-camera.test.ts`).
 - [ ] Ultralytics telemetrisi kapalı (`settings.sync=False` testi); ağ kapalıyken yan süreç açılır ve tanır; model dosyaları
       paket içinde; `THIRD_PARTY_NOTICES` K-57 lisans notunu içerir.
 - [ ] Kamera sihirbazı: sahte ONVIF/SADP yanıtıyla keşif listesi; RTSP kalıbı önerisi; görüntü testi başarısız/başarılı
@@ -74,3 +80,44 @@ WhatsApp/e-posta bildirimi (yalnız Telegram, K-50); bulut yüz tanıma API'si; 
 (KVKK 2026/921); model değişimi (K-57; satış gündeme gelirse ayrı faz).
 
 ## Sonuç
+
+### P20a — Yan süreç iskeleti ve Python hijyeni (2026-11-13)
+
+**Yapılanlar**
+- `src/main/camera/`: `sidecar.ts` (başlat/durdur/izle: rastgele 32 bayt belirteç + boş port ortamla, ayarlar JSON, stdin borusu,
+  çökmede artan beklemeyle yeniden başlatma, 3 çökme → bildirim, 5 çökme → vazgeç + bildirim, sağlık yoklaması, SIGTERM + 5 sn + SIGKILL),
+  `bridge.ts` (yalnız `127.0.0.1`, `X-Bismuth-Token`, `/api/` yolu zorunlu, canlı yayın için imzalı kısa ömürlü adres),
+  `secrets.ts` (kamera adresi + Telegram belirteci `safeStorage` ile mühürlü; ayar değil), `config.ts`, `redact.ts`.
+- `camera` yetki alanı (`camera` view/edit, `camera.enroll`), 16 `camera.*` ayarı (`settings.ts`; migrasyon gerekmedi: ayarlar
+  anahtar-değer tablosu), `camera.status/restart/setSecrets/testTelegram` yordamları, `camera-service.ts` (yetki + audit; sır
+  değeri hiçbir yerde dönmez/yazılmaz; sır ve yeniden başlatma yalnız otelin kendi penceresinden), crash bildirimi
+  (`notifications` satırı + OS bildirimi), ana süreç bağlantısı (`index.ts`: `camera.enabled` ile başlar, çıkışta durur).
+- Telegram Python'dan çıktı, `src/main/network/telegram/`: yalnız `api.telegram.org`, 5 sn, sessiz başarısızlık, kuyruk yok,
+  `network.enabled` + `camera.telegram.enabled` kapalıyken 0 istek, fotoğraf eki `camera.telegram.photo`, belirteç/sohbet biçimi
+  doğrulanır (URL'ye sızamaz), belirteç hiçbir yanıtta/günlükte yok.
+- `no-network-guard` kancası `src/main/camera/` için güncellendi (yalnız `127.0.0.1`/`localhost`/`rtsp://`; dış URL, LAN `http`,
+  `0.0.0.0`, WebSocket yasak) + 9 kanca testi (106 senaryo geçer); ESLint `src/main/camera/**` ağ kuralından muaf, `otel-kamera/**` lint dışı.
+- Python (`otel-kamera/`): kod bulguları 1, 3, 4, 7–19, 21, 22, 25–28 (tablo ve test adları `AI_GELISTIRICI_NOTLARI.md` §6),
+  `requirements.txt` `==`, `requirements-dev.txt`, `pyproject.toml` (pytest + ruff), yerel yol temizliği (`../deneme`), ayarlar
+  JSON/ortamdan (`.env` ve `python-dotenv` yok), `bridge_security.py`, `health.py`, `parent_watch.py`, `camera_grabber.py` gözcüsü,
+  `alert_recorder.py` (ham kare), 56 pytest testi, `ruff check` temiz. `AI_GELISTIRICI_NOTLARI.md` kodla eşitlendi (Ç-08);
+  `docs/plan/bagimliliklar.md`'ye kamera bölümü.
+
+**Karşılanan:** K-49, K-50 (istemci tarafı), K-51/K-53'ün P20a payı (sırlar şifreli; Python'a Telegram/DB sırrı gitmez), G-23, G-09, G-01.
+
+**Varsayılanlar (otonom varsayılan)**
+- `camera.enroll` varsayılanı: Sahip, Müdür, Resepsiyon = düzenler; `camera` varsayılanı: Sahip, Müdür = düzenler, Resepsiyon = görür.
+- Sır deposu `camera-secrets.json` (userData kökü, yedek/dışa aktarma dışı); anahtar deposu yoksa düz metin + 0600 (`network/state.ts` ile aynı).
+- Yan sürecin yerel dosyaları (`hotel_guests.db`, `alerts/`, `guest_photos/`) `userData/camera/` altında (yedeğe girmez) — P20c'ye kadar.
+- Çökme eşikleri: 10 dk pencerede 3 → bildirim, 5 → vazgeç (faz belgesindeki "5 çökme/10 dk" ve paket kartındaki "3 çökme" birleştirildi).
+- Kameradan tanıma artık çıkış yapmaz, aday döner (onay adımı; kod bulgusu 18); eski `checkout-from-camera` ve tarayıcı paneli yolları kaldırıldı.
+- Eski `static/index.html` ve `Baslat_*`/`Otel_*` betikleri duruyor (belirteç zorunluluğuyla tek başına çalışmaz): P20b/P20f'de silinir.
+
+**Ölçümler (Codespace, modelsiz iskelet; gerçek model ölçümü sahip onay paketinde):** gerçek `web_app.py` süreci boşta RSS ≈ 134 MB
+(fastapi + opencv + numpy + supervision), yalnız `127.0.0.1:<port>` dinler (`ss`), belirteçsiz istek 401, yabancı Origin 403, stdin
+boruyu kapatınca süreç kendiliğinden çıkar; sentetik 1080p karede sahte modellerle `_tick` (kare okuma, çizim, JPEG, izleme, her 3. karede
+analiz) ≈ 10,8 ms/kare, tepe RSS 149 MB. Modeller (YOLO11n + buffalo_s) bu ölçüme dahil değildir (`torch` kurulmadı).
+
+**Kalanlar:** gerçek modellerle (ultralytics, insightface) uçtan uca doğrulama P20d/P20f ve sahip onay paketi (Codespace'te `torch` kurulmadı);
+Kamera sekmesi, CSP `img-src` istisnası (P20b); `guest_faces`/`camera_events`, alarm → `notifications` + Telegram bağlantısı (P20c);
+`Ayarlar → Kamera` ekranı olmadığı için `camera.*` ayarları şimdilik yalnız servis/yordam ile yazılır.

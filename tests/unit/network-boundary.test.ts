@@ -1,5 +1,6 @@
 // CLAUDE.md yasak 1 (G-01, G-02): network code lives only in src/main/network, src/main/server and
-// src/renderer/lib/transport (plus src/main/discovery, the server mode's local-network announcement). Checked two
+// src/renderer/lib/transport (plus src/main/discovery, the server mode's local-network announcement, and
+// src/main/camera, the camera sidecar's 127.0.0.1 bridge: K-49, targets checked by the no-network-guard hook). Checked two
 // ways: the program's sources contain no network call or module elsewhere, and the ESLint rule refuses one.
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
@@ -11,6 +12,7 @@ const ALLOWED = [
   'src/main/network/',
   'src/main/server/',
   'src/main/discovery/',
+  'src/main/camera/',
   'src/renderer/lib/transport/'
 ]
 

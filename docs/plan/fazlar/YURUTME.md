@@ -98,7 +98,7 @@ Harcama sütunu: başlatıcının yazdığı `$` (dalga toplamı, gerçek).
 | 5 | P18d Çalışmayan öğeler (akış testi) | 18 | bulguya göre | feature-builder | $6–10 | ~$8 | ✅ |
 | 6 | P19a Sürüm iş akışı tekleştirme (tetikleme sahipte) | 19 | .github, electron-builder | packager | $5–8 | ~$4 | ✅ |
 | 6 | P19b Kurulum belgeleri + kılavuz + sihirbaz tek kâğıt adımı + belge çelişkileri (Ç-01/02/04/05); P19d ajan bakımı | 19 | docs, guide, setup, .claude | feature-builder-lite (+ feature-builder sihirbaz) | $4–8 | ~$12 | ✅ |
-| 7 | P20a Kamera yan süreç iskeleti + Python hijyeni + Telegram'ın Bismuth'a taşınması (K-50; kod bulguları `ekler/kamera-kod-bulgulari.md` §0) | 20 | main/camera, main/network/telegram, otel-kamera | camera-integrator | $12–20 | | ⬜ |
+| 7 | P20a Kamera yan süreç iskeleti + Python hijyeni + Telegram'ın Bismuth'a taşınması (K-50; kod bulguları `ekler/kamera-kod-bulgulari.md` §0) | 20 | main/camera, main/network/telegram, otel-kamera | camera-integrator | $12–20 | ~$25 | ✅ |
 | 8 | P20b Kamera sekmesi (canlı yayın yalnız ana bilgisayar; telefon alarm listesi) | 20 | features/camera | camera-integrator | $8–12 | | ⬜ |
 | 8 | P20d Model sabitleme ve çevrimdışı (K-57: mevcut modeller kalır, telemetri kapalı, lisans notu) | 20 | otel-kamera, resources/camera | camera-integrator | $4–6 | | ⬜ |
 | 9 | P20c Veri entegrasyonu (migrasyon 0021, şifreleme, alarm → bildirim; rıza alanı yok K-58) | 20 | camera, today | db-migration-builder → camera-integrator | $15–22 | | ⬜ |
@@ -302,3 +302,15 @@ QA2b, akış testleri C/D) bu plana **Son** satırında katılır; ayrı yürüt
   P21e'ye not: `drive.ts` Windows'ta eşlenmiş ağ sürücüsünü de tarayabilir, senkron `statSync` çevrimdışı sürücüde bekletebilir
   (Orta-Düşük); `stop-gate`/`protect-files` kapsam genişletme (Düşük); ru "Два блока" ifadesi ve tırnak tutarlılığı (Düşük).
   **Dalga 6 bitti.**
+- 2026-11-13: Dalga 6 sadeleştirme (Ponytail) atlandı: değişiklik çoğunlukla YAML/belge, kaynak kodda küçük. Dalga 7 başladı (P20a camera-integrator; taban 4626d85).
+- 2026-11-13: P20a ✅ — `src/main/camera/` (sidecar yaşam döngüsü: rastgele belirteç, yalnız 127.0.0.1, stdin kapanınca çıkış,
+  10 dk'da 3 çökme → bildirim, 5 → vazgeç; bridge; `safeStorage` sırlar; redact), `camera`/`camera.enroll` yetkileri, 16 `camera.*`
+  ayarı, `camera.status/restart/setSecrets/testTelegram`; `src/main/network/telegram/` (5 sn, sessiz, `network.enabled`);
+  Python: Telegram kaldırıldı, kod bulguları P20a maddeleri, `requirements.txt` sabit, 57 pytest + ruff; migrasyon yok.
+  P20afix (security-reviewer + privacy-auditor Yüksek): şifrede `/`/`@` olsa da maske (TS + Python), sağlık hatası maskeli
+  (`camera.status`'a sır sızmaz), `no-network-guard` `127.0.0.1.evil.com`/`localhost@evil.com` açığı kapandı, ESLint muafiyeti
+  yalnız global `fetch` (+ `node:net` tek satır), sırlar audit commit'inden sonra yazılır, belirteç Python'da ortamdan silinir.
+  Privacy "Telegram fotoğraf varsayılanı açık" bulgusu **sahip kararı K-50** (varsayılan açık) olduğu için değiştirilmedi.
+  P20c'ye: Python tarafındaki yüz vektörü/kırpma düz SQLite/JPEG (K-51 gereği DB'ye şifreli taşınacak), silme audit'i, log'da ad/oda
+  yok testi; P20b/P20f'ye: eski `static/index.html` + `Baslat_*`/`Otel_*` betikleri; Düşük: Telegram sohbet sayısı üst sınırı,
+  sidecar'a izinli env listesi, `pickFreePort` yarışı. 2737 test yeşil. **Dalga 7 bitti.**

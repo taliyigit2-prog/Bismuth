@@ -210,7 +210,37 @@ export const settingsShape = {
   /** Identity numbers stay out of the box (KVKK; the owner's copy still gets them live when allowed). */
   'relay.excludeIdentity': z.boolean(),
   /** Hourly PDF summary without personal data in Drive's Bismuth folder (G-145, S-62). */
-  'summary.enabled': z.boolean()
+  'summary.enabled': z.boolean(),
+  // Camera (Faz 20, K-49…K-53, K-57): thresholds and retention are settings, never code (G-09); they go to the Python
+  // sidecar as JSON at start. Secrets (camera address with password, Telegram token) are NOT settings: every signed-in
+  // user reads settings, so they live sealed in src/main/camera/secrets.ts.
+  /** The sidecar runs only on the hotel's own computer and only while this is on. */
+  'camera.enabled': z.boolean(),
+  /** Where the camera is ("Merdiven / Kat girişi"); '' = the sidecar's own default. */
+  'camera.location': z.string().trim().max(80),
+  /** Cosine similarity at which a face counts as a registered guest. */
+  'camera.similarityThreshold': z.number().min(0.1).max(0.95),
+  /** Stricter limit for "who is this" by camera (identify before check-out). */
+  'camera.confirmSimilarity': z.number().min(0.1).max(0.95),
+  'camera.minFaceScore': z.number().min(0.1).max(0.99),
+  'camera.minFacePx': z.number().int().min(20).max(400),
+  /** Consecutive unregistered sightings before an alarm. */
+  'camera.confirmationFrames': z.number().int().min(1).max(20),
+  /** Analyse every Nth frame. */
+  'camera.processEveryN': z.number().int().min(1).max(30),
+  'camera.alarmCooldownSeconds': z.number().int().min(5).max(3600),
+  /** Seconds a recognised person stays "registered" without a fresh match. */
+  'camera.verifiedTtlSeconds': z.number().int().min(5).max(300),
+  /** Crossing zone "x1,y1;x2,y2;…" in pixels or 0…1 fractions; '' = the whole picture. */
+  'camera.zonePolygon': z.string().trim().max(300),
+  /** Days alarm crops are kept (K-52: 3). */
+  'camera.alertRetentionDays': z.number().int().min(1).max(365),
+  /** Days a face is kept after check-out (K-52: 0 = deleted at check-out). */
+  'camera.faceRetentionDays': z.number().int().min(0).max(365),
+  /** Alarms also go to Telegram (K-50, the one outside service; needs `network.enabled`). */
+  'camera.telegram.enabled': z.boolean(),
+  /** The Telegram message carries the alarm photo (otherwise text only). */
+  'camera.telegram.photo': z.boolean()
 } as const
 
 export type SettingsKey = keyof typeof settingsShape
@@ -291,7 +321,22 @@ export const SETTINGS_DEFAULTS: SettingsValues = {
   'host.epoch': 1,
   'relay.enabled': true,
   'relay.excludeIdentity': true,
-  'summary.enabled': true
+  'summary.enabled': true,
+  'camera.enabled': false,
+  'camera.location': '',
+  'camera.similarityThreshold': 0.36,
+  'camera.confirmSimilarity': 0.45,
+  'camera.minFaceScore': 0.62,
+  'camera.minFacePx': 55,
+  'camera.confirmationFrames': 3,
+  'camera.processEveryN': 3,
+  'camera.alarmCooldownSeconds': 60,
+  'camera.verifiedTtlSeconds': 20,
+  'camera.zonePolygon': '',
+  'camera.alertRetentionDays': 3,
+  'camera.faceRetentionDays': 0,
+  'camera.telegram.enabled': false,
+  'camera.telegram.photo': true
 }
 
 /** The hotel's status and accent colours (G-33): shared by everyone, so they need the colour right, not just a session. */
@@ -329,6 +374,7 @@ export const isDesktopOnlySettingKey = (key: SettingsKey): boolean =>
   key.startsWith('host.') ||
   key.startsWith('relay.') ||
   key.startsWith('summary.') ||
+  key.startsWith('camera.') ||
   key === 'backup.driveFolder'
 
 /**
@@ -361,17 +407,20 @@ export const settingPermission = (
   | 'expenses.owner'
   | 'currency'
   | 'settings.backup'
-  | 'remote.settings' =>
-  key.startsWith('host.') || key.startsWith('relay.') || key.startsWith('summary.') || key === 'app.mode'
-    ? 'remote.settings'
-    : key === 'staff.expenseSection'
-      ? 'expenses.owner'
-      : key.startsWith('staff.')
-        ? 'staff.policy'
-        : key.startsWith('fx.')
-          ? 'currency'
-          : key.startsWith('backup.')
-            ? 'settings.backup'
-            : COLOUR_KEYS.includes(key)
-              ? 'settings.colors'
-              : 'settings'
+  | 'remote.settings'
+  | 'camera' =>
+  key.startsWith('camera.')
+    ? 'camera'
+    : key.startsWith('host.') || key.startsWith('relay.') || key.startsWith('summary.') || key === 'app.mode'
+      ? 'remote.settings'
+      : key === 'staff.expenseSection'
+        ? 'expenses.owner'
+        : key.startsWith('staff.')
+          ? 'staff.policy'
+          : key.startsWith('fx.')
+            ? 'currency'
+            : key.startsWith('backup.')
+              ? 'settings.backup'
+              : COLOUR_KEYS.includes(key)
+                ? 'settings.colors'
+                : 'settings'

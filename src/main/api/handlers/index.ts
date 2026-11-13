@@ -18,6 +18,7 @@ import { bookingHandlers } from './booking'
 import { systemHandlers } from './system'
 import { roomsHandlers } from './rooms'
 import { usersHandlers } from './users'
+import { cameraHandlers } from './camera'
 
 export const moduleHandlers = (services: Services) => ({
   ...reservationsHandlers(services),
@@ -37,5 +38,6 @@ export const moduleHandlers = (services: Services) => ({
   ...bookingHandlers(services),
   ...systemHandlers(services),
   ...roomsHandlers(services),
-  ...usersHandlers(services)
+  ...usersHandlers(services),
+  ...cameraHandlers(services)
 })

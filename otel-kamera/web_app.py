@@ -1,66 +1,48 @@
+"""Kamera yan sürecinin HTTP yüzü (FastAPI). Yalnız 127.0.0.1; her istek `X-Bismuth-Token` ister (`bridge_security`).
+
+P20a: uygulama bir fabrikadan kurulur (içe aktarma sırasında DB açılmaz; kod bulgusu 28); bloklayan uç noktalar `def`
+(iş parçacığı havuzu; kod bulgusu 14); Telegram uç noktası ve `api.telegram.org` yok (K-50); panel (`/`, `/static`) yok
+(P20b: Bismuth içindeki Kamera sekmesi); çıkış tarihi `strptime` ile doğrulanır (422; kod bulgusu 17); kayıt atomik
+(kod bulgusu 19); modeller arka planda yüklenir, `/api/health` açılışta da cevap verir.
+"""
+
+import asyncio
+import logging
 import os
 import re
-import shutil
+import threading
 import time
-import asyncio
+import uuid
 from contextlib import asynccontextmanager
-from datetime import datetime, timedelta
-from typing import Optional
+from typing import Callable, Optional
+
 import cv2
 import numpy as np
 import uvicorn
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request
-from fastapi.responses import HTMLResponse, StreamingResponse
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from config import config
-from database import GuestDatabase
-from security_service import SecurityService
+from bridge_security import BridgeGuard, redact
+from config import Config, load_config, load_token
+from database import GuestDatabase, face_sibling
+from parent_watch import WATCH_ENV, hard_exit, start_parent_watch
+from timeutil import checkout_deadline
 
-MAX_UPLOAD_BYTES = 10 * 1024 * 1024  # 10 MB üst sınır (DoS koruması)
+log = logging.getLogger("otel-kamera.web")
 
-os.makedirs(config.ALERTS_DIR, exist_ok=True)
-os.makedirs(config.GUEST_PHOTOS_DIR, exist_ok=True)
-os.makedirs("static", exist_ok=True)
-
-db = GuestDatabase(config.DB_PATH)
-security_service: Optional[SecurityService] = None
+MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    global security_service
-    security_service = SecurityService(db=db)
-    security_service.start()
-    print("=" * 65)
-    print(f"🌐 MANGO KAMERA KONTROL PANELİ HAZIR: http://localhost:{config.WEB_PORT}")
-    print("=" * 65)
-    yield
-    if security_service:
-        security_service.stop()
+def sanitize_text(val: str, max_len: int = 100) -> str:
+    """Kontrol karakterleri ve `<>"` silinir; kesme işareti kalır (O'Brien bozulmaz)."""
+    clean = re.sub(r"[<>\"`\x00-\x1f]", "", (val or "")).strip()
+    return clean[:max_len]
 
 
-app = FastAPI(
-    title="Mango Kamera - KBS ve Güvenlik Kontrol Paneli",
-    lifespan=lifespan,
-)
-
-
-@app.middleware("http")
-async def security_headers_middleware(request: Request, call_next):
-    response = await call_next(request)
-    response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["X-Frame-Options"] = "DENY"
-    response.headers["Referrer-Policy"] = "no-referrer"
-    if request.url.path.startswith("/api/") and request.url.path != "/api/stream":
-        response.headers["Cache-Control"] = "no-store"
-    return response
-
-
-app.mount("/alerts", StaticFiles(directory=config.ALERTS_DIR), name="alerts")
-app.mount("/guest_photos", StaticFiles(directory=config.GUEST_PHOTOS_DIR), name="guest_photos")
-app.mount("/static", StaticFiles(directory="static"), name="static")
+def photo_url(path: str, prefix: str) -> str:
+    return f"/{prefix}/{os.path.basename(path)}" if path else ""
 
 
 class GuestRegisterRequest(BaseModel):
@@ -70,374 +52,295 @@ class GuestRegisterRequest(BaseModel):
     check_out_date: Optional[str] = Field(default=None, max_length=32)
 
 
-def _sanitize_text(val: str, max_len: int = 100) -> str:
-    clean = re.sub(r"[<>\"'`\x00-\x1f]", "", (val or "")).strip()
-    return clean[:max_len]
+class ServiceHolder:
+    """Modeller arka planda yüklenirken `/api/health` 'starting' der; hata olursa 'failed' + sebep."""
+
+    def __init__(self) -> None:
+        self.service = None
+        self.state = "starting"
+        self.error: Optional[str] = None
+        self.started_at = time.time()
 
 
-def _compute_checkout_str(days: int, custom_date: Optional[str] = None) -> str:
-    if custom_date and custom_date.strip():
-        clean = _sanitize_text(custom_date, 32)
-        if len(clean) == 10:
-            return f"{clean} 23:59:59"
-        return clean
-    clamped_days = min(max(1, int(days)), 3650)
-    return (datetime.now() + timedelta(days=clamped_days)).strftime("%Y-%m-%d %H:%M:%S")
+def create_app(
+    settings: Config,
+    token: str,
+    db: GuestDatabase,
+    service_builder: Callable[[], object],
+) -> FastAPI:
+    holder = ServiceHolder()
+    os.makedirs(settings.ALERTS_DIR, exist_ok=True)
+    os.makedirs(settings.GUEST_PHOTOS_DIR, exist_ok=True)
 
+    def boot() -> None:
+        try:
+            service = service_builder()
+            service.start()  # type: ignore[attr-defined]
+            holder.service = service
+            holder.state = "running"
+            log.info("Kamera hizmeti hazır")
+        except Exception as exc:  # noqa: BLE001
+            holder.state = "failed"
+            holder.error = redact(f"{type(exc).__name__}: {exc}")[:300]
+            log.exception("Kamera hizmeti başlatılamadı")
 
-def _format_photo_url(path: str, prefix: str) -> str:
-    if not path:
-        return ""
-    return f"/{prefix}/{os.path.basename(path)}"
+    @asynccontextmanager
+    async def lifespan(_: FastAPI):
+        threading.Thread(target=boot, name="service-boot", daemon=True).start()
+        yield
+        if holder.service is not None:
+            holder.service.stop()  # type: ignore[attr-defined]
 
+    app = FastAPI(title="Otel Kamera yan süreci", lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
+    app.state.holder = holder
 
-def _save_and_respond_guest(
-    name: str,
-    room_number: str,
-    days: int,
-    check_out_date: Optional[str],
-    embedding: np.ndarray,
-    portrait: Optional[np.ndarray] = None,
-    fallback_img_path: str = "",
-    msg_suffix: str = "başarıyla KBS listesine tanımlandı.",
-) -> dict:
-    clean_name = _sanitize_text(name, 100)
-    clean_room = _sanitize_text(room_number, 24)
-    if not clean_name or not clean_room:
-        raise HTTPException(status_code=400, detail="Lütfen geçerli bir misafir adı ve oda numarası girin.")
+    @app.middleware("http")
+    async def security_headers(request: Request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Referrer-Policy"] = "no-referrer"
+        if request.url.path.startswith("/api/") and request.url.path != "/api/stream":
+            response.headers["Cache-Control"] = "no-store"
+        return response
 
-    checkout_str = _compute_checkout_str(days, check_out_date)
-    guest_id = db.add_guest(
-        name=clean_name,
-        room_number=clean_room,
-        embedding=embedding,
-        check_out_date=checkout_str,
-    )
+    app.mount("/alerts", StaticFiles(directory=settings.ALERTS_DIR), name="alerts")
+    app.mount("/guest_photos", StaticFiles(directory=settings.GUEST_PHOTOS_DIR), name="guest_photos")
 
-    photo_path = ""
-    if portrait is not None:
-        filename = f"guest_{guest_id}_{int(time.time())}.jpg"
-        photo_path = os.path.join(config.GUEST_PHOTOS_DIR, filename)
-        cv2.imwrite(photo_path, portrait, [int(cv2.IMWRITE_JPEG_QUALITY), 88])
-        db.update_guest_photo(guest_id, photo_path)
-    elif fallback_img_path and os.path.exists(fallback_img_path):
-        filename = f"guest_{guest_id}_{int(time.time())}.jpg"
-        photo_path = os.path.join(config.GUEST_PHOTOS_DIR, filename)
-        shutil.copy2(fallback_img_path, photo_path)
-        db.update_guest_photo(guest_id, photo_path)
+    def service():
+        if holder.service is None:
+            raise HTTPException(status_code=503, detail=f"service_{holder.state}")
+        return holder.service
 
-    if security_service:
-        security_service.reload_guests()
+    def save_guest(
+        name: str,
+        room_number: str,
+        days: int,
+        check_out_date: Optional[str],
+        embedding: np.ndarray,
+        portrait: Optional[np.ndarray] = None,
+        fallback_img_path: str = "",
+        msg_suffix: str = "kaydedildi.",
+    ) -> dict:
+        clean_name = sanitize_text(name, 100)
+        clean_room = sanitize_text(room_number, 24)
+        if not clean_name or not clean_room:
+            raise HTTPException(status_code=400, detail="Lütfen geçerli bir misafir adı ve oda numarası girin.")
+        try:
+            checkout = checkout_deadline(days, check_out_date)
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
 
-    guest = db.get_guest_by_id(guest_id)
-    guest["photo_url"] = _format_photo_url(photo_path, "guest_photos")
-    return {
-        "ok": True,
-        "message": f"{clean_name} (Oda {clean_room}) {msg_suffix}",
-        "guest": guest,
-    }
+        # Atomik kayıt: fotoğraf ÖNCE yazılır, satır yolla birlikte eklenir; hata/çift tıklamada dosya silinir.
+        photo_path = ""
+        written = False
+        if portrait is not None or (fallback_img_path and os.path.exists(fallback_img_path)):
+            photo_path = os.path.join(settings.GUEST_PHOTOS_DIR, f"guest_{uuid.uuid4().hex[:10]}_{int(time.time())}.jpg")
+            if portrait is not None:
+                written = bool(cv2.imwrite(photo_path, portrait, [int(cv2.IMWRITE_JPEG_QUALITY), 88]))
+            else:
+                import shutil
 
+                shutil.copy2(fallback_img_path, photo_path)
+                written = True
+        try:
+            guest_id = db.add_guest(clean_name, clean_room, embedding, checkout, photo_path if written else "")
+            guest = db.get_guest_by_id(guest_id)
+        except Exception:
+            if written and os.path.exists(photo_path):
+                os.remove(photo_path)
+            raise
+        if written and guest and guest["photo_path"] != photo_path and os.path.exists(photo_path):
+            os.remove(photo_path)  # çift tıklama: mevcut satır döndü, yeni dosya gereksiz
+        if holder.service is not None:
+            holder.service.reload_guests()  # type: ignore[attr-defined]
+        guest = db.get_guest_by_id(guest_id) or {}
+        guest["photo_url"] = photo_url(guest.get("photo_path", ""), "guest_photos")
+        return {"ok": True, "message": f"{clean_name} (Oda {clean_room}) {msg_suffix}", "guest": guest}
 
-@app.get("/", response_class=HTMLResponse)
-async def index():
-    html_path = os.path.join("static", "index.html")
-    if not os.path.exists(html_path):
-        return HTMLResponse("<h1>Arayüz dosyası bulunamadı.</h1>", status_code=404)
-    with open(html_path, "r", encoding="utf-8") as f:
-        return HTMLResponse(f.read())
+    @app.get("/api/health")
+    def health():
+        body = {
+            "ok": holder.state == "running",
+            "state": holder.state,
+            "error": holder.error,
+            "uptime_seconds": round(time.time() - holder.started_at, 1),
+        }
+        if holder.service is not None:
+            body["loop"] = holder.service.health.snapshot()  # type: ignore[attr-defined]
+        return body
 
+    @app.get("/api/status")
+    def get_status():
+        if holder.service is None:
+            return {"camera_connected": False, "active_guests_count": 0, "state": holder.state}
+        return holder.service.get_status()  # type: ignore[attr-defined]
 
-@app.get("/api/status")
-async def get_status():
-    if not security_service:
-        return {"camera_connected": False, "active_guests_count": 0}
-    return security_service.get_status()
+    @app.get("/api/stream")
+    async def video_stream(request: Request):
+        async def frames():
+            while True:
+                if await request.is_disconnected():
+                    break
+                svc = holder.service
+                if svc is None or not svc._running:  # type: ignore[attr-defined]
+                    break
+                jpeg = svc.latest_jpeg  # type: ignore[attr-defined]
+                if jpeg:
+                    yield b"--frame\r\nContent-Type: image/jpeg\r\n\r\n" + jpeg + b"\r\n"
+                await asyncio.sleep(0.05)
 
+        return StreamingResponse(frames(), media_type="multipart/x-mixed-replace; boundary=frame")
 
-@app.get("/api/stream")
-async def video_stream(request: Request):
-    async def frame_generator():
-        while True:
-            if await request.is_disconnected():
-                break
-            if not security_service or not security_service._running:
-                break
-            if security_service and security_service.latest_jpeg:
-                yield (
-                    b"--frame\r\n"
-                    b"Content-Type: image/jpeg\r\n\r\n" + security_service.latest_jpeg + b"\r\n"
-                )
-            await asyncio.sleep(0.05)
+    @app.get("/api/guests")
+    def list_guests():
+        guests = db.list_active_guests_info()
+        for g in guests:
+            g["photo_url"] = photo_url(g.get("photo_path", ""), "guest_photos")
+        return {"guests": guests, "total": len(guests)}
 
-    return StreamingResponse(
-        frame_generator(),
-        media_type="multipart/x-mixed-replace; boundary=frame",
-    )
-
-
-@app.get("/api/guests")
-async def list_guests():
-    guests = db.list_active_guests_info()
-    for g in guests:
-        g["photo_url"] = _format_photo_url(g.get("photo_path", ""), "guest_photos")
-    return {"guests": guests, "total": len(guests)}
-
-
-@app.post("/api/guests/from-camera")
-async def register_guest_from_camera(req: GuestRegisterRequest):
-    if not security_service or not security_service.camera_connected:
-        raise HTTPException(status_code=400, detail="Kamera şu anda bağlı değil.")
-
-    res = security_service.extract_face_from_live_camera()
-    if res is None:
-        raise HTTPException(
-            status_code=400,
-            detail="Şu anda kamerada net bir yüz görünmüyor. Lütfen kişinin kameraya bakmasını sağlayıp tekrar deneyin.",
-        )
-
-    embedding, portrait = res
-    return _save_and_respond_guest(
-        name=req.name,
-        room_number=req.room_number,
-        days=req.days,
-        check_out_date=req.check_out_date,
-        embedding=embedding,
-        portrait=portrait,
-    )
-
-
-@app.post("/api/guests/checkout-from-camera")
-async def checkout_guest_from_camera():
-    if not security_service or not security_service.camera_connected:
-        raise HTTPException(status_code=400, detail="Kamera şu anda bağlı değil.")
-
-    ok, msg, guest_info = security_service.identify_and_checkout_from_live_camera()
-    if not ok:
-        raise HTTPException(status_code=400, detail=msg)
-
-    return {"ok": True, "message": msg, "guest": guest_info}
-
-
-@app.post("/api/guests/from-photo")
-async def register_guest_from_photo(
-    name: str = Form(...),
-    room_number: str = Form(...),
-    days: int = Form(30),
-    check_out_date: Optional[str] = Form(None),
-    photo: UploadFile = File(...),
-):
-    if not security_service:
-        raise HTTPException(status_code=500, detail="Güvenlik servisi henüz hazır değil.")
-
-    contents = await photo.read(MAX_UPLOAD_BYTES + 1)
-    if len(contents) > MAX_UPLOAD_BYTES:
-        raise HTTPException(status_code=413, detail="Fotoğraf boyutu en fazla 10 MB olabilir.")
-
-    np_arr = np.frombuffer(contents, np.uint8)
-    img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
-    if img is None:
-        raise HTTPException(status_code=400, detail="Yüklenen dosya geçerli bir fotoğraf değil.")
-
-    res = security_service.extract_face_from_image(img)
-    if res is None:
-        raise HTTPException(
-            status_code=400,
-            detail="Yüklenen fotoğrafta net bir insan yüzü tespit edilemedi. Lütfen yüzün net göründüğü bir fotoğraf seçin.",
-        )
-
-    embedding, portrait = res
-    return _save_and_respond_guest(
-        name=name,
-        room_number=room_number,
-        days=days,
-        check_out_date=check_out_date,
-        embedding=embedding,
-        portrait=portrait,
-        msg_suffix="fotoğraftan başarıyla tanımlandı.",
-    )
-
-
-@app.post("/api/alerts/{alert_id}/register")
-async def register_guest_from_alert(alert_id: int, req: GuestRegisterRequest):
-    alert = db.get_alert_by_id(alert_id)
-    if not alert:
-        raise HTTPException(status_code=404, detail="Alarm kaydı bulunamadı.")
-
-    embedding = alert.get("embedding")
-    portrait_img = None
-
-    face_crop_path = alert.get("face_crop_path", "")
-    image_path = alert.get("image_path", "")
-
-    if not face_crop_path and image_path:
-        inferred_crop = image_path.replace("alert_", "face_")
-        if os.path.exists(inferred_crop):
-            face_crop_path = inferred_crop
-
-    if face_crop_path and os.path.exists(face_crop_path):
-        portrait_img = cv2.imread(face_crop_path)
-
-    if embedding is None:
-        if not security_service:
-            raise HTTPException(status_code=500, detail="Güvenlik servisi hazır değil.")
-        src_path = face_crop_path if (face_crop_path and os.path.exists(face_crop_path)) else image_path
-        if not src_path or not os.path.exists(src_path):
-            raise HTTPException(status_code=400, detail="Bu alarma ait görüntü dosyası bulunamadı.")
-        img = cv2.imread(src_path)
-        if img is None:
-            raise HTTPException(status_code=400, detail="Alarm görüntüsü okunamadı.")
-        res = security_service.extract_face_from_image(img)
+    @app.post("/api/guests/from-camera")
+    def register_guest_from_camera(req: GuestRegisterRequest):
+        svc = service()
+        if not svc.camera_connected:
+            raise HTTPException(status_code=400, detail="Kamera şu anda bağlı değil.")
+        res = svc.extract_face_from_live_camera()
         if res is None:
-            raise HTTPException(
-                status_code=400,
-                detail="Bu alarm karesinde yüz imzası çıkarılamadı. Lütfen yüzün daha net olduğu bir kare seçin.",
-            )
-        embedding, extracted_portrait = res
-        if portrait_img is None:
-            portrait_img = extracted_portrait
+            raise HTTPException(status_code=400, detail="Şu anda kamerada net bir yüz görünmüyor.")
+        embedding, portrait = res
+        return save_guest(req.name, req.room_number, req.days, req.check_out_date, embedding, portrait)
 
-    result = _save_and_respond_guest(
-        name=req.name,
-        room_number=req.room_number,
-        days=req.days,
-        check_out_date=req.check_out_date,
-        embedding=embedding,
-        portrait=portrait_img,
-        fallback_img_path=image_path,
-        msg_suffix="yakalanan fotoğraftan KBS listesine kaydedildi!",
+    @app.post("/api/guests/identify-from-camera")
+    def identify_guest_from_camera():
+        """Kameradaki kişiyi tanır ve ADAYI döner; çıkışı yapmaz (onay sonrası `/api/guests/{id}/checkout`)."""
+        svc = service()
+        if not svc.camera_connected:
+            raise HTTPException(status_code=400, detail="Kamera şu anda bağlı değil.")
+        ok, msg, info = svc.identify_guest_from_live_camera()
+        if not ok:
+            raise HTTPException(status_code=400, detail=msg)
+        return {"ok": True, "needs_confirmation": True, "message": msg, "guest": info}
+
+    @app.post("/api/guests/from-photo")
+    def register_guest_from_photo(
+        name: str = Form(...),
+        room_number: str = Form(...),
+        days: int = Form(30),
+        check_out_date: Optional[str] = Form(None),
+        photo: UploadFile = File(...),
+    ):
+        svc = service()
+        contents = photo.file.read(MAX_UPLOAD_BYTES + 1)
+        if len(contents) > MAX_UPLOAD_BYTES:
+            raise HTTPException(status_code=413, detail="Fotoğraf boyutu en fazla 10 MB olabilir.")
+        img = cv2.imdecode(np.frombuffer(contents, np.uint8), cv2.IMREAD_COLOR)
+        if img is None:
+            raise HTTPException(status_code=400, detail="Yüklenen dosya geçerli bir fotoğraf değil.")
+        res = svc.extract_face_from_image(img)
+        if res is None:
+            raise HTTPException(status_code=400, detail="Fotoğrafta net bir yüz tespit edilemedi.")
+        embedding, portrait = res
+        return save_guest(name, room_number, days, check_out_date, embedding, portrait, msg_suffix="fotoğraftan kaydedildi.")
+
+    @app.post("/api/alerts/{alert_id}/register")
+    def register_guest_from_alert(alert_id: int, req: GuestRegisterRequest):
+        alert = db.get_alert_by_id(alert_id)
+        if not alert:
+            raise HTTPException(status_code=404, detail="Alarm kaydı bulunamadı.")
+        embedding = alert.get("embedding")
+        image_path = alert.get("image_path", "")
+        crop_path = alert.get("face_crop_path", "") or (face_sibling(image_path) if image_path else "")
+        portrait = cv2.imread(crop_path) if crop_path and os.path.exists(crop_path) else None
+        if embedding is None:
+            svc = service()
+            src = crop_path if (crop_path and os.path.exists(crop_path)) else image_path
+            if not src or not os.path.exists(src):
+                raise HTTPException(status_code=400, detail="Bu alarma ait görüntü dosyası bulunamadı.")
+            img = cv2.imread(src)
+            res = svc.extract_face_from_image(img) if img is not None else None
+            if res is None:
+                raise HTTPException(status_code=400, detail="Bu alarm karesinde yüz imzası çıkarılamadı.")
+            embedding, extracted = res
+            portrait = portrait if portrait is not None else extracted
+        result = save_guest(
+            req.name, req.room_number, req.days, req.check_out_date, embedding, portrait,
+            fallback_img_path=image_path, msg_suffix="alarm karesinden kaydedildi.",
+        )  # fmt: skip
+        img_p, crop_p = db.delete_alert(alert_id)
+        for p in (img_p, crop_p):
+            GuestDatabase._safe_remove_file(p)
+        return result
+
+    @app.post("/api/guests/{guest_id}/checkout")
+    def checkout_single_guest(guest_id: int):
+        guest = db.get_guest_by_id(guest_id)
+        if not guest:
+            raise HTTPException(status_code=404, detail="Misafir bulunamadı.")
+        if not db.deactivate_guest(guest_id):
+            raise HTTPException(status_code=400, detail="Misafir zaten çıkış yapmış.")
+        if holder.service is not None:
+            holder.service.reload_guests()  # type: ignore[attr-defined]
+        return {"ok": True, "message": f"{guest['name']} (Oda {guest['room_number']}) çıkış yaptı."}
+
+    @app.get("/api/alerts")
+    def get_alerts(limit: int = 24):
+        alerts = db.get_recent_alerts(limit=min(max(1, limit), 100))
+        for a in alerts:
+            img = a.get("image_path", "")
+            crop = a.get("face_crop_path", "") or (face_sibling(img) if img else "")
+            a["image_url"] = photo_url(img, "alerts") if (img and os.path.exists(img)) else ""
+            a["face_url"] = photo_url(crop, "alerts") if (crop and os.path.exists(crop)) else a["image_url"]
+        return {"alerts": alerts}
+
+    @app.delete("/api/alerts/{alert_id}")
+    def delete_single_alert(alert_id: int):
+        for p in db.delete_alert(alert_id):
+            GuestDatabase._safe_remove_file(p)
+        return {"ok": True}
+
+    @app.post("/api/alerts/clear")
+    def clear_all_alerts():
+        for p in db.clear_alerts():
+            GuestDatabase._safe_remove_file(p)
+        return {"ok": True}
+
+    @app.post("/api/system/cleanup-storage")
+    def run_storage_cleanup():
+        return {"ok": True, "stats": db.run_storage_maintenance()}
+
+    @app.post("/api/system/toggle-alarms")
+    def toggle_alarms():
+        svc = service()
+        svc.alarms_paused = not svc.alarms_paused
+        return {"ok": True, "alarms_paused": svc.alarms_paused}
+
+    # En son eklenen en dıştadır: Host → Origin → belirteç, her şeyden önce.
+    app.add_middleware(BridgeGuard, token=token, port=settings.WEB_PORT)
+    return app
+
+
+def main() -> None:  # pragma: no cover - süreç girişi
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
+    settings = load_config()
+    token = load_token()
+    if os.environ.get(WATCH_ENV) == "1":
+        start_parent_watch(hard_exit)
+    from face_engine import FaceEngine
+    from security_service import SecurityService
+
+    db = GuestDatabase(settings.DB_PATH, settings)
+
+    def build() -> SecurityService:
+        return SecurityService(db=db, settings=settings, face_engine=FaceEngine(settings=settings))
+
+    uvicorn.run(
+        create_app(settings, token, db, build),
+        host=settings.WEB_HOST,
+        port=settings.WEB_PORT,
+        log_level="warning",
+        timeout_graceful_shutdown=1,
     )
-
-    img_p, crop_p = db.delete_alert(alert_id)
-    for p in (img_p, crop_p):
-        if p and os.path.exists(p):
-            try:
-                os.remove(p)
-            except OSError:
-                pass
-
-    return result
-
-
-@app.post("/api/guests/{guest_id}/checkout")
-async def checkout_single_guest(guest_id: int):
-    guest = db.get_guest_by_id(guest_id)
-    if not guest:
-        raise HTTPException(status_code=404, detail="Misafir bulunamadı.")
-
-    ok = db.deactivate_guest(guest_id)
-    if not ok:
-        raise HTTPException(status_code=400, detail="Misafir zaten çıkış yapmış.")
-
-    if security_service:
-        security_service.reload_guests()
-
-    return {
-        "ok": True,
-        "message": f"{guest['name']} (Oda {guest['room_number']}) çıkış işlemi yapıldı ve listeden kaldırıldı.",
-    }
-
-
-@app.get("/api/alerts")
-async def get_alerts(limit: int = 24):
-    clamped_limit = min(max(1, limit), 100)
-    alerts = db.get_recent_alerts(limit=clamped_limit)
-    for a in alerts:
-        img_path = a.get("image_path", "")
-        crop_path = a.get("face_crop_path", "")
-        if not crop_path and img_path:
-            inferred = img_path.replace("alert_", "face_")
-            if os.path.exists(inferred):
-                crop_path = inferred
-
-        a["image_url"] = _format_photo_url(img_path, "alerts") if (img_path and os.path.exists(img_path)) else ""
-        if crop_path and os.path.exists(crop_path):
-            a["face_url"] = _format_photo_url(crop_path, "alerts")
-        else:
-            a["face_url"] = a["image_url"]
-    return {"alerts": alerts}
-
-
-@app.delete("/api/alerts/{alert_id}")
-async def delete_single_alert(alert_id: int):
-    img_path, crop_path = db.delete_alert(alert_id)
-    for p in (img_path, crop_path):
-        if p and os.path.exists(p):
-            try:
-                os.remove(p)
-            except OSError:
-                pass
-    return {"ok": True}
-
-
-@app.post("/api/alerts/clear")
-async def clear_all_alerts():
-    paths = db.clear_alerts()
-    for p in paths:
-        if p and os.path.exists(p):
-            try:
-                os.remove(p)
-            except OSError:
-                pass
-    return {"ok": True, "message": "Tüm alarm geçmişi temizlendi."}
-
-
-@app.post("/api/system/cleanup-storage")
-async def run_storage_cleanup():
-    stats = db.run_storage_maintenance()
-    return {
-        "ok": True,
-        "stats": stats,
-        "message": (
-            f"Akıllı temizlik tamamlandı: {stats['removed_old_alerts']} eski, "
-            f"{stats['removed_duplicate_alerts']} mükerrer yüz ve "
-            f"{stats['removed_orphan_files']} gereksiz dosya silindi."
-        ),
-    }
-
-
-@app.post("/api/system/toggle-alarms")
-async def toggle_alarms():
-    if not security_service:
-        raise HTTPException(status_code=500, detail="Servis hazır değil.")
-    security_service.alarms_paused = not security_service.alarms_paused
-    state_str = "DURAKLATILDI" if security_service.alarms_paused else "AKTİF EDİLDİ"
-    return {
-        "ok": True,
-        "alarms_paused": security_service.alarms_paused,
-        "message": f"Telegram alarmları {state_str}.",
-    }
-
-
-@app.post("/api/system/test-telegram")
-async def test_telegram_notification():
-    if not security_service:
-        raise HTTPException(status_code=500, detail="Servis hazır değil.")
-
-    frame = security_service.latest_raw_frame
-    if frame is None:
-        frame = np.zeros((480, 640, 3), dtype=np.uint8)
-        frame[:] = (19, 18, 23)
-        cv2.putText(frame, "MANGO KAMERA TEST", (130, 240), cv2.FONT_HERSHEY_SIMPLEX, 1.1, (68, 162, 130), 2)
-
-    saved, _ = security_service.notifier.send_alert_with_crop(
-        frame=frame,
-        tracker_id=0,
-        title="✅ MANGO KAMERA PANEL TESTİ",
-        location="Resepsiyon Web Paneli",
-        async_send=True,
-    )
-    return {
-        "ok": True,
-        "message": "Telegram grubuna test bildirimi gönderildi!",
-        "saved_path": saved,
-    }
 
 
 if __name__ == "__main__":
-    uvicorn.run(
-        app,
-        host=config.WEB_HOST,
-        port=config.WEB_PORT,
-        log_level="info",
-        timeout_graceful_shutdown=1,
-    )
+    main()

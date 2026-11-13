@@ -45,6 +45,8 @@ const probes: Probe[] = []
  */
 const EXPECTED_UNPROBED: PermissionKey[] = [
   'ledger.locked',
+  // Faz 20: no service call needs it yet ("Kameradan yüz al" arrives with P20c; camera rights: permissions-camera.test.ts).
+  'camera.enroll',
   'reports.operations',
   'reports.staff',
   'reports.export'
@@ -569,6 +571,8 @@ beforeAll(async () => {
       level: 'view',
       run: (c) => svc.staff.myEmployee(c)
     },
+    { name: 'kamera durumu', permission: 'camera', level: 'view', run: (c) => svc.camera.status(c) },
+    { name: 'kamera yeniden başlat', permission: 'camera', level: 'edit', run: (c) => svc.camera.restart(c) },
     {
       name: 'otel ayarı',
       permission: 'settings',
