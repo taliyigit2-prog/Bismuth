@@ -34,15 +34,22 @@ koşulu ölü (ci tag'de tetiklenmez).
 ## 2. Ucuz dağıtım stratejisi (öneri)
 
 1. **Tek elle tetiklenen sürüm iş akışı** (`release.yml`, `workflow_dispatch` + `inputs.tag`): Linux'ta verify (typecheck,
-   lint, test, e2e) → Windows NSIS **Linux'ta** üretilir (electron-builder bunu destekler; ikon/sürüm kaynağı gömme için
-   `wine` gerekebilir — Codespace'te `npm run package:win` ile **önce yerelde denenmeli**, doğrulanmadı) → yalnız macOS
+   lint, test, e2e) → Windows NSIS **Linux'ta** üretilir (**doğrulandı 2026-11-12, Codespace 4 çekirdek**: `wine` yokken
+   `wine process failed ENOENT`; yalnız `wine64` ile ikon/sürüm gömme (`signtool.exe`) ve uninstaller üretimi 32-bit
+   ister (`wine32 is missing`); `dpkg --add-architecture i386 && apt-get install wine64 wine32:i386` + **temiz**
+   `~/.wine` önbelleği (`wineboot -u`) sonrası `npx electron-builder --win --publish never` 3 dk 29 s'de
+   `Bismuth-Setup-x64.exe` **102 MB** ve `Bismuth-Setup-arm64.exe` **97 MB** üretti; `win-unpacked` 368 MB; kurulum
+   dosyası gerçek Windows'ta S-80 ile denenecek. GitHub Linux runner'ında aynı apt adımı gerekir, ≈ +2 dk) → yalnız macOS
    DMG için macOS runner (tek iş, iki mimari) → `gh release create`. Tahmini ≈ 20 (Linux) + 100 (Mac) = **120** yerine
    bugünkü 180 + ayrıca ci 130–200.
 2. **`ci.yml` package işi kaldırılır**; ci = yalnız Linux verify (15–25 dk). Paket yalnız sürümde.
 3. **Playwright önbelleği** (`~/.cache/ms-playwright`, `actions/cache`) ve `npm ci` önbelleği → verify 3–5 dk kısalır.
 4. **`faz0-*.yml` silinir** (git etiketi `archive/faz0` ile prototipler arşivlenir).
-5. **Codespace'te paket üretimi** (dakika harcamadan): `npm run package:win` ve `package:dir` Linux'ta çalışır; çıktılar
-   `release/` (gitignore). DMG için Mac şart (sahibin Mac'i: `npm run package:mac`).
+5. **Codespace'te paket üretimi** (dakika harcamadan): `npm run package:win` ve `package:dir` Linux'ta çalışır (wine64 +
+   wine32 kurulu Codespace'te; `.devcontainer` postCreate'e eklenmesi P19a'da, +300 MB imaj); çıktılar `release/`
+   (gitignore). DMG için Mac şart (sahibin Mac'i: `npm run package:mac`). Codespace notu: `git push` "git-lfs not
+   found" derse `sudo apt-get install -y git-lfs` (devcontainer apt listesine eklendi; depo LFS kullanmıyor, kanca
+   imajdan geliyor).
 6. Tag öncesi şart: `release.yml` ilk adımda `npm run check` + e2e (Linux) koşsun; kırmızıysa paket üretmesin.
 7. **Hiçbir iş akışı ajanlar tarafından tetiklenmez** (`gh workflow run` kanca ile engellenir; §6). Sürüm tetiklemesi sahip kararı.
 

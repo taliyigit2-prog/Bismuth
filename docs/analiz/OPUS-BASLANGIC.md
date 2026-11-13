@@ -67,7 +67,10 @@ tablo ve dalga sırası kuralları YURUTME'de (bağımlı paket bir sonraki dalg
 Durunca: YURUTME günlüğüne "⏸ durdu: neden"; mesaj sonunda `❓ SORULARIM` (numaralı, her soruya önerilen cevap); tur biter.
 Cevap gelince `06-kararlar.md` 7. tur tablosuna yaz ve devam et.
 
-## 5. Yasaklar (kısa hatırlatma)
+## 5. Yasaklar (kısa hatırlatma) ve ortam notları
+Ortam: `git push` "git-lfs not found" derse `sudo apt-get install -y git-lfs`; Windows paketi Codespace'te `wine64 wine32:i386`
+ister (07 §2); Electron e2e `xvfb-run -a` ile çalışır (devcontainer düzeltildi).
+
 GitHub Actions tetikleme yok (`workflow-guard`); kamera/biyometrik veri ve sır commit edilmez (`camera-data-guard`);
 `01-gereksinimler.md` yalnız `/requirement-change`; migrasyon değişmez (sıradaki 0019 = P17d); push yalnız `claude/…`; ajan modeli
 yalnız `.claude/agents/*.md` ön bilgisinde (tek kaynak; beceri ve belgelerde tekrar yazılmaz); `.mcp.json` 21st.dev sunucusu yalnız sahip S-118'i onaylayıp secret eklerse kullanılır.

@@ -26,7 +26,8 @@ S-113. Cevapsız = kullanıcı başına kurulum kalır.
 
 ## Kabul ölçütleri
 - [ ] İş akışı dosyaları YAML geçerli (`actionlint` ya da `node -e yaml`), paketleme tek yerde; `npm run package:win`
-      Codespace'te denendi (sonuç ve gerekli araç raporda; üretilemediyse "doğrulanmadı").
+      Codespace'te denendi (2026-11-12: `wine64` + `wine32:i386` + temiz `~/.wine` ile x64 102 MB / arm64 97 MB, 3,5 dk;
+      07 §2); `.devcontainer` postCreate'e wine paketleri ve `release.yml` Linux işine aynı apt adımı eklenir.
 - [ ] `docs/kurulum.md` terminal komutu içermez; `<!-- doğrula -->` işaretleri yalnız S-80'e bağlı satırlarda.
 - [ ] Sihirbazda kurtarma kodları + Bismuth anahtarı tek adımda, yazdır düğmesi (e2e setup).
 - [ ] `prototypes/` ve `faz0-*.yml` yok; `node .claude/hooks/test-hooks.mjs` ve `npm run check` yeşil.
@@ -34,7 +35,8 @@ S-113. Cevapsız = kullanıcı başına kurulum kalır.
 - [ ] `security-reviewer` iş akışı/paketleme değişikliklerini onaylar (fuses, imza ayarları değişmedi).
 
 ## Teknik notlar
-`electron-builder` 26.15.3; NSIS Linux'ta `wine` gerektirebilir (doğrulanmadı); DMG yalnız macOS. Sürüm etiketi `v*`
+`electron-builder` 26.15.3; NSIS Linux'ta `wine64` + `wine32:i386` gerektirir (doğrulandı: ikon/sürüm gömme ve uninstaller
+üretimi 32-bit wine ile; `wine32` sonradan kurulduysa `~/.wine` silinip `wineboot -u`); DMG yalnız macOS. Sürüm etiketi `v*`
 `release.yml`'i tetikler → `workflow-guard` `git tag v*`'ı engeller; etiketi sahip atar.
 
 ## Yapılmayacaklar
