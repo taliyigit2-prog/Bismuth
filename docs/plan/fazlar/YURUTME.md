@@ -226,3 +226,7 @@ QA2b, akış testleri C/D) bu plana **Son** satırında katılır; ayrı yürüt
   Opus devir notu `docs/analiz/OPUS-BASLANGIC.md`. Sonraki adım: `/orkestra` dalga 1.
 - 2026-11-12 (kapanış): analiz turu commit'leri `claude/fable-analiz` dalında (8346aec → 07a3fad + bu). `npm run check` ✓
   (2427 test), kanca testleri 89/89. Fable harcaması ≈ $45. Opus: `OPUS-BASLANGIC.md` → `/orkestra 1`.
+- 2026-11-13: **Analiz turu 2. oturum (Fable).** Sahip cevapları S-100…S-118 işlendi (K-48…K-55 kesin, K-57…K-62); plan 13 dalga
+  + Faz 22 (14–16); "doğrulanmadı" maddeleri kapatıldı; 33 route'un tamamı gerçek Electron'da akış testinden geçti
+  (H-19…H-47, Kritik/Yüksek yok); Windows paketi Linux'ta üretildi (wine64+wine32); Ponytail becerisi (K-61), 21st.dev MCP
+  (K-60, `12-…md`), Rust/Tauri raporu ve ölçüm (`11-…md`, K-62 taslak). Fable harcaması 2. oturum ≈ $40+.
