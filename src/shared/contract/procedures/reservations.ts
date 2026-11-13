@@ -45,6 +45,8 @@ export const gridStaySchema = z.object({
   /** reservation_rooms.id */
   id: idSchema,
   reservationId: idSchema,
+  /** The group booking the reservation belongs to (G-194); null/absent = none. Data only for now. */
+  groupId: idSchema.nullish(),
   code: z.string(),
   roomId: idSchema,
   checkIn: localDateSchema,

@@ -124,6 +124,11 @@ export const settingsShape = {
     .min(CALENDAR_MIN_START_YEAR)
     .refine((year) => year <= new Date().getFullYear(), { message: 'start year in the future' })
     .nullable(),
+  /**
+   * How a group reservation (G-194, S-106) keeps its money: one folio on the group leader ('single', default) or
+   * one folio per room ('per_room'). A group's own `folio_mode` starts from this value.
+   */
+  'booking.groupFolioMode': z.enum(['single', 'per_room']),
   /** Nights (by the weekday they start, 0 = Sunday) that take the weekend price (K-44: Friday and Saturday). */
   'pricing.weekendNights': z.array(z.number().int().min(0).max(6)).max(7),
   /** KBS warnings for occupants (G-53). */
@@ -255,6 +260,7 @@ export const SETTINGS_DEFAULTS: SettingsValues = {
   'hotel.checkoutTime': '12:00',
   'calendar.highlightWeekdays': [6, 0],
   'calendar.startYear': null,
+  'booking.groupFolioMode': 'single',
   'pricing.weekendNights': [5, 6],
   'kbs.checksEnabled': true,
   'tasks.everyNStays': 10,

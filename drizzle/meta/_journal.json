@@ -141,6 +141,13 @@
       "when": 1794541590715,
       "tag": "0019_hourly_stays",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "6",
+      "when": 1794554179295,
+      "tag": "0020_reservation_groups",
+      "breakpoints": true
     }
   ]
 }

@@ -74,6 +74,22 @@ export const RESERVATION_STATUSES = [
   'parked'
 ] as const
 
+/**
+ * A group booking (G-194, S-101, S-106): several reservations made together (one per room, each with its own guest
+ * name). `folio_mode` 'single' = one folio on the leader's reservation; 'per_room' = a folio per room. Existing
+ * multi-room reservations stay without a group. Void with `voided_at`, never delete.
+ */
+export const reservationGroups = sqliteTable('reservation_groups', {
+  id: id(),
+  name: text('name').notNull(),
+  leaderGuestId: text('leader_guest_id').references(() => guests.id),
+  folioMode: text('folio_mode', { enum: ['single', 'per_room'] })
+    .notNull()
+    .default('single'),
+  voidedAt: text('voided_at'),
+  ...timestamps
+})
+
 export const reservations = sqliteTable(
   'reservations',
   {
@@ -100,10 +116,13 @@ export const reservations = sqliteTable(
     cancelledAt: text('cancelled_at'),
     cancelReason: text('cancel_reason'),
     soldByUserId: text('sold_by_user_id'),
+    /** The group booking this reservation belongs to (G-194); null = a booking of its own. */
+    groupId: text('group_id').references(() => reservationGroups.id),
     ...timestamps
   },
   (t) => [
     uniqueIndex('reservations_code_unique').on(t.code),
+    index('reservations_group_idx').on(t.groupId),
     index('reservations_guest_idx').on(t.primaryGuestId),
     index('reservations_status_idx').on(t.status)
   ]

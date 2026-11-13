@@ -229,6 +229,7 @@ function staysOf(db: Db, reservationIds: readonly string[], today: LocalDate, no
       out.push({
         id: stay.id,
         reservationId,
+        groupId: r.groupId,
         code: r.code,
         roomId: stay.roomId,
         checkIn: stay.checkIn,
