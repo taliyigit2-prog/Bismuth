@@ -52,6 +52,21 @@ const pKbsClean = project("kbs-clean", {
   git: true,
   files: { "src/guest.ts": "export const sample = '10000000146' // public test number\nexport const phone = '05321234567'\n" },
 });
+// Docs-only change in a checkout whose tests fail: the gate must skip the toolchain (nothing it checks changed).
+const failScripts = { ...allScripts, test: "node -e \"console.error('FAILTEST: 1 test failed');process.exit(1)\"" };
+const pDocsOnly = project("docs-only", { scripts: failScripts, git: true, files: { ".gitignore": "node_modules\n", "docs/analiz/not.md": "# belge\n", ".claude/agents/x.md": "---\nname: x\n---\n" } });
+const pDocsCode = project("docs-code", { scripts: failScripts, git: true, files: { ".gitignore": "node_modules\n", "docs/not.md": "# belge\n", "src/a.ts": "export const a = 1\n" } });
+// package.json is already committed in these checkouts; only the docs (and src/a.ts) are new.
+for (const dir of [pDocsOnly, pDocsCode]) {
+  const g = (...args) => execFileSync("git", ["-c", "user.name=t", "-c", "user.email=t@t", ...args], { cwd: dir, env: baseEnv, stdio: "ignore" });
+  g("add", "package.json", ".gitignore");
+  g("commit", "-q", "-m", "init");
+}
+// camera-data-guard fixtures: a face crop, a weight file and a bot token in the tree; a clean tree with a docs image.
+const pCamFace = project("cam-face", { git: true, files: { "otel-kamera/guest_photos/guest_1.jpg": "\xff\xd8" } });
+const pCamWeights = project("cam-weights", { git: true, files: { "otel-kamera/yolo11n.pt": "PK" } });
+const pCamToken = project("cam-token", { git: true, files: { "otel-kamera/config.py": "TOKEN='" + ["1234567890", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"].join(":") + "'\n" } });
+const pCamClean = project("cam-clean", { git: true, files: { "docs/analiz/ekler/ekran.png": "\x89PNG", "otel-kamera/.env.example": "TELEGRAM_BOT_TOKEN=\n", "src/a.ts": "export const a = 1\n" } });
 // A git checkout (a worktree, say) whose tests fail, while the project dir passes.
 const pGitFail = project("git-fail", {
   scripts: { ...allScripts, test: "node -e \"console.error('FAILTEST: 1 test failed');process.exit(1)\"" },
@@ -137,6 +152,36 @@ const cases = [
     expect: 0, note: "all green: commit passes, marker written",
     after: () => (existsSync(marker(pPass)) && !Number.isNaN(Date.parse(readFileSync(marker(pPass), "utf8").trim())) ? null : ".checks-passed yazılmadı"),
   },
+
+  {
+    hook: "pre-commit-gate.mjs", env: { CLAUDE_PROJECT_DIR: pDocsOnly }, input: { cwd: pDocsOnly, tool_name: "Bash", tool_input: { command: `git add -A && ${commit} -m "docs: x"` } },
+    expect: 0, stderr: /yalnız belge\/ayar/, note: "docs-only commit: toolchain skipped even though tests would fail",
+  },
+  {
+    hook: "pre-commit-gate.mjs", env: { CLAUDE_PROJECT_DIR: pDocsCode }, input: { cwd: pDocsCode, tool_name: "Bash", tool_input: { command: `git add -A && ${commit} -m "feat: x"` } },
+    expect: 2, stderr: /FAILTEST/, note: "docs + code commit: toolchain runs",
+  },
+  {
+    hook: "pre-commit-gate.mjs", env: { CLAUDE_PROJECT_DIR: pDocsOnly }, input: { cwd: pDocsOnly, tool_name: "Bash", tool_input: { command: `${commit} -m "docs: x"` } },
+    expect: 2, stderr: /FAILTEST/, note: "nothing staged and no add: cannot tell, toolchain runs",
+  },
+
+  // ---------- workflow-guard ----------
+  { hook: "workflow-guard.mjs", input: { cwd: root, tool_name: "Bash", tool_input: { command: "gh workflow run ci.yml" } }, expect: 2, stderr: /gh workflow run/, note: "workflow dispatch: blocked" },
+  { hook: "workflow-guard.mjs", input: { cwd: root, tool_name: "Bash", tool_input: { command: "gh run rerun 123" } }, expect: 2, stderr: /gh run rerun/, note: "rerun: blocked" },
+  { hook: "workflow-guard.mjs", input: { cwd: root, tool_name: "Bash", tool_input: { command: "gh release create v1.0.1 dist/*" } }, expect: 2, stderr: /gh release create/, note: "release create: blocked" },
+  { hook: "workflow-guard.mjs", input: { cwd: root, tool_name: "Bash", tool_input: { command: "gh api -X POST repos/o/r/actions/workflows/ci.yml/dispatches" } }, expect: 2, stderr: /POST|dispatches/, note: "REST dispatch: blocked" },
+  { hook: "workflow-guard.mjs", input: { cwd: root, tool_name: "Bash", tool_input: { command: "gh run list --limit 5 && gh run view 123 --log | tail -20" } }, expect: 0, note: "read-only gh: allowed" },
+  { hook: "workflow-guard.mjs", input: { cwd: root, tool_name: "Bash", tool_input: { command: "git tag v1.0.1 -m 'release'" } }, expect: 2, stderr: /v1\.0\.1/, note: "version tag: blocked" },
+  { hook: "workflow-guard.mjs", input: { cwd: root, tool_name: "Bash", tool_input: { command: "git tag -l 'v*' && git tag archive/faz0" } }, expect: 0, note: "listing and non-version tag: allowed" },
+  { hook: "workflow-guard.mjs", input: { cwd: root, tool_name: "Bash", tool_input: { command: "echo 'gh workflow run ci.yml'" } }, expect: 0, note: "text mentioning gh: not a command" },
+
+  // ---------- camera-data-guard ----------
+  { hook: "camera-data-guard.mjs", input: { cwd: pCamFace, tool_name: "Bash", tool_input: { command: "git add -A" } }, expect: 2, stderr: /guest_photos/, note: "face crop in the tree: blocked" },
+  { hook: "camera-data-guard.mjs", input: { cwd: pCamWeights, tool_name: "Bash", tool_input: { command: `${commit} -am x` } }, expect: 2, stderr: /yolo11n\.pt/, note: "model weights: blocked" },
+  { hook: "camera-data-guard.mjs", input: { cwd: pCamToken, tool_name: "Bash", tool_input: { command: "git add otel-kamera" } }, expect: 2, stderr: /Telegram/, note: "bot token text: blocked" },
+  { hook: "camera-data-guard.mjs", input: { cwd: pCamClean, tool_name: "Bash", tool_input: { command: "git add -A" } }, expect: 0, note: "docs image, .env.example and code: allowed" },
+  { hook: "camera-data-guard.mjs", input: { cwd: pCamFace, tool_name: "Bash", tool_input: { command: "git status --short" } }, expect: 0, note: "not add/commit: ignored" },
 
   // ---------- kbs-data-guard ----------
   { hook: "kbs-data-guard.mjs", input: { cwd: pKbsSheet, tool_name: "Bash", tool_input: { command: "git add -A" } }, expect: 2, stderr: /EGM_Konaklayan_Listesi\.xlsx/, note: "spreadsheet in the changes: blocked" },

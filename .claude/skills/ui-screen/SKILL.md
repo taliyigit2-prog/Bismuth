@@ -33,7 +33,7 @@ allowed-tools: Bash(npm run typecheck) Bash(npm run lint) Bash(npx vitest *) Bas
 4. **Mobil karar** (açıkça yaz, faz dosyasının ilgili maddesine not düş): (a) aynı bileşen duyarlı, (b) `layouts/mobile` için
    ayrı görünüm (ör. ızgara yerine liste), ya da (c) telefonda yok (G-143 kapsam listesinde değilse). Telefonda 44 px dokunma
    hedefi, 16 px giriş yazısı, `dvh`, güvenli alan.
-5. **Metinler**: `src/renderer/i18n/tr.json` kaynak; aynı anahtarlar `en.json` ve `ru.json`'a **çevrilerek** eklenir (Türkçe
+5. **Metinler** (üç json elle düzenlenmez: anahtarlar `i18n-spec/<ad>.json` dosyasına yazılır ve `npm run i18n:add -- i18n-spec/<ad>.json` ile uygulanır): `src/renderer/i18n/tr.json` kaynak; aynı anahtarlar `en.json` ve `ru.json`'a **çevrilerek** eklenir (Türkçe
    kopyalanmaz). Rusça çoğullar `_one/_few/_many/_other`. Terimler ve ton için `tr-copy-guide` becerisi. Varsa
    `npm run i18n:check` ile anahtar eşitliğini doğrula.
 6. **Testler**:

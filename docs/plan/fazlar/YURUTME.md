@@ -1,7 +1,8 @@
-# Kesintisiz Yürütme — Faz 5–16 (K-39)
+# Kesintisiz Yürütme — Faz 5–16 (K-39) ve Faz 17–21 (analiz turu, 2026-11-12)
 
 > Sahip (2026-10-04): fazlar arasında onay yok; hepsi tek seferde; sonda çok ayrıntılı kontrol, sonra tek onay.
-> Bu dosya ana oturumun çalışma planıdır: her bağlam sıkıştırmasından sonra önce bu dosya okunur.
+> Bu dosya ana oturumun çalışma planıdır: her bağlam sıkıştırmasından sonra önce bu dosya okunur (`session-context` kancası
+> açık paketleri özetler). Faz 17–21 paket kartları `docs/analiz/08-gelistirme-plani.md`; yürütme `/orkestra`.
 
 ## Düzen
 
@@ -20,22 +21,9 @@
 
 ## Ajanlar, modeller, çaba
 
-| Ajan | Model | Çaba | İş |
-|---|---|---|---|
-| `feature-builder` | opus | high | Faz paketleri: ekran + servis + sözleşme + test + e2e |
-| `feature-builder-lite` | sonnet | medium | Seed/liste, metin, küçük arayüz düzeltmeleri, belge |
-| `researcher` | sonnet | medium | Alan araştırması (kaynaklı) |
-| `bug-hunter` | opus | xhigh | Modül başına hata/mantık/karar çelişkisi avı (salt-okunur, testi çalıştırır) |
-| `flow-tester` | sonnet | high | Gerçek uygulamada her düğme/form tıklanır (Playwright betiği), çalışmayanlar raporlanır |
-| `decision-auditor` | opus | high | Kod ↔ gereksinim/karar/sahip cevabı çelişkileri |
-| `security-reviewer` | opus | high | Electron + HTTP yüzeyi |
-| `db-reviewer` | sonnet | high | Şema, migrasyon, sorgu |
-| `ui-reviewer` | sonnet | high | Ekran görüntüleriyle arayüz incelemesi |
-| `turkish-ui-copy` | sonnet | medium | Metin (TR/EN/RU) |
-| `requirements-tracer` | sonnet | high | G-xx kapsamı, açık zorunlu maddeler |
-| `/qa` (beceri) | haiku | low | Kontrolleri koşup kısa özet |
-
-Makine: 4 çekirdek, 15 GB. Aynı anda en çok 6 yapan ajan (CPU'yu testler yer); gözden geçiriciler ayrıca.
+Tek kaynak: `.claude/agents/<ad>.md` ön bilgisi; tablo ve gerekçe `docs/analiz/09-ajan-sistemi.md` §2 (K-56).
+Makine: **2 çekirdek, 8 GB** (Codespace) → aynı anda en çok **2 kodlayan ajan**; kontrol ajanları kodlayanlar bitince.
+Faz 5–16'daki eski tablo (4 çekirdek, 6 ajan) geçersizdir.
 
 ## Dalgalar ve paketler
 
@@ -75,7 +63,7 @@ Port: paket n → ui:shot `474n1`, `E2E_PORT=474n2` (n = 1…9; 10+ için 475n1/
 | 4 | P14fix Faz 11/14 hata avı düzeltmeleri | 11, 14 | external, backup | feature-builder | ✅ |
 | 4 | P4fix Faz 4 hata avı düzeltmeleri (kurulum/giriş/roller/odalar) | 4 | auth, rooms, settings | feature-builder | ✅ |
 | 4 | P16c Uçtan uca senaryolar, üç dil, rol testleri, kapsam | 16 | — | feature-builder | ✅ |
-| 5 | Son kontrol: modül başına bug-hunter + flow-tester, decision-auditor, security, db, ui, copy, tracer → düzeltme turları | — | — | hepsi | 🔄 |
+| 5 | Son kontrol: modül başına bug-hunter + flow-tester, decision-auditor, security, db, ui, copy, tracer → düzeltme turları | — | — | hepsi | ➡ Son dalgası |
 | 5 | QA1a Takvim aralığı + başlangıç yılı (G-31), oda/tarih araması (G-190) | 5, 6 | booking, guests | feature-builder | ✅ |
 | 5 | QA1b Misafir etiketleri (G-50), ay sonu işaretleri kişi tercihinde, TR görev önerileri | 6, 10, 9 | guests, reports | feature-builder | ✅ |
 | 5 | QA1c Raporda kur kaynağı, tedarik kartı, turizm karşılaştırması, hava UA, kapsam | 10, 11, 12, 16 | reports, tourism | feature-builder | ✅ |
@@ -84,12 +72,57 @@ Port: paket n → ui:shot `474n1`, `E2E_PORT=474n2` (n = 1…9; 10+ için 475n1/
 | 5 | Akış testi A (defter, kasa, personel) ve B (operasyon, Bugün) | — | — | flow-tester | ✅ |
 | 5 | QA2x Dışa aktarmada eksik tablolar (G-122, S-43) | 14 | backup | feature-builder | ✅ |
 | 5 | QA2a Akış testi A bulguları (para alanı, iptal menüsü, sınırlar, kasa teslimi) | 7, 8 | ledger, staff | feature-builder | ✅ |
-| 5 | QA2b Akış testi B bulguları (uzun metin taşması, kopyalama, alan sınırları, 44 px) | 9, 12 | operations | feature-builder | 🔄 |
+| 5 | QA2b Akış testi B bulguları (uzun metin taşması, kopyalama, alan sınırları, 44 px) | 9, 12 | operations | feature-builder | ➡ Son dalgası |
 | 5 | Hata avı Faz 15 + 16 | 15, 16 | — | bug-hunter | ✅ |
-| 5 | Akış testi C (takvim, rezervasyon, misafir, ayarlar, giriş, raporlar, turizm) ve D (döviz, yedek, aktarma, uzaktan, telefon) | — | — | flow-tester | 🔄 |
+| 5 | Akış testi C (takvim, rezervasyon, misafir, ayarlar, giriş, raporlar, turizm) ve D (döviz, yedek, aktarma, uzaktan, telefon) | — | — | flow-tester | ➡ Son dalgası |
 | 5 | QA2c Faz 15/16 hata avı düzeltmeleri (çökme döngüsü, kişisel ayar sızıntısı, sürükle-bırak fiyatı) | 15, 16 | — | feature-builder | ✅ |
 | 5 | QA2-copy Metin, kılavuz, otel e-postası, küçük düzeltmeler | 15 | — | feature-builder | ✅ |
-| 6 | Sahip onay paketi (owner-review: tüm ekranlar + gerçek cihaz denemeleri listesi) | — | — | ana oturum | ⬜ |
+| 6 | Sahip onay paketi (owner-review: tüm ekranlar + gerçek cihaz denemeleri listesi) | — | — | ana oturum | ➡ Son dalgası |
+
+## Faz 17–21 dalgaları (analiz turu; paket kartları `08-gelistirme-plani.md`)
+
+Port: paket n → ui:shot `475n1`, `E2E_PORT=475n2`. Durum: ⬜ bekliyor · 🔄 sürüyor · ✅ bitti · ⏸ durdu (neden günlükte).
+Harcama sütunu: başlatıcının yazdığı `$` (dalga toplamı, gerçek).
+
+| Dalga | Paket | Faz | Modül dosyası / ad alanı | Ajan | Tahmin | Harcama | Durum |
+|---|---|---|---|---|---|---|---|
+| 1 | P17a Vazgeçme ve iade akışı (undoCheckIn, iptal/çıkışta ödeme + iade, kapalı rezervasyonda menü, raporda iptal/gelmedi/iade satırları) | 17 | booking, calendar, reports | calendar-specialist | $12–18 | | ⬜ |
+| 1 | P19c Depo temizliği (prototypes arşiv, faz0 iş akışları, icon, yerel yollar, kanca istisnaları) | 19 | — | feature-builder-lite | $2–4 | | ⬜ |
+| 2 | P17d Gündüz kullanımı 2.0 + ikinci tur hatası + H-06 (migrasyon **0019**) | 17 | booking, reservations, settings | db-migration-builder → calendar-specialist | $15–22 | | ⬜ |
+| 2 | P18a ui-shot çoklu boyut/ölçek/dil + ölçüm JSON; Electron e2e Codespace'te yeşil | 18 | scripts, tests/e2e | feature-builder-lite | $2–4 | | ⬜ |
+| 3 | P17b Grup rezervasyonu + toplu giriş (migrasyon **0020**) | 17 | booking, reservations | db-migration-builder → calendar-specialist | $15–22 | | ⬜ |
+| 3 | P18c Pencere: F11, tam ekran/zoom hatırlama, çoklu monitör | 18 | main/windows, main/app | feature-builder | $6–10 | | ⬜ |
+| 4 | P17c Hızlı takvim: sağ tık, hızlı çubuk, çoklu seçim (+ toplu ödeme), bugün şeridi, son iptaller listesi, park nedeni etiketi | 17 | calendar | feature-builder | $8–12 | | ⬜ |
+| 4 | P17e Yüksek/Orta hata düzeltmeleri (02 raporu; H-05, H-07, H-08, H-09) | 17 | bulguya göre | feature-builder / calendar-specialist | $8–12 | | ⬜ |
+| 5 | P18b Düzen düzeltmeleri (05 raporu) | 18 | features/*, layouts | feature-builder | $8–12 | | ⬜ |
+| 5 | P18d Çalışmayan öğeler (akış testi) | 18 | bulguya göre | feature-builder | $6–10 | | ⬜ |
+| 6 | P19a Sürüm iş akışı tekleştirme (tetikleme sahipte) | 19 | .github, electron-builder | packager | $5–8 | | ⬜ |
+| 6 | P19b Kurulum belgeleri + kılavuz + sihirbaz tek kâğıt adımı + belge çelişkileri (Ç-01/02/04/05); P19d ajan bakımı | 19 | docs, guide, setup, .claude | feature-builder-lite (+ feature-builder sihirbaz) | $4–8 | | ⬜ |
+| 7 | P20a Kamera yan süreç iskeleti + Python hijyeni (kod bulguları listesi `ekler/kamera-kod-bulgulari.md` §0) | 20 | main/camera, otel-kamera | camera-integrator | $12–20 | | ⬜ |
+| 8 | P20b Kamera sekmesi | 20 | features/camera | camera-integrator | $8–12 | | ⬜ |
+| 8 | P20d Model değişimi (YuNet + SFace/AuraFace + ByteTrack) | 20 | otel-kamera | camera-integrator | $12–20 | | ⬜ |
+| 9 | P20c Veri entegrasyonu (migrasyon 0021, şifreleme, rıza, alarm → bildirim) | 20 | camera, today | db-migration-builder → camera-integrator | $15–22 | | ⬜ |
+| 10 | P20e KVKK paketi | 20 | camera, settings | camera-integrator | $8–12 | | ⬜ |
+| 10 | P20f Kamera paketleme | 20 | electron-builder, resources | packager | $10–15 | | ⬜ |
+| 11 | P21a Profil altyapısı (K-54) | 21 | main/app/paths, auth, settings | feature-builder | $10–15 | | ⬜ |
+| 11 | P21d Geç çıkış, no-show bedeli, hasar depozitosu kalemi, gece raporu | 21 | booking, reports | feature-builder | $6–9 | | ⬜ |
+| 12 | P21b İstemci çoklu ana bilgisayar | 21 | remote | feature-builder | $8–12 | | ⬜ |
+| 12 | P21e Orta/Düşük bulgular (02 + 04 listesi, faz-21) | 21 | bulguya göre | feature-builder-lite / feature-builder | $4–6 | | ⬜ |
+| 13 | P21c Portföy özeti | 21 | portfolio | feature-builder | $8–12 | | ⬜ |
+| Son | Tam kontrol sürüsü (bug-hunter + flow-tester modül başına, decision, security, db, ui, screen, privacy, copy, tracer) → düzeltme turu → `/owner-review` | — | — | hepsi | $40–60 | | ⬜ |
+
+Dalga sırası kuralları: bir paket bağımlı olduğu paketten **sonraki** dalgada (P17c → P17b, P18b → P17c, P20b/P20d → P20a,
+P20c → P20b, P21b/P21c → P21a); aynı dalgadaki iki paket aynı dizine dokunmaz. Migrasyon numarası dalga sırasıyla verilir
+(`db:generate` sıradakini üretir): P17d 0019 → P17b 0020 → P20c 0021; çakışırsa yeniden üretilir.
+
+Dalga toplamları (paket + kontrol ajanları $3–8 + orkestra Opus $3–8): 1: $20–38 · 2: $23–42 · 3: $27–48 · 4: $22–40 ·
+5: $20–38 · 6: $15–32 · 7: $18–36 · 8: $26–48 · 9: $21–38 · 10: $24–43 · 11: $22–40 · 12: $18–34 · 13: $14–28 ·
+Son: $45–70 → **toplam $315–575** (dalga 1–5 = Faz 17 + ekran ≈ $110–210). Model başına: Opus $50–130 · Sonnet $250–415 ·
+Haiku $15–30. Ölçüm: Codespace 2026-11-12'de 4 çekirdek / 15 GB (paralel kodlayan ajan sınırı yine 2; üçüncü çekirdekler
+test/paketleme için).
+
+Kontrol ajanları dalga başına: `08-gelistirme-plani.md` §6. Faz 5–16'nın açık kalan satırları (5. dalga son kontrol,
+QA2b, akış testleri C/D) bu plana **Son** satırında katılır; ayrı yürütülmez.
 
 ## Günlük
 
@@ -182,3 +215,9 @@ Port: paket n → ui:shot `474n1`, `E2E_PORT=474n2` (n = 1…9; 10+ için 475n1/
   ayrıştırma), 35b7e78 (QA4: tek otel saat dilimi "bugün", arayüz incelemesi) birleşti. Varsayılanlar K-47. Akış
   testleri C1/C2/D ve son arayüz incelemesi bitti (raporlar scratchpad'de). GitHub Actions 10 Eki'den beri iş
   başlatmıyor (2 sn'de başarısız, günlük yok — dakika/harcama sınırı olası; sahip onay paketinde); yerine tam e2e yerelde.
+- 2026-11-12: **Analiz turu (Fable).** Faz 17–21 planı, K-48…K-56 taslakları, S-100…S-118, G-193…G-196, Ö-20…Ö-24;
+  ajan sistemi v2 (6 yeni ajan, `/orkestra`, `workflow-guard`, `camera-data-guard`, belge-yalnız commit kapısı);
+  baz: typecheck ✓, lint ✓, 2427 birim test ✓, kanca 89/89. Faz 5–16'nın 🔄 satırları "Son" dalgasına taşındı.
+  Opus devir notu `docs/analiz/OPUS-BASLANGIC.md`. Sonraki adım: `/orkestra` dalga 1.
+- 2026-11-12 (kapanış): analiz turu commit'leri `claude/fable-analiz` dalında (8346aec → 07a3fad + bu). `npm run check` ✓
+  (2427 test), kanca testleri 89/89. Fable harcaması ≈ $45. Opus: `OPUS-BASLANGIC.md` → `/orkestra 1`.

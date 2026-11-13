@@ -20,6 +20,17 @@ if (existsSync(durum)) {
   const current = text.split("\n").find((l) => l.startsWith("**Şu anki faz:**"));
   if (current) lines.push(current.replace(/\*\*/g, ""));
 }
+// Uninterrupted execution (K-39): the next wave and its open packages come from YURUTME.md so a post-compaction
+// context resumes from the same place (docs/analiz/OPUS-BASLANGIC.md, /orkestra).
+const yurutme = join(root, "docs", "plan", "fazlar", "YURUTME.md");
+if (existsSync(yurutme)) {
+  const rows = readFileSync(yurutme, "utf8")
+    .split("\n")
+    .filter((l) => /^\|\s*\d+\s*\|/.test(l) && /(🔄|⬜)/.test(l))
+    .slice(0, 8)
+    .map((l) => l.replace(/\s*\|\s*/g, " | ").trim());
+  if (rows.length) lines.push(`YURUTME.md açık paketler (ilk ${rows.length}): ${rows.join(" ;; ")}`);
+}
 try {
   const status = execFileSync("git", ["status", "--short"], { cwd: root, stdio: "pipe" })
     .toString()
@@ -35,7 +46,7 @@ lines.push(
   "Yasaklar: internet şartı yok · OTA entegrasyonu yok · fatura yok · telemetri/otomatik güncelleme yok · " +
     "tek giriş · para tam sayı kuruş · yetki servis katmanında · metin tr.json'da · migrasyon değişmez · otel kuralı = ayar.",
 );
-lines.push("Faza devam etmek için: docs/plan/fazlar/DURUM.md ve ilgili faz dosyasını oku; /phase-runner NN kullan.");
+lines.push("Devam etmek için: docs/plan/fazlar/YURUTME.md (dalga/paket durumu) ve DURUM.md'yi oku; otonom yürütme /orkestra, tek faz /phase-runner NN.");
 
 process.stdout.write(
   JSON.stringify({

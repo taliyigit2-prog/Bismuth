@@ -52,6 +52,15 @@
 | K-45 | Uzaktan erişim güvenlik varsayılanları (yerel ağ kapalı, uzaktan PIN yok, anahtar yalnız masaüstü, devralda anahtar) | varsayılan (2026-10-05) |
 | K-46 | Son kontrol varsayılanları (takvim aralığı, misafir etiketleri, oda/tarih araması, tanıtıcı not, otel kuru, ay sonu işaretleri) | varsayılan (2026-10-05) |
 | K-47 | Akış testi düzeltme varsayılanları (para yazımı, sınırlar, tek "bugün", yinelenen ad, kutu ayarları, gelmedi, vergi no) | varsayılan (2026-10-11) |
+| K-48 | **Gündüz kullanımı 2.0:** gündüz yuvası saat aralıklı (`start_time`/`end_time`), aynı odada aynı gün birden çok gündüz satışı ayarla (`dayUse.maxPerRoomPerDay`), temizlik arası `dayUse.turnoverMinutes`, fiyat kipi `nightly/fixed/hourly`, raporda ayrı satır; aynı gün ikinci tur çıkışında gece yuvası boşalır (K-44 eki) | taslak (2026-11-12, Fable; sahip S-102…S-105) |
+| K-49 | **Kamera ağ sınırı:** `src/main/camera/` beşinci izinli ağ klasörü; yalnız `127.0.0.1` (yan süreç) ve `rtsp://` (yerel kamera) hedefleri | taslak (2026-11-12) |
+| K-50 | **Telegram kaldırılır:** kamera alarmı Bismuth bildirim merkezine düşer; dış bildirim yalnız fotoğrafsız, `network.enabled` + `camera.externalNotify` açıkken, `src/main/network/` altında | taslak (2026-11-12; sahip S-109) |
+| K-51 | **Biyometrik veri saklama:** yüz vektörü/kırpma yalnız Bismuth DB'de AES-GCM şifreli (`safeStorage` anahtarı), yedek/dışa aktarma/kopya/kutu dışı; Python tarafı diske yazmaz; kanca `camera-data-guard` | taslak (2026-11-12) |
+| K-52 | **Biyometrik veri silinir:** "veri silinmez" kuralının istisnası; çıkışta / `camera.faceRetentionDays` sonunda fiziksel silme + `audit_log`; alarm kırpması `camera.alertRetentionDays` (3 gün) | taslak (2026-11-12) |
+| K-53 | **Kamera tek giriş:** kamera panelinde elle misafir girişi yok; ad/oda/tarih Bismuth'tan; yüz kaydı Kişiler sekmesinden rıza ile (`consent_at`) | taslak (2026-11-12; sahip S-111) |
+| K-54 | **Çoklu otel:** otel başına ayrı veritabanı profili (`userData/hotels/<kod>/`) + program içinde otel değiştirme + sahip için salt-okunur portföy özeti; tek DB'de `hotel_id` reddedildi (migrasyon riski, çevrimdışı ilke) | taslak (2026-11-12; sahip S-114…S-117) |
+| K-55 | **Vazgeçme ve iade akışı:** check-in sonrası iptal yerine "Vazgeçme ve iade" menüsü (aynı gün çıkış + iade / girişi geri al + iptal / erken çıkış); iptal ve çıkış pencereleri tahsilatı gösterir ve iade satırı ya da "İade bekliyor" parkı sunar; kapalı rezervasyonda üç nokta menüsü kalır; resepsiyon iade yetkisi S-100'e bağlı | taslak (2026-11-12) |
+| K-56 | **Model ve çaba ataması (ajanlar):** tek kaynak ajan dosyası ön bilgisi; orkestra şefi Opus 5.5, kod yazan sonnet, tarama haiku, karar denetimi opus; Fable yalnız sahip isteğiyle (`docs/analiz/09-ajan-sistemi.md` §2) | kesin (2026-11-12, Fable) |
 
 ## K-01 · Electron vs Tauri
 (v1 metni geçerli.) Ek: sunucu modu için Node tarafında Hono çalıştırmak Electron'da doğal; Tauri'de sidecar gerekirdi → Electron lehine bir neden daha.
@@ -87,6 +96,18 @@ Supabase ve diğer "bulut ana kaynak" seçenekleri reddedildi (çevrimdışı ç
 
 ## K-24 · Turizm istatistiği
 KBS Excel'i (`EGM_Konaklayan_Listesi`) yapısı `02-excel-analizi.md` §2.4.2'de. Kimlik/ad sütunları içe alınmaz. Uyruk ham adı → `country_map` (ISO2 + bakanlık Türkçe adı) tohum tablosu (~250 ülke, KBS'nin İngilizce/parantezli yazımları dahil); eşleşmeyen → kullanıcıya sor. Çıktı tablosu bakanlık paneli sırasıyla (Ülke · Toplam Giriş · Toplam Geceleme) + kopyala. Aynı gün = 1 gece (sahip bakanlıkla teyit etti). Türkler dahil.
+
+## K-48…K-56 · Analiz turu taslakları (2026-11-12)
+
+Gerekçeler ve ayrıntılar `docs/analiz/` altında: K-48 ve K-55 → `03-resepsiyon-geri-bildirimi.md`; K-49…K-53 →
+`06-kamera-entegrasyonu.md` §5–6; K-54 → `10-coklu-otel.md`; K-56 → `09-ajan-sistemi.md`. Taslaklar sahibin
+`00-ozet.md`'deki soruları cevaplamasıyla kesinleşir; cevap gelmezse Opus varsayılanla uygular ve satırı
+"varsayılan (tarih)" yapar (K-39).
+
+## Sahip cevapları (2026-11-12, 7. tur — analiz turu soruları S-100…S-119)
+
+> Henüz cevap yok. Opus cevapları buraya `| Soru | Cevap | Etki |` tablosuyla yazar; cevapsız soru = `05-sorular.md`
+> varsayılanı + "(varsayılan)".
 
 ## Sahip cevapları (2026-10-04, altıncı tur — çalışma düzeni)
 

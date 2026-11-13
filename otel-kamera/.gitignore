@@ -6,3 +6,11 @@ __pycache__/
 *.db-wal
 test_verification.db*
 alerts/*.jpg
+
+# sırlar ve kişisel veri (kök .gitignore da kapsar; klasör taşınırsa burası korur)
+.env
+*.db
+guest_photos/
+alerts/
+*.pt
+*.onnx
