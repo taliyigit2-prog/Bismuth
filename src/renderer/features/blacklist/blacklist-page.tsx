@@ -37,7 +37,10 @@ function CheckCard() {
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const typed = name.trim().length >= 3 || phone.replace(/\D/g, '').length >= 7
-  const candidate = useDebounced({ name: name.trim(), phone: phone.trim() || null })
+  const candidate = useDebounced({
+    name: name.trim().slice(0, 160),
+    phone: phone.trim().slice(0, 40) || null
+  })
   const check = useApiQuery('blacklist.check', candidate, { enabled: typed })
   const hits = check.data ?? []
   return (

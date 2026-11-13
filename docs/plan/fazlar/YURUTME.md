@@ -92,8 +92,8 @@ Harcama sütunu: başlatıcının yazdığı `$` (dalga toplamı, gerçek).
 | 2 | P18a ui-shot çoklu boyut/ölçek/dil + ölçüm JSON; Electron e2e Codespace'te yeşil | 18 | scripts, tests/e2e | feature-builder-lite | $2–4 | ~$3 | ✅ |
 | 3 | P17b Grup rezervasyonu + toplu giriş (migrasyon **0020**) | 17 | booking, reservations | db-migration-builder → calendar-specialist | $15–22 | ~$40 | ✅ |
 | 3 | P18c Pencere: F11, tam ekran/zoom hatırlama, çoklu monitör | 18 | main/windows, main/app | feature-builder | $6–10 | ~$10 | ✅ |
-| 4 | P17c Hızlı takvim: sağ tık, hızlı çubuk, çoklu seçim (+ toplu ödeme), bugün şeridi, son iptaller listesi, park nedeni etiketi | 17 | calendar | feature-builder | $8–12 | | ⬜ |
-| 4 | P17e Yüksek/Orta hata düzeltmeleri (02 raporu; H-05, H-07, H-08, H-09, H-19, H-21, H-24, H-25, H-44) | 17 | bulguya göre | feature-builder / calendar-specialist | $10–14 | | ⬜ |
+| 4 | P17c Hızlı takvim: sağ tık, hızlı çubuk, çoklu seçim (+ toplu ödeme), bugün şeridi, son iptaller listesi, park nedeni etiketi | 17 | calendar | feature-builder | $8–12 | ~$30 | ✅ |
+| 4 | P17e Yüksek/Orta hata düzeltmeleri (02 raporu; H-05, H-07, H-08, H-09, H-19, H-21, H-24, H-25, H-44) | 17 | bulguya göre | feature-builder / calendar-specialist | $10–14 | ~$14 | ✅ |
 | 5 | P18b Düzen düzeltmeleri (05 raporu) | 18 | features/*, layouts | feature-builder | $8–12 | | ⬜ |
 | 5 | P18d Çalışmayan öğeler (akış testi) | 18 | bulguya göre | feature-builder | $6–10 | | ⬜ |
 | 6 | P19a Sürüm iş akışı tekleştirme (tetikleme sahipte) | 19 | .github, electron-builder | packager | $5–8 | | ⬜ |
@@ -267,3 +267,12 @@ QA2b, akış testleri C/D) bu plana **Son** satırında katılır; ayrı yürüt
   lejant, Ayarlar → Takvim'de grup hesabı seçimi; e2e masaüstü + telefon ✓ (2613 test). Tasarım: her oda kendi folyosunu
   tutar, "tek hesap" kipinde grup paneli birleşik bakiye gösterir. Açık → P17c: grup tek ödemesinin odalara dağıtılması,
   mevcut rezervasyonu gruba bağlama. P18c güvenlik incelemesi: 2 Düşük bulgu düzeltildi.
+- 2026-11-13: **Dalga 3 bitti** (kontroller: Kritik/Yüksek yok; Orta bulgular P17c'ye eklendi; 3 metin düzeltildi).
+- 2026-11-13: P17c ✅ — sağ tık menüsü (çubukta 10, boş hücrede 4; Shift+F10), hızlı rezervasyon çubuğu, Ctrl/Shift çoklu
+  seçim + toplu not/giriş/çıkış/ödeme/gruba bağlama, bugün şeridi, "Son iptaller" (7 gün), panel başlığında üç düğme,
+  telefonda uzun basma; grup tek ödemesi `booking.payGroup` (S-106), `booking.attachToGroup`, `reservations.recentEnded`.
+  Açık: telefonda seçim çubuğu yok (Düşük). `stay-filter` testi yük altında yarışıyordu → `waitFor`.
+- 2026-11-13: P17e ✅ — H-05 telefon (`src/shared/phone.ts` tek ayrıştırma), H-07/H-19/H-25/H-44 metin üst sınırları
+  sözlesmede (`contract/text.ts`) + alan sayacı (`char-counter.tsx`), H-08/H-24 fiyat/tutar doğrulaması, H-09 yetkisiz
+  ayar sekmesi gizli, H-21 firma telefonu + tekrar uyarısı. Ajan iki kez oturum kapanışında yarım kaldı; ana oturumda
+  tamamlandı (sayaç ile alan hatasının çift mesajı düzeltildi). **Dalga 4 bitti.**

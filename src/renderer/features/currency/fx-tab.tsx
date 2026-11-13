@@ -246,7 +246,7 @@ function Converter({
   const [fromCurrency, setFromCurrency] = useState(base)
   const [to, setTo] = useState<string>(firstForeign)
   const parsed = textToMoney(text, fromCurrency, f.locale)
-  const invalid = parsed !== null && Number.isNaN(parsed)
+  const invalid = parsed !== null && !Number.isFinite(parsed)
   const from: MoneyValue = { amountMinor: invalid ? null : parsed, currency: fromCurrency }
   const exact = from.amountMinor !== null ? convertMinor(from.amountMinor, from.currency, to, table) : null
   const others = currencies.filter((c) => c !== from.currency && c !== to)

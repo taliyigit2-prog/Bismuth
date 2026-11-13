@@ -22,6 +22,7 @@ import {
   WrenchIcon
 } from 'lucide-react'
 import type { ProcedureOutput } from '@shared/contract'
+import { TEXT_MAX } from '@shared/contract/text'
 import { localDateOf } from '@shared/date'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -474,7 +475,7 @@ export function WriteHandover({
           <Textarea
             id={`${id}-note`}
             rows={3}
-            maxLength={5000}
+            maxLength={TEXT_MAX.long}
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder={t('shift.write.placeholder')}

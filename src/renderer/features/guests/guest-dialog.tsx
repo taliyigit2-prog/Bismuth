@@ -46,6 +46,9 @@ const NATIONALITIES = [
 const NONE = '__none'
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
+/** The longest name the duplicate and blacklist checks take (H-07): a longer typed name is checked by its start. */
+const CANDIDATE_NAME_MAX = 160
+
 export function GuestDialog({
   open,
   onOpenChange,
@@ -82,7 +85,7 @@ export function GuestDialog({
   const fullName = `${firstName} ${lastName}`.trim()
   const phoneTyped = phoneText(phone)
   const candidate = useDebounced({
-    name: fullName,
+    name: fullName.slice(0, CANDIDATE_NAME_MAX),
     phone: phone.number.length >= 7 ? phoneTyped : null,
     idDocNumber: identity && docNumber.trim().length >= 5 ? docNumber.trim() : null,
     ...(guest ? { excludeId: guest.id } : {})

@@ -63,7 +63,7 @@ konaklama türü filtresi + aylık saatlik sayısı; S-106 tek hesap (varsayıla
       (`hourly-stays.test.ts`, `reports-service.test.ts` "konaklama türü süzgeci", `hourly-stay.test.tsx`; turizm testleri yeşil).
 - [x] H-06: çıkış penceresinde aynı gün ücreti saat ücretinden önerilir, 0 onay ister (servis `dayUseFreeNeedsConfirm` + panel
       testi), gündüz yuvasında boş aralık yoksa alan gizli.
-- [ ] P17e listesindeki her bulgu için test kırmızıdan yeşile.
+- [x] P17e listesindeki her bulgu için test kırmızıdan yeşile (H-05, H-07, H-08, H-09, H-19, H-21, H-24, H-25, H-44: `phone.test.ts`, `contract/text.test.ts`, `char-counter.test.tsx`, `new-reservation-dialog.test.tsx`, `night-price-table.test.tsx`, `companies-page.test.tsx`, `settings-page.test.tsx`, `components.test.tsx`).
 - [ ] `npm run check`, hedefli e2e, `ui-reviewer` + `turkish-ui-copy` + `db-reviewer` + `decision-auditor` bulgularında Kritik/Yüksek yok.
 
 ## Teknik notlar
@@ -122,3 +122,9 @@ fiyatlama; kamera (Faz 20).
   e2e `electron/quick-actions.spec.ts` (5 senaryo), `mobile/quick-actions.spec.ts` (2). Güncellenen: `calendar-page.test.tsx` (N artık çubuğu açar),
   `reservation-panel.test.tsx` (pasif "Çıkış yap" düğmesi nedeniyle tarih düğmesi seçicisi), e2e `calendar.spec.ts` (N → çubuk → Ayrıntı).
 
+### P17e — Yüksek/Orta hata düzeltmeleri (feature-builder)
+- **Paket kartı:** H-05, H-07, H-08, H-09, H-19, H-21, H-24, H-25, H-44 (`docs/analiz/02-hata-raporu.md`); migrasyon yok.
+- **Ortak çözümler:** `src/shared/phone.ts` (`splitPhoneInput`: `+`/`00`/`0`/kodsuz 90 ayıklama, eski çift `+90 905…` kaydı onarımı; `isPlausiblePhone` 6–17 rakam); `src/shared/contract/text.ts` (`TEXT_MAX`, `phoneTextSchema`, `optionalPhone`) misafir, yeni misafir, firma, çalışan, kara liste ve rehber telefonunda tek denetim; `components/char-counter.tsx` + `ui/input` / `ui/textarea`: `maxLength`'li her denetimli alan %80'den "n / sınır", sınırda kırmızı uyarı gösterir (sınır < 20 olan kod alanlarında yok, `counter={false}` ile kapanır).
+- **H-05** `PhoneField` yapıştırmayı `splitPhoneInput` ile ayrıştırır; `parsePhone` aynı işlev. **H-07** yeni misafir adı/telefonu alan altı hata (`newGuestSchema`), kara liste ve kopya sorguları adı 160 karakterde keser (400 yok). **H-08** gecelik fiyat hücresi alan altı hata gösterir (`abc`, negatif, çok büyük), 0 fiyat için tek soru "Yine de kaydet" (varsayılan: 0 serbest, bir kez sorulur). **H-09** Ayarlar listesi yalnız izinli bölümleri sayar; yetkisiz/bilinmeyen `?tab=` ilk izinli bölümü açar (eski "yetkiniz yok" gövdesi kalktı, test güncellendi). **H-19** ödeme notu 500, gider açıklaması 200, gün notu 1000 zaten sözleşmedeydi (test ile sabitlendi); devir notu ve kendime not 5000 → 2000 (`TEXT_MAX.long`), formlar sınırı sözleşmeden okur. **H-21** firma telefonu denetlenir, aynı vergi numarası için uyarı (aynı ünvan uyarısı vardı), alanlar `maxLength` + sayaç. **H-24** `textToMoney` taşan tutarı `tooLarge` sayar ("Tutar çok büyük"), yanıltıcı "sayı olmalı" kalktı. **H-25** rehber telefonu `isPlausiblePhone` ile denetlenir, ad sayaçlı. **H-44** ortak sayaç (yukarıda).
+- **Varsayılanlar:** telefon 6–17 rakam; 0 fiyat onayla serbest; firma tekrarı uyarı (engel değil); mevcut uzun veriler okunur kalır, yalnız yeni giriş denetlenir.
+- **Kalanlar:** sayaç ızgara/flex satırlarında ek satır açar (rehber telefon satırında kapalı); kalan tek satırlık özel alanlar elle gözden geçirilmedi.

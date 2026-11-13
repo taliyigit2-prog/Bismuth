@@ -106,9 +106,11 @@ export function SettingsPage() {
   const update = useUpdateSettings()
   const search: { tab?: SettingsTab } = useSearch({ strict: false })
   const navigate = useNavigate()
-  const section = sectionOf(search.tab)
-  // The open section stays listed even when refused, so the picker never shows an empty value.
-  const sections = SETTINGS_SECTIONS.filter((key) => key === section || canOpenTab(key, can))
+  // H-09: only sections the role may open are listed; an address naming another one (or none we know) opens the
+  // first one it may ("Genel" is open to everyone), so no refused section name ever shows up in the list.
+  const sections = SETTINGS_SECTIONS.filter((key) => canOpenTab(key, can))
+  const asked = sectionOf(search.tab)
+  const section = sections.includes(asked) ? asked : (sections[0] ?? 'general')
   const open = (next: string): void => {
     if (isSettingsTab(next)) void navigate({ to: '.', search: { tab: next }, replace: true })
   }

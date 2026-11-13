@@ -40,6 +40,7 @@ describe('bileşen kuralları (saf)', () => {
     expect(readMoneyText('-100', 'TRY', 'tr')).toEqual({ minor: null, problem: 'negative' })
     expect(readMoneyText('-100', 'TRY', 'tr', true)).toEqual({ minor: -10_000, problem: null })
     expect(readMoneyText('99.999.999.999', 'TRY', 'tr')).toEqual({ minor: null, problem: 'tooLarge' })
+    expect(readMoneyText('99999999999999999', 'TRY', 'tr')).toEqual({ minor: null, problem: 'tooLarge' })
     expect(readMoneyText('1.000.000.000', 'TRY', 'tr')).toEqual({ minor: 100_000_000_000, problem: null })
     expect(readMoneyText('  ', 'TRY', 'tr')).toEqual({ minor: null, problem: null })
     expect(isAmount({ amountMinor: 0, currency: 'TRY' })).toBe(true)

@@ -16,6 +16,7 @@ import {
   StickyNoteIcon
 } from 'lucide-react'
 import type { ProcedureOutput } from '@shared/contract'
+import { TEXT_MAX } from '@shared/contract/text'
 import { localDateOf, today as todayOf, type LocalDate } from '@shared/date'
 import { datePart, localDateTimeOf, timePart, type LocalDateTime } from '@shared/domain/local-datetime'
 import { Badge } from '@/components/ui/badge'
@@ -120,7 +121,7 @@ function NoteDialog({
           <Textarea
             id={`${id}-text`}
             rows={3}
-            maxLength={5000}
+            maxLength={TEXT_MAX.long}
             value={text}
             autoFocus
             onChange={(e) => setText(e.target.value)}

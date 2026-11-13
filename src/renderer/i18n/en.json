@@ -1761,7 +1761,8 @@
       "editTitle": "Edit company",
       "ibanInvalid": "The IBAN looks invalid. Write it with the country code; its check digits may be wrong, e.g. TR33 0006 1005 1978 6457 8413 26.",
       "taxNumberInvalid": "The tax number must have 10 digits (or a valid 11-digit national ID number for a person).",
-      "sameTitle": "A company with the same name already exists: {{title}}. You can still save."
+      "sameTitle": "A company with the same name already exists: {{title}}. You can still save.",
+      "sameTax": "A company with this tax number already exists: {{title}}. You can still save."
     },
     "toast": {
       "created": "Company saved",
@@ -3772,7 +3773,7 @@
     "phoneLabel": "Label of number {{n}}",
     "phoneNumber": "Number {{n}}",
     "removePhone": "Remove number {{n}}",
-    "phoneInvalid": "A number needs at least 3 digits.",
+    "phoneInvalid": "Write the number in digits (6 to 17 digits).",
     "addPhone": "Add number",
     "emailInvalid": "The e-mail should look like name@example.com.",
     "import": {
@@ -5632,7 +5633,10 @@
       "byNight_one": "Rate by night ({{count}} night)",
       "byNight_other": "Rate by night ({{count}} nights)",
       "listOf": "Room {{room}}: rate and payment by night",
-      "save": "Save rates ({{count}})"
+      "save": "Save rates ({{count}})",
+      "zeroTitle": "Save with a price of 0?",
+      "zeroBody": "At least one night of this reservation costs 0. Continue if the stay is free of charge.",
+      "zeroAction": "Save anyway"
     },
     "toast": {
       "created": "Reservation saved",
@@ -6993,6 +6997,8 @@
     "wholeNumber": "Type a whole number.",
     "range": "Type a number from {{min}} to {{max}}.",
     "rangeWhole": "Type a whole number from {{min}} to {{max}}.",
-    "minWhole": "Type a whole number of {{min}} or more."
+    "minWhole": "Type a whole number of {{min}} or more.",
+    "limitReached": "You can write at most {{max}} characters.",
+    "phone": "Write the phone number in digits (e.g. +90 532 123 45 67)."
   }
 }

@@ -5,6 +5,7 @@
 import * as z from 'zod'
 import { compactTaxNumber, isValidIban, isValidTurkishTaxNumber } from '../domain/tax-id'
 import { idSchema, localDateSchema } from './rooms'
+import { optionalPhone } from './text'
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -43,7 +44,7 @@ export const STANDING_NOTE_LEVELS = ['info', 'warn'] as const
 const guestFields = z.object({
   firstName: z.string().trim().min(1).max(80),
   lastName: z.string().trim().max(80),
-  phone: optionalText(40),
+  phone: optionalPhone,
   email: optionalEmail,
   /** ISO 3166-1 alpha-2, optional and hidden by default (G-50). */
   nationality: optionalText(2)
@@ -149,7 +150,7 @@ const companyFields = z.object({
   city: optionalText(80),
   taxOffice: optionalText(120),
   taxNumber: optionalTaxNumber,
-  phone: optionalText(40),
+  phone: optionalPhone,
   email: optionalEmail,
   iban: optionalIban,
   contactPerson: optionalText(120),
@@ -188,7 +189,7 @@ export const blacklistInputSchema = z
     guestId: idSchema.nullish(),
     name: z.string().trim().max(160).optional(),
     idDocNumber: optionalText(40),
-    phone: optionalText(40),
+    phone: optionalPhone,
     severity: z.enum(BLACKLIST_SEVERITIES),
     /** Short code chosen in the UI (damage, unpaid, behaviour…); the text explains. */
     reasonCode: z.string().trim().min(1).max(40),

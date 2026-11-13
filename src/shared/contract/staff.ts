@@ -5,6 +5,7 @@ import { clockTime, currencyCode } from './settings'
 import { daySchema, reasonSchema } from './expenses'
 import { amountSchema, idSchema } from './rooms'
 import { yearMonthSchema } from './ledger'
+import { optionalPhone } from './text'
 
 const name = z.string().trim().min(1).max(60)
 
@@ -12,7 +13,7 @@ export const employeeCreateSchema = z.object({
   firstName: name,
   lastName: name,
   position: z.string().trim().max(60).nullish(),
-  phone: z.string().trim().max(40).nullish(),
+  phone: optionalPhone,
   startDate: daySchema,
   endDate: daySchema.nullish(),
   notes: z.string().max(1000).nullish(),

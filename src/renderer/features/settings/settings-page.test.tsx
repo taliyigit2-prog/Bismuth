@@ -177,15 +177,16 @@ describe('Durum etiketlerinin adları', () => {
 })
 
 describe('Ayarlar yetkileri', () => {
-  it('bölümü göremeyen rol bölümü listede görmez; açık bölüm "yetkiniz yok" der', async () => {
+  it('bölümü göremeyen rol bölümü listede görmez; açık yetkisiz bölüm yerine ilk izinli bölüm açılır (H-09)', async () => {
     const { setViewAs } = await import('@/lib/view-as')
     try {
       await renderWithProviders(<SettingsPage />, { transport: adminTransport() })
       await openTab('Uzaktan erişim')
       expect(await screen.findByTestId('device-list')).toBeInTheDocument()
       act(() => setViewAs('manager'))
-      expect(await screen.findByText('Bu ekrana yetkiniz yok')).toBeInTheDocument()
+      expect(await screen.findByTestId('language-select')).toBeInTheDocument()
       expect(screen.queryByTestId('device-list')).not.toBeInTheDocument()
+      expect(screen.queryByRole('link', { name: 'Uzaktan erişim' })).not.toBeInTheDocument()
       expect(screen.queryByRole('link', { name: 'Kullanıcılar ve roller' })).not.toBeInTheDocument()
       expect(screen.getByRole('link', { name: 'Listeler' })).toBeInTheDocument()
     } finally {

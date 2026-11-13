@@ -1,8 +1,10 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
+import { CharCounter } from "@/components/char-counter"
 
-function Input({ className, type, ...props }: React.ComponentProps<"input">) {
-  return (
+function Input({ className, type, counter = true, ...props }: React.ComponentProps<"input"> & { counter?: boolean }) {
+  const length = counter && props.maxLength && typeof props.value === "string" ? props.value.length : null
+  const field = (
     <input
       type={type}
       data-slot="input"
@@ -14,6 +16,14 @@ function Input({ className, type, ...props }: React.ComponentProps<"input">) {
       )}
       {...props}
     />
+  )
+  return length === null ? (
+    field
+  ) : (
+    <>
+      {field}
+      <CharCounter length={length} max={props.maxLength!} />
+    </>
   )
 }
 

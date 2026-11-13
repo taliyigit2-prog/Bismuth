@@ -1761,7 +1761,8 @@
       "editTitle": "Firmayı düzenle",
       "ibanInvalid": "IBAN geçersiz görünüyor. Ülke koduyla yazın; kontrol rakamları tutmuyor olabilir, örn. TR33 0006 1005 1978 6457 8413 26.",
       "taxNumberInvalid": "Vergi numarası 10 haneli olmalı (şahıs ise geçerli 11 haneli T.C. kimlik no).",
-      "sameTitle": "Aynı ünvanla kayıtlı bir firma var: {{title}}. Yine de kaydedebilirsiniz."
+      "sameTitle": "Aynı ünvanla kayıtlı bir firma var: {{title}}. Yine de kaydedebilirsiniz.",
+      "sameTax": "Bu vergi numarasıyla kayıtlı bir firma var: {{title}}. Yine de kaydedebilirsiniz."
     },
     "toast": {
       "created": "Firma kaydedildi",
@@ -3772,7 +3773,7 @@
     "phoneLabel": "{{n}}. numaranın etiketi",
     "phoneNumber": "{{n}}. numara",
     "removePhone": "{{n}}. numarayı çıkar",
-    "phoneInvalid": "Numara en az 3 rakam olmalı.",
+    "phoneInvalid": "Numarayı rakamlarla yazın (6 ile 17 rakam arası).",
     "addPhone": "Numara ekle",
     "emailInvalid": "E-posta adresi ad@ornek.com gibi olmalı.",
     "import": {
@@ -5632,7 +5633,10 @@
       "byNight_one": "Gece gece fiyat ({{count}} gece)",
       "byNight_other": "Gece gece fiyat ({{count}} gece)",
       "listOf": "Oda {{room}}: gece gece fiyat ve ödeme",
-      "save": "Fiyatları kaydet ({{count}})"
+      "save": "Fiyatları kaydet ({{count}})",
+      "zeroTitle": "Fiyat 0 olarak kaydedilsin mi?",
+      "zeroBody": "Bu rezervasyonda en az bir gecenin fiyatı 0. Ücretsiz bir konaklama ise devam edin.",
+      "zeroAction": "Yine de kaydet"
     },
     "toast": {
       "created": "Rezervasyon kaydedildi",
@@ -5934,7 +5938,7 @@
         "roomPay": "Ödeme al",
         "roomBalance": "Bakiye: {{amount}}",
         "stayRange": "{{from}} – {{to}}",
-        "stayRangeNotDue": "{{from}} – {{to}} · Giriş günü gelmedi"
+        "stayRangeNotDue": "{{from}} – {{to}} · Giriş günü henüz değil"
       },
       "noteDialog": {
         "title": "Tüm odalara not",
@@ -6993,6 +6997,8 @@
     "wholeNumber": "Tam sayı yazın.",
     "range": "{{min}} ile {{max}} arasında bir sayı yazın.",
     "rangeWhole": "{{min}} ile {{max}} arasında bir tam sayı yazın.",
-    "minWhole": "{{min}} ya da daha büyük bir tam sayı yazın."
+    "minWhole": "{{min}} ya da daha büyük bir tam sayı yazın.",
+    "limitReached": "En çok {{max}} karakter yazabilirsiniz.",
+    "phone": "Telefonu rakamlarla yazın (örn. +90 532 123 45 67)."
   }
 }

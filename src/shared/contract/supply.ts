@@ -3,6 +3,7 @@
 // Update schemas are built from default-free fields (zod keeps `.default()` inside `.partial()`).
 import * as z from 'zod'
 import { optionalEmail, optionalText } from './guests'
+import { phoneTextSchema } from './text'
 import { amountSchema, idSchema, localDateSchema } from './rooms'
 
 // --- Phone book (G-160) ----------------------------------------------------------------------------------
@@ -23,7 +24,7 @@ export type ContactCategory = z.infer<typeof contactCategorySchema>
 export const contactPhoneSchema = z.object({
   /** "cep", "iş", "WhatsApp"… free label. */
   label: z.string().trim().max(40).default(''),
-  number: z.string().trim().min(1).max(40)
+  number: phoneTextSchema.min(1)
 })
 
 const contactFields = z.object({

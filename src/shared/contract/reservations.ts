@@ -5,6 +5,7 @@ import { diffDays, type LocalDate } from '../date'
 import { isValidHourRange } from '../domain/stays'
 import { amountSchema, idSchema, localDateSchema } from './rooms'
 import { currencyCode } from './settings'
+import { optionalPhone } from './text'
 
 const nightPriceSchema = z.object({ date: localDateSchema, priceMinor: amountSchema.nonnegative() })
 
@@ -50,7 +51,7 @@ export const stayInputSchema = z
 export const newGuestSchema = z.object({
   firstName: z.string().trim().min(1).max(80),
   lastName: z.string().trim().max(80).default(''),
-  phone: z.string().trim().max(40).nullish(),
+  phone: optionalPhone,
   email: z.email().max(120).nullish()
 })
 

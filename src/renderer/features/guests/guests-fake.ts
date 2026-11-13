@@ -363,7 +363,13 @@ export function guestsTransport(
 
       case 'companies.list':
         return state.companies
-          .filter((c) => !input.q || matchName(input.q, normalizeName(c.title)) === 'exact')
+          .filter(
+            (c) =>
+              !input.q ||
+              matchName(input.q, normalizeName(c.title)) === 'exact' ||
+              (input.q.replace(/\D/g, '').length >= 3 &&
+                (c.taxNumber ?? '').includes(input.q.replace(/\D/g, '')))
+          )
           .sort((a, b) => Number(b.favorite) - Number(a.favorite) || a.title.localeCompare(b.title, 'tr'))
           .map((c) => ({
             ...c,

@@ -6,6 +6,7 @@ import { recurrenceRuleInputSchema } from '../domain/task-recurrence'
 import { isLocalDateTime } from '../domain/local-datetime'
 import { idSchema, localDateSchema } from './rooms'
 import { clockTime, hexColor } from './settings'
+import { TEXT_MAX } from './text'
 
 /** "YYYY-MM-DD" that is a real calendar day. */
 export const calendarDateSchema = localDateSchema.refine(isLocalDate, 'invalid date')
@@ -215,21 +216,21 @@ export type ShiftUpdate = z.input<typeof shiftUpdateSchema>
 export const handoverInputSchema = z.object({
   fromShiftId: idSchema.nullish(),
   toShiftId: idSchema.nullish(),
-  text: optionalText(5000)
+  text: optionalText(TEXT_MAX.long)
 })
 export type HandoverInput = z.input<typeof handoverInputSchema>
 
 export const noteInputSchema = z.object({
   /** personal: only the writer ever reads it (§4.9-12); board: everyone with shift notes. */
   kind: z.enum(['personal', 'board']),
-  text: z.string().trim().min(1).max(5000),
+  text: z.string().trim().min(1).max(TEXT_MAX.long),
   remindAt: localDateTimeSchema.nullish(),
   pinned: z.boolean().default(false)
 })
 export type NoteInput = z.input<typeof noteInputSchema>
 
 export const noteUpdateSchema = z
-  .object({ text: z.string().trim().min(1).max(5000), remindAt: localDateTimeSchema.nullable() })
+  .object({ text: z.string().trim().min(1).max(TEXT_MAX.long), remindAt: localDateTimeSchema.nullable() })
   .partial()
   .refine((p) => Object.keys(p).length > 0, { message: 'empty patch' })
 export type NoteUpdate = z.input<typeof noteUpdateSchema>

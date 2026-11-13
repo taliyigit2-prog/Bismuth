@@ -35,6 +35,8 @@ export function useIssueText(): (issue: Issue) => string {
           return t('form.tooSmall', { min: f.number(Number(issue.minimum)) })
         case 'invalid_type':
           return issue.expected === 'int' ? t('form.wholeNumber') : t('form.invalid')
+        case 'custom':
+          return issue.message === 'phone' ? t('form.phone') : t('form.invalid')
         default:
           return t('form.invalid')
       }
