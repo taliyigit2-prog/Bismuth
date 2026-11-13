@@ -49,7 +49,8 @@ Sahip sorularının tamamı cevaplandı; ilk mesajda soru sorma. Yeni soru yaln�
 | P19c | `feature-builder-lite` | `git tag archive/faz0`; `prototypes/`, `faz0-*.yml`, `resources/icon.png` sil; kanca istisnaları + `test-hooks.mjs` güncelle; `otel-kamera` belgelerinde yerel yolları temizle; kök README'ye analiz işaretçisi | `npm run check` + kanca testleri yeşil |
 
 Dalga 1 bitince dalga 2 (P17d migrasyon 0019 + P18a), sonra 3 (P17b migrasyon 0020 + P18c), 4 (P17c + P17e), 5 (P18b + P18d),
-6 (P19a + P19b/d), 7 (P20a), 8 (P20b + P20d), 9 (P20c), 10 (P20e + P20g), 11 (P20f + P21b), 12 (P21c + P21d), 13 (P21e + P21a)…
+6 (P19a + P19b/d), 7 (P20a), 8 (P20b + P20d), 9 (P20c), 10 (P20e + P20g), 11 (P20f + P21b), 12 (P21c + P21d), 13 (P21e + P21a),
+14–16 Faz 22 (Electron ölçüm/hafifletme → Tauri 2 prototipi → **sahip kararı**, K-62)…
 tablo ve dalga sırası kuralları YURUTME'de (bağımlı paket bir sonraki dalgada).
 
 ## 4. Ne zaman durup sahibe sorarsın (`/orkestra` §5)
@@ -62,6 +63,13 @@ tablo ve dalga sırası kuralları YURUTME'de (bağımlı paket bir sonraki dalg
 
 Durunca: YURUTME günlüğüne "⏸ durdu: neden"; mesaj sonunda `❓ SORULARIM` (numaralı, her soruya önerilen cevap); tur biter.
 Cevap gelince `06-kararlar.md` 7. tur tablosuna yaz ve devam et.
+
+## 4a. Üç yeni araç (2026-11-13)
+- **Ponytail** (`/ponytail`, K-61): her dalgada kod commit'inden sonra `/orkestra` §3 adım 5a sadeleştirme turu; "Son"
+  dalgasında modül başına `full`. Proje kuralları Ponytail'den önce gelir (beceri dosyasındaki Bismuth notu).
+- **21st.dev** (K-60): MCP sunucusu açık (`enabledMcpjsonServers`), anahtar secret'ta; seçimler ve uyarlama adımları
+  `12-21st-tasarim-secimi.md` (A1…A6, ilgili paketler P17b/c, P18b, P20b, P21c/e). Yalnız MIT bileşen; framer-motion/Base UI alınmaz.
+- **Faz 22 / Rust** (K-62 taslak, `11-rust-gecisi.md`): Faz 21'den sonra; dalga 15 sonunda sahibe rakamlı karar sayfası ile dur.
 
 ## 5. Yasaklar (kısa hatırlatma) ve ortam notları
 Ortam: `git push` "git-lfs not found" derse `sudo apt-get install -y git-lfs`; Windows paketi Codespace'te `wine64 wine32:i386`

@@ -47,8 +47,9 @@ Tam liste: `02-hata-raporu.md` (18 hata, 9 çelişki), `06-…` §7 ve `ekler/ka
 | 6 | **Faz 19 Kurulum:** sürüm iş akışı, belgeler, ajan bakımı | $15–25 |
 | 7–11 | **Faz 20 Kamera:** yan süreç + Telegram (ayarlı), sekme, veri, model sabitleme (mevcut modeller), KVKK (aydınlatma), kurulum sihirbazı, paketleme | $107–197 |
 | 11–13 | **Faz 21 Çoklu otel + diğer:** istemci otel listesi, takvimli portföy, geç çıkış/no-show/gece raporu, isteğe bağlı profiller | $60–110 |
-| Son | Tam kontrol sürüsü + sahip onay sayfası | $40–60 |
-| **Toplam** | | **$320–580** (Opus orkestra + decision-auditor ≈ $50–130, Sonnet ≈ $255–420, Haiku ≈ $15–30; 13 dalga + Son, `08` §6) |
+| 14–16 | **Faz 22 Performans ve kabuk (sahip B.1):** Electron ölçüm/hafifletme, kabuk soyutlaması, Tauri 2 prototipi → sahip kararı (K-62); tam Rust yok | $95–190 (+R3 kararla) |
+| Son | Tam kontrol sürüsü + Ponytail sadeleştirme + sahip onay sayfası | $55–85 |
+| **Toplam** | | **$330–595** Faz 17–21 + Son (Opus ≈ $50–130, Sonnet ≈ $255–420, Haiku ≈ $15–30); + Ponytail turları $30–55; + Faz 22 R0–R2 $95–190 → **≈ $455–840** tamamı (`08` §6, §10) |
 
 Kısa bütçeyle: yalnız dalga 1–5 ($110–210) resepsiyonun dört maddesini ve ekran düzeltmelerini kapatır. Opus `node tools/ajan/ajan.mjs --model claude-opus-5-5
 --butce 200 "…"` ile başlar (`OPUS-BASLANGIC.md`); bütçe bitince `--devam` ile sürer.
