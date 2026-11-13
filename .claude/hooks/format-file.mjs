@@ -2,7 +2,7 @@
 // PostToolUse on Edit|Write|MultiEdit: formats the edited file with the project's own Prettier
 // (node_modules/.bin/prettier, prettier.cmd on Windows) so no model turns are spent on style.
 // Scope: .ts .tsx .js .mjs .cjs .json .css under src/, tests/, scripts/ and the root tool configs.
-// Never touches docs/, prototypes/, drizzle/ (generated migrations and meta must stay byte-identical) or anything
+// Never touches docs/, drizzle/ (generated migrations and meta must stay byte-identical) or anything
 // outside the project. Never blocks: every error is swallowed and the hook always exits 0.
 import { readFileSync, existsSync } from "node:fs";
 import { spawnSync } from "node:child_process";
@@ -33,7 +33,7 @@ function run() {
   const rel = relative(root, abs).replace(/\\/g, "/");
   if (!rel || /^\.\.(\/|$)/.test(rel) || isAbsolute(rel)) return; // outside the project
   if (!/\.(ts|tsx|js|mjs|cjs|json|css)$/.test(rel)) return;
-  if (/(^|\/)(node_modules|drizzle|migrations|docs|prototypes)\//.test(rel)) return;
+  if (/(^|\/)(node_modules|drizzle|migrations|docs)\//.test(rel)) return;
   if (!/^(src|tests|scripts)\//.test(rel) && !ROOT_CONFIGS.has(rel)) return;
   if (!existsSync(abs)) return;
 

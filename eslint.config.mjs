@@ -31,7 +31,6 @@ export default tseslint.config(
       'coverage/**',
       'drizzle/**',
       'docs/**',
-      'prototypes/**',
       'tools/**',
       '.claude/**',
       'playwright-report/**',

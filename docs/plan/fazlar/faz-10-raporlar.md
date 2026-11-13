@@ -7,7 +7,7 @@ Excel'inden saniyeler içinde üretmek.
 **Gereksinimler:** G-100 … G-105, G-70, G-150.
 **Ön koşul:** Faz 7, Faz 8, Faz 9.
 **Sorular:** yok — S-32, S-40, S-43, S-60, S-61, S-78, S-81, S-91, S-99 (gerçek yatak sayısı; bakanlıktaki 28 kullanılmaz) cevaplandı.
-**Referans:** `02-excel-analizi.md` §2.4.1–2.4.2, `03-mimari.md` §6.10–§6.11, K-24, K-29, K-36; prototip `prototypes/kbs-stats` (15 test).
+**Referans:** `02-excel-analizi.md` §2.4.1–2.4.2, `03-mimari.md` §6.10–§6.11, K-24, K-29, K-36; prototip `prototypes/kbs-stats` (arşiv etiketi `archive/faz0`) (15 test).
 **Tasarım rehberi:** `dataviz` becerisi (renk sistemi, grafik türü seçimi) her grafikten önce okunur.
 
 ## Teslimatlar

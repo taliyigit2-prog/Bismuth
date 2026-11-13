@@ -1,7 +1,7 @@
 # Faz 0 · Canlı API Doğrulaması (A0.5) — Kur, Hava Durumu, Bayram Kaynakları
 
-> Çalıştırma: GitHub Actions `faz0-live-checks`, run 36936636290, ubuntu‑24.04 (Azure eastus), 2026‑10‑01 22:42–22:57 UTC
-> (= 2 Ekim 01:42–01:57 TR saati; piyasalar gece, kurlar yatay). Betik: `prototypes/live-checks/check.mjs`.
+> Çalıştırma: GitHub Actions `faz0-live-checks` (arşiv etiketi `archive/faz0`), run 36936636290, ubuntu‑24.04 (Azure eastus), 2026‑10‑01 22:42–22:57 UTC
+> (= 2 Ekim 01:42–01:57 TR saati; piyasalar gece, kurlar yatay). Betik: `prototypes/live-checks/check.mjs` (arşiv etiketi `archive/faz0`).
 > Kur için 4 örnek (5 dk arayla), hava ve bayram için 1 örnek. Bu konteyner dış adreslere erişemediği için
 > doğrulama çalıştırıcıda yapıldı.
 

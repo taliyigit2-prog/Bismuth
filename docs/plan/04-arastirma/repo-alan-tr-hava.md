@@ -14,7 +14,7 @@ Tarih: 2026-10-01 · Hazırlayan: araştırma ajanı · Hedef dosya (plan): `doc
 | `api.github.com`, `github.com` HTML, api.met.no, open-meteo.com, ktb.gov.tr, jandarma.gov.tr, mgm.gov.tr, visualcrossing.com, hmsotel.com, aa.com.tr, jsDelivr, truncgil | ❌ vekil engeli | Bu konulardaki bilgi resmî belgenin GitHub kaynağından (MET, Open‑Meteo) ya da arama özetinden; ikincisi **(doğrula)** ile işaretli |
 | Yerel deneme | ✅ | Node 22 `Intl.DisplayNames('tr')`, KBS etiketi → ISO otomatik eşleme betiği (Ek A) |
 
-Canlı API çağrısı gereken her şey Faz 0 A0.5'te (GitHub Actions, `prototypes/live-checks`) tekrar sınanmalıdır.
+Canlı API çağrısı gereken her şey Faz 0 A0.5'te (GitHub Actions, `prototypes/live-checks` (arşiv etiketi `archive/faz0`)) tekrar sınanmalıdır.
 
 ---
 

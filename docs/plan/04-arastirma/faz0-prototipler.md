@@ -1,12 +1,12 @@
 # Faz 0 · Prototip (Spike) Sonuçları
 
-> Tarih: 2026-10-01. Kod: `prototypes/` (ürün kodu değildir; Faz 1 ürünü `src/` altında sıfırdan kurulur).
+> Tarih: 2026-10-01. Kod: `prototypes/` (arşiv etiketi `archive/faz0`) (ürün kodu değildir; Faz 1 ürünü `src/` altında sıfırdan kurulur).
 > Bu konteynerin dış internet erişimi vekil tarafından engelli olduğu için işletim sistemi paketleme ve canlı API
-> kontrolleri **GitHub Actions** çalıştırıcılarında yapıldı (`.github/workflows/faz0-*.yml`).
+> kontrolleri **GitHub Actions** çalıştırıcılarında yapıldı (`.github/workflows/faz0-*.yml` (arşiv etiketi `archive/faz0`)).
 
 ## 1. Masaüstü kabuğu ve paketleme — A0.1 (K-01, K-12) ✅
 
-**Ne yapıldı:** `prototypes/shell` — sertleştirilmiş `BrowserWindow` (contextIsolation, sandbox, nodeIntegration kapalı,
+**Ne yapıldı:** `prototypes/shell` (arşiv etiketi `archive/faz0`) — sertleştirilmiş `BrowserWindow` (contextIsolation, sandbox, nodeIntegration kapalı,
 spellcheck kapalı, CSP), better-sqlite3 13 ile 10.000 satır yazma + WAL + `VACUUM INTO` yedek + `integrity_check`,
 Tailwind v4'ün ihtiyaç duyduğu CSS özelliklerinin yoklaması, Türkçe/Kiril karakter testi, `--smoke` modu.
 electron-builder 26.15.3 ile Windows NSIS (kullanıcı başına, klasör seçilebilir, TR/EN/RU kurulum dili) ve
@@ -26,7 +26,7 @@ macOS DMG (arm64, ad‑hoc imza `identity: "-"`).
 
 - Kurulum dosyaları: **Windows ≈ 92 MB** (`Bismuth Proto-Setup-0.0.1-electron37.10.3-x64.exe`), **macOS ≈ 118 MB** (`.dmg`, arm64). Ürün kodu eklenince birkaç MB artar.
 - better-sqlite3 13.0.3 npm paketi 8 platform için **hazır ikili** taşıyor (`gypfile:false`) → `npmRebuild:false` + `asarUnpack` yeterli; yeniden derleme yok. Node ≥22 istiyor → Electron 37 (Node 22.21) ve 44 (Node 24) ikisi de uygun.
-- İndirme (14 gün saklanır): Actions → faz0-shell → run 36936900593 → Artifacts (`bismuth-proto-Windows-electron37.10.3`, `bismuth-proto-macOS-electron37.10.3`). **Sahibin kendi cihazlarında denemesi bekleniyor (S-80).**
+- İndirme (14 gün saklanır): Actions → faz0-shell (arşiv etiketi `archive/faz0`) → run 36936900593 → Artifacts (`bismuth-proto-Windows-electron37.10.3`, `bismuth-proto-macOS-electron37.10.3`). **Sahibin kendi cihazlarında denemesi bekleniyor (S-80).**
 - Not: `actions/checkout@v4` vb. Node 20 uyarısı veriyor → ürün CI'ında güncel ana sürümler kullanılacak.
 - Not: paketlenmiş uygulamada `userData` klasör adı `package.json` → `name` alanından geliyor; ürün `productName: "Bismuth"` ve `name: "bismuth"` ile ayarlanmalı.
 
@@ -37,7 +37,7 @@ dışı kalacak. Yeni macOS/Windows'ta sorun çıkarsa 44.x'e geçiş tek satır
 
 ## 2. Takvim ızgarası (tape chart) — A0.3 (K-03) ✅
 
-**Ne yapıldı:** `prototypes/tape-chart` — React 19 + @tanstack/react-virtual 3.14.13, 19 oda × **3.653 gün (10 yıl)**,
+**Ne yapıldı:** `prototypes/tape-chart` (arşiv etiketi `archive/faz0`) — React 19 + @tanstack/react-virtual 3.14.13, 19 oda × **3.653 gün (10 yıl)**,
 deterministik **17.900 sentetik konaklama** (gece gece ödenmiş/ödenmemiş, aynı gün giriş‑çıkış yarım hücre, satılmaz
 blok), sabit sol iki sütun (oda no, tip) ve yapışkan tarih satırı (Türkçe gün adı, cumartesi vurgusu, bugün çerçevesi),
 geçmiş günler gri. Yalnızca görünen sütunlar ve o aralığa düşen konaklamalar DOM'da (oda başına ikili arama).
@@ -57,7 +57,7 @@ SQLite'tan ay ay okunur.
 
 ## 3. KBS → Turizm Bakanlığı istatistiği — A0.8 (K-24, K-29) ✅
 
-**Ne yapıldı:** `prototypes/kbs-stats` — exceljs 4.4.0 ile `.xlsx` okuma; sütunlar **başlık adıyla** bulunur (sıra/boş
+**Ne yapıldı:** `prototypes/kbs-stats` (arşiv etiketi `archive/faz0`) — exceljs 4.4.0 ile `.xlsx` okuma; sütunlar **başlık adıyla** bulunur (sıra/boş
 hücre değişse de çalışır); kimlik sütunları (TC, belge, ad, soyad, plaka) **hiç okunmaz**; i18n-iso-countries 7.14.0 ile
 İngilizce ülke adı → ISO → Türkçe ad; kurallar: giriş ayı, aynı gün = 1, doluluk = geceleme ÷ (yatak × gün).
 
@@ -84,7 +84,7 @@ hücre değişse de çalışır); kimlik sütunları (TC, belge, ad, soyad, plak
 
 ## 4. Bayram üretimi — A0.4 (K-04) ✅
 
-**Ne yapıldı:** `prototypes/holidays` — `date-holidays` 3.37.0 (ISC; veri CC‑BY‑3.0) Türkiye kurallarını Türk hukukuna
+**Ne yapıldı:** `prototypes/holidays` (arşiv etiketi `archive/faz0`) — `date-holidays` 3.37.0 (ISC; veri CC‑BY‑3.0) Türkiye kurallarını Türk hukukuna
 göre normalleştirir: Ramazan = arife (13:00'dan, yarım gün) + 3 gün; Kurban = arife + 4 gün; 28 Ekim yarım gün.
 
 | Doğrulama | Sonuç |

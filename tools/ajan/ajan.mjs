@@ -2,7 +2,7 @@
 // Runs a Claude agent on this repository through the Claude Agent SDK, billed to the Anthropic API key in
 // ANTHROPIC_API_KEY (Console promotional credits cover "Agent SDK", unlike the `claude` CLI).
 //
-//   node tools/ajan/ajan.mjs                                   # Fable reads docs/fable-talimati.md
+//   node tools/ajan/ajan.mjs                                   # Fable reads tools/ajan/talimatlar/fable-talimati.md
 //   node tools/ajan/ajan.mjs --model haiku --butce 0.2 "Merhaba de ve dur."   # cheap billing test
 //   node tools/ajan/ajan.mjs --model claude-opus-5-5 --butce 80 "<task>"
 //   node tools/ajan/ajan.mjs --devam                           # continue the last session
@@ -22,7 +22,7 @@ const lastSessionFile = join(stateDir, 'son-oturum.json')
 mkdirSync(stateDir, { recursive: true })
 const logFile = join(stateDir, `${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.log`)
 
-const DEFAULT_PROMPT = 'docs/fable-talimati.md dosyasını baştan sona oku ve eksiksiz uygula.'
+const DEFAULT_PROMPT = 'tools/ajan/talimatlar/fable-talimati.md dosyasını baştan sona oku ve eksiksiz uygula.'
 
 function parseArgs(argv) {
   const out = { model: 'claude-fable-5-1', budget: 100, resume: false, prompt: null, effort: null }

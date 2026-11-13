@@ -35,10 +35,6 @@ coverage/
 playwright-report/
 test-results/
 
-# prototype build output
-prototypes/**/release/
-prototypes/**/node_modules/
-
 # Claude hook marker (last successful npm run check)
 .claude/.checks-passed
 # local Electron profile used by e2e/ui-shot

@@ -32,7 +32,7 @@ denetimi, para/tarih tipleri ve Excel'den çıkan tüm iş kuralları. Bu faz bi
    - `GuestHistoryService`: konaklama/ödeme/fiyat geçmişi ve özet (§6.12); `CompanyService` (fatura bilgileri, favori, kopya metni üretimi).
    - `RoomIssueService`: arıza kayıtları, durum geçişleri, oda bloğu etkisi, ek dosya bağlantısı.
    - `ContactService`, `SupplyService` (ürün, kategori, gider satırlarından fiyat geçmişi ve zam §6.13), `LaundryService` (giden/gelen teslimat, bekleyen/eksik, aylık mutabakat).
-   - `TourismStatsService`: KBS Excel ayrıştırma (sütun **başlık adıyla**), uyruk eşleme (normalize + takma ad + yazım hatası önerisi + kullanıcı onayı; K-36), giriş/geceleme hesabı (§6.11; otelde kalanlar planlı çıkışa kadar), program verisiyle karşılaştırma. Prototip: `prototypes/kbs-stats`.
+   - `TourismStatsService`: KBS Excel ayrıştırma (sütun **başlık adıyla**), uyruk eşleme (normalize + takma ad + yazım hatası önerisi + kullanıcı onayı; K-36), giriş/geceleme hesabı (§6.11; otelde kalanlar planlı çıkışa kadar), program verisiyle karşılaştırma. Prototip: `prototypes/kbs-stats` (arşiv etiketi `archive/faz0`).
    - `AttachmentService`: dosya kaydetme/küçültme/sha256, yol doğrulama (K-25).
    - `UserService` / `AuthService` / `SessionService`: kullanıcı, rol (üç seviyeli yetki), PIN/şifre (scrypt), oturum belirteçleri, cihazlar, boşta kilit.
    - `BackupService`: çevrimiçi yedek (ekler dahil), geri yükle, bütünlük.

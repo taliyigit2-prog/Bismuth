@@ -3,7 +3,7 @@
 Otel güvenlik kamerası üzerinden **KBS kayıtlı misafirleri** yüz imzasıyla tanıyan, kayıtsız girişleri **yakınlaştırılmış yüz (PIP)** kanıtıyla yakalayan ve Telegram grubuna anlık bildiren yerel yapay zeka sistemi.
 
 > 🤖 **Geliştiriciler ve Yapay Zeka Ajanları İçin Not:**
-> Bu projenin tam teknik mimarisi, çözülmüş kritik problemleri, veritabanı şeması ve hand-off notları için lütfen **[AI_GELISTIRICI_NOTLARI.md](file:///Users/yigittali/Desktop/Otel%20Kamera/AI_GELISTIRICI_NOTLARI.md)** dosyasını inceleyin.
+> Bu projenin tam teknik mimarisi, çözülmüş kritik problemleri, veritabanı şeması ve hand-off notları için lütfen **[AI_GELISTIRICI_NOTLARI.md](AI_GELISTIRICI_NOTLARI.md)** dosyasını inceleyin.
 
 ---
 
@@ -45,7 +45,7 @@ Otel Kamera/
    - Google Drive'dan indirdiğiniz `Otel Kamera` klasörünü Masaüstüne çıkarın.
 3. **Kamera Adresini Girin (`.env`):**
    - Klasör içindeki `.env` dosyasını Not Defteri ile açın.
-   - `CAMERA_SOURCE=0` satırını otel kamerasının RTSP adresiyle değiştirin (Örn: `CAMERA_SOURCE=rtsp://admin:sifre@192.168.1.64:554/stream1`).
+   - `CAMERA_SOURCE=0` satırını otel kamerasının RTSP adresiyle değiştirin (Örn: `CAMERA_SOURCE=rtsp://192.168.1.64:554/stream1`; kullanıcı adı ve şifre kamera kurulumunda adresin başına eklenir).
    - `TELEGRAM_BOT_TOKEN` ve `TELEGRAM_CHAT_ID` bilgilerini girin.
 4. **İlk Kurulumu Yapın (Sadece 1 Kez):**
    - `Otel_Ilk_Kurulum_Windows.bat` dosyasına çift tıklayın. Gerekli yapay zeka kütüphaneleri otomatik kurulacaktır.

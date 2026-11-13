@@ -15,6 +15,8 @@ ekranındadır.
 Geliştirme fazlar hâlinde ilerler: `docs/plan/fazlar/DURUM.md`. Plan ve kararlar `docs/plan/` altında
 (gereksinimler `01`, mimari `03`, sorular `05`, kararlar `06`).
 
+Son analiz raporları ve geliştirme planı: [`docs/analiz/00-ozet.md`](docs/analiz/00-ozet.md).
+
 ## Kurulum (sahip için)
 
 Ayrıntılı, adım adım kılavuz: [`docs/kurulum.md`](docs/kurulum.md).

@@ -16,8 +16,7 @@ const fp = String(input.tool_input?.file_path ?? "").replace(/\\/g, "/");
 if (!fp || !/\.(ts|tsx|js|jsx|mjs|cjs|html|css)$/.test(fp)) process.exit(0);
 if (/(^|\/)src\/main\/(network|server)\//.test(fp)) process.exit(0);
 if (/(^|\/)src\/renderer\/lib\/transport\//.test(fp)) process.exit(0);
-// prototypes/ holds Faz 0 spike code (live API checks etc.), never shipped in the product bundle.
-if (/(^|\/)(tests?|__tests__|e2e|scripts|prototypes|\.github|docs|\.claude)\//.test(fp)) process.exit(0);
+if (/(^|\/)(tests?|__tests__|e2e|scripts|\.github|docs|\.claude)\//.test(fp)) process.exit(0);
 if (/\.(test|spec)\.(ts|tsx|js)$/.test(fp)) process.exit(0);
 
 const text = String(input.tool_input?.new_string ?? input.tool_input?.content ?? "");

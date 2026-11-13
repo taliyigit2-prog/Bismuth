@@ -82,7 +82,6 @@ const pFmt = project("fmt", {
     "vitest.config.ts": "export default {}\n",
     "docs/x.ts": "const x = 1\n",
     "drizzle/meta/_journal.json": "{}\n",
-    "prototypes/p.ts": "const p = 1\n",
     "src/readme.md": "# md\n",
     // Fake prettier: records its arguments so the test can see whether (and how) the hook called it.
     "node_modules/.bin/prettier":
@@ -135,7 +134,6 @@ const cases = [
   { hook: "no-network-guard.mjs", input: { cwd: root, tool_name: "Write", tool_input: { file_path: "src/main/server/app.ts", content: "serve({ fetch: app.fetch, port })" } }, expect: 0, note: "host-mode server passes" },
   { hook: "no-network-guard.mjs", input: { cwd: root, tool_name: "Write", tool_input: { file_path: "src/renderer/lib/transport/http.ts", content: 'await fetch(`${baseUrl}/api`)' } }, expect: 0, note: "client transport passes" },
   { hook: "no-network-guard.mjs", input: { cwd: root, tool_name: "Write", tool_input: { file_path: "src/renderer/features/today/page.tsx", content: 'await fetch(`${baseUrl}/api`)' } }, expect: 2, note: "fetch in a feature blocked" },
-  { hook: "no-network-guard.mjs", input: { cwd: root, tool_name: "Write", tool_input: { file_path: "prototypes/live-checks/check.mjs", content: 'await fetch("https://open.er-api.com/v6/latest/USD")' } }, expect: 0, note: "prototype spike passes" },
 
   // ---------- pre-commit-gate ----------
   { hook: "pre-commit-gate.mjs", env: { CLAUDE_PROJECT_DIR: pEmpty }, input: { cwd: pEmpty, tool_name: "Bash", tool_input: { command: `${commit} -m x` } }, expect: 0, stderr: /package\.json yok/, note: "no package.json: fail-open" },
@@ -236,7 +234,6 @@ const cases = [
   fmtCase("vitest.config.ts", true, "root config formatted"),
   fmtCase("docs/x.ts", false, "docs/ skipped"),
   fmtCase("drizzle/meta/_journal.json", false, "drizzle/ skipped"),
-  fmtCase("prototypes/p.ts", false, "prototypes/ skipped"),
   fmtCase("src/readme.md", false, "non-code extension skipped"),
   { hook: "format-file.mjs", env: { CLAUDE_PROJECT_DIR: pEmpty }, input: { cwd: pEmpty, tool_name: "Write", tool_input: { file_path: join(pEmpty, "src", "missing.ts") } }, expect: 0, note: "no prettier installed: silent" },
   { hook: "format-file.mjs", input: "not json", expect: 0, note: "bad input never blocks" },

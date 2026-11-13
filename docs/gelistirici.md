@@ -41,7 +41,7 @@ Kullanıcıya dönük belgeler: [`kurulum.md`](kurulum.md), [`yedek-ve-tasima.md
 | `npm run i18n:check` | Kodda kullanılan her sabit `t('…')` anahtarı `tr.json`'da var mı; en/ru anahtar kümesi tr ile aynı mı. Dinamik anahtarları `typecheck` denetler. |
 | `npm run i18n:add -- <spec.json>` | Üç dil json'ına anahtar ekler (§5.4). |
 | `npm run notices` | `THIRD_PARTY_NOTICES.md` + Hakkında ekranı listesi (`src/renderer/features/about/third-party.json`). CI güncel olup olmadığını denetler. |
-| `npm run icon` | `build/icon.svg` → `build/icon.png` (1024) ve `resources/icon.png`. |
+| `npm run icon` | `build/icon.svg` → `build/icon.png` (1024). |
 | `npm run seed:demo -- [--out .demo/bismuth.db] [--days 365] [--seed N] [--force]` | Örnek otel: 19 oda / 38 yatak, bir yıllık uydurma veri — hepsi servisler üzerinden (yetki + audit). Var olan dosyanın üzerine yalnız `--force` ile yazar. Açmak için: `BISMUTH_USER_DATA=.demo npm run dev`. Demo hesapları: `sahip`, `mudur`, `resepsiyon`, `muhasebe`, `temizlik` (şifre `demo-sifre-1`). |
 
 ## 3. Derleme ve paketleme

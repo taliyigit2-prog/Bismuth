@@ -85,20 +85,20 @@ Geliştirme sürecinde karşılaşılan ve çözülen problemler:
 
 ### 1. Siyah / Kapalı Kamera Ekranında Yanlış Alarm Üretilmesi
 * **Sorun:** Kamera lensi kapatıldığında veya gece kızılötesi geçişinde siyah ekranda rastgele gürültü sebebiyle yanlış yüz alarmları tetikleniyordu.
-* **Çözüm:** [`security_service.py`](file:///Users/yigittali/Desktop/deneme/security_service.py) içine `is_frame_dark_or_covered(frame)` eklendi. Ortalama parlaklık (Luminance) < 18 veya standart sapma < 8 ise kare anında elenir, alarm tetiklenmez.
+* **Çözüm:** [`security_service.py`](security_service.py) içine `is_frame_dark_or_covered(frame)` eklendi. Ortalama parlaklık (Luminance) < 18 veya standart sapma < 8 ise kare anında elenir, alarm tetiklenmez.
 
 ### 2. Yandan Bakış (Profil) ile Karşıdan Bakış Eşleşmeme Problemi
 * **Sorun:** Misafir kameraya 90° profilden baktığında tek bir açıdan alınan fotoğraf bazen tanınamayabiliyordu.
-* **Çözüm:** [`database.py`](file:///Users/yigittali/Desktop/deneme/database.py) içinde **Çoklu Açı Yüz Profilleri (`guest_face_profiles`)** yapısı kuruldu. Bir misafir için 5 farklı açıdan (ön, sağ profil, sol profil) yüz embedding'i saklanabilir. Tanıma motoru misafirin herhangi bir açısıyla eşleştiğinde kişiyi yeşil olarak doğrular.
+* **Çözüm:** [`database.py`](database.py) içinde **Çoklu Açı Yüz Profilleri (`guest_face_profiles`)** yapısı kuruldu. Bir misafir için 5 farklı açıdan (ön, sağ profil, sol profil) yüz embedding'i saklanabilir. Tanıma motoru misafirin herhangi bir açısıyla eşleştiğinde kişiyi yeşil olarak doğrular.
 * **Eşik Değeri:** `FACE_SIMILARITY_THRESHOLD = 0.36` olarak kalibre edildi (InsightFace `buffalo_s` için ideal denge).
 
 ### 3. Resepsiyon Masasındaki Bilgisayar/Laptop Ekranlarındaki Yüzler
 * **Sorun:** Resepsiyon görevlisinin laptop ekranında görünen bir aktör veya video görüntüsü alarm üretiyordu.
-* **Çözüm:** [`tracker.py`](file:///Users/yigittali/Desktop/deneme/tracker.py) içine `min_face_size = 55px` piksel sınırı ve YOLO gövde-yüz örtüşme doğrulaması eklendi. Ekranda uzakta kalan küçük pikselli yüzler filtrelenir.
+* **Çözüm:** [`tracker.py`](tracker.py) içine `min_face_size = 55px` piksel sınırı ve YOLO gövde-yüz örtüşme doğrulaması eklendi. Ekranda uzakta kalan küçük pikselli yüzler filtrelenir.
 
 ### 4. Xiaomi Wi-Fi Menzil Genişletici ve Elektrik Kesintisi Dayanıklılığı
 * **Sorun:** Otelde kamera kabloyla modeme, bilgisayar ise Xiaomi Wi-Fi güçlendirici ile modeme bağlıdır. Elektrik kesintisinde kamera ve sinyal güçlendirici geç açıldığında OpenCV `cv2.VideoCapture` sonsuza kadar kilitleniyordu.
-* **Çözüm:** [`security_service.py`](file:///Users/yigittali/Desktop/deneme/security_service.py) içine `_ResilientCameraGrabber` yazıldı:
+* **Çözüm:** [`security_service.py`](security_service.py) içine `_ResilientCameraGrabber` yazıldı:
   * RTSP bağlantısı **TCP üzerinden zorlanır** (`rtsp_transport=tcp`), paket kaybı önlenir.
   * Soket zaman aşımı 5 saniyeye çekildi (`stimeout=5000000`).
   * Ayrı bir **Watchdog Thread** her 8 saniyede bir yeni kare gelip gelmediğini denetler; 8 saniye boyunca donma olursa kamerayı arka planda otomatik yeniden bağlar.
@@ -106,7 +106,7 @@ Geliştirme sürecinde karşılaşılan ve çözülen problemler:
 
 ### 5. Disk Hafızasının Dolması ve 30 Günlük Saklama Politikası
 * **Sorun:** Sürekli alarm fotoğrafları kaydedildiğinde otel bilgisayarının diski dolabilirdi.
-* **Çözüm:** [`database.py`](file:///Users/yigittali/Desktop/deneme/database.py) içine `run_storage_maintenance()` motoru eklendi:
+* **Çözüm:** [`database.py`](database.py) içine `run_storage_maintenance()` motoru eklendi:
   * Otel kamerasının 30 günlük hafızasına sadık kalınarak **30 günden eski tüm fotoğraflar diskten ve veritabanından otomatik silinir**.
   * Aynı yabancı kişinin son 12 saat içinde çekilmiş mükerrer fotoğrafları yüz benzerliği (`DEDUP_SIMILARITY_THRESHOLD = 0.46`) ile tekilleştirilir, yalnızca en net ve en güncel kare tutulur.
   * Veritabanında kaydı kalmayan sahipsiz (orphan) tüm `.jpg` dosyaları otomatik temizlenir.
@@ -114,8 +114,8 @@ Geliştirme sürecinde karşılaşılan ve çözülen problemler:
 ### 6. Ağ Güvenliği ve KVKK Koruma Kalkanı
 * **Sorun:** Otel Wi-Fi ağına bağlanan misafirlerin tarayıcılarından `http://<bilgisayar-ip>:8000` yazarak canlı kamerayı ve diğer misafirlerin isim/oda listesini görme riski vardı.
 * **Çözüm:**
-  * [`config.py`](file:///Users/yigittali/Desktop/deneme/config.py) içinde `WEB_HOST = "127.0.0.1"` yapıldı; dış IP'lerden gelen tüm istekler engellendi. Panele **yalnızca resepsiyon bilgisayarının kendi ekranından** erişilebilir.
-  * [`static/index.html`](file:///Users/yigittali/Desktop/deneme/static/index.html) içine HTML karakterlerini temizleyen `esc()` fonksiyonu eklenerek DOM XSS açıkları kapatıldı.
+  * [`config.py`](config.py) içinde `WEB_HOST = "127.0.0.1"` yapıldı; dış IP'lerden gelen tüm istekler engellendi. Panele **yalnızca resepsiyon bilgisayarının kendi ekranından** erişilebilir.
+  * [`static/index.html`](static/index.html) içine HTML karakterlerini temizleyen `esc()` fonksiyonu eklenerek DOM XSS açıkları kapatıldı.
   * Sunucu seviyesinde `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff` ve `Cache-Control: no-store` güvenlik başlıkları eklendi.
   * Fotoğraf yükleme API'sine 10 MB boyut sınırı (`MAX_UPLOAD_BYTES`) getirildi.
 
@@ -166,7 +166,7 @@ CREATE TABLE IF NOT EXISTS alert_logs (
 
 | Değişken | Varsayılan | Açıklama |
 | :--- | :--- | :--- |
-| `CAMERA_SOURCE` | `0` | RTSP kamera linki (Örn: `rtsp://admin:sifre@192.168.1.64:554/stream1`) veya yerel kamera indeksi |
+| `CAMERA_SOURCE` | `0` | RTSP kamera linki (Örn: `rtsp://192.168.1.64:554/stream1`; kullanıcı adı ve şifre kamera kurulumunda adresin başına eklenir) veya yerel kamera indeksi |
 | `CAMERA_LOCATION` | `Merdiven / Kat Girisi` | Bildirimlerde ve ekranda görünen kamera konumu |
 | `FACE_SIMILARITY_THRESHOLD`| `0.36` | Kosinüs benzerlik eşiği (0.36 ve üzeri = Aynı Kişi / Kayıtlı Misafir) |
 | `MIN_FACE_DET_SCORE` | `0.62` | Yüz algılama güven skoru (düşük kaliteli yüzleri eler) |
@@ -194,9 +194,9 @@ Oteldeki bilgisayar onarıldığında veya yeni bir bilgisayar bağlandığında
    * `CAMERA_SOURCE=...` satırına kamera ustasından alınan RTSP bağlantısını yazın.
    * `TELEGRAM_BOT_TOKEN` ve `TELEGRAM_CHAT_ID` satırlarına otelin bildirim grubunu girin.
 4. **İlk Kurulum Sihirbazını Çalıştırın (Sadece 1 Kez):**
-   * [`Otel_Ilk_Kurulum_Windows.bat`](file:///Users/yigittali/Desktop/deneme/Otel_Ilk_Kurulum_Windows.bat) dosyasına çift tıklayın. Gerekli kütüphaneler otomatik kurulacaktır.
+   * [`Otel_Ilk_Kurulum_Windows.bat`](Otel_Ilk_Kurulum_Windows.bat) dosyasına çift tıklayın. Gerekli kütüphaneler otomatik kurulacaktır.
 5. **Elektrik Kesintisi Sonrası Otomatik Başlatmayı Aktif Edin:**
-   * [`Otel_Otomatik_Baslangica_Kur_Windows.bat`](file:///Users/yigittali/Desktop/deneme/Otel_Otomatik_Baslangica_Kur_Windows.bat) dosyasına çift tıklayın.
+   * [`Otel_Otomatik_Baslangica_Kur_Windows.bat`](Otel_Otomatik_Baslangica_Kur_Windows.bat) dosyasına çift tıklayın.
    * Artık resepsiyon görevlileri bilgisayarı açtığında sistem arka planda otomatik çalışacak ve resepsiyon ekranında `http://localhost:8000` açılacaktır.
 
 ---

@@ -1,4 +1,4 @@
-# 13 — Fable tamamlama kontrol listesi (`docs/fable-talimati.md` §2–§8 ve `docs/fable-tamamlama.md`)
+# 13 — Fable tamamlama kontrol listesi (`tools/ajan/talimatlar/fable-talimati.md` §2–§8 ve `docs/fable-tamamlama.md` (silinmiş; git geçmişinde))
 
 > Fable, 2. oturum (2026-11-12 → 2026-11-13). Her madde: yapıldı mı, kanıt nerede. "Bekliyor" satırları oturum sonunda güncellenir.
 
@@ -22,7 +22,7 @@
 | 7.5 | Opus devir notu + tek satır komut | ✅ | `OPUS-BASLANGIC.md` (bütçe 200, soru sormadan başlar) |
 | 8 | Her aşamada commit/push; son kontrol (tutarlılık, bulgu→paket, paket→ajan) | ✅ | Tutarlılık denetimi (`.tmp/verify-plan/REPORT.md`, 22 boşluk kapatıldı: `24881d9`); bu oturumda 12+ commit |
 
-## B. Tamamlama talimatı (`docs/fable-tamamlama.md`)
+## B. Tamamlama talimatı (`docs/fable-tamamlama.md` (silinmiş; git geçmişinde))
 
 | § | Madde | Durum | Kanıt |
 |---|---|---|---|

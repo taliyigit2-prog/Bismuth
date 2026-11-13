@@ -61,7 +61,7 @@ koşulu ölü (ci tag'de tetiklenmez).
 | `prototypes/holidays`, `tape-chart`, `kbs-stats` | Etiketle ve sil; plan belgelerindeki yollar "arşiv etiketi" olarak güncellenir | düşük-orta (araştırma kanıtı izi) | ❌ plana (P19c) |
 | `resources/icon.png` | Sil; `scripts/make-icon.mjs:39` satırı kaldır (hiçbir girdi okumuyor) | düşük | ❌ plana (P19c) |
 | `otel-kamera/` | **Depoda kalır** (sahip iki sistemin birleşmesini istiyor); kök README'ye "ürünün parçası değil, entegrasyon planı 06" notu; `.gitignore` tamamlandı, `.env.example` eklendi; belgelerdeki yerel yol (`/Users/.../`) temizlenir | yüksek (sahip kararı: ayrı depo mu?) | ✅ `.gitignore` + `.env.example` (bu dal); yol temizliği P19c |
-| `docs/fable-talimati.md` | `tools/ajan/` altına taşınabilir; şimdilik yerinde (başlatıcı okuyor) | düşük | ❌ |
+| `docs/fable-talimati.md` | `tools/ajan/talimatlar/` altına taşındı (P19c) | düşük | ✅ |
 | `THIRD_PARTY_NOTICES.md` (kök, 70 KB) | Yerinde (pakete giriyor, CI diff denetliyor) | — | — |
 | `tools/ajan/` | Yerinde; `kayit/` gitignore'da | — | — |
 | `.devcontainer` `python:1` özelliği | Kamera yan süreci için gerekli olacak; kalır | — | — |

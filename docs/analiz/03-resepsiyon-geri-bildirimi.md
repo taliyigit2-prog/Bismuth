@@ -1,7 +1,7 @@
 # 03 — Resepsiyon geri bildirimi: dört madde, kök neden ve çözüm tasarımı
 
 > Hazırlayan: Fable (2026-11-12). Kaynak: resepsiyon çalışanlarının gerçek kullanımdan bildirdiği dört madde
-> (`docs/fable-talimati.md` §3). Kod izi kaynak dosya ve satır numaralarıyla verilmiştir; satır numaraları
+> (`tools/ajan/talimatlar/fable-talimati.md` §3). Kod izi kaynak dosya ve satır numaralarıyla verilmiştir; satır numaraları
 > `claude/fable-analiz` dalının 2026-11-12 tarihli hâline aittir.
 > Yeniden üretim betiği: `docs/analiz/ekler/resepsiyon-repro.test.ts.txt` (7 vitest senaryosu; geçici olarak
 > `src/main/services/` altına kopyalanıp `npx vitest run --project node <dosya>` ile koşuldu, 7/7 geçti, sonra silindi).
