@@ -256,6 +256,14 @@ export function applyPendingRestore(opts: {
     for (const suffix of ['', '-wal', '-shm'])
       if (existsSync(opts.dbFile + suffix))
         cpSync(opts.dbFile + suffix, join(safetyDir, BACKUP_DB_NAME + suffix))
+    // The safety copy is kept until removed by hand, so it must not outlive the face retention rules (K-52).
+    // A damaged live file (startup recovery) cannot be opened: it is kept as it is for diagnosis.
+    if (existsSync(join(safetyDir, BACKUP_DB_NAME)))
+      try {
+        scrubBiometricData(join(safetyDir, BACKUP_DB_NAME))
+      } catch {
+        /* damaged copy: left untouched */
+      }
     if (existsSync(opts.attachmentsDir))
       cpSync(opts.attachmentsDir, join(safetyDir, ATTACHMENTS), { recursive: true })
     cpSync(sourceDb, stagedDb)

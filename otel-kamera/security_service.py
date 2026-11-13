@@ -9,6 +9,9 @@ P20d: modeller yalnız yerel dosyadan, çevrimdışı yüklenir (`model_loader.p
 düşük sıklıkta yüz aranır (5); tek eşik + "emin değil" bandı (6); OpenCV ile yazı/kutu ÇİZİLMEZ — kutular ve etiketler
 `get_overlay()` ile (normalleştirilmiş koordinat) verilir, Bismuth penceresi çizer (20); canlı yayın yalnız yeni karede
 ve yalnız izleyici isteyince, küçültülmüş JPEG olarak üretilir (23, 24).
+
+P20c: diske hiçbir şey yazılmaz (K-51, K-53). İçerideki misafirlerin yüzleri `FaceStore`'da (bellek, Bismuth verir),
+alarmlar `AlertQueue`'da (bellek, Bismuth çeker); kayıtlı misafir adı/odası yalnız ekran etiketi içindir.
 """
 
 import logging
@@ -27,8 +30,8 @@ from alert_recorder import AlertRecorder
 from camera_grabber import ResilientCameraGrabber
 from config import Config
 from config import config as default_config
-from database import GuestDatabase
 from face_engine import FaceEngine
+from face_store import AlertQueue, FaceStore
 from health import LoopHealth
 from model_loader import load_yolo
 from timeutil import now_local
@@ -61,8 +64,6 @@ def build_person_detector(settings: Config = default_config) -> PersonDetector:
 @dataclass
 class _LoopState:
     frame_count: int = 0
-    last_db_sync: float = field(default_factory=time.time)
-    last_expiry_sync: float = field(default_factory=time.time)
     last_maintenance: float = field(default_factory=time.time)
     last_fps_time: float = field(default_factory=time.time)
     fps_counter: int = 0
@@ -77,7 +78,8 @@ class _LoopState:
 class SecurityService:
     def __init__(
         self,
-        db: GuestDatabase,
+        faces: FaceStore,
+        alerts: AlertQueue,
         settings: Config = default_config,
         face_engine: Optional[FaceEngine] = None,
         person_detector: Optional[PersonDetector] = None,
@@ -86,23 +88,18 @@ class SecurityService:
         grabber_factory: Callable[..., Any] = ResilientCameraGrabber,
         clock: Callable[[], float] = time.time,
         sleep: Callable[[float], None] = time.sleep,
-        run_maintenance_on_start: bool = True,
     ):
-        self.db = db
+        self.faces = faces
+        self.alerts = alerts
         self.settings = settings
         self.face_engine = face_engine or FaceEngine(settings=settings)
         self.person_detector = person_detector or build_person_detector(settings)
-        self.recorder = recorder or AlertRecorder(settings)
+        self.recorder = recorder or AlertRecorder()
         self.tracker = tracker or SecurityTracker(settings=settings)
         self._grabber_factory = grabber_factory
         self._clock = clock
         self._sleep = sleep
         self.health = LoopHealth(clock)
-
-        os.makedirs(settings.GUEST_PHOTOS_DIR, exist_ok=True)
-        if run_maintenance_on_start:
-            maint = db.run_storage_maintenance()
-            log.info("Açılış temizliği: %s", maint)
 
         self._lock = threading.Lock()
         self._engine_lock = threading.Lock()
@@ -119,7 +116,6 @@ class SecurityService:
         self._placeholder_jpeg: Optional[bytes] = None
         self.stream_viewers = 0
         self._overlay_state: Tuple[List[PersonBox], List[FaceBox], int, int, int] = ([], [], 0, 0, 0)
-        self.active_guests: List[Tuple[int, str, str, np.ndarray]] = db.get_active_guests()
         self.last_detection_summary = "İzleme hazır"
         self.fps = 0.0
         self.reconnect_count = 0
@@ -167,15 +163,13 @@ class SecurityService:
             return frame
         return cv2.resize(crop, (240, 240))
 
-    def reload_guests(self) -> None:
-        with self._lock:
-            self.active_guests = self.db.get_active_guests()
+    def faces_changed(self) -> None:
+        """Bismuth yeni yüz listesi verdi: izleyicinin "doğrulanmış kimlik" belleği sıfırlanır (ad/oda değişmiş olabilir)."""
         self.tracker.clear_memory()
-        log.info("Aktif misafir imzası güncellendi (%d yüz profili)", len(self.active_guests))
+        log.info("Aktif yüz listesi güncellendi (%d yüz profili)", len(self.faces.snapshot()))
 
     def _unique_guest_count(self) -> int:
-        with self._lock:
-            return len({(n.strip().lower(), r.strip().lower()) for _, n, r, _ in self.active_guests})
+        return self.faces.guest_count()
 
     # ------------------------------------------------------------------ yüz çıkarma (kayıt)
 
@@ -203,7 +197,7 @@ class SecurityService:
             if self.latest_raw_frame is None or self.camera_covered:
                 return None
             frame_copy = self.latest_raw_frame.copy()
-            current_guests = list(self.active_guests)
+        current_guests = self.faces.snapshot()
         enhanced = self.enhance_low_light_frame(frame_copy)
         with self._engine_lock:
             all_faces = self.face_engine.extract_all_embeddings(enhanced)
@@ -215,31 +209,6 @@ class SecurityService:
                     return emb, self.crop_face_portrait(frame_copy, bbox)
         best_emb, best_bbox = all_faces[0]
         return best_emb, self.crop_face_portrait(frame_copy, best_bbox)
-
-    def identify_guest_from_live_camera(self) -> Tuple[bool, str, Optional[Dict[str, Any]]]:
-        """Kameradaki kişiyi aktif misafirlerle eşleştirir ve ADAYI döner; çıkışı KENDİSİ YAPMAZ (kod bulgusu 18).
-        Çıkış, kullanıcı adayı onaylayınca `POST /api/guests/{id}/checkout` ile yapılır. Eşik CHECKOUT_MIN_SIMILARITY."""
-        with self._lock:
-            if self.latest_raw_frame is None or self.camera_covered:
-                return False, "Şu anda kamera kapalı veya net bir görüntü yok.", None
-            frame_copy = self.latest_raw_frame.copy()
-            current_guests = list(self.active_guests)
-        enhanced = self.enhance_low_light_frame(frame_copy)
-        with self._engine_lock:
-            all_faces = self.face_engine.extract_all_embeddings(enhanced)
-        if not all_faces:
-            return False, "Şu anda kamerada net bir yüz görünmüyor.", None
-
-        best = None
-        for emb, _ in all_faces:
-            m = self.face_engine.match_face(emb, current_guests, threshold=self.settings.CHECKOUT_MIN_SIMILARITY)
-            if m is not None and (best is None or m[3] > best[3]):
-                best = m
-        if best is None:
-            return False, "Kameradaki kişi aktif misafir listesinde bulunamadı.", None
-        gid, name, room, score = best
-        info = self.db.get_guest_by_id(gid)
-        return True, f"{name} (Oda {room}) tanındı (%{int(score * 100)}); çıkışı onaylayın.", info
 
     # ------------------------------------------------------------------ yayın ve kutu verisi
 
@@ -292,7 +261,7 @@ class SecurityService:
         küçültülse de pencere aynı kutuyu çizer. Etiket METNİ yoktur; ad/oda/skor ham veridir, yazıyı pencere dizer."""
         with self._lock:
             persons, faces, width, height, seq = self._overlay_state
-            guests = len({(n.strip().lower(), r.strip().lower()) for _, n, r, _ in self.active_guests})
+        guests = self.faces.guest_count()
 
         def norm(box: List[float]) -> List[float]:
             if width <= 0 or height <= 0:
@@ -343,8 +312,6 @@ class SecurityService:
     def _run_loop(self) -> None:
         """Hiçbir istisna döngüyü öldürmez: sayılır, sağlık uç noktasına yansır, geri çekilerek devam edilir."""
         state = _LoopState(
-            last_db_sync=self._clock(),
-            last_expiry_sync=self._clock(),
             last_maintenance=self._clock(),
             last_fps_time=self._clock(),
         )
@@ -392,21 +359,9 @@ class SecurityService:
             self.frame_seq += 1
         self.tracker.configure_frame(frame.shape[1], frame.shape[0])
 
-        if now - st.last_db_sync > 10.0:  # salt okuma
-            guests = self.db.get_active_guests()
-            with self._lock:
-                self.active_guests = guests
-            st.last_db_sync = now
-        if now - st.last_expiry_sync > 60.0:  # süresi dolanları pasifle (yazma, seyrek)
-            self.db.cleanup_expired_guests()
-            st.last_expiry_sync = now
         if now - st.last_maintenance > 3600.0:
             self._prevent_windows_sleep()
             st.last_maintenance = now
-            try:
-                self.db.run_storage_maintenance()
-            except Exception as exc:  # noqa: BLE001
-                self.health.error(exc, "maintenance")
 
         if self.is_frame_dark_or_covered(frame):
             self.camera_covered = True
@@ -426,8 +381,7 @@ class SecurityService:
         new_person_boxes: List[PersonBox] = []
         new_face_boxes: List[FaceBox] = []
         pending: List[Tuple[int, np.ndarray, np.ndarray]] = []
-        with self._lock:
-            current_guests = list(self.active_guests)
+        current_guests = self.faces.snapshot()
         analysis_frame = self.enhance_low_light_frame(frame)
         threshold = self.settings.FACE_SIMILARITY_THRESHOLD
         margin = self.settings.FACE_UNCERTAIN_MARGIN
@@ -499,17 +453,14 @@ class SecurityService:
                     }
                 )
 
-        for tid, bbox, embedding in pending:
+        for tid, bbox, _embedding in pending:
             try:
-                # Alarm karesi HAM karedir: kayıtlı misafirin adı/oda etiketi çizilmez (kod bulgusu 1).
-                scene_path, face_crop_path = self.recorder.record(frame, bbox, tid)
-                self.db.log_alert(
-                    image_path=scene_path,
-                    details=f"Tanımsız Kişi (Takip #{tid})",
-                    face_crop_path=face_crop_path,
-                    embedding=embedding,
-                )
-            except Exception as exc:  # noqa: BLE001 - disk/DB hatası döngüyü öldürmez (kod bulgusu 13)
+                # Alarm kırpması HAM karedendir (kod bulgusu 1) ve yalnız bellekte durur: Bismuth çekip şifreleyerek
+                # kendi veritabanına yazar (K-51). Diske hiçbir şey yazılmaz.
+                crop = self.recorder.crop_jpeg(frame, bbox)
+                alert_id = self.alerts.add(tid, crop)
+                log.info("Alarm kuyruğa alındı (#%d, iz %d)", alert_id, tid)
+            except Exception as exc:  # noqa: BLE001 - kodlama hatası döngüyü öldürmez (kod bulgusu 13)
                 self.health.error(exc, "alarm")
                 log.exception("Alarm kaydedilemedi")
 
@@ -526,7 +477,7 @@ class SecurityService:
             "alarms_paused": self.alarms_paused,
             "fps": self.fps,
             "last_detection": self.last_detection_summary,
-            "retention_days": self.settings.ALERT_RETENTION_DAYS,
+            "faces_loaded": len(self.faces.snapshot()),
             "reconnect_count": self.reconnect_count,
             "grabber_stall_restarts": getattr(self._grabber, "stall_restarts", 0),
             "stream_viewers": self.stream_viewers,

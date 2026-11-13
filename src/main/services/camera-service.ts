@@ -1,26 +1,36 @@
-// Camera module's service layer (Faz 20 P20a; K-49…K-53): permission (`camera`: view = state, edit = secrets and
-// restart), audit, the sealed secrets and the Telegram test. The sidecar itself is driven through `CameraRuntime`
+// Camera module's service layer (Faz 20 P20a…P20c; K-49…K-53): permission (`camera`: view = state and alarms, edit =
+// secrets and restart; `camera.enroll` = a guest's face), audit, the sealed secrets, the Telegram test, the alarm list
+// (Bismuth's own `camera_events`), the guests' sealed face rows and their sync with the sidecar (`camera-sync.ts`). The sidecar itself is driven through `CameraRuntime`
 // (src/main/camera), attached by the main process after the services exist; on a computer that does not host the
 // camera (client device, tests) there is none and the state reads `unavailable`.
 // Secrets (camera address with password, Telegram token) only go in and are never returned, logged or audited as values.
 import {
+  cameraAlertIdInputSchema,
   cameraBoxSchema,
+  cameraGuestInputSchema,
   cameraMarkAlertInputSchema,
   cameraPauseInputSchema,
+  cameraSaveAlertInputSchema,
   cameraSecretsInputSchema,
+  type CameraAlertCrop,
   type CameraAlerts,
+  type CameraCandidate,
+  type CameraFaceStatus,
+  type CameraGuestInput,
   type CameraLive,
   type CameraMarkAlertInput,
+  type CameraSaveAlertInput,
   type CameraSecretsInput,
   type CameraStatus,
   type CameraStream,
   type CameraTelegramTest
 } from '@shared/contract/camera'
 import { ulid } from '@shared/ids'
-import { notifications } from '../db/schema'
+import { desc, eq } from 'drizzle-orm'
+import { cameraEvents, guestFaces, guests, notifications } from '../db/schema'
 import type { CameraRuntime } from '../camera'
 import type { Bridge } from '../camera/bridge'
-import { alertKey, type AlertStateStore } from '../camera/alert-state'
+import { FaceCryptoError, type FaceCrypto } from '../camera/crypto'
 import type { SecretStore } from '../camera/secrets'
 import type { SidecarNotice } from '../camera/sidecar'
 import {
@@ -34,8 +44,28 @@ import type { FetchLike } from '../network/http'
 import { AppError } from './errors'
 import type { Ctx } from './context'
 import {
+  activeFaces,
+  deleteFaceRow,
+  inHouseGuests,
+  MAX_FACES_PER_GUEST,
+  purgeExpired,
+  type PurgeResult
+} from './camera-faces'
+import {
+  createCameraSync,
+  decodeBase64,
+  eventCropContext,
+  faceContext,
+  EMBEDDING_BYTES,
+  localIso,
+  type AlertNotice,
+  type TickResult
+} from './camera-sync'
+import {
+  conflict,
   inTransaction,
   invalid,
+  newId,
   notFound,
   parseInput,
   requirePermission,
@@ -46,12 +76,16 @@ import { readSetting } from './settings-service'
 
 export interface CameraServiceDeps extends ServiceDeps {
   secrets: SecretStore
-  /** Which alarms staff marked seen or handled (P20b; moves into `camera_events` with P20c). */
-  alertState: AlertStateStore
+  /** Seals face vectors and crops (K-51): `safeStorage` key + AES-GCM; without a key store no face is kept. */
+  faceCrypto: FaceCrypto
   /** Tests: the fake Telegram server's fetch / local origin (never in a packaged build). */
   telegram?: { fetch?: FetchLike; origin?: string | null }
   /** The Telegram test message in the hotel's language (the main process passes its translator). */
   testMessage?: () => string
+  /** The Telegram text of an alarm in the hotel's language (no guest name, K-50). */
+  alertMessage?: (info: { time: string; location: string }) => string
+  /** The program's window notice for a new alarm (the main process passes it). */
+  onAlert?: (notice: AlertNotice) => void
 }
 
 /** A webcam number ("0") or an RTSP address: the only camera targets (K-49). */
@@ -78,25 +112,7 @@ async function ask(bridge: Bridge, path: string): Promise<unknown> {
   }
 }
 
-/** The sidecar's latest alarms (id and time only: the picture paths and texts never leave it, K-51). */
-async function fetchAlerts(bridge: Bridge): Promise<{ id: string; at: string | null }[] | null> {
-  const body = await ask(bridge, '/api/alerts?limit=100')
-  const list = (body as { alerts?: unknown } | null)?.alerts
-  if (!Array.isArray(list)) return null
-  const rows: { id: string; at: string | null }[] = []
-  for (const item of list) {
-    const r = item as Record<string, unknown>
-    const id =
-      typeof r['id'] === 'number' && Number.isInteger(r['id']) && r['id'] >= 0 ? String(r['id']) : null
-    if (id === null) continue
-    const at =
-      typeof r['alert_time'] === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/.test(r['alert_time'])
-        ? r['alert_time']
-        : null
-    rows.push({ id, at })
-  }
-  return rows
-}
+const CROP_URL = 'data:image/jpeg;base64,'
 
 export function createCameraService(deps: CameraServiceDeps) {
   const { db, secrets } = deps
@@ -116,6 +132,109 @@ export function createCameraService(deps: CameraServiceDeps) {
     ...(deps.telegram?.fetch ? { fetch: deps.telegram.fetch } : {}),
     ...(deps.telegram?.origin ? { origin: deps.telegram.origin } : {})
   })
+  const { faceCrypto } = deps
+  const sync = createCameraSync(
+    {
+      ...deps,
+      telegram,
+      ...(deps.alertMessage ? { alertMessage: deps.alertMessage } : {}),
+      ...(deps.onAlert ? { onAlert: deps.onAlert } : {})
+    },
+    running
+  )
+
+  /** `data:` URL of a sealed JPEG, or null when it is gone or this computer cannot open it. */
+  const openCrop = (blob: Buffer | null, context: string): string | null => {
+    if (!blob) return null
+    try {
+      return CROP_URL + faceCrypto.decrypt(blob, context).toString('base64')
+    } catch {
+      return null
+    }
+  }
+
+  const faceStatusOf = (ctx: Ctx, guestId: string): CameraFaceStatus => {
+    const rows = db
+      .select({ id: guestFaces.id, enrolledAt: guestFaces.enrolledAt, cropEnc: guestFaces.cropEnc })
+      .from(guestFaces)
+      .where(eq(guestFaces.guestId, guestId))
+      .orderBy(desc(guestFaces.enrolledAt))
+      .all()
+    const newest = rows[0]
+    return {
+      inHouse: inHouseGuests(db).some((g) => g.guestId === guestId),
+      count: rows.length,
+      max: MAX_FACES_PER_GUEST,
+      enrolledAt: newest?.enrolledAt ?? null,
+      crop:
+        ctx.transport === 'ipc' && newest ? openCrop(newest.cropEnc, faceContext('crop', newest.id)) : null,
+      keyStore: faceCrypto.available()
+    }
+  }
+
+  const guestOrThrow = (guestId: string): void => {
+    if (!db.select({ id: guests.id }).from(guests).where(eq(guests.id, guestId)).get())
+      throw notFound('guest', guestId)
+  }
+
+  /** What the sidecar's face endpoints answer: a vector and a crop, checked field by field. */
+  function readFace(json: unknown): { embedding: Buffer; crop: Buffer | null; model: string } | null {
+    const o = json && typeof json === 'object' ? (json as Record<string, unknown>) : {}
+    const embedding = decodeBase64(o['embedding'], EMBEDDING_BYTES)
+    if (!embedding || embedding.length !== EMBEDDING_BYTES) return null
+    const crop = decodeBase64(o['crop'], 400_000)
+    const model =
+      typeof o['model'] === 'string' && /^[\w.@-]{1,60}$/.test(o['model']) ? o['model'] : 'unknown'
+    return { embedding, crop: crop && crop[0] === 0xff && crop[1] === 0xd8 ? crop : null, model }
+  }
+
+  /** Seals and stores a face row for a guest who is in the house; the sidecar gets the new list at once. */
+  async function storeFace(
+    ctx: Ctx,
+    guestId: string,
+    face: { embedding: Buffer; crop: Buffer | null; model: string },
+    reason: string
+  ): Promise<void> {
+    try {
+      inTransaction(deps, ctx, (tx, audit, now) => {
+        const inHouse = inHouseGuests(tx).find((g) => g.guestId === guestId)
+        if (!inHouse) throw conflict('errors.cameraGuestNotInHouse')
+        const have = tx
+          .select({ id: guestFaces.id })
+          .from(guestFaces)
+          .where(eq(guestFaces.guestId, guestId))
+          .all()
+        if (have.length >= MAX_FACES_PER_GUEST) throw conflict('errors.cameraFaceLimit')
+        const id = newId(now)
+        tx.insert(guestFaces)
+          .values({
+            id,
+            guestId,
+            reservationId: inHouse.reservationId,
+            embeddingEnc: faceCrypto.encrypt(face.embedding, faceContext('embedding', id)),
+            cropEnc: face.crop ? faceCrypto.encrypt(face.crop, faceContext('crop', id)) : null,
+            model: face.model,
+            enrolledAt: now.toISOString(),
+            enrolledBy: ctx.userId as string,
+            expiresAt: null,
+            ...stamps(now)
+          })
+          .run()
+        // The sealed bytes never go to the audit log (K-51): who, which guest, which model, why.
+        audit({
+          entity: 'guest_face',
+          entityId: id,
+          action: 'create',
+          after: { guestId, model: face.model, reservationId: inHouse.reservationId },
+          reason
+        })
+      })
+    } catch (error) {
+      if (error instanceof FaceCryptoError) throw conflict('errors.cameraNoKeyStore')
+      throw error
+    }
+    await sync.pushNow()
+  }
 
   return {
     /** The main process hands over the sidecar it built (after the services exist: it reads settings and secrets). */
@@ -267,16 +386,34 @@ export function createCameraService(deps: CameraServiceDeps) {
       return { header, frame: sized ? { width, height } : null, boxes: sized ? boxes : [] }
     },
 
-    /** The latest alarms from the sidecar with the staff's marks (P20c moves the rows into Bismuth's own table). */
-    async alerts(ctx: Ctx): Promise<CameraAlerts> {
+    /** The alarm list: Bismuth's own `camera_events` (P20c), newest first; phones get id, time and state only (S-108). */
+    alerts(ctx: Ctx): CameraAlerts {
       requirePermission(ctx, 'camera', 'view')
-      const bridge = running()
-      if (!bridge) return { available: false, alerts: [] }
-      const rows = await fetchAlerts(bridge)
-      if (!rows) return { available: false, alerts: [] }
+      const desktop = ctx.transport === 'ipc'
+      const rows = db
+        .select({
+          id: cameraEvents.id,
+          occurredAt: cameraEvents.occurredAt,
+          state: cameraEvents.state,
+          hasCrop: cameraEvents.cropEnc,
+          guestId: cameraEvents.guestId
+        })
+        .from(cameraEvents)
+        .orderBy(desc(cameraEvents.occurredAt), desc(cameraEvents.id))
+        .limit(100)
+        .all()
       return {
         available: true,
-        alerts: rows.map((r) => ({ ...r, state: deps.alertState.get(alertKey(r.id, r.at)) }))
+        alerts: rows.map((r) => {
+          const at = new Date(r.occurredAt)
+          return {
+            id: r.id,
+            at: Number.isNaN(at.getTime()) ? null : localIso(at),
+            state: r.state === 'seen' || r.state === 'handled' ? r.state : 'new',
+            hasCrop: desktop && r.hasCrop !== null,
+            linked: r.guestId !== null
+          }
+        })
       }
     },
 
@@ -284,22 +421,174 @@ export function createCameraService(deps: CameraServiceDeps) {
      * Seen / handled / new again. Marking an alarm is the front desk's daily work, so the `view` level is enough (the
      * mark holds no personal data); it is audited all the same.
      */
-    async markAlert(ctx: Ctx, raw: CameraMarkAlertInput): Promise<void> {
+    markAlert(ctx: Ctx, raw: CameraMarkAlertInput): Promise<void> {
       requirePermission(ctx, 'camera', 'view')
       const input = parseInput(cameraMarkAlertInputSchema, raw)
-      const bridge = running()
-      const rows = bridge ? await fetchAlerts(bridge) : null
-      const alert = rows?.find((r) => r.id === input.id)
-      if (!alert) throw notFound('camera_alert', input.id)
-      inTransaction(deps, ctx, (_tx, audit) =>
+      const event = db
+        .select({ id: cameraEvents.id, state: cameraEvents.state })
+        .from(cameraEvents)
+        .where(eq(cameraEvents.id, input.id))
+        .get()
+      if (!event) throw notFound('camera_alert', input.id)
+      inTransaction(deps, ctx, (tx, audit, now) => {
+        const iso = now.toISOString()
+        tx.update(cameraEvents)
+          .set({
+            state: input.state,
+            ...(input.state === 'new'
+              ? { seenBy: null, seenAt: null, handledBy: null, handledAt: null }
+              : input.state === 'seen'
+                ? { seenBy: ctx.userId, seenAt: iso, handledBy: null, handledAt: null }
+                : { handledBy: ctx.userId, handledAt: iso }),
+            updatedAt: iso
+          })
+          .where(eq(cameraEvents.id, input.id))
+          .run()
         audit({
           entity: 'camera_alert',
           entityId: input.id,
           action: 'update',
+          before: { state: event.state },
           after: { state: input.state }
         })
-      )
-      deps.alertState.set(alertKey(alert.id, alert.at), input.state)
+      })
+      return Promise.resolve()
+    },
+
+    // --- Faces (K-51…K-53): taken from the camera on the guest's card, sealed in Bismuth's database, gone at check-out ---
+
+    faceStatus(ctx: Ctx, raw: CameraGuestInput): CameraFaceStatus {
+      requirePermission(ctx, 'camera.enroll', 'view')
+      const { guestId } = parseInput(cameraGuestInputSchema, raw)
+      guestOrThrow(guestId)
+      return faceStatusOf(ctx, guestId)
+    },
+
+    /** "Kameradan yüz al": the face now in front of the camera, for a guest who is in the house. */
+    async enrollFace(ctx: Ctx, raw: CameraGuestInput): Promise<CameraFaceStatus> {
+      requirePermission(ctx, 'camera.enroll', 'edit')
+      desktopOnly(ctx)
+      const { guestId } = parseInput(cameraGuestInputSchema, raw)
+      guestOrThrow(guestId)
+      if (!inHouseGuests(db).some((g) => g.guestId === guestId))
+        throw conflict('errors.cameraGuestNotInHouse')
+      if (!faceCrypto.available()) throw conflict('errors.cameraNoKeyStore')
+      const bridge = running()
+      if (!bridge) throw new AppError('CONFLICT', 'errors.cameraUnavailable')
+      const res = await bridge.request('POST', '/api/faces/capture').catch(() => null)
+      if (!res) throw new AppError('CONFLICT', 'errors.cameraUnavailable')
+      if (res.status !== 200) throw conflict('errors.cameraNoFace')
+      const face = readFace(res.json)
+      if (!face) throw conflict('errors.cameraNoFace')
+      await storeFace(ctx, guestId, face, 'camera')
+      return faceStatusOf(ctx, guestId)
+    },
+
+    /** Deletes every face row of the guest for real (K-52); the sidecar forgets them at once. */
+    async deleteFaces(ctx: Ctx, raw: CameraGuestInput): Promise<CameraFaceStatus> {
+      requirePermission(ctx, 'camera.enroll', 'edit')
+      const { guestId } = parseInput(cameraGuestInputSchema, raw)
+      guestOrThrow(guestId)
+      inTransaction(deps, ctx, (tx, audit) => {
+        const rows = tx
+          .select({ id: guestFaces.id, guestId: guestFaces.guestId, model: guestFaces.model })
+          .from(guestFaces)
+          .where(eq(guestFaces.guestId, guestId))
+          .all()
+        for (const row of rows) deleteFaceRow(tx, audit, row, 'manual')
+      })
+      await sync.pushNow()
+      return faceStatusOf(ctx, guestId)
+    },
+
+    /** The guests who are in the house now (the picker of "Misafir olarak kaydet"). */
+    candidates(ctx: Ctx): CameraCandidate[] {
+      requirePermission(ctx, 'camera.enroll', 'view')
+      const withFace = new Map<string, number>()
+      for (const f of activeFaces(db)) withFace.set(f.guestId, (withFace.get(f.guestId) ?? 0) + 1)
+      const collator = new Intl.Collator('tr')
+      return inHouseGuests(db)
+        .map((g) => ({ guestId: g.guestId, name: g.name, room: g.room, faces: withFace.get(g.guestId) ?? 0 }))
+        .sort((a, b) => collator.compare(a.name, b.name))
+    },
+
+    /** The sealed crop of an alarm, opened for the hotel computer's own window (biometric: `camera.enroll`). */
+    alertCrop(ctx: Ctx, raw: { id: string }): CameraAlertCrop {
+      requirePermission(ctx, 'camera.enroll', 'view')
+      desktopOnly(ctx)
+      const { id } = parseInput(cameraAlertIdInputSchema, raw)
+      const event = db
+        .select({ cropEnc: cameraEvents.cropEnc })
+        .from(cameraEvents)
+        .where(eq(cameraEvents.id, id))
+        .get()
+      if (!event) throw notFound('camera_alert', id)
+      return { crop: openCrop(event.cropEnc, eventCropContext(id)) }
+    },
+
+    /** "Misafir olarak kaydet": the face of an alarm's crop becomes a face of a guest who is in the house. */
+    async saveAlertAsGuest(ctx: Ctx, raw: CameraSaveAlertInput): Promise<void> {
+      requirePermission(ctx, 'camera.enroll', 'edit')
+      desktopOnly(ctx)
+      const input = parseInput(cameraSaveAlertInputSchema, raw)
+      const event = db
+        .select({ id: cameraEvents.id, cropEnc: cameraEvents.cropEnc })
+        .from(cameraEvents)
+        .where(eq(cameraEvents.id, input.id))
+        .get()
+      if (!event) throw notFound('camera_alert', input.id)
+      guestOrThrow(input.guestId)
+      if (!inHouseGuests(db).some((g) => g.guestId === input.guestId))
+        throw conflict('errors.cameraGuestNotInHouse')
+      if (!faceCrypto.available()) throw conflict('errors.cameraNoKeyStore')
+      if (!event.cropEnc) throw conflict('errors.cameraCropGone')
+      let jpeg: Buffer
+      try {
+        jpeg = faceCrypto.decrypt(event.cropEnc, eventCropContext(event.id))
+      } catch {
+        throw conflict('errors.cameraCropGone')
+      }
+      const bridge = running()
+      if (!bridge) throw new AppError('CONFLICT', 'errors.cameraUnavailable')
+      const res = await bridge
+        .request('POST', '/api/faces/extract', { image: jpeg.toString('base64') })
+        .catch(() => null)
+      if (!res) throw new AppError('CONFLICT', 'errors.cameraUnavailable')
+      const face = res.status === 200 ? readFace(res.json) : null
+      if (!face) throw conflict('errors.cameraNoFace')
+      // The alarm's own picture is kept as the guest's crop (it is the face that was just read).
+      await storeFace(ctx, input.guestId, { ...face, crop: face.crop ?? jpeg }, 'alert')
+      inTransaction(deps, ctx, (tx, audit, now) => {
+        const iso = now.toISOString()
+        tx.update(cameraEvents)
+          .set({
+            guestId: input.guestId,
+            state: 'handled',
+            handledBy: ctx.userId,
+            handledAt: iso,
+            updatedAt: iso
+          })
+          .where(eq(cameraEvents.id, input.id))
+          .run()
+        audit({
+          entity: 'camera_alert',
+          entityId: input.id,
+          action: 'update',
+          after: { state: 'handled', guestId: input.guestId },
+          reason: 'saved as guest'
+        })
+      })
+    },
+
+    /** One round with the sidecar: new alarms in (notification, Telegram), the face list out. */
+    tick: (ctx: Ctx, opts?: { force?: boolean }): Promise<TickResult> => sync.tick(ctx, opts),
+
+    /**
+     * The retention job (K-52): faces past their date and of guests who left, sealed crops past
+     * `camera.alertRetentionDays`. Written as the program itself; the counts go to the audit log.
+     */
+    purge(ctx: Ctx): PurgeResult {
+      return inTransaction(deps, ctx, (tx, audit, now) => purgeExpired(tx, audit, now))
     },
 
     /** "Alarmları duraklat" / "Alarmları sürdür": the sidecar only toggles, so the state is read first. */

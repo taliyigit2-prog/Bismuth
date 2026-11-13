@@ -1721,7 +1721,12 @@
     "groupPayPerRoom": "In this group every room pays on its own account. Take the payment from the room's reservation.",
     "cameraSourceInvalid": "The camera address must start with rtsp:// (the camera's user name and password come first in the address) or be a webcam number.",
     "cameraTelegramInvalid": "The Telegram details are not valid. Check the bot token and the chat numbers.",
-    "cameraUnavailable": "The camera system does not run on this computer. Use the hotel's main computer."
+    "cameraUnavailable": "The camera system does not run on this computer. Use the hotel's main computer.",
+    "cameraGuestNotInHouse": "This guest is not in the hotel now. A face is only saved for a guest who is staying.",
+    "cameraNoKeyStore": "This computer cannot keep face data safely (no system key store). A face cannot be saved.",
+    "cameraNoFace": "The camera does not see a clear face. Ask the guest to face the camera and try again.",
+    "cameraFaceLimit": "This guest has the most face records allowed. Delete an old one first.",
+    "cameraCropGone": "The picture of this alarm was deleted because its keep time ran out."
   },
   "common": {
     "close": "Close",
@@ -1831,7 +1836,12 @@
       "crashedBody": "The camera system stopped {{count}} times; it is restarting by itself.",
       "gaveUpTitle": "Camera system is off",
       "gaveUpBody": "The camera system kept stopping and is no longer restarted. Restart it from the Camera screen.",
-      "telegramTest": "Bismuth: the Telegram connection works"
+      "telegramTest": "Bismuth: the Telegram connection works",
+      "alertTitle": "An unregistered person came in",
+      "alertBody": "At {{time}}. Open the Camera screen.",
+      "alertBodyAt": "At {{time}}, {{location}}. Open the Camera screen.",
+      "alertTelegram": "Bismuth: an unregistered person is at the camera. At {{time}}.",
+      "alertTelegramAt": "Bismuth: an unregistered person is at the camera. At {{time}}, {{location}}."
     }
   },
   "companies": {
@@ -5632,7 +5642,9 @@
       "room_capacity_change": "Room capacity",
       "reservation_groups": "Group reservation",
       "camera": "Camera system",
-      "camera_alert": "Camera alarm"
+      "camera_alert": "Camera alarm",
+      "guest_face": "Face record",
+      "camera_event": "Camera event"
     },
     "fieldName": {
       "name": "Name",
@@ -7203,7 +7215,44 @@
         "new": "New · {{count}}",
         "seen": "Seen · {{count}}",
         "handled": "Handled · {{count}}"
+      },
+      "saveAsGuest": "Save as guest",
+      "linked": "Linked to a guest",
+      "saveDialog": {
+        "title": "Link the person in the alarm to a guest",
+        "body": "This face is added to the face record of the guest you pick. It is deleted when the guest checks out.",
+        "crop": "Face in the alarm",
+        "guest": "Guest",
+        "pick": "Pick a guest",
+        "none": "No guest is staying in the hotel now.",
+        "cropGone": "The picture of this alarm is gone; its face cannot be saved.",
+        "loading": "Opening the picture",
+        "save": "Save the face",
+        "saved": "Face record added",
+        "failed": "The face could not be saved",
+        "faces_one": "{{count}} face record",
+        "faces_other": "{{count}} face records"
       }
+    },
+    "face": {
+      "title": "Face record (camera)",
+      "help": "The face is taken so the camera can know the guest. It is kept only on this computer, encrypted, and deleted when the guest checks out.",
+      "none": "No face record",
+      "has_one": "{{count}} face record",
+      "has_other": "{{count}} face records",
+      "since": "Latest: {{when}}",
+      "cropAlt": "Saved face",
+      "enroll": "Take face from camera",
+      "delete": "Delete face record",
+      "notInHouse": "The guest is not in the hotel. A face is only saved for a guest who is staying.",
+      "noKeyStore": "This computer cannot keep face data safely; a face cannot be saved.",
+      "hostOnly": "A face is only taken from the hotel's main computer.",
+      "enrolled": "Face record added",
+      "enrollFailed": "The face could not be taken",
+      "deleted": "Face record deleted",
+      "deleteFailed": "The face record could not be deleted",
+      "confirmTitle": "Delete the face record?",
+      "confirmBody": "All face records of this guest are deleted for good. The camera will no longer know them."
     }
   }
 }

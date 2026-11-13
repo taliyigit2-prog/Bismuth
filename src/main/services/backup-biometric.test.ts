@@ -86,6 +86,19 @@ describe('biyometrik tablolar yedeğe girmez (K-51)', () => {
     expect(count(join(root, 'bismuth.db'), 'guest_faces')).toBe(40)
   })
 
+  it('tablolar boş olsa da önceki silmelerden kalan serbest sayfalardaki baytlar kopyada kalmaz', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'bismuth-bio-'))
+    temps.push(root)
+    const file = join(root, 'copy.db')
+    handle = await openDatabase({ file, migrationsFolder: MIGRATIONS })
+    fillBiometric(handle)
+    handle.sqlite.exec('delete from guest_faces; delete from camera_events')
+    handle.close()
+    handle = undefined
+    expect(scrubBiometricData(file)).toBe(0)
+    expect(readFileSync(file).includes(Buffer.from(MARK))).toBe(false)
+  })
+
   it('scrubBiometricData: tabloları olmayan eski şema kopyasını bozmaz', () => {
     const root = mkdtempSync(join(tmpdir(), 'bismuth-bio-'))
     temps.push(root)

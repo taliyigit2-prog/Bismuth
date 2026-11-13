@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 
 from bridge_security import make_stream_token, redact, verify_stream_token
 from config import CONFIG_ENV, ConfigError, load_config, load_token
-from database import GuestDatabase
+from face_store import AlertQueue, FaceStore
 from tests.conftest import PORT, TOKEN
 from tests.fakes import FakeService
 from web_app import create_app
@@ -60,8 +60,7 @@ def test_stream_token_expires_and_is_bound_to_the_secret():
 
 @pytest.fixture
 def client(settings):
-    db = GuestDatabase(settings.DB_PATH, settings)
-    app = create_app(settings, TOKEN, db, FakeService)
+    app = create_app(settings, TOKEN, FaceStore(), AlertQueue(), FakeService)
     with TestClient(app, base_url=f"http://127.0.0.1:{PORT}") as c:
         yield c
 
@@ -77,7 +76,7 @@ def test_request_with_token_is_served(client):
 
 
 def test_post_from_a_foreign_origin_is_403_even_with_the_token(client):
-    res = client.post("/api/alerts/clear", headers={"X-Bismuth-Token": TOKEN, "Origin": "https://kotu-site.example"})
+    res = client.post("/api/system/toggle-alarms", headers={"X-Bismuth-Token": TOKEN, "Origin": "https://kotu-site.example"})
     assert res.status_code == 403
 
 

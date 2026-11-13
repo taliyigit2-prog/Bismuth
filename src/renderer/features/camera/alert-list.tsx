@@ -1,10 +1,18 @@
 // The alarm list (Faz 20 P20b; pattern of 21st.dev "Notification Panel", MIT, with CSS transitions instead of
 // framer-motion): grouped by day, filtered by state, and each alarm is "yeni" until staff mark it "görüldü" (someone
-// looked) or "halledildi" (dealt with). Alarms come from the sidecar until P20c moves them into Bismuth's own table.
+// looked) or "halledildi" (dealt with). The rows are Bismuth's own (`camera_events`, P20c); on the hotel computer an
+// alarm with a kept crop offers "Misafir olarak kaydet" (K-53).
 // This list is also the whole Kamera screen on a phone (S-108).
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { BellOffIcon, CheckCheckIcon, EyeIcon, RotateCcwIcon, UserRoundXIcon } from 'lucide-react'
+import {
+  BellOffIcon,
+  CheckCheckIcon,
+  EyeIcon,
+  RotateCcwIcon,
+  UserRoundPlusIcon,
+  UserRoundXIcon
+} from 'lucide-react'
 import { toast } from 'sonner'
 import { addDays, localDate, today as todayOf } from '@shared/date'
 import {
@@ -19,8 +27,10 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { EmptyState } from '@/components/states'
 import { useFormat } from '@/hooks/use-format'
 import { useApiMutation } from '@/lib/api/hooks'
+import { useCan } from '@/lib/view-as'
 import { cn } from '@/lib/utils'
 import { groupByDay } from './alert-groups'
+import { SaveAsGuestDialog } from './save-as-guest-dialog'
 
 type Filter = 'all' | CameraAlertState
 
@@ -45,11 +55,14 @@ const STATE_BADGE: Record<CameraAlertState, 'destructive' | 'secondary' | 'outli
 function AlertRow({
   alert,
   busy,
-  onMark
+  onMark,
+  onSave
 }: {
   alert: CameraAlert
   busy: boolean
   onMark: (state: CameraAlertState) => void
+  /** Set when this window may save the alarm's face as a guest's (hotel computer, `camera.enroll`). */
+  onSave?: (() => void) | undefined
 }) {
   const { t } = useTranslation()
   const f = useFormat()
@@ -77,9 +90,16 @@ function AlertRow({
         <p className="text-muted-foreground flex flex-wrap items-center gap-x-2 text-xs">
           {alert.at ? <span className="tabular-nums">{f.time(alert.at)}</span> : null}
           <Badge variant={STATE_BADGE[alert.state]}>{t(`camera.alerts.state.${alert.state}`)}</Badge>
+          {alert.linked ? <Badge variant="outline">{t('camera.alerts.linked')}</Badge> : null}
         </p>
       </div>
       <div className="flex flex-wrap gap-2 max-md:w-full">
+        {onSave && alert.hasCrop && !alert.linked ? (
+          <Button variant="outline" size="sm" onClick={onSave} data-testid={`camera-alert-save-${alert.id}`}>
+            <UserRoundPlusIcon aria-hidden />
+            {t('camera.alerts.saveAsGuest')}
+          </Button>
+        ) : null}
         {alert.state === 'new' ? (
           <Button
             variant="outline"
@@ -122,7 +142,9 @@ function AlertRow({
 
 export function AlertList({ data }: { data: CameraAlerts }) {
   const { t } = useTranslation()
+  const can = useCan()
   const [filter, setFilter] = useState<Filter>('all')
+  const [saving, setSaving] = useState<CameraAlert | null>(null)
   const mark = useApiMutation('camera.markAlert', {
     invalidates: ['camera.alerts'],
     onError: (error) =>
@@ -197,12 +219,14 @@ export function AlertList({ data }: { data: CameraAlerts }) {
                   alert={alert}
                   busy={mark.isPending}
                   onMark={(state) => mark.mutate({ id: alert.id, state })}
+                  onSave={can('camera.enroll', 'edit') ? () => setSaving(alert) : undefined}
                 />
               ))}
             </ul>
           </section>
         ))
       )}
+      {saving ? <SaveAsGuestDialog alert={saving} onClose={() => setSaving(null)} /> : null}
     </div>
   )
 }

@@ -106,10 +106,10 @@ class FaceEngine:
     def best_match(
         self,
         face_embedding: np.ndarray,
-        active_guests: List[Tuple[int, str, str, np.ndarray]],
-    ) -> Optional[Tuple[int, str, str, float]]:
+        active_guests: List[Tuple[str, str, str, np.ndarray]],
+    ) -> Optional[Tuple[str, str, str, float]]:
         """Eşiğe bakmadan en benzer misafiri döner (misafir yoksa None). "Emin değil" bandı için de kullanılır."""
-        best: Optional[Tuple[int, str, str, float]] = None
+        best: Optional[Tuple[str, str, str, float]] = None
         for gid, name, room, guest_emb in active_guests:
             score = self.cosine_similarity(face_embedding, guest_emb)
             if best is None or score > best[3]:
@@ -119,9 +119,9 @@ class FaceEngine:
     def match_face(
         self,
         face_embedding: np.ndarray,
-        active_guests: List[Tuple[int, str, str, np.ndarray]],
+        active_guests: List[Tuple[str, str, str, np.ndarray]],
         threshold: Optional[float] = None,
-    ) -> Optional[Tuple[int, str, str, float]]:
+    ) -> Optional[Tuple[str, str, str, float]]:
         """
         Gelen yüz embedding'ini aktif misafirlerin embedding'leri ile kıyaslar.
         Eşleşirse: (guest_id, name, room_number, similarity_score) döner.

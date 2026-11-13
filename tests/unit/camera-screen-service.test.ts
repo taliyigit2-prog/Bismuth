@@ -1,14 +1,13 @@
 // The Kamera screen's service calls (Faz 20 P20b, S-108, K-49, K-51): the signed live address, the strip and face boxes,
-// the alarm list with the staff's marks, the pause toggle. A stand-in bridge answers like the sidecar does.
-import { mkdtempSync, rmSync } from 'node:fs'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+// the pause toggle; P20c: the alarm list is Bismuth's own table (`camera_events`), its marks live there (the alarm flow
+// itself: `camera-data.test.ts`). A stand-in bridge answers like the sidecar does.
 import { afterEach, describe, expect, it } from 'vitest'
+import { eq } from 'drizzle-orm'
 import { defaultPermissions } from '@shared/permissions'
-import { auditLog } from '../../src/main/db/schema'
+import { auditLog, cameraEvents, roles, users } from '../../src/main/db/schema'
 import type { DatabaseHandle } from '../../src/main/db/client'
 import type { CameraRuntime } from '../../src/main/camera'
-import { createAlertStateStore } from '../../src/main/camera/alert-state'
+import { createFaceCrypto } from '../../src/main/camera/crypto'
 import { createBridge, type BridgeFetch } from '../../src/main/camera/bridge'
 import { createSecretStore } from '../../src/main/camera/secrets'
 import { createCameraService } from '../../src/main/services/camera-service'
@@ -18,16 +17,11 @@ import { depsOf, roleCtx, testClock } from '../factories/ctx'
 import { seededDatabase } from '../factories/db'
 
 let handle: DatabaseHandle
-const dirs: string[] = []
-afterEach(() => {
-  handle?.close()
-  for (const d of dirs.splice(0)) rmSync(d, { recursive: true, force: true })
-})
+afterEach(() => handle?.close())
 
 const TOKEN = 'a'.repeat(32)
 
 interface Sidecar {
-  alerts: { id: number; alert_time: string; details: string; image_path: string }[]
   paused: boolean
   overlay: unknown
   status: Record<string, unknown>
@@ -36,15 +30,6 @@ interface Sidecar {
 
 function fakeSidecar(): { sidecar: Sidecar; fetch: BridgeFetch } {
   const sidecar: Sidecar = {
-    alerts: [
-      {
-        id: 7,
-        alert_time: '2026-11-13T02:10:00',
-        details: 'Tanımsız Kişi (Takip #3)',
-        image_path: '/x/secret.jpg'
-      },
-      { id: 6, alert_time: '2026-11-12T23:40:00', details: 'Tanımsız Kişi (Takip #1)', image_path: '' }
-    ],
     paused: false,
     overlay: null,
     status: {
@@ -63,7 +48,6 @@ function fakeSidecar(): { sidecar: Sidecar; fetch: BridgeFetch } {
     sidecar.calls.push(`${init.method} ${path}`)
     if (path === '/api/status')
       return Promise.resolve(json(200, { ...sidecar.status, alarms_paused: sidecar.paused }))
-    if (path === '/api/alerts') return Promise.resolve(json(200, { alerts: sidecar.alerts }))
     if (path === '/api/overlay')
       return Promise.resolve(
         sidecar.overlay === null ? json(404, { detail: 'not_found' }) : json(200, sidecar.overlay)
@@ -79,8 +63,6 @@ function fakeSidecar(): { sidecar: Sidecar; fetch: BridgeFetch } {
 
 async function setup(opts: { running?: boolean } = {}) {
   handle = await seededDatabase()
-  const dir = mkdtempSync(join(tmpdir(), 'bismuth-camera-'))
-  dirs.push(dir)
   const clock = testClock()
   const fake = fakeSidecar()
   const bridge = createBridge({ port: 51234, token: TOKEN, fetch: fake.fetch })
@@ -92,14 +74,35 @@ async function setup(opts: { running?: boolean } = {}) {
       ({ state: opts.running === false ? 'stopped' : 'running' }) as ReturnType<CameraRuntime['snapshot']>,
     bridge: () => (opts.running === false ? null : bridge)
   } satisfies CameraRuntime
-  const alertFile = join(dir, 'alerts.json')
+  // The account the marks point at (seen_by / handled_by).
+  const roleId = handle.db.select().from(roles).where(eq(roles.code, 'owner')).get()!.id
+  handle.db
+    .insert(users)
+    .values({
+      id: 'user-owner',
+      username: 'owner',
+      displayName: 'owner',
+      roleId,
+      passwordHash: 'x',
+      createdAt: '2026-10-01T00:00:00.000Z',
+      updatedAt: '2026-10-01T00:00:00.000Z'
+    })
+    .run()
   const service = createCameraService({
     ...depsOf(handle, clock),
     secrets: createSecretStore(null, null),
-    alertState: createAlertStateStore(alertFile)
+    faceCrypto: createFaceCrypto(null, null)
   })
   service.attach(runtime)
-  return { service, sidecar: fake.sidecar, alertFile }
+  /** An alarm row as the pull makes it (time as the hotel computer's UTC instant). */
+  const addEvent = (id: string, local: string, state: 'new' | 'seen' | 'handled' = 'new') => {
+    const iso = new Date(local).toISOString()
+    handle.db
+      .insert(cameraEvents)
+      .values({ id, kind: 'alarm', occurredAt: iso, state, cropEnc: null, createdAt: iso, updatedAt: iso })
+      .run()
+  }
+  return { service, sidecar: fake.sidecar, addEvent }
 }
 
 const phone = (role: 'owner' | 'reception' = 'owner'): Ctx =>
@@ -176,51 +179,51 @@ describe('canlı şerit ve yüz kutuları', () => {
   })
 })
 
-describe('alarm listesi ve "görüldü / halledildi"', () => {
-  it('alarmlar işaretsiz gelir; resim yolu ve metin dışarı çıkmaz; telefon da okuyabilir', async () => {
-    const { service } = await setup()
-    const out = await service.alerts(phone('reception'))
+const ID = (n: number): string => String(n).padStart(26, '0')
+
+describe('alarm listesi ve "görüldü / halledildi" (Bismuth tablosundan)', () => {
+  it('alarmlar yerel saatle, yeniden eskiye gelir; telefon da okuyabilir; resim ve metin dışarı çıkmaz', async () => {
+    const { service, addEvent } = await setup()
+    addEvent(ID(6), '2026-11-12T23:40:00')
+    addEvent(ID(7), '2026-11-13T02:10:00')
+    const out = service.alerts(phone('reception'))
     expect(out).toEqual({
       available: true,
       alerts: [
-        { id: '7', at: '2026-11-13T02:10:00', state: 'new' },
-        { id: '6', at: '2026-11-12T23:40:00', state: 'new' }
+        { id: ID(7), at: '2026-11-13T02:10:00', state: 'new', hasCrop: false, linked: false },
+        { id: ID(6), at: '2026-11-12T23:40:00', state: 'new', hasCrop: false, linked: false }
       ]
     })
-    expect(JSON.stringify(out)).not.toContain('secret.jpg')
-    expect(JSON.stringify(out)).not.toContain('Takip')
   })
 
-  it('işaret dosyada kalır; yeniden açılınca da görünür, "yeni" diye geri alınabilir; denetim kaydı düşer', async () => {
-    const { service, alertFile } = await setup()
+  it('işaret tabloda kalır; "yeni" diye geri alınabilir; denetim kaydı düşer; yan süreç kapalıyken de çalışır', async () => {
+    const { service, addEvent } = await setup({ running: false })
+    addEvent(ID(7), '2026-11-13T02:10:00')
+    addEvent(ID(6), '2026-11-12T23:40:00')
     const owner = roleCtx('owner')
-    await service.markAlert(owner, { id: '7', state: 'seen' })
-    await service.markAlert(owner, { id: '6', state: 'handled' })
-    expect((await service.alerts(owner)).alerts.map((a) => a.state)).toEqual(['seen', 'handled'])
-    // A new service over the same file (the program restarted) still knows.
-    const again = createAlertStateStore(alertFile)
-    expect(again.get('7|2026-11-13T02:10:00')).toBe('seen')
-    await service.markAlert(owner, { id: '7', state: 'new' })
-    expect((await service.alerts(owner)).alerts[0]?.state).toBe('new')
+    await service.markAlert(owner, { id: ID(7), state: 'seen' })
+    await service.markAlert(owner, { id: ID(6), state: 'handled' })
+    expect(service.alerts(owner).alerts.map((a) => a.state)).toEqual(['seen', 'handled'])
+    expect(
+      handle.db
+        .select()
+        .from(cameraEvents)
+        .where(eq(cameraEvents.id, ID(6)))
+        .get()?.state
+    ).toBe('handled')
+    await service.markAlert(owner, { id: ID(7), state: 'new' })
+    expect(service.alerts(owner).alerts[0]?.state).toBe('new')
     const rows = handle.db.select().from(auditLog).all()
     expect(rows.filter((r) => r.entity === 'camera_alert')).toHaveLength(3)
+    // Never a "camera available" doubt: the list is Bismuth's own, with or without the sidecar.
+    expect(service.alerts(owner).available).toBe(true)
   })
 
-  it('aynı numara başka zamanla gelirse (yan sürecin veritabanı sıfırlandı) eski işaret yeni alarmı gizlemez', async () => {
-    const { service, sidecar } = await setup()
-    const owner = roleCtx('owner')
-    await service.markAlert(owner, { id: '7', state: 'handled' })
-    sidecar.alerts = [{ id: 7, alert_time: '2026-11-14T01:00:00', details: '', image_path: '' }]
-    expect((await service.alerts(owner)).alerts[0]?.state).toBe('new')
-  })
-
-  it('listede olmayan alarm NOT_FOUND; yan süreç yokken liste "kullanılamıyor" der', async () => {
+  it('listede olmayan alarm NOT_FOUND', async () => {
     const { service } = await setup()
-    expect(await code(() => service.markAlert(roleCtx('owner'), { id: '99', state: 'seen' }))).toMatch(
+    expect(await code(() => service.markAlert(roleCtx('owner'), { id: ID(99), state: 'seen' }))).toMatch(
       /^NOT_FOUND/
     )
-    const off = await setup({ running: false })
-    expect(await off.service.alerts(roleCtx('owner'))).toEqual({ available: false, alerts: [] })
   })
 
   it('geçersiz numara ya da durum reddedilir', async () => {
@@ -229,7 +232,7 @@ describe('alarm listesi ve "görüldü / halledildi"', () => {
       /^VALIDATION/
     )
     expect(
-      await code(() => service.markAlert(roleCtx('owner'), { id: '7', state: 'bogus' as never }))
+      await code(() => service.markAlert(roleCtx('owner'), { id: ID(7), state: 'bogus' as never }))
     ).toMatch(/^VALIDATION/)
   })
 })

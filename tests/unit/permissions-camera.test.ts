@@ -5,7 +5,7 @@ import { defaultPermissions, SYSTEM_ROLE_CODES, type SystemRoleCode } from '@sha
 import { auditLog, notifications } from '../../src/main/db/schema'
 import type { DatabaseHandle } from '../../src/main/db/client'
 import type { CameraRuntime } from '../../src/main/camera'
-import { createAlertStateStore } from '../../src/main/camera/alert-state'
+import { createFaceCrypto } from '../../src/main/camera/crypto'
 import { createSecretStore } from '../../src/main/camera/secrets'
 import { createCameraService } from '../../src/main/services/camera-service'
 import { ctxFromPermissions, systemCtx, type Ctx } from '../../src/main/services/context'
@@ -55,7 +55,7 @@ async function setup(fetchFn?: FetchLike) {
   const service = createCameraService({
     ...deps,
     secrets: createSecretStore(null, null),
-    alertState: createAlertStateStore(null),
+    faceCrypto: createFaceCrypto(null, null),
     ...(fetchFn ? { telegram: { fetch: fetchFn } } : {})
   })
   return { service, settings, deps }
@@ -77,7 +77,14 @@ describe('camera yetkisi (G-23)', () => {
     service.attach(rt.runtime)
     const owner = roleCtx('owner')
     // `ok` is what a role that may call it gets: the alarm mark finds no alarm and the pause finds no sidecar here.
-    const calls: { name: string; level: 'view' | 'edit'; run: (c: Ctx) => unknown; ok?: string }[] = [
+    const calls: {
+      name: string
+      level: 'view' | 'edit'
+      /** The permission it needs: `camera` (default) or the biometric `camera.enroll`. */
+      key?: 'camera' | 'camera.enroll'
+      run: (c: Ctx) => unknown
+      ok?: string
+    }[] = [
       { name: 'camera.status', level: 'view', run: (c) => service.status(c) },
       { name: 'camera.restart', level: 'edit', run: (c) => service.restart(c) },
       {
@@ -92,7 +99,44 @@ describe('camera yetkisi (G-23)', () => {
       {
         name: 'camera.markAlert',
         level: 'view',
-        run: (c) => service.markAlert(c, { id: '1', state: 'seen' }),
+        run: (c) => service.markAlert(c, { id: '0'.repeat(26), state: 'seen' }),
+        ok: 'NOT_FOUND'
+      },
+      // P20c (K-51…K-53): the guest's face and the alarm crops need `camera.enroll`. No guest/alarm here: NOT_FOUND is "allowed".
+      {
+        name: 'camera.faceStatus',
+        level: 'view',
+        key: 'camera.enroll',
+        run: (c) => service.faceStatus(c, { guestId: 'none' }),
+        ok: 'NOT_FOUND'
+      },
+      {
+        name: 'camera.enrollFace',
+        level: 'edit',
+        key: 'camera.enroll',
+        run: (c) => service.enrollFace(c, { guestId: 'none' }),
+        ok: 'NOT_FOUND'
+      },
+      {
+        name: 'camera.deleteFaces',
+        level: 'edit',
+        key: 'camera.enroll',
+        run: (c) => service.deleteFaces(c, { guestId: 'none' }),
+        ok: 'NOT_FOUND'
+      },
+      { name: 'camera.candidates', level: 'view', key: 'camera.enroll', run: (c) => service.candidates(c) },
+      {
+        name: 'camera.alertCrop',
+        level: 'view',
+        key: 'camera.enroll',
+        run: (c) => service.alertCrop(c, { id: '0'.repeat(26) }),
+        ok: 'NOT_FOUND'
+      },
+      {
+        name: 'camera.saveAlertAsGuest',
+        level: 'edit',
+        key: 'camera.enroll',
+        run: (c) => service.saveAlertAsGuest(c, { id: '0'.repeat(26), guestId: 'none' }),
         ok: 'NOT_FOUND'
       },
       {
@@ -104,8 +148,8 @@ describe('camera yetkisi (G-23)', () => {
     ]
     expect(await code(() => service.status(owner))).toBe('ok')
     for (const role of SYSTEM_ROLE_CODES as readonly SystemRoleCode[]) {
-      const level = defaultPermissions(role).camera
       for (const call of calls) {
+        const level = defaultPermissions(role)[call.key ?? 'camera']
         const allowed = call.level === 'view' ? level !== 'none' : level === 'edit'
         expect(await code(() => call.run(roleCtx(role))), `${role} ${call.name}`).toBe(
           allowed ? (call.ok ?? 'ok') : 'PERMISSION_DENIED'

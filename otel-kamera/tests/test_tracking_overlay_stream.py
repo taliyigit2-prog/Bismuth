@@ -10,12 +10,11 @@ import pytest
 import supervision as sv
 
 from bytetrack_lite import ByteTrackLite, iou_matrix
-from database import GuestDatabase
 from face_engine import FaceEngine
+from face_store import AlertQueue, FaceStore
 from security_service import SecurityService, _LoopState
 from tests.conftest import noise_frame, unit_embedding
-from tests.fakes import FakeGrabber, FakeInsightApp, Recorder, fake_face, one_person_detector
-from timeutil import checkout_deadline
+from tests.fakes import FakeGrabber, FakeInsightApp, Recorder, add_guest, fake_face, one_person_detector
 from tracker import SecurityTracker
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
@@ -109,21 +108,20 @@ def test_izleyici_tespitlere_kalıcı_kimlik_verir_eşleşmeyen_düşük_güvenl
 
 
 def build(cfg, faces, detector=None):
-    db = GuestDatabase(cfg.DB_PATH, cfg)
     app = FakeInsightApp(faces)
     rec = Recorder()
     service = SecurityService(
-        db=db,
+        faces=FaceStore(),
+        alerts=AlertQueue(),
         settings=cfg,
         face_engine=FaceEngine(settings=cfg, app=app),
         person_detector=detector or (lambda _f: sv.Detections.empty()),
         recorder=rec,
         grabber_factory=FakeGrabber,
         sleep=lambda _s: None,
-        run_maintenance_on_start=False,
     )
     service._grabber = FakeGrabber(frame=noise_frame())
-    return service, db, rec
+    return service, service.faces, rec
 
 
 def test_kişi_kutusu_yokken_de_yüz_aranır_ve_kayıtsız_yüz_alarm_üretir(settings):
@@ -198,7 +196,7 @@ def test_kişi_kutuları_varken_kutuya_düşmeyen_küçük_yüz_yok_sayılır(se
 
 
 def test_alarm_tekrar_tanıma_ve_tekilleştirme_tek_ayarlı_eşiği_kullanır(settings):
-    source = (ROOT / "tracker.py").read_text(encoding="utf-8") + (ROOT / "database.py").read_text(encoding="utf-8")
+    source = (ROOT / "tracker.py").read_text(encoding="utf-8") + (ROOT / "face_store.py").read_text(encoding="utf-8")
     assert "0.40" not in source and "0.46" not in source and "DEDUP_SIMILARITY_THRESHOLD" not in source
     assert "FACE_SIMILARITY_THRESHOLD" in source
 
@@ -219,8 +217,7 @@ def test_emin_değil_bandındaki_yüz_kayıtsız_sayılmaz_alarm_sayacına_girme
     guest = unit_embedding(10)
     lookalike = with_similarity(guest, 0.33)  # eşik 0.36, marj 0.06 → bant
     service, db, rec = build(cfg, [fake_face(lookalike)])
-    db.add_guest("Bant Örnek", "7", guest, checkout_deadline(5))
-    service.reload_guests()
+    add_guest(service, "Bant Örnek", "7", guest)
     state = _LoopState()
     for _ in range(3):
         service._tick(state)
@@ -236,8 +233,7 @@ def test_marj_sıfırsa_bant_yoktur_aynı_yüz_kayıtsız_alarmı_üretir(settin
     guest = unit_embedding(10)
     lookalike = with_similarity(guest, 0.33)
     service, db, rec = build(cfg, [fake_face(lookalike)])
-    db.add_guest("Bant Örnek", "7", guest, checkout_deadline(5))
-    service.reload_guests()
+    add_guest(service, "Bant Örnek", "7", guest)
     state = _LoopState()
     service._tick(state)
     assert state.face_boxes[0]["kind"] == "unknown" and len(rec.calls) == 1
@@ -250,8 +246,7 @@ def test_kutu_ve_etiket_verisi_normalleştirilmiş_koordinatla_api_ye_verilir(se
     cfg = replace(settings, CONFIRMATION_FRAMES=1, PROCESS_EVERY_N_FRAMES=1)
     guest = unit_embedding(5)
     service, db, _ = build(cfg, [fake_face(guest, bbox=(40, 20, 100, 80))], detector=one_person_detector())
-    db.add_guest("Ayşe Örnek", "12", guest, checkout_deadline(5))
-    service.reload_guests()
+    add_guest(service, "Ayşe Örnek", "12", guest)
     service._tick(_LoopState())
     overlay = service.get_overlay()
     assert overlay["frame"] == {"width": 160, "height": 120}

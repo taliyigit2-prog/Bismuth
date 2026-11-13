@@ -13,7 +13,9 @@ test('telefonda Kamera: durum ve alarm listesi; canlı görüntü ve yönetim d�
   await page.goto('/#/camera')
   await page.getByTestId('app-ready').waitFor({ state: 'attached' })
   await expect(page.getByTestId('camera-state-badge')).toHaveText('Çalışıyor', { timeout: 30_000 })
-  await expect(page.getByTestId('camera-alerts').locator('li')).toHaveCount(3)
+  // P20c: the alarms are pulled from the sidecar into Bismuth's own table within a few seconds, then listed from there.
+  const alerts = page.getByTestId('camera-alerts').locator('li')
+  await expect(alerts).toHaveCount(3, { timeout: 30_000 })
   await expect(page.getByTestId('camera-live')).toHaveCount(0)
   await expect(page.getByTestId('camera-restart')).toHaveCount(0)
   await expect(page.getByRole('switch', { name: 'Alarmları duraklat' })).toHaveCount(0)
@@ -21,10 +23,19 @@ test('telefonda Kamera: durum ve alarm listesi; canlı görüntü ve yönetim d�
   if (shots) await page.screenshot({ path: `${shots}/camera-phone.png`, fullPage: true })
 
   // Marking is the front desk's work: it goes over HTTP too and the 44 px buttons are real targets.
-  const seen = page.getByTestId('camera-alert-seen-3')
+  const newest = alerts.first()
+  const seen = newest.getByRole('button', { name: 'Gördüm' })
   expect((await seen.boundingBox())!.height).toBeGreaterThanOrEqual(44)
   await seen.click()
-  await expect(page.getByTestId('camera-alert-3')).toHaveAttribute('data-state', 'seen')
+  await expect(newest).toHaveAttribute('data-state', 'seen')
+  // S-108: a phone gets id, time and state only: no crop and no "save as guest"; the service refuses the picture too.
+  await expect(page.getByRole('button', { name: 'Misafir olarak kaydet' })).toHaveCount(0)
+  const listed = await api<{ alerts: Record<string, unknown>[] }>(page, 'camera.alerts')
+  expect(listed.body.alerts.every((a) => a['hasCrop'] === false)).toBe(true)
+  const crop = await api(page, 'camera.alertCrop', { id: String(listed.body.alerts[0]!['id']) })
+  expect(crop.status).toBe(403)
+  const candidates = await api(page, 'camera.candidates')
+  expect(candidates.status).toBe(200) // allowed for the role, but names only: no picture, no face
 
   // The service refuses the live picture and the strip to a phone, whatever the screen does.
   const stream = await api(page, 'camera.streamUrl')

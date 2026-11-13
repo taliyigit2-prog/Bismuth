@@ -35,6 +35,7 @@ import { useCan } from '@/lib/view-as'
 import { cn } from '@/lib/utils'
 import { useAdminMutation } from '@/features/settings/use-admin'
 import { CompanyCard } from '@/features/companies/company-card'
+import { GuestFace } from './guest-face'
 import { GUEST_READS } from './guests-api'
 import { HistorySummary, StayList } from './guest-history'
 import { GuestTagPicker } from './guest-tags'
@@ -406,6 +407,7 @@ function GuestCardView({
                 onCheckedChange={(on) => vip.mutate({ id: guest.id, patch: { vip: on } })}
               />
             </Label>
+            <GuestFace key={guest.id} guestId={guest.id} />
             <section className="grid gap-1.5" aria-labelledby="card-notes">
               <h3 id="card-notes" className="text-sm font-semibold">
                 {t('guests.info.notes')}

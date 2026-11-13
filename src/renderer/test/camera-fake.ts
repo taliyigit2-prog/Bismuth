@@ -6,7 +6,13 @@ import {
   type ProcedureOutput,
   type SettingsValues
 } from '@shared/contract'
-import type { CameraAlert, CameraLive, CameraStatus } from '@shared/contract/camera'
+import type {
+  CameraAlert,
+  CameraCandidate,
+  CameraFaceStatus,
+  CameraLive,
+  CameraStatus
+} from '@shared/contract/camera'
 import { ApiError, type Transport } from '@/lib/transport'
 import { fakeTransport } from './render'
 
@@ -42,7 +48,9 @@ export const LIVE: CameraLive = {
 export const alertOf = (id: number, at: string, state: CameraAlert['state'] = 'new'): CameraAlert => ({
   id: String(id),
   at,
-  state
+  state,
+  hasCrop: false,
+  linked: false
 })
 
 export interface CameraFakeState {
@@ -52,6 +60,11 @@ export interface CameraFakeState {
   available: boolean
   streamUrl: string | null
   telegramTest: ProcedureOutput<'camera.testTelegram'>
+  /** A guest's face record (P20c): one status for every guest id the test asks about. */
+  face: CameraFaceStatus
+  candidates: CameraCandidate[]
+  /** The opened alarm crop (`data:` URL), null = the picture is gone. */
+  crop: string | null
 }
 
 export const emptyCamera = (): CameraFakeState => ({
@@ -60,7 +73,10 @@ export const emptyCamera = (): CameraFakeState => ({
   alerts: [],
   available: true,
   streamUrl: 'http://127.0.0.1:51234/api/stream?st=1.abc',
-  telegramTest: { ok: true, reason: null }
+  telegramTest: { ok: true, reason: null },
+  face: { inHouse: true, count: 0, max: 5, enrolledAt: null, crop: null, keyStore: true },
+  candidates: [],
+  crop: 'data:image/jpeg;base64,/9j/'
 })
 
 export function cameraTransport(
@@ -104,6 +120,31 @@ export function cameraTransport(
           const alert = state.alerts.find((a) => a.id === i.id)
           if (!alert) throw new ApiError('NOT_FOUND', 404, 'errors.notFound')
           alert.state = i.state
+          return { ok: true } as never
+        }
+        case 'camera.faceStatus':
+          return structuredClone(state.face) as never
+        case 'camera.enrollFace':
+          write()
+          desktopOnly()
+          state.face = { ...state.face, count: state.face.count + 1, enrolledAt: '2026-11-13T09:00:00.000Z' }
+          return structuredClone(state.face) as never
+        case 'camera.deleteFaces':
+          write()
+          state.face = { ...state.face, count: 0, enrolledAt: null, crop: null }
+          return structuredClone(state.face) as never
+        case 'camera.candidates':
+          return structuredClone(state.candidates) as never
+        case 'camera.alertCrop':
+          desktopOnly()
+          return { crop: state.crop } as never
+        case 'camera.saveAlertAsGuest': {
+          write()
+          desktopOnly()
+          const alert = state.alerts.find((a) => a.id === i.id)
+          if (!alert) throw new ApiError('NOT_FOUND', 404, 'errors.notFound')
+          alert.linked = true
+          alert.state = 'handled'
           return { ok: true } as never
         }
         case 'camera.setAlarmsPaused':

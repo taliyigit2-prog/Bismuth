@@ -1721,7 +1721,12 @@
     "groupPayPerRoom": "Bu grupta her oda kendi hesabını öder. Ödemeyi odanın rezervasyonundan alın.",
     "cameraSourceInvalid": "Kamera adresi rtsp:// ile başlamalı (kamera kullanıcı adı ve şifresi adresin başında yer alır) ya da bir web kamerası numarası olmalı.",
     "cameraTelegramInvalid": "Telegram bilgisi geçersiz. Bot belirtecini ve sohbet numaralarını kontrol edin.",
-    "cameraUnavailable": "Kamera sistemi bu bilgisayarda çalışmıyor. Otelin ana bilgisayarını kullanın."
+    "cameraUnavailable": "Kamera sistemi bu bilgisayarda çalışmıyor. Otelin ana bilgisayarını kullanın.",
+    "cameraGuestNotInHouse": "Bu misafir şu an otelde değil. Yüz kaydı yalnız otelde kalan misafir için alınır.",
+    "cameraNoKeyStore": "Bu bilgisayar yüz bilgisini güvenle saklayamıyor (sistemin anahtar deposu yok). Yüz kaydı alınamaz.",
+    "cameraNoFace": "Kamerada net bir yüz görünmüyor. Misafiri kameraya doğru çevirip yeniden deneyin.",
+    "cameraFaceLimit": "Bu misafirin yüz kayıtları dolu. Önce eski kaydı silin.",
+    "cameraCropGone": "Bu alarmın resmi, saklama süresi dolduğu için silindi."
   },
   "common": {
     "close": "Kapat",
@@ -1831,7 +1836,12 @@
       "crashedBody": "Kamera sistemi {{count}} kez durdu; kendiliğinden yeniden başlatılıyor.",
       "gaveUpTitle": "Kamera sistemi kapalı",
       "gaveUpBody": "Kamera sistemi tekrar tekrar durdu ve artık yeniden başlatılmıyor. Kamera ekranından yeniden başlatın.",
-      "telegramTest": "Bismuth: Telegram bağlantısı çalışıyor"
+      "telegramTest": "Bismuth: Telegram bağlantısı çalışıyor",
+      "alertTitle": "Kayıtsız kişi girdi",
+      "alertBody": "Saat {{time}}. Kamera ekranına bakın.",
+      "alertBodyAt": "Saat {{time}}, {{location}}. Kamera ekranına bakın.",
+      "alertTelegram": "Bismuth: kayıtsız biri kameraya girdi. Saat {{time}}.",
+      "alertTelegramAt": "Bismuth: kayıtsız biri kameraya girdi. Saat {{time}}, {{location}}."
     }
   },
   "companies": {
@@ -5632,7 +5642,9 @@
       "room_capacity_change": "Oda kapasitesi",
       "reservation_groups": "Grup rezervasyonu",
       "camera": "Kamera sistemi",
-      "camera_alert": "Kamera alarmı"
+      "camera_alert": "Kamera alarmı",
+      "guest_face": "Yüz kaydı",
+      "camera_event": "Kamera olayı"
     },
     "fieldName": {
       "name": "Ad",
@@ -7203,7 +7215,44 @@
         "new": "Yeni · {{count}}",
         "seen": "Görüldü · {{count}}",
         "handled": "Halledildi · {{count}}"
+      },
+      "saveAsGuest": "Misafir olarak kaydet",
+      "linked": "Misafire bağlandı",
+      "saveDialog": {
+        "title": "Alarmdaki kişiyi misafire bağla",
+        "body": "Bu yüz, seçtiğiniz misafirin yüz kaydına eklenir. Misafir çıkış yapınca silinir.",
+        "crop": "Alarmdaki yüz",
+        "guest": "Misafir",
+        "pick": "Misafir seçin",
+        "none": "Şu an otelde kalan misafir yok.",
+        "cropGone": "Bu alarmın resmi artık yok; yüz kaydedilemez.",
+        "loading": "Resim açılıyor",
+        "save": "Yüzü kaydet",
+        "saved": "Yüz kaydı eklendi",
+        "failed": "Yüz kaydı eklenemedi",
+        "faces_one": "{{count}} yüz kaydı",
+        "faces_other": "{{count}} yüz kaydı"
       }
+    },
+    "face": {
+      "title": "Yüz kaydı (kamera)",
+      "help": "Kamera misafiri tanısın diye yüzü alınır. Yalnız bu bilgisayarda, şifreli saklanır; misafir çıkış yapınca silinir.",
+      "none": "Yüz kaydı yok",
+      "has_one": "{{count}} yüz kaydı var",
+      "has_other": "{{count}} yüz kaydı var",
+      "since": "Son kayıt: {{when}}",
+      "cropAlt": "Kayıtlı yüz",
+      "enroll": "Kameradan yüz al",
+      "delete": "Yüz kaydını sil",
+      "notInHouse": "Misafir otelde değil. Yüz kaydı yalnız otelde kalan misafir için alınır.",
+      "noKeyStore": "Bu bilgisayar yüz bilgisini güvenle saklayamıyor; yüz kaydı alınamaz.",
+      "hostOnly": "Yüz kaydı yalnız otelin ana bilgisayarından alınır.",
+      "enrolled": "Yüz kaydı eklendi",
+      "enrollFailed": "Yüz kaydı alınamadı",
+      "deleted": "Yüz kaydı silindi",
+      "deleteFailed": "Yüz kaydı silinemedi",
+      "confirmTitle": "Yüz kaydı silinsin mi?",
+      "confirmBody": "Bu misafirin tüm yüz kayıtları kalıcı olarak silinir. Kamera onu bir daha tanımaz."
     }
   }
 }

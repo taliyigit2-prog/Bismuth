@@ -109,6 +109,9 @@ async function main(): Promise<void> {
     services.camera.attach(camera)
     await services.settings.set(localOwnerCtx(), { 'camera.enabled': true, 'camera.location': 'Merdiven' })
     await camera.apply()
+    // P20c: the main process takes the sidecar's alarms into Bismuth's table every few seconds; so does the harness.
+    const round = setInterval(() => void services.camera.tick(systemCtx()).catch(() => undefined), 1_000)
+    round.unref()
     process.on('exit', () => void camera.stop())
     for (const signal of ['SIGINT', 'SIGTERM'] as const)
       process.on(signal, () => void camera.stop().finally(() => process.exit(0)))

@@ -255,3 +255,73 @@ describe('Kamera ekranı: telefon ve istemci (S-108)', () => {
     expect(button).toHaveAttribute('data-slot', 'button')
   })
 })
+
+describe('Kamera ekranı: "Misafir olarak kaydet" (P20c, K-53)', () => {
+  function withCrop() {
+    const state = withAlerts()
+    state.alerts[0] = { ...state.alerts[0]!, hasCrop: true }
+    state.alerts[1] = { ...state.alerts[1]!, hasCrop: true, linked: true }
+    state.candidates = [
+      { guestId: 'g1', name: 'Ayşe Örnek', room: '204', faces: 0 },
+      { guestId: 'g2', name: 'Can Örnek', room: '205', faces: 2 }
+    ]
+    return state
+  }
+
+  it('resmi saklanan alarmda düğme çıkar; resim açılır, otelde kalan misafir seçilir, kaydedince alarm bağlanır', async () => {
+    const transport = cameraTransport(withCrop())
+    await renderWithProviders(<CameraPage />, { transport })
+    const user = userEvent.setup()
+    await user.click(await screen.findByTestId('camera-alert-save-9'))
+    expect(await screen.findByTestId('camera-save-guest-crop')).toHaveAttribute(
+      'src',
+      'data:image/jpeg;base64,/9j/'
+    )
+    expect(transport.callsTo('camera.alertCrop')).toEqual([{ id: '9' }])
+    const confirm = screen.getByTestId('camera-save-guest-confirm')
+    expect(confirm).toBeDisabled() // no guest picked yet
+    await user.click(screen.getByTestId('camera-save-guest'))
+    await user.click(await screen.findByRole('option', { name: /Can Örnek · 205 · 2 yüz kaydı/ }))
+    await user.click(confirm)
+    await waitFor(() =>
+      expect(transport.callsTo('camera.saveAlertAsGuest')).toEqual([{ id: '9', guestId: 'g2' }])
+    )
+    // The list reloads: the alarm is linked and handled, and its button is gone.
+    expect(await screen.findAllByText('Misafire bağlandı')).toHaveLength(2)
+    await waitFor(() => expect(screen.queryByTestId('camera-alert-save-9')).toBeNull())
+  })
+
+  it('zaten bağlanmış alarmda düğme yok; resmi olmayan (silinmiş) alarmda da yok', async () => {
+    await renderWithProviders(<CameraPage />, { transport: cameraTransport(withCrop()) })
+    expect(await screen.findByTestId('camera-alert-9')).toBeInTheDocument()
+    expect(screen.queryByTestId('camera-alert-save-8')).toBeNull() // linked
+    expect(screen.queryByTestId('camera-alert-save-7')).toBeNull() // no crop kept
+    expect(screen.getAllByText('Misafire bağlandı')).toHaveLength(1)
+  })
+
+  it('otelde kalan misafir yoksa nedenini söyler; resim silinmişse kaydet kapalı kalır', async () => {
+    const state = withCrop()
+    state.candidates = []
+    state.crop = null
+    await renderWithProviders(<CameraPage />, { transport: cameraTransport(state) })
+    await userEvent.setup().click(await screen.findByTestId('camera-alert-save-9'))
+    expect(await screen.findByText('Şu an otelde kalan misafir yok.')).toBeInTheDocument()
+    expect(await screen.findByText(/resmi artık yok/)).toBeInTheDocument()
+    expect(screen.getByTestId('camera-save-guest-confirm')).toBeDisabled()
+  })
+
+  it('telefonda ve HTTP istemcisinde düğme yok (servis resim bilgisini vermez; yalnız kimlik, zaman, durum)', async () => {
+    phone()
+    await renderWithProviders(<CameraPage />, {
+      transport: cameraTransport(withAlerts(), { kind: 'http' })
+    })
+    expect(await screen.findByTestId('camera-alert-9')).toBeInTheDocument()
+    expect(screen.queryByTestId('camera-alert-save-9')).toBeNull()
+  })
+
+  it('yüz kaydı yetkisi olmayan rol alarmı görür ama düğmeyi görmez', async () => {
+    act(() => setViewAs('housekeeping'))
+    await renderWithProviders(<CameraPage />, { transport: cameraTransport(withCrop()) })
+    await waitFor(() => expect(screen.queryByTestId('camera-alert-save-9')).toBeNull())
+  })
+})

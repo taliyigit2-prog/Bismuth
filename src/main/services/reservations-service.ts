@@ -1,7 +1,7 @@
 // Reservations: stays, nights, folio charges, room changes, cancel/park, check-in/out (03-mimari.md §4.4, §6.1,
 // §6.2, §6.3; G-35…G-44, G-48, G-60, G-90, K-09). One reservation = one folio; every night has exactly one live
 // room-night charge (§4.8-2); a price change voids the old charge and writes a new one (never edits history).
-import { and, asc, eq, gte, inArray, isNull, lt, ne } from 'drizzle-orm'
+import { and, asc, eq, gte, inArray, isNotNull, isNull, lt, ne } from 'drizzle-orm'
 import {
   cancelReasonSchema,
   cancelRefundSchema,
@@ -97,6 +97,7 @@ import {
 } from '../db/schema'
 import type { AuditEntry } from './audit'
 import type { Ctx } from './context'
+import { releaseFaces } from './camera-faces'
 import { baseCurrencyOf, chargeBaseMinor } from './currency-service'
 import {
   conflict,
@@ -1161,6 +1162,18 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
       .where(eq(reservationRooms.id, stayId))
       .run()
     stampOccupants(tx, audit, stayId, 'leftAt', iso)
+    // K-52: the camera's face rows of the guests who left go in the same transaction (or get their keep-until date).
+    releaseFaces(
+      tx,
+      audit,
+      now,
+      tx
+        .select({ guestId: stayOccupants.guestId })
+        .from(stayOccupants)
+        .where(and(eq(stayOccupants.reservationRoomId, stayId), isNotNull(stayOccupants.guestId)))
+        .all()
+        .map((o) => o.guestId as string)
+    )
     refreshKind(tx, stay.reservationId, now)
     markRoomDirtyAfterCheckout(tx, audit, ctx, stay.roomId, now)
     const open = tx

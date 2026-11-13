@@ -12,7 +12,7 @@ import { createCalendarService } from './calendar-service'
 import { createContactsService } from './contacts-service'
 import { createCurrencyService } from './currency-service'
 import { createCameraService } from './camera-service'
-import { createAlertStateStore } from '../camera/alert-state'
+import { createFaceCrypto } from '../camera/crypto'
 import { createSecretStore } from '../camera/secrets'
 import { createExpensesService } from './expenses-service'
 import { createExternalService } from './external-service'
@@ -90,7 +90,15 @@ export interface ServiceStorage {
     secrets?: SecretStorage | null
   }
   /** Camera (Faz 20): the sealed secrets file (default `camera-secrets.json` in the data folder) and the Telegram test text. */
-  camera?: { secretsFile?: string | null; testMessage?: () => string }
+  camera?: {
+    secretsFile?: string | null
+    testMessage?: () => string
+    /** The Telegram text of an alarm (no guest name) and the program's window notice for it. */
+    alertMessage?: (info: { time: string; location: string }) => string
+    onAlert?: (notice: { eventId: string; time: string; location: string }) => void
+    /** Tests: the face key (default: a file in the data folder sealed by the key store). */
+    faceCrypto?: ReturnType<typeof createFaceCrypto>
+  }
 }
 
 /** Wire every service to one database handle. No Electron imports below this line (03-mimari.md §1.3). */
@@ -163,14 +171,21 @@ export function createServices(handle: DatabaseHandle, runtime: RuntimeInfo, sto
           : null,
       systemSealer(storage.network?.secrets ?? null)
     ),
-    alertState: createAlertStateStore(
-      runtime.dataDir ? join(runtime.dataDir, 'camera-alert-state.json') : null
-    ),
+    // K-51: face vectors and crops are sealed with a key kept by the operating system's key store; without a store (or
+    // without a data folder, a test) the key lives in memory only and a restarted program cannot open old blobs.
+    faceCrypto:
+      storage.camera?.faceCrypto ??
+      createFaceCrypto(
+        runtime.dataDir ? join(runtime.dataDir, 'camera', 'face-key.bin') : null,
+        systemSealer(storage.network?.secrets ?? null)
+      ),
     telegram: {
       fetch: storage.network?.fetch,
       origin: runtime.packaged ? null : (storage.network?.origin ?? null)
     },
-    ...(storage.camera?.testMessage ? { testMessage: storage.camera.testMessage } : {})
+    ...(storage.camera?.testMessage ? { testMessage: storage.camera.testMessage } : {}),
+    ...(storage.camera?.alertMessage ? { alertMessage: storage.camera.alertMessage } : {}),
+    ...(storage.camera?.onAlert ? { onAlert: storage.camera.onAlert } : {})
   })
   const setup = createSetupService(deps, {
     settings,

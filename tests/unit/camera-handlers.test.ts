@@ -11,6 +11,6 @@ describe('kamera işleyicileri', () => {
     } as unknown as Services
     const handlers = cameraHandlers(services)
     const call = handlers['camera.markAlert'] as (ctx: unknown, input: unknown) => Promise<unknown>
-    await expect(call({}, { id: '7', state: 'seen' })).rejects.toBe(refused)
+    await expect(call({}, { id: '0'.repeat(26), state: 'seen' })).rejects.toBe(refused)
   })
 })

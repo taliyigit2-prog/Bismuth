@@ -40,9 +40,7 @@ def clock() -> FakeClock:
 def settings(tmp_path) -> Config:
     return replace(
         Config(),
-        DB_PATH=str(tmp_path / "guests.db"),
-        ALERTS_DIR=str(tmp_path / "alerts"),
-        GUEST_PHOTOS_DIR=str(tmp_path / "guest_photos"),
+        RUNTIME_DIR=str(tmp_path),
         WEB_PORT=PORT,
     )
 

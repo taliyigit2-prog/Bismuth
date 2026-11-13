@@ -7,6 +7,7 @@ from typing import Any, List, Optional, Tuple
 import numpy as np
 import supervision as sv
 
+from face_store import encode_embedding
 from health import LoopHealth
 from tests.conftest import noise_frame
 
@@ -20,9 +21,8 @@ class FakeService:
         self.stream_viewers = 0
         self.camera_connected = True
         self.alarms_paused = False
-        self.reloads = 0
+        self.changes = 0
         self.live_face: Optional[Tuple[np.ndarray, np.ndarray]] = None
-        self.identified: Tuple[bool, str, Any] = (False, "yok", None)
 
     def start(self) -> None:
         self._running = True
@@ -30,8 +30,8 @@ class FakeService:
     def stop(self) -> None:
         self._running = False
 
-    def reload_guests(self) -> None:
-        self.reloads += 1
+    def faces_changed(self) -> None:
+        self.changes += 1
 
     def viewer_joined(self) -> None:
         self.stream_viewers += 1
@@ -53,9 +53,6 @@ class FakeService:
 
     def extract_face_from_image(self, image):
         return self.live_face
-
-    def identify_guest_from_live_camera(self):
-        return self.identified
 
 
 class FakeGrabber:
@@ -97,17 +94,27 @@ def one_person_detector(box=(10.0, 10.0, 150.0, 110.0)):
 
 
 class Recorder:
-    """`AlertRecorder.record` yerine: ne ile çağrıldığını tutar."""
+    """`AlertRecorder.crop_jpeg` yerine: ne ile çağrıldığını tutar."""
 
     def __init__(self) -> None:
-        self.calls: List[Tuple[np.ndarray, np.ndarray, int]] = []
+        self.calls: List[Tuple[np.ndarray, np.ndarray, Optional[int]]] = []
         self.fail = False
 
-    def record(self, frame, bbox, tracker_id):
+    def crop_jpeg(self, frame, bbox):
         if self.fail:
-            raise OSError("disk dolu")
-        self.calls.append((frame, bbox, tracker_id))
-        return f"/tmp/alert_{tracker_id}_{len(self.calls)}.jpg", ""
+            raise OSError("kodlama hatası")
+        self.calls.append((frame, bbox, None))
+        return b"\xff\xd8\xffcrop"
+
+
+def add_guest(service, name: str, room: str, embedding, face_id: Optional[str] = None) -> str:
+    """Bismuth'un yaptığı gibi: yüz listesine bir misafir ekler (yalnız bellek) ve hizmete haber verir."""
+    items = [(fid, n, r, encode_embedding(e)) for fid, n, r, e in service.faces.snapshot()]
+    fid = face_id or f"f{len(items) + 1}"
+    items.append((fid, name, room, encode_embedding(embedding)))
+    service.faces.replace(items)
+    service.faces_changed()
+    return fid
 
 
 def wait_until(predicate, timeout: float = 5.0, step: float = 0.01) -> bool:

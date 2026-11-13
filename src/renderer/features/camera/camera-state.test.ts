@@ -27,7 +27,13 @@ describe('kamera durumu kelimeleri', () => {
 })
 
 describe('alarmları güne göre gruplama', () => {
-  const a = (id: string, at: string | null) => ({ id, at, state: 'new' as const })
+  const a = (id: string, at: string | null) => ({
+    id,
+    at,
+    state: 'new' as const,
+    hasCrop: false,
+    linked: false
+  })
 
   it('yeni gün üstte, aynı günün alarmları bir arada; saatsizler sona', () => {
     const days = groupByDay([

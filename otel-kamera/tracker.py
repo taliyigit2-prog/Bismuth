@@ -22,7 +22,7 @@ from config import config as default_config
 
 log = logging.getLogger("otel-kamera.tracker")
 
-MatchInfo = Tuple[int, str, str, float]
+MatchInfo = Tuple[str, str, str, float]
 PRUNE_EVERY_SECONDS = 30.0
 FACE_ID_BASE = 1000  # kişi kutusuna bağlanamayan yüzlerin iz kimlikleri bu değerden başlar
 

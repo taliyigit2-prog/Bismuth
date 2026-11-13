@@ -3,14 +3,18 @@
 // GET /api/health with the token check, and leaves when its stdin closes (the parent watch). FAKE_MODE picks a behaviour:
 //   ok (default) · slow (reports "starting" for a while) · crash (exits 3 soon after it listens) ·
 //   hang (never listens) · stubborn (ignores SIGTERM and stdin; only SIGKILL stops it) · ignore-term (ignores SIGTERM)
-// The Kamera screen's endpoints (Faz 20 P20b) answer too: /api/status, /api/alerts, /api/overlay, /api/stream (an image
+// The Kamera screen's endpoints (Faz 20 P20b) answer too: /api/status, /api/overlay, /api/stream (an image
 // that repeats, behind the signed `st` address an <img> uses) and POST /api/system/toggle-alarms.
+// P20c: like the real sidecar it keeps nothing on disk: GET /api/alerts?after&boot&limit (in memory, with a `boot` id and a
+// face crop), PUT /api/faces/active (the in-house faces Bismuth pushes), POST /api/faces/capture and /api/faces/extract.
 import { appendFileSync } from 'node:fs'
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto'
 import { createServer } from 'node:http'
 import { crc32, deflateSync } from 'node:zlib'
 
 const mode = process.env.FAKE_MODE ?? 'ok'
+// This run's id: the alarm counter below starts over with every start, as the real sidecar's does.
+const boot = createHash('sha1').update(`${process.pid}:${Date.now()}`).digest('hex').slice(0, 32)
 const token = process.env.BISMUTH_CAMERA_TOKEN ?? ''
 const config = JSON.parse(process.env.BISMUTH_CAMERA_CONFIG ?? '{}')
 const host = config.WEB_HOST
@@ -83,32 +87,20 @@ else {
   const slowMs = Number(process.env.FAKE_SLOW_MS ?? 400)
   const picture = makePicture()
   let alarmsPaused = false
+  // Three alarms, oldest first (ids count up); each carries a tiny JPEG-looking face crop (the screen never decodes it).
+  const crop = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.from('fake-face-crop')]).toString(
+    'base64'
+  )
   const alerts = [
-    {
-      id: 3,
-      alert_time: ago(0.5),
-      image_path: '',
-      face_crop_path: '',
-      has_embedding: true,
-      details: 'Tanımsız Kişi (Takip #3)'
-    },
-    {
-      id: 2,
-      alert_time: ago(2),
-      image_path: '',
-      face_crop_path: '',
-      has_embedding: true,
-      details: 'Tanımsız Kişi (Takip #2)'
-    },
-    {
-      id: 1,
-      alert_time: ago(30),
-      image_path: '',
-      face_crop_path: '',
-      has_embedding: false,
-      details: 'Tanımsız Kişi (Takip #1)'
-    }
+    { id: 1, alert_time: ago(30), track: 1, crop },
+    { id: 2, alert_time: ago(2), track: 2, crop },
+    { id: 3, alert_time: ago(0.5), track: 3, crop }
   ]
+  // A 512-value float32 vector, the shape the real sidecar answers with.
+  const vector = Buffer.alloc(2048)
+  for (let i = 0; i < 512; i++) vector.writeFloatLE(((i * 7) % 13) / 13 + 0.05, i * 4)
+  const face = { embedding: vector.toString('base64'), crop, model: 'buffalo_s' }
+  let activeFaces = []
   const server = createServer((req, res) => {
     const send = (status, body) => {
       res.writeHead(status, { 'content-type': 'application/json' }).end(JSON.stringify(body))
@@ -126,6 +118,7 @@ else {
         state: starting ? 'starting' : 'running',
         error: null,
         uptime_seconds: (Date.now() - born) / 1000,
+        boot,
         ...(starting ? {} : { loop: { state: 'ok' } })
       })
     }
@@ -134,11 +127,30 @@ else {
         camera_connected: true,
         camera_covered: false,
         camera_location: config.CAMERA_LOCATION ?? '',
-        active_guests_count: 4,
+        active_guests_count: activeFaces.length || 4,
         alarms_paused: alarmsPaused,
         fps: 12.5
       })
-    if (url.pathname === '/api/alerts') return send(200, { alerts })
+    if (url.pathname === '/api/alerts') {
+      const after = url.searchParams.get('boot') === boot ? Number(url.searchParams.get('after') ?? 0) : 0
+      const limit = Math.min(Number(url.searchParams.get('limit') ?? 50) || 50, 100)
+      return send(200, { boot, alerts: alerts.filter((a) => a.id > after).slice(0, limit) })
+    }
+    if (url.pathname === '/api/faces/active' && req.method === 'PUT') {
+      let raw = ''
+      req.on('data', (c) => (raw += c))
+      req.on('end', () => {
+        try {
+          activeFaces = JSON.parse(raw).faces ?? []
+          send(200, { ok: true, count: activeFaces.length })
+        } catch {
+          send(422, { detail: 'bad_list' })
+        }
+      })
+      return
+    }
+    if (url.pathname === '/api/faces/capture' && req.method === 'POST') return send(200, face)
+    if (url.pathname === '/api/faces/extract' && req.method === 'POST') return send(200, face)
     if (url.pathname === '/api/overlay')
       return send(200, {
         frame: { width: 320, height: 180 },

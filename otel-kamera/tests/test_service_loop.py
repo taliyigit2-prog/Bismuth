@@ -6,12 +6,11 @@ from dataclasses import replace
 import numpy as np
 import pytest
 
-from database import GuestDatabase
 from face_engine import FaceEngine
+from face_store import AlertQueue, FaceStore
 from security_service import SecurityService
-from tests.conftest import noise_frame, unit_embedding
-from tests.fakes import FakeGrabber, FakeInsightApp, Recorder, fake_face, one_person_detector, wait_until
-from timeutil import checkout_deadline
+from tests.conftest import unit_embedding
+from tests.fakes import FakeGrabber, FakeInsightApp, Recorder, add_guest, fake_face, one_person_detector, wait_until
 
 
 @pytest.fixture
@@ -20,20 +19,19 @@ def cfg(settings):
 
 
 def build(cfg, faces, detector=None, recorder=None):
-    db = GuestDatabase(cfg.DB_PATH, cfg)
     app = FakeInsightApp(faces)
     service = SecurityService(
-        db=db,
+        faces=FaceStore(),
+        alerts=AlertQueue(),
         settings=cfg,
         face_engine=FaceEngine(settings=cfg, app=app),
         person_detector=detector or one_person_detector(),
         recorder=recorder or Recorder(),
         grabber_factory=FakeGrabber,
         sleep=lambda _s: None,
-        run_maintenance_on_start=False,
     )
     service._grabber = FakeGrabber()
-    return service, db, app
+    return service, service.faces, app
 
 
 def test_alarm_karesi_etiketsiz_ham_karedir_kayıtlı_misafirin_adı_çizilmez(cfg):
@@ -42,8 +40,7 @@ def test_alarm_karesi_etiketsiz_ham_karedir_kayıtlı_misafirin_adı_çizilmez(c
     faces = [fake_face(stranger, (40, 20, 100, 80)), fake_face(guest, (110, 20, 170, 80))]
     rec = Recorder()
     service, db, _ = build(cfg, faces, recorder=rec)
-    db.add_guest("Ayşe Örnek", "12", guest, checkout_deadline(5))
-    service.reload_guests()
+    add_guest(service, "Ayşe Örnek", "12", guest)
     from security_service import _LoopState
 
     # iki yüz de aynı kişi kutusuna düşmesin: ikinci kutu
@@ -115,8 +112,7 @@ def test_kayıtlı_iz_yabancıya_geçmez_ardışık_eşleşmemede_kayıtsız_olu
     guest, stranger = unit_embedding(5), unit_embedding(6)
     rec = Recorder()
     service, db, app = build(cfg, [fake_face(guest)], recorder=rec)
-    db.add_guest("Can Örnek", "3", guest, checkout_deadline(5))
-    service.reload_guests()
+    add_guest(service, "Can Örnek", "3", guest)
     from security_service import _LoopState
 
     state = _LoopState()
@@ -130,18 +126,3 @@ def test_kayıtlı_iz_yabancıya_geçmez_ardışık_eşleşmemede_kayıtsız_olu
     assert [kind == "known" for kind in labels] == [True, True, False, False]
     assert labels[-1] == "unknown"
     assert rec.calls == []  # henüz CONFIRMATION_FRAMES kez kayıtsız görülmedi
-
-
-def test_kameradan_tanıma_adayı_döner_çıkışı_kendisi_yapmaz(cfg):
-    """Kod bulgusu 18: onay adımı; eşik CHECKOUT_MIN_SIMILARITY."""
-    guest = unit_embedding(8)
-    service, db, _ = build(cfg, [fake_face(guest)])
-    gid = db.add_guest("Onay Gerek", "9", guest, checkout_deadline(5))
-    service.reload_guests()
-    service.latest_raw_frame = noise_frame()
-    ok, msg, info = service.identify_guest_from_live_camera()
-    assert ok and info["id"] == gid and "onaylayın" in msg
-    assert db.get_guest_by_id(gid)["is_active"] is True
-    service.face_engine.app.faces = [fake_face(0.3 * guest + 0.95 * unit_embedding(99))]  # benzerlik < 0.45
-    ok, _, info = service.identify_guest_from_live_camera()
-    assert not ok and info is None

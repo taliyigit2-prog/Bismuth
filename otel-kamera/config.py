@@ -1,6 +1,6 @@
 """Ayarlar. Bismuth yan süreci başlatırken ayarları JSON olarak `BISMUTH_CAMERA_CONFIG` ortam değişkeniyle verir
 (G-09: eşikler koda yazılmaz; K-49: sır komut satırında görünmez). Geliştirmede aynı adlı ortam değişkenleri de okunur.
-`.env` dosyası yüklenmez. Dış servis ayarı yoktur (Telegram Bismuth'tadır, K-50).
+`.env` dosyası yüklenmez. Dış servis ayarı yoktur (Telegram Bismuth'tadır, K-50). Veritabanı/dosya yolu ayarı yoktur (P20c).
 """
 
 import ipaddress
@@ -61,14 +61,11 @@ class Config:
     ALARM_COOLDOWN_SECONDS: int = 60
     STALL_SECONDS: float = 15.0  # bu kadar kare gelmezse okuyucu yeniden başlatılır (kod bulgusu 10)
 
-    # Veritabanı ve kayıt dizinleri (P20c'de Bismuth'a taşınır; o zamana dek yerel)
-    DB_PATH: str = "hotel_guests.db"
-    ALERTS_DIR: str = "alerts"
-    GUEST_PHOTOS_DIR: str = "guest_photos"
-    ALERT_RETENTION_DAYS: int = 30
-    MAX_ALERT_COUNT: int = 500
-    DEDUP_WINDOW_HOURS: int = 12
-    ORPHAN_MIN_AGE_SECONDS: int = 300  # bundan yeni dosya "sahipsiz" sayılmaz (kod bulgusu 8)
+    # P20c (K-51, K-53): yan süreç diske misafir/yüz/alarm YAZMAZ; veritabanı ve resim klasörleri yoktur. Yalnız model
+    # çalışma zamanının kendi ayar/önbellek klasörü (misafir verisi değil): Bismuth `userData/camera` yolunu verir.
+    RUNTIME_DIR: str = ""
+    # Bellekteki alarm kuyruğu üst sınırı (Bismuth çekip kendi tablosuna yazar; kırpmalar Bismuth'ta saklanır).
+    MAX_ALERT_COUNT: int = 200
 
     # Web: yalnız loopback; başka bir adres reddedilir (K-49)
     WEB_HOST: str = "127.0.0.1"

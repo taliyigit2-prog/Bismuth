@@ -1,6 +1,7 @@
 // Camera module contract (Faz 20 P20a; K-49…K-53, K-57…K-59): the sidecar's state for the Kamera screen, the secrets
 // (camera address, Telegram) and the Telegram test. Secrets only go IN; a reply says whether one is set, never what it is.
 import * as z from 'zod'
+import { ULID_PATTERN } from '../ids'
 
 export const CAMERA_RUNTIME_STATES = [
   'unavailable',
@@ -104,25 +105,68 @@ export const cameraAlertStateSchema = z.enum(CAMERA_ALERT_STATES)
 export type CameraAlertState = z.infer<typeof cameraAlertStateSchema>
 
 export const cameraAlertSchema = z.object({
-  /** The sidecar's row number as text. */
+  /** The `camera_events` row id (P20c: alarms live in Bismuth's own table). */
   id: z.string(),
-  /** Local `YYYY-MM-DDTHH:mm:ss`, or null when the sidecar gave none. */
+  /** Local `YYYY-MM-DDTHH:mm:ss`, or null when the event has no time. */
   at: z.string().nullable(),
-  state: cameraAlertStateSchema
+  state: cameraAlertStateSchema,
+  /** A sealed face crop is still kept and this window may look at it (hotel computer only, S-108). */
+  hasCrop: z.boolean(),
+  /** Staff already saved this person as a guest ("Misafir olarak kaydet"). */
+  linked: z.boolean()
 })
 export type CameraAlert = z.infer<typeof cameraAlertSchema>
 
 export const cameraAlertsSchema = z.object({
-  /** false: the sidecar is not running (or does not answer), so the list is empty for that reason. */
+  /** Kept for the screen: the list is read from Bismuth's own table, so it is there whether or not the sidecar runs. */
   available: z.boolean(),
   alerts: z.array(cameraAlertSchema).max(100)
 })
 export type CameraAlerts = z.infer<typeof cameraAlertsSchema>
 
 export const cameraMarkAlertInputSchema = z
-  .object({ id: z.string().regex(/^\d{1,12}$/), state: cameraAlertStateSchema })
+  .object({ id: z.string().regex(ULID_PATTERN), state: cameraAlertStateSchema })
   .strict()
 export type CameraMarkAlertInput = z.infer<typeof cameraMarkAlertInputSchema>
 
 export const cameraPauseInputSchema = z.object({ paused: z.boolean() }).strict()
 export const cameraPauseOutputSchema = z.object({ alarmsPaused: z.boolean() })
+
+// --- Yüz kaydı (Faz 20 P20c; K-51…K-53) ---------------------------------------------------------------------------
+// A face is taken from the camera on the guest's card (Kişiler), sealed, and kept only while the guest is in the house
+// (or for `camera.faceRetentionDays` after). Nothing here is typed into the camera panel: the guest is Bismuth's.
+export const cameraGuestInputSchema = z.object({ guestId: z.string().min(1).max(40) }).strict()
+export type CameraGuestInput = z.infer<typeof cameraGuestInputSchema>
+
+export const cameraFaceStatusSchema = z.object({
+  /** The guest is in the house now: only then a face can be taken. */
+  inHouse: z.boolean(),
+  /** How many face rows the guest has (angles). */
+  count: z.number().int().min(0),
+  max: z.number().int().positive(),
+  enrolledAt: z.string().nullable(),
+  /** `data:image/jpeg;base64,…` of the newest crop, only for the hotel computer's own window. */
+  crop: z.string().nullable(),
+  /** This computer has no operating-system key store: a face cannot be kept (never stored unsealed). */
+  keyStore: z.boolean()
+})
+export type CameraFaceStatus = z.infer<typeof cameraFaceStatusSchema>
+
+/** In-house guests a face can be saved for (the picker of "Misafir olarak kaydet"). */
+export const cameraCandidateSchema = z.object({
+  guestId: z.string(),
+  name: z.string(),
+  room: z.string(),
+  faces: z.number().int().min(0)
+})
+export const cameraCandidatesSchema = z.array(cameraCandidateSchema).max(500)
+export type CameraCandidate = z.infer<typeof cameraCandidateSchema>
+
+export const cameraAlertIdInputSchema = z.object({ id: z.string().regex(ULID_PATTERN) }).strict()
+export const cameraAlertCropSchema = z.object({ crop: z.string().nullable() })
+export type CameraAlertCrop = z.infer<typeof cameraAlertCropSchema>
+
+export const cameraSaveAlertInputSchema = z
+  .object({ id: z.string().regex(ULID_PATTERN), guestId: z.string().min(1).max(40) })
+  .strict()
+export type CameraSaveAlertInput = z.infer<typeof cameraSaveAlertInputSchema>

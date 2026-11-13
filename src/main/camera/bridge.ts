@@ -27,7 +27,7 @@ export interface BridgeResponse {
 
 export interface Bridge {
   readonly baseUrl: string
-  request(method: 'GET' | 'POST' | 'DELETE', path: string, body?: unknown): Promise<BridgeResponse>
+  request(method: 'GET' | 'POST' | 'PUT' | 'DELETE', path: string, body?: unknown): Promise<BridgeResponse>
   /** The sidecar's answer, or null when it cannot be reached (or answers nonsense). */
   health(): Promise<BridgeHealth | null>
   /**
@@ -60,7 +60,7 @@ export function createBridge(opts: BridgeOptions): Bridge {
   const timeout = opts.timeoutMs ?? BRIDGE_TIMEOUT_MS
 
   async function request(
-    method: 'GET' | 'POST' | 'DELETE',
+    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
     path: string,
     body?: unknown
   ): Promise<BridgeResponse> {

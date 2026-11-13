@@ -14,7 +14,7 @@ import numpy as np
 import pytest
 
 import model_loader as models
-from database import GuestDatabase
+from face_store import AlertQueue, FaceStore
 from model_loader import ModelMissingError
 from security_service import SecurityService
 from tests.conftest import noise_frame
@@ -190,11 +190,9 @@ def test_ağ_kapalıyken_hizmet_gerçek_yükleyicilerle_açılır_tanır_ve_alar
     monkeypatch.setitem(sys.modules, "ultralytics", ultralytics)
     monkeypatch.setitem(sys.modules, "insightface", types.ModuleType("insightface"))
     monkeypatch.setitem(sys.modules, "insightface.app", insight)
-
-    db = GuestDatabase(cfg.DB_PATH, cfg)
     rec = Recorder()
     service = SecurityService(  # face_engine ve person_detector verilmez: gerçek yükleyiciler çalışır
-        db=db, settings=cfg, recorder=rec, grabber_factory=FakeGrabber, sleep=lambda _s: None, run_maintenance_on_start=False
+        faces=FaceStore(), alerts=AlertQueue(), settings=cfg, recorder=rec, grabber_factory=FakeGrabber, sleep=lambda _s: None
     )
     service._grabber = FakeGrabber(frame=noise_frame())
     from security_service import _LoopState

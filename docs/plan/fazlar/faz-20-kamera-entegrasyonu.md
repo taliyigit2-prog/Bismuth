@@ -58,10 +58,16 @@ Cevaplandı (2026-11-13): S-107 personel dışlama (varsayılan); S-108 canlı y
 - [ ] Kamera sekmesi 1366×768 ve 390×844 açık/koyu görüntüleri `ui-reviewer` + `turkish-ui-copy` temiz.
 - [ ] Çıkışta `guest_faces` silinir + audit; yedek/dışa aktarma/kopyada yüz verisi yok (birim test + `privacy-auditor`); aydınlatma
       metni sihirbazda ve Kamera sekmesinde üç dilde yazdırılabilir.
-- [ ] Alarm → bildirim merkezi ve telefon listesi; `camera.telegram.enabled` açıkken Telegram'a da gider, ağ yokken program
+      _P20c kısmı hazır (kutu `privacy-auditor` ve P20e aydınlatma metniyle kapanır):_ çıkışta fiziksel silme + audit, bayt audit'te yok
+      (`tests/unit/camera-data.test.ts`: "çıkış yapınca yüz satırı fiziksel silinir…"), yedek/dışa aktarma/kopya dışı
+      (`migrations-0021.test.ts`, `backup-biometric.test.ts`, adım 1).
+- [x] Alarm → bildirim merkezi ve telefon listesi; `camera.telegram.enabled` açıkken Telegram'a da gider, ağ yokken program
       bildirimi yine düşer (sahte sunucu testi, 5 sn zaman aşımı); "misafir olarak kaydet" mevcut kişi akışını açar (e2e).
-      _P20a kısmı hazır (kutu P20c'de kapanır):_ Telegram istemcisi, 5 sn zaman aşımı, `network.enabled=false` → 0 istek,
-      sahte yerel sunucu testi (`src/main/network/telegram/telegram.test.ts`, `tests/unit/permissions-camera.test.ts`).
+      Telegram istemcisi, 5 sn zaman aşımı, `network.enabled=false` → 0 istek: `src/main/network/telegram/telegram.test.ts`;
+      alarm → `camera_events` + `notifications`, mesajda misafir adı yok, ağ kapalıyken de düşer:
+      `tests/unit/camera-data.test.ts` ("Telegram açıkken fotoğraflı mesaj gider…", "ağ kapalıyken Telegram isteği çıkmaz…");
+      telefon yalnız kimlik/zaman/durum: `camera-data.test.ts` + `tests/e2e/mobile/camera.spec.ts`; "misafir olarak kaydet"
+      (otelde kalan mevcut misafire yüz bağlama): `tests/e2e/electron/camera.spec.ts` ("Kişiler kartı: …").
 - [ ] Ultralytics telemetrisi kapalı (`settings.sync=False` testi); ağ kapalıyken yan süreç açılır ve tanır; model dosyaları
       paket içinde; `THIRD_PARTY_NOTICES` K-57 lisans notunu içerir.
       _P20d kısmı hazır (kutu P20f'de kapanır; model dosyalarını paketleme getirir):_ `settings.sync=False` + çevrimdışı ortam
@@ -193,3 +199,50 @@ kılavuza Kamera bölümü; aydınlatma metni (P20e).
 **Sahip onay paketine:** gerçek model dosyalarıyla (`yolo11n.pt`, `buffalo_s`) ölçüm ve sha256 (P20f); sahada eşik/marj kalibrasyonu;
 InsightFace izin e-postası (`06` §6.4); gerçek kamerada ≥ 4 analiz/sn ve kişi-yokken-yüz taraması CPU maliyeti. Gerçek `ultralytics` ve
 `insightface` Codespace'te kurulmadı (torch ~1 GB); testler aynı çağrı biçimini taklit eden sahte modüllerle çalışır.
+
+### P20c — Veri entegrasyonu (2026-11-13; adım 1: migrasyon 0021 + şifreleme, adım 2: bu bölüm)
+
+**Yapılanlar**
+- **Kameradan yüz al** (Kişiler → misafir kartı → Bilgiler): `camera.enroll` yetkisi (görme/düzenleme), yalnız otelin ana bilgisayar
+  penceresi; yüz vektörü + kırpma yan süreçten anlık alınır, AES-GCM ile `guest_faces`'e yazılır (`enrolled_at/by`, rıza alanı yok,
+  K-58); kartta "yüz kaydı var/yok", resim, silme (onaylı). Misafir başına en çok 5 yüz; yalnız otelde kalan misafir için; anahtar deposu
+  yoksa hiç alınmaz (düz yüz asla yazılmaz). Yordamlar: `camera.faceStatus/enrollFace/deleteFaces/candidates/alertCrop/saveAlertAsGuest`.
+- **Eşitleme** (`src/main/services/camera-sync.ts`): Bismuth 3 sn'de bir yan süreçten alarmları çeker ve içerideki misafirlerin yüz
+  listesini (ad/oda/vektör, tüm liste) verir; liste yalnız değişince ya da yan süreç yeniden başlayınca (`boot`) gönderilir. Check-in/out,
+  yüz ekleme/silme, oda değişikliği listeyi kendiliğinden değiştirir (liste "otelde kalan misafirin yüzü"nden türetilir).
+- **Yan süreç diske yazmaz** (K-51, K-53): `database.py` (SQLite), `/alerts` ve `/guest_photos` statik yolları, `/api/guests*`,
+  fotoğraf yazımı ve bakım işi kalktı; yüzler bellekte (`face_store.FaceStore`), alarmlar bellek kuyruğunda
+  (`AlertQueue`, `boot` + numara); yeni uçlar `PUT /api/faces/active`, `POST /api/faces/capture|extract`, `GET /api/alerts?after&boot`.
+  `tests/test_no_disk.py` (kaynakta sqlite/imwrite/yazma yok; çalışırken yazma girişimi testi düşürür).
+- **Alarm → Bismuth:** alarmlar `camera_events`'e (`source_ref` = `boot:no`, tekil), kırpma şifreli, `expires_at` =
+  alarm + `camera.alertRetentionDays`; her biri `notifications` satırı (`camera_alert`), pencere bildirimi ve (açıksa) Telegram
+  (fotoğraf ayara göre, mesajda ad yok, K-50). P20b'nin `camera-alert-state.json` dosyası kalktı; işaretler `camera_events.state`
+  (+ `seen_by/at`, `handled_by/at`). Eski sürümlerin düz dosyaları (`hotel_guests.db`, `alerts/`, `guest_photos/`,
+  `camera-alert-state.json`) açılışta silinir (`src/main/camera/legacy.ts`).
+- **Silme (K-52):** çıkışta aynı işlemde (`checkOutIn` → `releaseFaces`): `camera.faceRetentionDays` = 0 → fiziksel silme + audit
+  (`guest_face` / `delete` / `checkout`); > 0 → `expires_at` konur. Saklama işi (açılışta + saatlik; `purgeExpired`): süresi gelen
+  yüzler, çıkışı görülmeden ayrılan misafirlerin yüzleri, `alertRetentionDays` geçen alarm kırpmaları (olay satırı kalır); sayılar audit'te.
+  Şifreli bayt audit'e hiç yazılmaz (testli).
+- **Kamera ekranı** alarm listesi `camera_events`'ten okunur; telefon yalnız kimlik/zaman/durum (`hasCrop` telefonda hep false);
+  "Misafir olarak kaydet" (yalnız ana bilgisayar penceresi, `camera.enroll`): alarm kırpması açılır, otelde kalan misafir seçilir,
+  yan sürece vektör çıkarttırılıp misafire yüz olarak bağlanır; alarm "halledildi" olur.
+
+**Karşılanan:** K-50, K-51, K-52, K-53, K-58 (rıza alanı yok), G-23, G-60.
+
+**Varsayılanlar (otonom varsayılan)**
+- Yüz yalnız **otelde kalan** misafir için alınır; kimliği olmayan/ayrılmış misafire yüz bağlanmaz.
+- Telegram fotoğrafı alarm **yüz kırpması**dır (sahne karesi değil): Bismuth yalnız kırpmayı saklar, gönderdiği de odur.
+- Alarm kırpması için anahtar deposu yoksa olay yine yazılır, kırpma tutulmaz (düz kırpma asla yazılmaz).
+- "Misafir olarak kaydet" alarmı `handled` yapar ve olaya `guest_id` yazar.
+- `camera.faceRetentionDays` > 0: çıkıştan sonra yüz pasif (yan sürece verilmez), süre sonunda silinir.
+- Test/e2e için `BISMUTH_FACE_KEY=memory` (yalnız paketsiz derlemede): anahtar deposu olmayan makinede bellek anahtarı; paketli sürüm yok sayar.
+- Yeni yetki alanı yok (`camera.enroll` P20a'da vardı); alarm kırpmasını görmek ve aday listesi de `camera.enroll` ister.
+
+**Ölçümler (Codespace, gerçek model yok):** 200 yüz + 200 alarm kırpması bellekte: RSS 43 → 66 MB; kırpma + kuyruğa alma ≈ 0,6 ms/alarm
+(1080p kareden). Analiz döngüsünün CPU/RSS değerleri P20a/P20d ölçümlerinden değişmedi (bu pakette döngüye yalnız veritabanı kalktı).
+
+**Sahip onay paketine:** gerçek kamerada "Kameradan yüz al" → tanınma → çıkışta silinme; Windows/macOS anahtar deposu ile yüz
+kaydı (Codespace'te anahtar deposu yok: e2e bellek anahtarıyla koştu); alarm → Telegram'a uçtan uca (gerçek bot).
+
+**Kalanlar:** `privacy-auditor` ve `db-reviewer` turu; `otel-kamera/static/index.html` (eski panel, ölü) P20f'de
+silinir; bildirim merkezi ekranı yok (satırlar yazılır, pencere bildirimi çıkar).

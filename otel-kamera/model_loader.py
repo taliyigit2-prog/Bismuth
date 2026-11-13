@@ -127,7 +127,7 @@ def load_yolo(settings: Config, importer: Optional[Callable[[], Any]] = None) ->
     """YOLO11n'i yerel dosyadan yükler. `importer` yalnız testlerde (sahte `ultralytics`) verilir."""
     weights = require_yolo_weights(settings)  # dosya yoksa ultralytics'e hiç girilmez (o indirirdi)
     verify_checksums(models_dir(settings))
-    apply_offline_env(str(Path(settings.DB_PATH).resolve().parent / "ultralytics"))
+    apply_offline_env(str(Path(settings.RUNTIME_DIR or ".").resolve() / "ultralytics"))
     if importer is None:
         import ultralytics as _ultralytics
 

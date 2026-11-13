@@ -31,7 +31,8 @@ import { closingBackupNeeded, createBackupScheduler } from './backup/scheduler'
 import { readSetting } from './services/settings-service'
 import { processImage, startAttachmentRetention } from './attachments'
 import { createTaskScheduler, showOsNotice } from './notifications'
-import { createCameraRuntime } from './camera'
+import { createCameraRuntime, createFaceCrypto } from './camera'
+import { removeLegacyCameraFiles } from './camera/legacy'
 import { LOCAL_CONFIG, readConnectionConfig, writeConnectionConfig } from './server/connection-config'
 import {
   bundledSchemaVersion,
@@ -54,6 +55,10 @@ const devOrigin = devUrl ? new URL(devUrl).origin : null
 const startedAt = Date.now()
 
 let mainWindow: BrowserWindow | null = null
+/** How often alarms are taken from the sidecar and the face list is sent to it, and how often the retention job runs. */
+const CAMERA_ROUND_MS = 3_000
+const CAMERA_PURGE_MS = 3_600_000
+
 /** The camera sidecar's runtime once built (Faz 20): the request filter reads its address for the live picture. */
 let cameraRuntime: ReturnType<typeof createCameraRuntime> | null = null
 let database: DatabaseHandle | null = null
@@ -198,7 +203,22 @@ async function start(): Promise<void> {
       writeGate: () => (replacedNow() ? 'replaced' : null),
       // Development and e2e only (ignored in a packaged build): optional online data goes to a local fake server.
       network: { origin: process.env['BISMUTH_EXTERNAL_ORIGIN'] ?? null, secrets: safeStorage },
-      camera: { testMessage: () => tMain('main.camera.telegramTest') },
+      camera: {
+        // Development and e2e only (ignored in a packaged build): a headless machine has no system key store, so the
+        // face key lives in memory for that run (K-51: a packaged program never keeps a face without the key store).
+        ...(!app.isPackaged && process.env['BISMUTH_FACE_KEY'] === 'memory'
+          ? { faceCrypto: createFaceCrypto(null, null) }
+          : {}),
+        testMessage: () => tMain('main.camera.telegramTest'),
+        // K-50: the Telegram text and the window notice of an alarm carry the time and the camera's place, never a name.
+        alertMessage: ({ time, location }) =>
+          tMain(location ? 'main.camera.alertTelegramAt' : 'main.camera.alertTelegram', { time, location }),
+        onAlert: ({ time, location }) =>
+          showOsNotice({
+            title: tMain('main.camera.alertTitle'),
+            body: tMain(location ? 'main.camera.alertBodyAt' : 'main.camera.alertBody', { time, location })
+          })
+      },
       // Exported tables: the usual "Save as" dialog, starting in Documents with the suggested name.
       saveExport: saveAs,
       backup: {
@@ -398,6 +418,37 @@ async function start(): Promise<void> {
     })
     services.camera.attach(camera)
     cameraRuntime = camera
+    // P20c: the first versions kept plain face files; Bismuth's own database is the only keeper now (K-51, K-53).
+    removeLegacyCameraFiles(paths.root)
+    // Alarms in and the face list out every few seconds while the sidecar runs; one round at a time. A round that
+    // fails (database busy, sidecar gone) is tried again at the next one.
+    let camBusy = false
+    const camRound = (): void => {
+      if (camBusy || !services.setup.isDone() || hostRuntime.guard.replaced() !== null) return
+      camBusy = true
+      services.camera
+        .tick(systemCtx())
+        .catch((error: unknown) => log.warn('camera round failed', error))
+        .finally(() => {
+          camBusy = false
+        })
+    }
+    const camTimer = setInterval(camRound, CAMERA_ROUND_MS)
+    // K-52: faces past their date or of guests who left, sealed alarm pictures past `camera.alertRetentionDays`.
+    const camPurge = (): void => {
+      if (!services.setup.isDone() || hostRuntime.guard.replaced() !== null) return
+      try {
+        services.camera.purge(systemCtx())
+      } catch (error) {
+        log.warn('camera retention failed', error)
+      }
+    }
+    camPurge()
+    const purgeTimer = setInterval(camPurge, CAMERA_PURGE_MS)
+    app.on('will-quit', () => {
+      clearInterval(camTimer)
+      clearInterval(purgeTimer)
+    })
     const apply = (restart: boolean): void =>
       void camera.apply({ restart }).catch((error: unknown) => log.warn('camera sidecar', error))
     services.settings.onChange((_values, changed) => {

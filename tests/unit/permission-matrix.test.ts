@@ -45,8 +45,6 @@ const probes: Probe[] = []
  */
 const EXPECTED_UNPROBED: PermissionKey[] = [
   'ledger.locked',
-  // Faz 20: no service call needs it yet ("Kameradan yüz al" arrives with P20c; camera rights: permissions-camera.test.ts).
-  'camera.enroll',
   'reports.operations',
   'reports.staff',
   'reports.export'
@@ -580,7 +578,43 @@ beforeAll(async () => {
       name: 'kamera alarmı işaretle',
       permission: 'camera',
       level: 'view',
-      run: (c) => svc.camera.markAlert(c, { id: '1', state: 'seen' })
+      run: (c) => svc.camera.markAlert(c, { id: '0'.repeat(26), state: 'seen' })
+    },
+    {
+      name: 'kamera yüz durumu',
+      permission: 'camera.enroll',
+      level: 'view',
+      run: (c) => svc.camera.faceStatus(c, { guestId: 'none' })
+    },
+    {
+      name: 'kamera yüz al',
+      permission: 'camera.enroll',
+      level: 'edit',
+      run: (c) => svc.camera.enrollFace(c, { guestId: 'none' })
+    },
+    {
+      name: 'kamera yüz sil',
+      permission: 'camera.enroll',
+      level: 'edit',
+      run: (c) => svc.camera.deleteFaces(c, { guestId: 'none' })
+    },
+    {
+      name: 'kamera aday misafirler',
+      permission: 'camera.enroll',
+      level: 'view',
+      run: (c) => svc.camera.candidates(c)
+    },
+    {
+      name: 'kamera alarm resmi',
+      permission: 'camera.enroll',
+      level: 'view',
+      run: (c) => svc.camera.alertCrop(c, { id: '0'.repeat(26) })
+    },
+    {
+      name: 'kamera alarmdan misafir kaydet',
+      permission: 'camera.enroll',
+      level: 'edit',
+      run: (c) => svc.camera.saveAlertAsGuest(c, { id: '0'.repeat(26), guestId: 'none' })
     },
     {
       name: 'kamera alarmları duraklat',

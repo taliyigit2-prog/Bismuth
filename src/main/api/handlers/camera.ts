@@ -21,5 +21,14 @@ export const cameraHandlers = (services: Services): HandlersFor<keyof typeof cam
     await services.camera.markAlert(ctx, input)
     return { ok: true as const }
   },
-  'camera.setAlarmsPaused': (ctx, input) => services.camera.setAlarmsPaused(ctx, input)
+  'camera.setAlarmsPaused': (ctx, input) => services.camera.setAlarmsPaused(ctx, input),
+  'camera.faceStatus': (ctx, input) => services.camera.faceStatus(ctx, input),
+  'camera.enrollFace': (ctx, input) => services.camera.enrollFace(ctx, input),
+  'camera.deleteFaces': (ctx, input) => services.camera.deleteFaces(ctx, input),
+  'camera.candidates': (ctx) => services.camera.candidates(ctx),
+  'camera.alertCrop': (ctx, input) => services.camera.alertCrop(ctx, input),
+  'camera.saveAlertAsGuest': async (ctx, input) => {
+    await services.camera.saveAlertAsGuest(ctx, input)
+    return { ok: true as const }
+  }
 })

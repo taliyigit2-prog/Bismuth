@@ -154,12 +154,8 @@ function Body({ status }: { status: CameraStatus }) {
   const hostWindow = transport.kind === 'ipc' && !isMobile
   const running = view.tone === 'running' || view.key === 'slow'
   const live = useApiQuery('camera.live', {}, { enabled: hostWindow && running, refetchInterval: 2_000 })
-  // While the list is not available (the sidecar is still starting) it is asked for again soon, then every 10 seconds.
-  const alerts = useApiQuery(
-    'camera.alerts',
-    {},
-    { refetchInterval: (query) => (query.state.data?.available ? 10_000 : 2_000) }
-  )
+  // The list is Bismuth's own table (P20c): new alarms land there within a few seconds of the sidecar seeing them.
+  const alerts = useApiQuery('camera.alerts', {}, { refetchInterval: 5_000 })
   const off = view.key === 'disabled' || view.key === 'noSource' || view.key === 'unavailable'
 
   if (off) return <SwitchedOff status={status} />

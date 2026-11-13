@@ -1,6 +1,6 @@
 // The sidecar's life against a real child process (tests/fixtures/fake-sidecar.mjs stands in for the Python service):
 // start, token, loopback only, stop, parent-pipe, crash notices, hang, stubborn process.
-import { readFileSync, existsSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -16,6 +16,7 @@ import {
   type SidecarOptions
 } from './sidecar'
 import { buildSidecarConfig } from './config'
+import { removeLegacyCameraFiles } from './legacy'
 import { redactSecrets } from './redact'
 
 const FIXTURE = fileURLToPath(new URL('../../../tests/fixtures/fake-sidecar.mjs', import.meta.url))
@@ -269,8 +270,13 @@ describe('ayar ve sır', () => {
       WEB_PORT: 47512,
       FACE_SIMILARITY_THRESHOLD: 0.36,
       CONFIRMATION_FRAMES: 3,
-      ALERT_RETENTION_DAYS: 3
+      RUNTIME_DIR: '/tmp/cam'
     })
+    // P20c: no database, alarm or picture path is given any more; the sidecar keeps nothing on disk (K-51, K-53).
+    expect(Object.keys(cfg)).not.toEqual(
+      expect.arrayContaining(['DB_PATH', 'ALERTS_DIR', 'GUEST_PHOTOS_DIR', 'ALERT_RETENTION_DAYS'])
+    )
+    expect(JSON.stringify(cfg)).not.toMatch(/hotel_guests|guest_photos|alerts/)
     expect(JSON.stringify(cfg)).not.toMatch(/telegram/i) // K-50: nothing about Telegram reaches Python
     expect(() => buildSidecarConfig(SETTINGS_DEFAULTS, null, 47512, { dataDir: '/tmp/cam' })).toThrow(
       SidecarConfigError
@@ -329,5 +335,40 @@ describe('ayar ve sır', () => {
     expect(out).not.toContain('admin')
     expect(out).not.toContain('TESTtoken')
     expect(out).toContain('10.0.0.2')
+  })
+})
+
+describe('eski düz dosyalar (P20c; K-51, K-53)', () => {
+  it('ilk sürümlerin düz misafir veritabanı, alarm/yüz resimleri ve işaret dosyası açılışta silinir; yeni dosyalara dokunulmaz', () => {
+    const root = tempDataDir()
+    mkdirSync(join(root, 'camera', 'alerts'), { recursive: true })
+    mkdirSync(join(root, 'camera', 'guest_photos'), { recursive: true })
+    mkdirSync(join(root, 'camera', 'ultralytics'), { recursive: true })
+    writeFileSync(join(root, 'camera', 'hotel_guests.db'), 'x')
+    writeFileSync(join(root, 'camera', 'hotel_guests.db-wal'), 'x')
+    writeFileSync(join(root, 'camera', 'alerts', 'face_1.jpg'), 'x')
+    writeFileSync(join(root, 'camera', 'guest_photos', 'guest_1.jpg'), 'x')
+    writeFileSync(join(root, 'camera-alert-state.json'), '{}')
+    writeFileSync(join(root, 'camera', 'face-key.bin'), 'sealed key')
+    writeFileSync(join(root, 'camera-secrets.json'), '{}')
+    const removed = removeLegacyCameraFiles(root)
+    expect(removed.sort()).toEqual(
+      [
+        join('camera', 'alerts'),
+        join('camera', 'guest_photos'),
+        join('camera', 'hotel_guests.db'),
+        join('camera', 'hotel_guests.db-wal'),
+        'camera-alert-state.json'
+      ].sort()
+    )
+    for (const gone of ['hotel_guests.db', 'hotel_guests.db-wal', 'alerts', 'guest_photos'])
+      expect(existsSync(join(root, 'camera', gone))).toBe(false)
+    expect(existsSync(join(root, 'camera-alert-state.json'))).toBe(false)
+    // The sealed key, the secrets and the model runtime folder stay.
+    expect(existsSync(join(root, 'camera', 'face-key.bin'))).toBe(true)
+    expect(existsSync(join(root, 'camera-secrets.json'))).toBe(true)
+    expect(existsSync(join(root, 'camera', 'ultralytics'))).toBe(true)
+    // Nothing left to remove the second time.
+    expect(removeLegacyCameraFiles(root)).toEqual([])
   })
 })

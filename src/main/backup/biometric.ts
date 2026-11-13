@@ -21,7 +21,8 @@ export function scrubBiometricData(file: string): number {
       if (!exists) continue
       removed += db.prepare(`delete from ${table}`).run().changes
     }
-    if (removed > 0) db.exec('VACUUM') // free pages would still hold the sealed bytes
+    // Always: even with empty tables, free pages from earlier deletions may still hold sealed bytes.
+    db.exec('VACUUM')
     return removed
   } finally {
     db.close()

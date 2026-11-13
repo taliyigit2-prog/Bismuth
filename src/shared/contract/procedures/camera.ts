@@ -1,8 +1,14 @@
-// Faz 20 (P20a, P20b): the camera sidecar's state, its secrets, the Telegram test and the Kamera screen's data.
+// Faz 20 (P20a, P20b, P20c): the camera sidecar's state, its secrets, the Telegram test and the Kamera screen's data.
 // Spread into the contract by ./index.ts; handlers in src/main/api/handlers/camera.ts.
 import * as z from 'zod'
 import {
+  cameraAlertCropSchema,
+  cameraAlertIdInputSchema,
   cameraAlertsSchema,
+  cameraCandidatesSchema,
+  cameraFaceStatusSchema,
+  cameraGuestInputSchema,
+  cameraSaveAlertInputSchema,
   cameraLiveSchema,
   cameraMarkAlertInputSchema,
   cameraPauseInputSchema,
@@ -26,5 +32,12 @@ export const cameraProcedures = {
   'camera.live': proc(empty, cameraLiveSchema),
   'camera.alerts': proc(empty, cameraAlertsSchema),
   'camera.markAlert': proc(cameraMarkAlertInputSchema, ok),
-  'camera.setAlarmsPaused': proc(cameraPauseInputSchema, cameraPauseOutputSchema)
+  'camera.setAlarmsPaused': proc(cameraPauseInputSchema, cameraPauseOutputSchema),
+  // P20c (K-51…K-53): a guest's face (taken from the camera, sealed, deleted at check-out) and alarm crops. `camera.enroll`.
+  'camera.faceStatus': proc(cameraGuestInputSchema, cameraFaceStatusSchema),
+  'camera.enrollFace': proc(cameraGuestInputSchema, cameraFaceStatusSchema),
+  'camera.deleteFaces': proc(cameraGuestInputSchema, cameraFaceStatusSchema),
+  'camera.candidates': proc(empty, cameraCandidatesSchema),
+  'camera.alertCrop': proc(cameraAlertIdInputSchema, cameraAlertCropSchema),
+  'camera.saveAlertAsGuest': proc(cameraSaveAlertInputSchema, ok)
 } as const satisfies Record<string, Procedure>

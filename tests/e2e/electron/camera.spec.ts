@@ -12,6 +12,8 @@ import { expect, test } from './fixtures'
 const root = resolve(__dirname, '../../..')
 const shots = process.env['CAMERA_SHOTS']
 const env = {
+  // A headless machine has no system key store: the face key lives in memory for the run (ignored in a packaged build).
+  BISMUTH_FACE_KEY: 'memory',
   BISMUTH_CAMERA_PYTHON: process.execPath,
   BISMUTH_CAMERA_SCRIPT: resolve(root, 'tests/fixtures/fake-sidecar.mjs')
 }
@@ -75,21 +77,32 @@ test('Kamera ekranı: durum, canlı görüntü, şerit, kutular, alarm işaretle
   expect(await page.evaluate(overflowReport)).toEqual([])
   if (shots) await page.screenshot({ path: `${shots}/camera-desktop.png`, fullPage: true })
 
-  // Alarms: new → seen → handled; the marks survive a reload.
+  // Alarms: the program takes them from the sidecar into its own table within a few seconds (P20c), then they are listed
+  // from there: new → seen → handled; the marks survive a reload (they are rows now, not a file).
   const alerts = page.getByTestId('camera-alerts').locator('li')
-  await expect(alerts).toHaveCount(3)
-  await expect(page.getByTestId('camera-alert-3')).toHaveAttribute('data-state', 'new')
-  await page.getByTestId('camera-alert-seen-3').click()
-  await expect(page.getByTestId('camera-alert-3')).toHaveAttribute('data-state', 'seen')
-  await page.getByTestId('camera-alert-handled-2').click()
-  await expect(page.getByTestId('camera-alert-2')).toHaveAttribute('data-state', 'handled')
+  await expect(alerts).toHaveCount(3, { timeout: 30_000 })
+  const newest = alerts.nth(0)
+  const middle = alerts.nth(1)
+  await expect(newest).toHaveAttribute('data-state', 'new')
+  await newest.getByRole('button', { name: 'Gördüm' }).click()
+  await expect(newest).toHaveAttribute('data-state', 'seen')
+  await middle.getByRole('button', { name: 'Hallettim' }).click()
+  await expect(middle).toHaveAttribute('data-state', 'handled')
   await reload(page, '#/camera')
-  await expect(page.getByTestId('camera-alert-3')).toHaveAttribute('data-state', 'seen')
-  await expect(page.getByTestId('camera-alert-2')).toHaveAttribute('data-state', 'handled')
-  await expect(page.getByTestId('camera-alert-1')).toHaveAttribute('data-state', 'new')
+  await expect(alerts).toHaveCount(3, { timeout: 30_000 })
+  await expect(alerts.nth(0)).toHaveAttribute('data-state', 'seen')
+  await expect(alerts.nth(1)).toHaveAttribute('data-state', 'handled')
+  await expect(alerts.nth(2)).toHaveAttribute('data-state', 'new')
   await page.getByTestId('camera-filter-handled').click()
-  await expect(page.getByTestId('camera-alert-2')).toBeVisible()
-  await expect(page.getByTestId('camera-alert-1')).toHaveCount(0)
+  await expect(alerts).toHaveCount(1)
+  await page.getByTestId('camera-filter-all').click()
+  await expect(alerts).toHaveCount(3)
+
+  // The same alarm is not written twice when the screen asks again (one row per alarm of the sidecar's run).
+  await page.waitForTimeout(4_000)
+  await expect(alerts).toHaveCount(3)
+  const listed = await api<{ alerts: { id: string }[] }>(page, 'camera.alerts')
+  expect(new Set(listed.body.alerts.map((a) => a.id)).size).toBe(3)
 
   // Pause: the strip says so.
   await page.getByRole('switch', { name: 'Alarmları duraklat' }).click()
@@ -109,4 +122,109 @@ test('Kamera ekranı: durum, canlı görüntü, şerit, kutular, alarm işaretle
   expect(await page.locator('body').innerText()).not.toContain('gizli@')
   expect(await page.evaluate(overflowReport)).toEqual([])
   if (shots) await page.screenshot({ path: `${shots}/camera-settings-desktop.png`, fullPage: true })
+})
+
+interface BookingView {
+  guest: { id: string }
+  stays: { id: string }[]
+}
+interface FaceStatus {
+  inHouse: boolean
+  count: number
+  keyStore: boolean
+}
+
+const localDay = (offset: number): string => {
+  const d = new Date()
+  d.setDate(d.getDate() + offset)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+test('Kişiler kartı: "Kameradan yüz al" kaydeder, "Yüz kaydını sil" siler, çıkışta yüz kalmaz; alarm misafire bağlanır (P20c)', async ({
+  launch
+}) => {
+  const { page } = await launch({ env })
+  expect(
+    (await api(page, 'camera.setSecrets', { source: 'rtsp:' + '//kamera:gizli@192.168.1.64:554/s' })).status
+  ).toBe(200)
+  expect((await api(page, 'settings.set', { 'camera.enabled': true })).status).toBe(200)
+  await expect
+    .poll(async () => (await api<{ state: string }>(page, 'camera.status')).body.state, { timeout: 30_000 })
+    .toBe('running')
+
+  // A guest who is in the house (checked in today).
+  const options = (
+    await api<{ rooms: { id: string; number: string }[]; channels: { id: string }[] }>(
+      page,
+      'booking.options'
+    )
+  ).body
+  const created = await api<BookingView>(page, 'booking.create', {
+    guest: { firstName: 'Örnek', lastName: 'Kameralı', phone: '0532 111 22 44' },
+    channelId: options.channels[0]!.id,
+    stays: [
+      {
+        roomId: options.rooms.find((r) => r.number === '101')!.id,
+        checkIn: localDay(0),
+        checkOut: localDay(2),
+        nightlyPriceMinor: 200_000
+      }
+    ]
+  })
+  expect(created.status, JSON.stringify(created.body)).toBe(200)
+  const guestId = created.body.guest.id
+  const stayId = created.body.stays[0]!.id
+  expect((await api(page, 'booking.checkIn', { stayId })).status).toBe(200)
+
+  await reload(page, '#/guests')
+  await page.getByTestId('guest-search').fill('kameralı')
+  await page.getByTestId('guest-table').getByRole('button', { name: 'Örnek Kameralı' }).click()
+  const sheet = page.getByTestId('guest-sheet')
+  await sheet.getByRole('tab', { name: 'Bilgiler' }).click()
+  const face = sheet.getByTestId('guest-face')
+  await expect(face).toBeVisible()
+  await expect(face.getByTestId('guest-face-state')).toHaveText('Yüz kaydı yok')
+
+  const status = (await api<FaceStatus>(page, 'camera.faceStatus', { guestId })).body
+  expect(status).toMatchObject({ inHouse: true, count: 0 })
+  if (!status.keyStore) {
+    // No operating-system key store on this machine (a headless Linux): a face is never kept unsealed, so taking is off.
+    await expect(face.getByTestId('guest-face-enroll')).toBeDisabled()
+    await expect(face).toContainText('yüz bilgisini güvenle saklayamıyor')
+    return
+  }
+
+  // Take the face: sealed in Bismuth's database, shown as a count; the sidecar is given the list of faces in the house.
+  await face.getByTestId('guest-face-enroll').click()
+  await expect(face.getByTestId('guest-face-state')).toHaveText('1 yüz kaydı var')
+  await expect(face.getByTestId('guest-face-crop')).toBeVisible()
+  expect((await api<FaceStatus>(page, 'camera.faceStatus', { guestId })).body.count).toBe(1)
+
+  // Delete it (asks first), then take another one.
+  await face.getByTestId('guest-face-delete').click()
+  await page.getByRole('button', { name: 'Vazgeç' }).click()
+  await expect(face.getByTestId('guest-face-state')).toHaveText('1 yüz kaydı var')
+  await face.getByTestId('guest-face-delete').click()
+  await page.getByTestId('guest-face-delete-confirm').click()
+  await expect(face.getByTestId('guest-face-state')).toHaveText('Yüz kaydı yok')
+  await face.getByTestId('guest-face-enroll').click()
+  await expect(face.getByTestId('guest-face-state')).toHaveText('1 yüz kaydı var')
+
+  // An alarm's face is saved as this guest's: the picker lists the guests who are in the house.
+  await reload(page, '#/camera')
+  const alerts = page.getByTestId('camera-alerts').locator('li')
+  await expect(alerts).toHaveCount(3, { timeout: 30_000 })
+  await alerts.first().getByRole('button', { name: 'Misafir olarak kaydet' }).click()
+  await expect(page.getByTestId('camera-save-guest-crop')).toBeVisible()
+  await page.getByTestId('camera-save-guest').click()
+  await page.getByRole('option', { name: /Örnek Kameralı · 101/ }).click()
+  await page.getByTestId('camera-save-guest-confirm').click()
+  await expect(alerts.first()).toContainText('Misafire bağlandı')
+  await expect(alerts.first()).toHaveAttribute('data-state', 'handled')
+  expect((await api<FaceStatus>(page, 'camera.faceStatus', { guestId })).body.count).toBe(2)
+
+  // Check-out: the faces are deleted for real, in the same step.
+  expect((await api(page, 'booking.checkOut', { stayId })).status).toBe(200)
+  const after = (await api<FaceStatus>(page, 'camera.faceStatus', { guestId })).body
+  expect(after).toMatchObject({ count: 0, inHouse: false })
 })
