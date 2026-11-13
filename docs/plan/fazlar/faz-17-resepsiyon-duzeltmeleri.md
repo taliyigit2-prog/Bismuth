@@ -16,25 +16,30 @@ kullanımı 2.0, ZORUNLU); G-37, G-39, G-42, G-43, G-46, G-60. Kararlar: K-44, K
 Faz 5–16 kodu (`main` ile aynı taban), `npm run check` yeşil, migrasyon sırası **0019 (P17d, dalga 2)** ve **0020 (P17b, dalga 3)**.
 
 ## Sorular
-S-100 (iade yetkisi), S-101 ("ortak görünüyor"), S-102…S-105 (gündüz kuralları), S-106 (grup folyosu). Cevapsız =
-`05-sorular.md` varsayılanı + "(varsayılan)".
+**Cevaplandı (2026-11-13, `06-kararlar.md` 7. tur):** S-100 resepsiyon iade girebilir; S-101 = (a) grup; S-102 saatlik,
+tutarı resepsiyon girer, kurulumda varsayılan saat ücreti; S-103 sınırsız; S-104 KBS'ye bildirilir; S-105 raporlara dahil +
+konaklama türü filtresi + aylık saatlik sayısı; S-106 tek hesap (varsayılan). Soru kalmadı.
 
 ## Teslimatlar
 1. **P17a Vazgeçme ve iade** — `booking.undoCheckIn`; `in_house` menüsünde "Vazgeçme ve iade" (aynı gün çıkış + iade /
    girişi geri al + iptal / erken çıkış); iptal ve çıkış pencerelerinde tahsilat özeti ve iade satırı ya da "İade
    bekliyor" parkı; `checked_out` panelde üç nokta menüsü (İade gir, Geçmiş, Not); iade satırı defter + kasa teslimi;
    raporlarda iptal / gelmedi / iade ayrı satırlar (bugün yalnız net toplam); `undoCheckIn`'de odada KBS işaretli kişi
-   varsa uyarı; kılavuz §3–4 güncel.
+   varsa uyarı; **resepsiyon iade girebilir** (`payments.refund` resepsiyon rolünde varsayılan E, rol ayarından
+   kapatılabilir; K-55); kılavuz §3–4 güncel.
 2. **P17b Grup rezervasyonu** — migrasyon 0020 (`reservation_groups`, `reservations.group_id`); oda başına misafir adı;
    grup paneli; `booking.checkInMany/checkOutMany` (atomik); takvimde grup deseni + lejant; folyo kipi ayarı (S-106).
 3. **P17c Hızlı takvim** — sağ tık / uzun basma menüsü; hızlı rezervasyon çubuğu; Ctrl/Shift çoklu seçim + toplu
    işlemler (not/giriş/çıkış/ödeme); bugün şeridi; panel başlığında Giriş yap · Ödeme al · Çıkış yap düğmeleri; takvim
-   üst çubuğunda "Son iptaller" (7 gün) listesi + lejant notu; park alanında park nedeni etiketi; S-101 (b) ise aynı
-   misafirin başka odadaki konaklaması için zincir simgesi.
-4. **P17d Gündüz kullanımı 2.0** — migrasyon 0019 (`room_nights.start_time/end_time`, indeks, `room_types.day_use_price_minor`);
-   `dayUse.*` ayarları; saat çakışma kuralı; ikinci tur çıkışında gece yuvası boşalır (hata C); takvimde yarım çubuk;
-   rapor satırı; doluluğa katılım ayarı; H-06 (çıkış penceresinde "aynı gün ücreti" varsayılanı ayardan, 0 için onay,
-   yuva doluysa alan gizli).
+   üst çubuğunda "Son iptaller" (7 gün) listesi + lejant notu; park alanında park nedeni etiketi (S-101 = a: zincir
+   simgesi yapılmaz).
+4. **P17d Saatlik konaklama (gündüz kullanımı 2.0, K-48)** — migrasyon 0019 (`room_nights.start_time/end_time`, indeks
+   `(room_id, date, slot, start_time)`, `room_types.hourly_price_minor` isteğe bağlı); `dayUse.turnoverMinutes` ayarı
+   (uyarı); aynı odada aynı gün **sınırsız** saatlik satış, yalnız saat çakışması engel; tutarı resepsiyon satış anında
+   girer (varsayılan: oda tipi saat ücreti × saat, yoksa boş); kurulum sihirbazında ve Ayarlar → Fiyatlar'da isteğe bağlı
+   saat ücreti; ikinci tur çıkışında gece yuvası boşalır (hata C); takvimde saatli çubuk; KBS listesine girer; raporlara
+   **dahil** + "konaklama türü: gecelik / saatlik" filtresi + aylık saatlik satış sayısı; H-06 (çıkış penceresinde
+   "aynı gün ücreti" varsayılanı saat ücretinden, 0 için onay, yuva doluysa alan gizli).
 5. **P17e Yüksek/Orta hata düzeltmeleri** (Kritik H-01 P17a'da) — `docs/analiz/02-hata-raporu.md` §2'de "P17e" işaretli bulgular:
    H-05 telefon numarası maskesi (+90/0 ayıklama, yapıştırma), H-07 misafir adı uzunluk sınırı + istemci 400'leri,
    H-08 gecelik fiyat doğrulama (negatif/üst sınır/`abc`/0 onayı), H-09 yetkisiz ayar sekmesi adı sızıntısı; her biri
@@ -49,13 +54,18 @@ S-100 (iade yetkisi), S-101 ("ortak görünüyor"), S-102…S-105 (gündüz kura
 - [ ] 3 odalı grup: oda başına ad, toplu giriş atomik, takvimde desen (migrasyon + servis + grid + e2e).
 - [ ] Sağ tık menüsü ve hızlı çubuk klavyeyle erişilebilir; telefonda uzun basma (e2e).
 - [ ] Betik C senaryosu: ikinci tur çıkışından sonra oda o gece satılabilir (servis testi, kırmızıdan yeşile).
-- [ ] Aynı gün iki gündüz satışı saat çakışmazsa olur, çakışırsa saatli `roomOccupied` (domain testi 8 senaryo).
-- [ ] Gündüz fiyat kipi ve rapor satırı ayarlara uyar; turizm istatistiği kuralı değişmedi (mevcut testler yeşil).
+- [ ] Aynı gün üç saatlik satış saat çakışmazsa olur, çakışırsa saatli `roomOccupied`; temizlik arası dolmadan uyarı ama
+      engel yok (domain testi 8 senaryo).
+- [ ] Saatlik tutar resepsiyonun girdiği değerdir; saat ücreti ayarlıysa önerilir; raporlarda saatlik satışlar dahil ve
+      türe göre süzülebilir, aylık sayı görünür; saatlik misafir KBS listesinde; turizm istatistiği kuralı değişmedi
+      (mevcut testler yeşil).
 - [ ] P17e listesindeki her bulgu için test kırmızıdan yeşile.
 - [ ] `npm run check`, hedefli e2e, `ui-reviewer` + `turkish-ui-copy` + `db-reviewer` + `decision-auditor` bulgularında Kritik/Yüksek yok.
 
 ## Teknik notlar
 - Durum makinesi değişmezleri `endReservation`/`settleStatus` korunur; yeni geçişler tabloya eklenir (03 §1.1).
+- Saatlik konaklama = `room_nights.slot='day'` + `start_time/end_time`; gece yuvasını kilitlemez; `dayUse.maxPerRoomPerDay`,
+  `dayUse.priceMode`, `dayUse.countsInOccupancy`, `dayUse.kbsReport` ayarları **yok** (sahip cevabıyla sabit kural).
 - `room_nights` benzersizliği 0019'da `(room_id, date, slot, start_time)`; eski satırlarda `start_time` null = tüm gün.
 - Para `amount_minor`; iade `payments.kind='refund'`, `assertRefundCovered` korunur; silme yok.
 - Takvim ızgarası sanallaştırılmış; `dir="ltr"` adası; inline style yalnız konum/boyut.
