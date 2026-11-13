@@ -13,15 +13,17 @@ export interface KeyInput {
   meta: boolean
   alt: boolean
   shift: boolean
+  isAutoRepeat?: boolean
 }
 
 /** What a key press asks of the window, or null when it is none of its keys. */
 export function windowKeyAction(input: KeyInput): WindowKeyAction | null {
   if (input.type !== 'keyDown' || input.alt) return null
   const mod = input.control || input.meta
-  if (!mod) return input.key === 'F11' && !input.shift ? 'fullscreen' : null
+  // A held key repeats; full screen toggles once per press (zoom may repeat).
+  if (!mod) return input.key === 'F11' && !input.shift && !input.isAutoRepeat ? 'fullscreen' : null
   // Ctrl/⌘+Shift+F; the physical key, so a Russian layout ("а") works too.
-  if (input.shift && input.code === 'KeyF') return 'fullscreen'
+  if (input.shift && input.code === 'KeyF') return input.isAutoRepeat ? null : 'fullscreen'
   const { key, code } = input
   if (key === '+' || key === '=' || code === 'NumpadAdd' || code === 'Equal') return { zoom: 'in' }
   if (key === '-' || key === '_' || code === 'NumpadSubtract' || code === 'Minus') return { zoom: 'out' }

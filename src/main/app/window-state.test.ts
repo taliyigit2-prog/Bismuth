@@ -38,6 +38,20 @@ describe('pencere durumu: hatırlama', () => {
     expect(state.fullScreen).toBe(false)
   })
 
+  it('bozuk dosyada "true" ya da "false" metni büyütme/tam ekran sayılmaz', () => {
+    const state = resolveWindowState(
+      stored({
+        bounds: { x: 0, y: 0, width: 1200, height: 800 },
+        maximized: 'false',
+        fullScreen: 'true'
+      }),
+      [main],
+      main
+    )
+    expect(state.maximized).toBe(false)
+    expect(state.fullScreen).toBe(false)
+  })
+
   it('dosya yok, bozuk ya da çok küçükse sistem yer seçer', () => {
     for (const raw of [
       null,

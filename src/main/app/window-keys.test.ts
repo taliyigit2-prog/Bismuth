@@ -22,6 +22,13 @@ describe('pencere tuşları', () => {
     expect(windowKeyAction(press('А', { control: true, shift: true, code: 'KeyF' }))).toBe('fullscreen')
   })
 
+  it('basılı tutulan F11 ya da Ctrl+Shift+F tam ekranı yalnız bir kez değiştirir', () => {
+    expect(windowKeyAction(press('F11', { isAutoRepeat: true }))).toBeNull()
+    expect(
+      windowKeyAction(press('F', { control: true, shift: true, code: 'KeyF', isAutoRepeat: true }))
+    ).toBeNull()
+  })
+
   it('Ctrl+F (arama) ve Ctrl+Shift+başka tuş tam ekran değildir', () => {
     expect(windowKeyAction(press('f', { control: true, code: 'KeyF' }))).toBeNull()
     expect(windowKeyAction(press('K', { control: true, shift: true, code: 'KeyK' }))).toBeNull()

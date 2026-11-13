@@ -90,7 +90,7 @@ Harcama sütunu: başlatıcının yazdığı `$` (dalga toplamı, gerçek).
 | 1 | P19c Depo temizliği (prototypes arşiv, faz0 iş akışları, icon, yerel yollar, kanca istisnaları) | 19 | — | feature-builder-lite | $2–4 | ~$3 | ✅ |
 | 2 | P17d Gündüz kullanımı 2.0 + ikinci tur hatası + H-06 (migrasyon **0019**) | 17 | booking, reservations, settings | db-migration-builder → calendar-specialist | $15–22 | ~$45 | ✅ |
 | 2 | P18a ui-shot çoklu boyut/ölçek/dil + ölçüm JSON; Electron e2e Codespace'te yeşil | 18 | scripts, tests/e2e | feature-builder-lite | $2–4 | ~$3 | ✅ |
-| 3 | P17b Grup rezervasyonu + toplu giriş (migrasyon **0020**) | 17 | booking, reservations | db-migration-builder → calendar-specialist | $15–22 | | ⬜ |
+| 3 | P17b Grup rezervasyonu + toplu giriş (migrasyon **0020**) | 17 | booking, reservations | db-migration-builder → calendar-specialist | $15–22 | | 🔄 |
 | 3 | P18c Pencere: F11, tam ekran/zoom hatırlama, çoklu monitör | 18 | main/windows, main/app | feature-builder | $6–10 | ~$10 | ✅ |
 | 4 | P17c Hızlı takvim: sağ tık, hızlı çubuk, çoklu seçim (+ toplu ödeme), bugün şeridi, son iptaller listesi, park nedeni etiketi | 17 | calendar | feature-builder | $8–12 | | ⬜ |
 | 4 | P17e Yüksek/Orta hata düzeltmeleri (02 raporu; H-05, H-07, H-08, H-09, H-19, H-21, H-24, H-25, H-44) | 17 | bulguya göre | feature-builder / calendar-specialist | $10–14 | | ⬜ |

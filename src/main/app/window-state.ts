@@ -88,8 +88,8 @@ export function resolveWindowState(
     if (!valid) return none
     return {
       bounds: fitToScreens(b, screens, primary),
-      maximized: Boolean(parsed.maximized),
-      fullScreen: Boolean(parsed.fullScreen),
+      maximized: parsed.maximized === true,
+      fullScreen: parsed.fullScreen === true,
       hasPosition: true
     }
   } catch {
