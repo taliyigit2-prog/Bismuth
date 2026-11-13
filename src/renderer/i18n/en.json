@@ -319,7 +319,90 @@
       "confirm": "Move",
       "hint": "Drag a bar to move the reservation to another room or other dates; you are asked to confirm when you drop it. With the keyboard: open the reservation and use the Nights tab."
     },
-    "groupLegend": "The same coloured frame and icon belong to one group"
+    "groupLegend": "The same coloured frame and icon belong to one group",
+    "quick": {
+      "menu": {
+        "checkIn": "Check in",
+        "checkOut": "Check out",
+        "pay": "Take payment",
+        "move": "Move",
+        "extend": "Extend or shorten",
+        "note": "Add note",
+        "park": "Park",
+        "noShow": "No-show",
+        "giveUp": "Gave up and refund",
+        "guest": "Guest card",
+        "cellTitle": "Room {{room}} · {{date}}",
+        "quick": "Quick reservation",
+        "detail": "Detailed reservation",
+        "hourly": "Hourly sale",
+        "block": "Close the room"
+      },
+      "title": "Quick reservation · Room {{room}} · {{date}}",
+      "name": "Guest name",
+      "people": "Guests",
+      "nights": "Nights",
+      "price": "Nightly rate",
+      "detail": "Details",
+      "errors": {
+        "name": "Enter the guest's name.",
+        "nights": "The number of nights must be between 1 and 400.",
+        "price": "Enter the nightly rate."
+      },
+      "today": {
+        "label": "Today's summary",
+        "arrivals": "Arriving today: {{count}}",
+        "departures": "Departing today: {{count}}",
+        "inHouse": "In the hotel: {{count}} rooms",
+        "done": "Done",
+        "failed": "Today's summary could not be loaded."
+      },
+      "recent": {
+        "button": "Recent cancellations",
+        "title": "Cancellations of the last {{days}} days",
+        "empty": "No cancellations or no-shows lately.",
+        "failed": "The list could not be loaded.",
+        "note": "Cancelled and no-show records also stay under Guest card → History.",
+        "status": {
+          "cancelled": "Cancelled",
+          "no_show": "No-show"
+        },
+        "rooms": "Room {{rooms}}",
+        "meta": "{{place}} · {{ended}}",
+        "metaDates": "{{place}} · {{from}} – {{to}} · {{ended}}"
+      },
+      "legendNote": "Cancelled and no-show reservations leave the calendar; they stay under Guest card → History.",
+      "bulk": {
+        "label": "Bulk actions",
+        "count": "Selected: {{count}}",
+        "checkIn": "Bulk check-in",
+        "checkOut": "Bulk check-out",
+        "note": "Bulk note",
+        "pay": "Bulk payment",
+        "attach": "Link to a group",
+        "clear": "Clear selection",
+        "checkInDone": "Rooms checked in: {{count}}",
+        "checkOutDone": "Rooms checked out: {{count}}",
+        "noteDone": "Reservations with a note: {{count}}",
+        "payDone": "Reservations paid: {{count}}",
+        "attachDone": "Reservations linked to the group: {{count}}",
+        "partial": "{{ok}} done, {{failed}} could not be done.",
+        "noteTitle": "Note for the chosen reservations",
+        "noteBody": "The note is added to all {{count}} chosen reservations.",
+        "noteLabel": "Note",
+        "payTitle": "Bulk payment",
+        "payBody": "Each reservation pays its own open balance. The amounts are below.",
+        "paySave": "Save payments",
+        "payNone": "The chosen reservations have no open balance.",
+        "payTotal": "Total",
+        "method": "Payment method",
+        "attachTitle": "Link to a group",
+        "attachBodyJoin": "The {{count}} chosen reservations join the group. Stays and amounts do not change.",
+        "attachBodyNew": "The {{count}} chosen reservations are joined in a new group. Stays and amounts do not change.",
+        "attachSave": "Link to the group",
+        "groupName": "Group name"
+      }
+    }
   },
   "today": {
     "title": "Today",
@@ -1545,7 +1628,13 @@
     "dayUseFreeNeedsConfirm": "The price is 0. Confirm a free check-out or enter an amount.",
     "hoursRequired": "Enter the hours for a same-day stay.",
     "groupStayMismatch": "The chosen room does not belong to this group. Close and reopen the group panel.",
-    "groupClosed": "This group was cancelled. Make a new group if needed."
+    "groupClosed": "This group was cancelled. Make a new group if needed.",
+    "groupPayCurrency": "The group's rooms are not in this currency. Take the payment on each room's own account.",
+    "groupPayExceeds": "The amount is more than the group's open balance. Lower the amount.",
+    "groupAttachTaken": "One of the chosen reservations is already in a group.",
+    "groupAttachClosed": "A closed or cancelled reservation cannot be linked to a group.",
+    "groupTooLarge": "A group can hold at most 30 rooms.",
+    "groupAttachTooFew": "Choose at least two reservations for a new group."
   },
   "common": {
     "close": "Close",
@@ -5840,7 +5929,12 @@
         "mixedCurrency": "The rooms use different currencies; no total is shown.",
         "notes": "Group notes",
         "noNotes": "No group notes yet. Press \"Note for all\" to add the first one.",
-        "charges": "Room charges"
+        "charges": "Room charges",
+        "pay": "Take group payment",
+        "roomPay": "Take payment",
+        "roomBalance": "Balance due: {{amount}}",
+        "stayRange": "{{from}} – {{to}}",
+        "stayRangeNotDue": "{{from}} – {{to}} · Not the check-in day yet"
       },
       "noteDialog": {
         "title": "Note on every room",
@@ -5856,7 +5950,18 @@
         "checkedIn": "The chosen rooms checked in",
         "checkedOut": "The chosen rooms checked out",
         "noteAdded": "Note added to every room",
-        "cancelled": "Group cancelled"
+        "cancelled": "Group cancelled",
+        "paid": "Group payment saved"
+      },
+      "payDialog": {
+        "title": "Group payment",
+        "body": "The group's open balance is {{amount}}.",
+        "amount": "Amount",
+        "method": "Payment method",
+        "note": "Note",
+        "needAmount": "Enter the amount.",
+        "tooMuch": "The amount is more than the open balance ({{amount}}).",
+        "spread": "The amount is spread over the rooms' open balances in booking order; each room gets its own payment row."
       }
     }
   },
@@ -6850,7 +6955,9 @@
       "week": "One week forward or back",
       "today": "Back to today",
       "open": "Open the selected cell",
-      "new": "New reservation in the selected cell"
+      "new": "New reservation in the selected cell",
+      "select": "Pick or drop a stay (Ctrl or Shift + click)",
+      "menu": "Actions menu of the stay or cell (right click)"
     },
     "forms": {
       "save": "Save",

@@ -24,6 +24,8 @@ export type ShortcutLabelKey =
   | 'shortcuts.calendar.today'
   | 'shortcuts.calendar.open'
   | 'shortcuts.calendar.new'
+  | 'shortcuts.calendar.select'
+  | 'shortcuts.calendar.menu'
   | 'shortcuts.forms.save'
   | 'shortcuts.forms.close'
   | 'shortcuts.forms.next'
@@ -138,6 +140,14 @@ export const SHORTCUTS: readonly ShortcutDef[] = [
   { id: 'calendar-today', group: 'calendar', labelKey: 'shortcuts.calendar.today', keys: ['Home'] },
   { id: 'calendar-open', group: 'calendar', labelKey: 'shortcuts.calendar.open', keys: ['Enter'] },
   { id: 'calendar-new', group: 'calendar', labelKey: 'shortcuts.calendar.new', keys: ['n'] },
+  // P17c: pick the stay under the cursor (Ctrl/Shift-click does the same with the mouse); the menu of its actions.
+  { id: 'calendar-select', group: 'calendar', labelKey: 'shortcuts.calendar.select', keys: [' '] },
+  {
+    id: 'calendar-menu',
+    group: 'calendar',
+    labelKey: 'shortcuts.calendar.menu',
+    keys: ['shift+F10', 'ContextMenu']
+  },
   // Every dialog and form (components/responsive-dialog.tsx, Radix dialogs; tests/unit/dialog-keys.test.tsx).
   { id: 'form-save', group: 'forms', labelKey: 'shortcuts.forms.save', keys: ['Enter'] },
   { id: 'form-close', group: 'forms', labelKey: 'shortcuts.forms.close', keys: ['Escape'] },
@@ -208,7 +218,9 @@ const KEY_CAPS: Record<string, string> = {
   Escape: 'Esc',
   Enter: 'Enter',
   Home: 'Home',
-  Tab: 'Tab'
+  Tab: 'Tab',
+  ' ': 'Space',
+  ContextMenu: 'Menu'
 }
 
 /** The caps of one combination: `mod+k` → ["Ctrl", "K"] (["⌘", "K"] on a Mac). */

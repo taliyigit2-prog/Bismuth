@@ -5,8 +5,18 @@
 // Desktop: right-hand sheet; phone: bottom sheet, the rooms as a list.
 import { useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { LogInIcon, LogOutIcon, MessageSquarePlusIcon, UsersIcon, XCircleIcon } from 'lucide-react'
+import {
+  BanknoteIcon,
+  LogInIcon,
+  LogOutIcon,
+  MessageSquarePlusIcon,
+  UsersIcon,
+  XCircleIcon
+} from 'lucide-react'
 import { localDateOf } from '@shared/date'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
+import { isAmount, MoneyInput, type MoneyValue } from '@/components/money-input'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -17,6 +27,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { ResponsiveDialog } from '@/components/responsive-dialog'
 import { ErrorState } from '@/components/states'
 import { useFormat } from '@/hooks/use-format'
+import { deferForPendingAmount } from '@/features/settings/use-admin'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { useCan } from '@/lib/view-as'
 import { cn } from '@/lib/utils'
@@ -25,6 +36,8 @@ import {
   requestPanel,
   useBookingMutation,
   useGroup,
+  localName,
+  useBookingOptions,
   useGroupPanelRequest,
   type GroupView
 } from './booking-api'
@@ -107,6 +120,7 @@ function Group({
   const [picked, setPicked] = useState<ReadonlySet<string> | null>(null)
   const [noteOpen, setNoteOpen] = useState(false)
   const [cancelOpen, setCancelOpen] = useState(false)
+  const [payOpen, setPayOpen] = useState(false)
   const stays = view.rooms.flatMap((r) => r.stays.filter((s) => s.status !== 'cancelled'))
   const dueIn = new Set(
     stays.filter((s) => s.status === 'planned' && s.checkIn <= today).map((s) => s.stayId)
@@ -146,6 +160,7 @@ function Group({
           {view.voided ? <Badge variant="outline">{t('booking.group.panel.voided')}</Badge> : null}
         </div>
         <SheetDescription className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <span className="sr-only">{t('booking.group.panel.description')}</span>
           <span>{t('booking.group.panel.rooms', { count: view.rooms.length })}</span>
           {view.leader ? <span>{t('booking.group.panel.leader', { name: view.leader.name })}</span> : null}
           <span data-testid="group-folio-mode">{t(`booking.group.panel.folio.${view.folioMode}`)}</span>
@@ -171,6 +186,20 @@ function Group({
               <LogOutIcon aria-hidden />
               {t('booking.group.panel.checkOut')} ({toCheckOut.length})
             </Button>
+            {can('payments', 'edit') &&
+            view.folioMode === 'single' &&
+            view.totals?.balanceMinor &&
+            view.totals.balanceMinor > 0 ? (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setPayOpen(true)}
+                data-testid="group-pay-open"
+              >
+                <BanknoteIcon aria-hidden />
+                {t('booking.group.panel.pay')}
+              </Button>
+            ) : null}
             <Button
               size="sm"
               variant="outline"
@@ -203,6 +232,7 @@ function Group({
               <Button
                 size="xs"
                 variant="ghost"
+                className="max-md:h-11"
                 onClick={() => setPicked(allChosen ? new Set() : new Set(selectable))}
                 data-testid="group-select-all"
               >
@@ -221,6 +251,7 @@ function Group({
                 selectable={selectable}
                 onToggle={toggle}
                 showBalance={view.folioMode === 'per_room'}
+                canPay={can('payments', 'edit')}
                 onOpenReservation={onOpenReservation}
               />
             ))}
@@ -231,7 +262,7 @@ function Group({
           <section className="grid gap-1 rounded-lg border p-3 text-sm" data-testid="group-total">
             <h3 className="font-semibold">{t('booking.group.panel.total')}</h3>
             <p className="flex justify-between gap-2">
-              <span>{t('booking.group.panel.total')}</span>
+              <span>{t('booking.group.panel.charges')}</span>
               <bdi className="tabular-nums">{f.money(total.chargesMinor, total.currency)}</bdi>
             </p>
             {total.balanceMinor !== null ? (
@@ -265,6 +296,14 @@ function Group({
 
       <GroupNoteDialog groupId={view.id} open={noteOpen} onOpenChange={setNoteOpen} />
       <GroupCancelDialog groupId={view.id} open={cancelOpen} onOpenChange={setCancelOpen} />
+      {payOpen && view.totals?.balanceMinor ? (
+        <GroupPayDialog
+          groupId={view.id}
+          currency={view.totals.currency}
+          balanceMinor={view.totals.balanceMinor}
+          onOpenChange={setPayOpen}
+        />
+      ) : null}
     </>
   )
 }
@@ -277,6 +316,7 @@ function RoomRow({
   selectable,
   onToggle,
   showBalance,
+  canPay,
   onOpenReservation
 }: {
   room: GroupRoom
@@ -286,6 +326,7 @@ function RoomRow({
   selectable: ReadonlySet<string>
   onToggle: (stayId: string, on: boolean) => void
   showBalance: boolean
+  canPay: boolean
   onOpenReservation: ((reservationId: string) => void) | undefined
 }) {
   const { t } = useTranslation()
@@ -317,8 +358,10 @@ function RoomRow({
               </Label>
               <Badge variant="outline">{t(`calendar.resStatus.${room.status}`)}</Badge>
               <span className="text-muted-foreground basis-full ps-7 text-xs tabular-nums">
-                {f.dayMonth(s.checkIn)} – {f.dayMonth(s.checkOut)}
-                {future ? ` · ${t('booking.group.panel.notDue')}` : ''}
+                {t(future ? 'booking.group.panel.stayRangeNotDue' : 'booking.group.panel.stayRange', {
+                  from: f.dayMonth(s.checkIn),
+                  to: f.dayMonth(s.checkOut)
+                })}
               </span>
             </div>
           )
@@ -331,24 +374,41 @@ function RoomRow({
       )}
       <div className="mt-2 flex flex-wrap items-center justify-between gap-2 ps-7">
         {showBalance && room.balanceMinor !== null ? (
-          <bdi className="text-sm tabular-nums">
-            {t('booking.group.panel.balance')}: {f.money(room.balanceMinor, room.currency)}
+          <bdi className="text-sm tabular-nums" data-testid={`group-room-balance-${room.reservationId}`}>
+            {t('booking.group.panel.roomBalance', { amount: f.money(room.balanceMinor, room.currency) })}
           </bdi>
         ) : (
           <span />
         )}
-        <Button
-          size="xs"
-          variant="ghost"
-          onClick={() => {
-            requestGroupPanel(null)
-            if (onOpenReservation) onOpenReservation(room.reservationId)
-            else requestPanel(room.reservationId)
-          }}
-          data-testid={`group-open-${room.reservationId}`}
-        >
-          {t('booking.group.panel.openReservation')}
-        </Button>
+        <div className="flex flex-wrap items-center gap-1">
+          {showBalance && canPay && (room.balanceMinor ?? 0) > 0 ? (
+            <Button
+              size="xs"
+              variant="outline"
+              className="max-md:h-11"
+              onClick={() => {
+                requestGroupPanel(null)
+                requestPanel(room.reservationId, { kind: 'pay' })
+              }}
+              data-testid={`group-room-pay-${room.reservationId}`}
+            >
+              {t('booking.group.panel.roomPay')}
+            </Button>
+          ) : null}
+          <Button
+            size="xs"
+            variant="ghost"
+            className="max-md:h-11"
+            onClick={() => {
+              requestGroupPanel(null)
+              if (onOpenReservation) onOpenReservation(room.reservationId)
+              else requestPanel(room.reservationId)
+            }}
+            data-testid={`group-open-${room.reservationId}`}
+          >
+            {t('booking.group.panel.openReservation')}
+          </Button>
+        </div>
       </div>
     </li>
   )
@@ -485,6 +545,120 @@ function GroupCancelDialog({
             {t('errors.reasonRequired')}
           </p>
         ) : null}
+      </form>
+    </ResponsiveDialog>
+  )
+}
+
+/** One payment on the group's single account (S-106): spread over the rooms' open balances, in booking order. */
+function GroupPayDialog({
+  groupId,
+  currency,
+  balanceMinor,
+  onOpenChange
+}: {
+  groupId: string
+  currency: string
+  balanceMinor: number
+  onOpenChange: (open: boolean) => void
+}) {
+  const { t } = useTranslation()
+  const f = useFormat()
+  const options = useBookingOptions()
+  const id = useId()
+  const [amount, setAmount] = useState<MoneyValue>({ amountMinor: balanceMinor, currency })
+  const [methodPick, setMethodPick] = useState('')
+  const [note, setNote] = useState('')
+  const [tried, setTried] = useState(false)
+  const methods = options.data?.methods ?? []
+  const methodId = methodPick || methods[0]?.id || ''
+  const tooMuch = isAmount(amount) && amount.amountMinor > balanceMinor
+  const bad = !isAmount(amount) || amount.amountMinor <= 0 || tooMuch
+  const pay = useBookingMutation('booking.payGroup', {
+    success: t('booking.group.toast.paid'),
+    onSuccess: () => onOpenChange(false)
+  })
+  return (
+    <ResponsiveDialog
+      open
+      onOpenChange={onOpenChange}
+      title={t('booking.group.payDialog.title')}
+      description={t('booking.group.payDialog.body', { amount: f.money(balanceMinor, currency) })}
+      footer={
+        <>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            {t('common.cancel')}
+          </Button>
+          <Button
+            type="submit"
+            form={`${id}-form`}
+            disabled={pay.isPending || !methodId}
+            data-testid="group-pay-save"
+          >
+            {t('common.save')}
+          </Button>
+        </>
+      }
+    >
+      <form
+        id={`${id}-form`}
+        className="grid gap-3"
+        noValidate
+        onSubmit={(e) => {
+          e.preventDefault()
+          if (deferForPendingAmount(e.currentTarget)) return
+          setTried(true)
+          if (bad || !isAmount(amount) || !methodId) return
+          pay.mutate({
+            groupId,
+            date: options.data?.today ?? localDateOf(new Date()),
+            methodId,
+            amountMinor: amount.amountMinor,
+            currency,
+            note: note.trim() || null
+          })
+        }}
+      >
+        <MoneyInput
+          id={`${id}-amount`}
+          label={t('booking.group.payDialog.amount')}
+          value={amount}
+          currencies={[currency]}
+          error={
+            tried && bad
+              ? tooMuch
+                ? t('booking.group.payDialog.tooMuch', { amount: f.money(balanceMinor, currency) })
+                : t('booking.group.payDialog.needAmount')
+              : null
+          }
+          onChange={setAmount}
+        />
+        <div className="grid gap-1.5">
+          <Label htmlFor={`${id}-method`}>{t('booking.group.payDialog.method')}</Label>
+          <Select value={methodId} onValueChange={setMethodPick}>
+            <SelectTrigger id={`${id}-method`} className="w-full" data-testid="group-pay-method">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {methods.map((m) => (
+                <SelectItem key={m.id} value={m.id}>
+                  {localName(f, m)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="grid gap-1.5">
+          <Label htmlFor={`${id}-note`}>{t('booking.group.payDialog.note')}</Label>
+          <Input
+            id={`${id}-note`}
+            autoComplete="off"
+            maxLength={500}
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+          />
+        </div>
+        <p className="text-muted-foreground text-xs">{t('booking.group.payDialog.spread')}</p>
       </form>
     </ResponsiveDialog>
   )

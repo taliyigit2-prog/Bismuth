@@ -2,7 +2,8 @@
 // reservation with its own guest name. The group links them; check-in/out and notes act on the whole group in one
 // transaction. Procedures: ./procedures/booking.ts; service: reservations-service.ts.
 import * as z from 'zod'
-import { idSchema, localDateSchema, minorSchema } from './rooms'
+import { amountSchema, idSchema, localDateSchema, minorSchema } from './rooms'
+import { currencyCode } from './settings'
 import { newGuestSchema, reservationCreateSchema, stayInputSchema } from './reservations'
 import { bookingNoteTextSchema } from './booking'
 
@@ -49,6 +50,38 @@ export const groupCancelSchema = z
   .object({ groupId: idSchema, reason: z.string().trim().min(3).max(200) })
   .strict()
 export type GroupCancelInput = z.input<typeof groupCancelSchema>
+
+/**
+ * One payment on a group's single account (S-106): the amount is spread over the rooms' open balances, in booking
+ * order, in one transaction. The currency is the one every room's folio is in.
+ */
+export const groupPaySchema = z
+  .object({
+    groupId: idSchema,
+    date: localDateSchema,
+    methodId: idSchema,
+    amountMinor: amountSchema.positive(),
+    currency: currencyCode,
+    reference: z.string().max(120).nullish(),
+    note: z.string().max(500).nullish(),
+    dayClosedReason: z.string().trim().min(3).max(200).optional()
+  })
+  .strict()
+export type GroupPayInput = z.input<typeof groupPaySchema>
+
+/**
+ * Link reservations that already exist to a group (G-194): an existing one (`groupId`) or a new one named here
+ * (`name`; the first reservation's guest leads it). A reservation already in a group is not moved.
+ */
+export const groupAttachSchema = z
+  .object({
+    groupId: idSchema.optional(),
+    name: z.string().trim().min(1).max(120).optional(),
+    reservationIds: z.array(idSchema).min(1).max(MAX_GROUP_ROOMS)
+  })
+  .strict()
+  .refine((g) => !!g.groupId !== !!g.name, { path: ['groupId'], message: 'groupId xor name' })
+export type GroupAttachInput = z.input<typeof groupAttachSchema>
 
 const reservationStatus = z.enum([
   'tentative',

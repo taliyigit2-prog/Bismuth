@@ -12,6 +12,7 @@ import { EmptyState, ErrorState } from '@/components/states'
 import { useFormat } from '@/hooks/use-format'
 import { useApiQuery } from '@/lib/api/hooks'
 import { cn } from '@/lib/utils'
+import { StayContextMenu } from '@/features/calendar/context-menu'
 import type { GridStayView } from '@/features/calendar/grid-model'
 import { WEEK_DAYS, weekOf } from './week'
 
@@ -31,22 +32,24 @@ export function WeekList({ onOpen }: { onOpen: (reservationId: string) => void }
     const Icon = arrival ? LogInIcon : LogOutIcon
     return (
       <li key={`${arrival ? 'a' : 'd'}-${s.id}`}>
-        <button
-          type="button"
-          onClick={() => onOpen(s.reservationId)}
-          className="hover:bg-accent focus-visible:ring-ring flex min-h-11 w-full items-center gap-2 rounded-md px-2 text-start text-sm outline-none focus-visible:ring-[3px]"
-        >
-          <Icon
-            className={cn('size-4 shrink-0', arrival ? 'text-success' : 'text-muted-foreground')}
-            aria-label={arrival ? t('calendar.week.arrival') : t('calendar.week.departure')}
-          />
-          <span className="bg-muted grid min-w-9 shrink-0 place-items-center rounded px-1 font-semibold tabular-nums">
-            {roomNumber(s)}
-          </span>
-          <span className="min-w-0 flex-1 truncate" title={s.guestName}>
-            {s.guestName}
-          </span>
-        </button>
+        <StayContextMenu stay={s} today={page?.today ?? s.checkIn}>
+          <button
+            type="button"
+            onClick={() => onOpen(s.reservationId)}
+            className="hover:bg-accent focus-visible:ring-ring flex min-h-11 w-full items-center gap-2 rounded-md px-2 text-start text-sm outline-none focus-visible:ring-[3px]"
+          >
+            <Icon
+              className={cn('size-4 shrink-0', arrival ? 'text-success' : 'text-muted-foreground')}
+              aria-label={arrival ? t('calendar.week.arrival') : t('calendar.week.departure')}
+            />
+            <span className="bg-muted grid min-w-9 shrink-0 place-items-center rounded px-1 font-semibold tabular-nums">
+              {roomNumber(s)}
+            </span>
+            <span className="min-w-0 flex-1 truncate" title={s.guestName}>
+              {s.guestName}
+            </span>
+          </button>
+        </StayContextMenu>
       </li>
     )
   }

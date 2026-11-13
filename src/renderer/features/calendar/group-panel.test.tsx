@@ -109,7 +109,7 @@ describe('grup paneli', () => {
     const transport = bookingTransport()
     const panel = await openPanel(transport, await seededGroup(transport, '2099-01-01', '2099-01-03'))
     expect(await within(panel).findByTestId('group-pick-101')).toBeDisabled()
-    expect(within(panel).getAllByText(/Giriş günü gelmedi/)).toHaveLength(3)
+    expect(within(panel).getAllByText(/Giriş günü henüz değil/)).toHaveLength(3)
     expect(within(panel).getByTestId('group-check-in')).toBeDisabled()
   })
 
@@ -168,5 +168,50 @@ describe('grup paneli', () => {
     await user.click(await within(panel).findByTestId(`group-open-${first}`))
     expect(opened).toEqual([first])
     await waitFor(() => expect(screen.queryByTestId('group-panel')).not.toBeInTheDocument())
+  })
+
+  it('tek hesap kipinde "Grup ödemesi al" tutarı gruba bir adımda öder; bakiye sıfırlanır (S-106)', async () => {
+    const transport = bookingTransport()
+    const id = await seededGroup(transport)
+    const user = userEvent.setup()
+    const panel = await openPanel(transport, id)
+    expect(await within(panel).findByTestId('group-balance')).toHaveTextContent('12.000')
+    await user.click(await within(panel).findByTestId('group-pay-open'))
+    const dialog = await screen.findByRole('dialog', { name: 'Grup ödemesi' })
+    await user.click(within(dialog).getByTestId('group-pay-save'))
+    await waitFor(() => expect(transport.callsTo('booking.payGroup')).toHaveLength(1))
+    const sent = transport.callsTo('booking.payGroup')[0] as { groupId: string; amountMinor: number }
+    expect(sent.groupId).toBe(id)
+    // Three rooms, two nights at 2.000 each.
+    expect(sent.amountMinor).toBe(1_200_000)
+    await waitFor(() => expect(within(panel).getByTestId('group-balance')).toHaveTextContent('₺0'))
+    await waitFor(() => expect(within(panel).queryByTestId('group-pay-open')).not.toBeInTheDocument())
+  })
+
+  it('grup ödemesi açık bakiyeden fazla tutarı istek göndermeden reddeder', async () => {
+    const transport = bookingTransport()
+    const panel = await openPanel(transport, await seededGroup(transport))
+    const user = userEvent.setup()
+    await user.click(await within(panel).findByTestId('group-pay-open'))
+    const dialog = await screen.findByRole('dialog', { name: 'Grup ödemesi' })
+    const amount = within(dialog).getByRole('textbox', { name: 'Tutar' })
+    await user.clear(amount)
+    await user.type(amount, '99999')
+    await user.click(within(dialog).getByTestId('group-pay-save'))
+    expect(await within(dialog).findByText(/açık bakiyeyi/)).toBeInTheDocument()
+    expect(transport.callsTo('booking.payGroup')).toHaveLength(0)
+  })
+
+  it('oda başına hesap kipinde her odanın bakiyesi satırında görünür, grup ödemesi düğmesi çıkmaz', async () => {
+    const transport = bookingTransport()
+    const id = await seededGroup(transport)
+    transport.booking.groups![id]!.folioMode = 'per_room'
+    const panel = await openPanel(transport, id)
+    const first = Object.keys(transport.booking.views)[0]!
+    expect(await within(panel).findByTestId(`group-room-balance-${first}`)).toHaveTextContent(
+      /^Bakiye: .*4\.000/
+    )
+    expect(within(panel).queryByTestId('group-pay-open')).not.toBeInTheDocument()
+    expect(within(panel).getByTestId(`group-room-pay-${first}`)).toBeInTheDocument()
   })
 })

@@ -22,6 +22,7 @@ import { StatusTagBadge } from '@/components/status-tag-badge'
 import { useFormat } from '@/hooks/use-format'
 import { useApiQuery } from '@/lib/api/hooks'
 import { cn } from '@/lib/utils'
+import { StayContextMenu } from './context-menu'
 import { dayActivity, groupRing, nightStatusOn, type GridStayView } from './grid-model'
 
 type Section = 'arrivals' | 'departures' | 'staying'
@@ -96,57 +97,63 @@ export function DayList({ onOpen }: { onOpen: (reservationId: string) => void })
             const status = nightStatusOn(s, day, today)
             return (
               <li key={s.id}>
-                <button
-                  type="button"
-                  onClick={() => onOpen(s.reservationId)}
-                  className="bg-card focus-visible:ring-ring flex min-h-14 w-full items-center gap-3 rounded-xl border px-3 py-2 text-start outline-none focus-visible:ring-[3px]"
-                >
-                  <span className="bg-muted grid size-10 shrink-0 place-items-center rounded-lg text-sm font-semibold tabular-nums">
-                    {room?.number}
-                  </span>
-                  {/* The name wraps (two lines at most) instead of being cut; the guest's request sits under it. */}
-                  <span className="min-w-0 flex-1">
-                    <span className="line-clamp-2 text-sm font-medium break-words">{s.guestName}</span>
-                    <span className="text-muted-foreground block text-xs whitespace-nowrap">
-                      {s.startTime && s.endTime ? (
-                        <bdi className="tabular-nums" data-testid={`day-hours-${s.id}`}>
-                          {f.dayMonth(s.checkIn)} · {s.startTime}–{s.endTime}
-                        </bdi>
-                      ) : (
-                        <>
-                          {f.dayMonth(s.checkIn)} – {f.dayMonth(s.checkOut)}
-                        </>
-                      )}
+                {/* A long press opens the same menu as a right click on the desktop grid (P17c). */}
+                <StayContextMenu stay={s} today={today}>
+                  <button
+                    type="button"
+                    onClick={() => onOpen(s.reservationId)}
+                    className="bg-card focus-visible:ring-ring flex min-h-14 w-full items-center gap-3 rounded-xl border px-3 py-2 text-start outline-none focus-visible:ring-[3px]"
+                  >
+                    <span className="bg-muted grid size-10 shrink-0 place-items-center rounded-lg text-sm font-semibold tabular-nums">
+                      {room?.number}
                     </span>
-                    {key === 'arrivals' && s.standingNote ? (
+                    {/* The name wraps (two lines at most) instead of being cut; the guest's request sits under it. */}
+                    <span className="min-w-0 flex-1">
+                      <span className="line-clamp-2 text-sm font-medium break-words">{s.guestName}</span>
+                      <span className="text-muted-foreground block text-xs whitespace-nowrap">
+                        {s.startTime && s.endTime ? (
+                          <bdi className="tabular-nums" data-testid={`day-hours-${s.id}`}>
+                            {f.dayMonth(s.checkIn)} · {s.startTime}–{s.endTime}
+                          </bdi>
+                        ) : (
+                          <>
+                            {f.dayMonth(s.checkIn)} – {f.dayMonth(s.checkOut)}
+                          </>
+                        )}
+                      </span>
+                      {key === 'arrivals' && s.standingNote ? (
+                        <span
+                          className={cn(
+                            'block text-xs break-words',
+                            s.standingNote.level === 'warn' ? 'text-destructive' : 'text-info'
+                          )}
+                        >
+                          {s.standingNote.text}
+                        </span>
+                      ) : null}
+                    </span>
+                    {s.groupId ? (
                       <span
+                        role="img"
+                        aria-label={t('calendar.grid.group')}
+                        title={t('calendar.grid.group')}
+                        data-testid={`day-group-${s.id}`}
                         className={cn(
-                          'block text-xs break-words',
-                          s.standingNote.level === 'warn' ? 'text-destructive' : 'text-info'
+                          'grid size-7 shrink-0 place-items-center rounded-md ring-2',
+                          groupRing(s.groupId)
                         )}
                       >
-                        {s.standingNote.text}
+                        <UsersIcon className="size-3.5" aria-hidden />
                       </span>
                     ) : null}
-                  </span>
-                  {s.groupId ? (
-                    <span
-                      role="img"
-                      aria-label={t('calendar.grid.group')}
-                      title={t('calendar.grid.group')}
-                      data-testid={`day-group-${s.id}`}
-                      className={cn(
-                        'grid size-7 shrink-0 place-items-center rounded-md ring-2',
-                        groupRing(s.groupId)
-                      )}
-                    >
-                      <UsersIcon className="size-3.5" aria-hidden />
-                    </span>
-                  ) : null}
-                  {status ? (
-                    <StatusTagBadge subject={{ kind: 'auto', code: status }} label={t(`status.${status}`)} />
-                  ) : null}
-                </button>
+                    {status ? (
+                      <StatusTagBadge
+                        subject={{ kind: 'auto', code: status }}
+                        label={t(`status.${status}`)}
+                      />
+                    ) : null}
+                  </button>
+                </StayContextMenu>
               </li>
             )
           })}

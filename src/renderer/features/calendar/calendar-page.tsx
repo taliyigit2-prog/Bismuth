@@ -30,8 +30,15 @@ import { useShortcutAction } from '@/lib/shortcuts/actions'
 import { tagLabel } from '@/features/settings/use-status-tags'
 import { BlockDialog, type BlockDialogState } from './block-dialog'
 import { BulkNoteDialog } from './bulk-note-dialog'
-import { CalendarGrid, type FreeHighlight, type GridHandle, type RoomIssueMark } from './calendar-grid'
+import {
+  CalendarGrid,
+  type FreeHighlight,
+  type GridHandle,
+  type GridMenuTarget,
+  type RoomIssueMark
+} from './calendar-grid'
 import { CalendarNavigation } from './calendar-toolbar'
+import { CellMenuItems, StayMenuItems } from './context-menu'
 import { DayDialog } from './day-dialog'
 import type { StayMove } from './drag'
 import { MoveStayDialog } from './move-stay-dialog'
@@ -50,6 +57,11 @@ import { GuestJump, type FoundStayView } from './guest-jump'
 import { HourlyStayDialog, type HourlySeed } from './hourly-stay-dialog'
 import { NewReservationDialog, type NewReservationSeed } from './new-reservation-dialog'
 import { ParkArea } from './park-area'
+import { QuickBookBar, type QuickSeed } from './quick-book-bar'
+import { RecentEnded } from './recent-ended'
+import { nextSelection, pickedStays, type SelectMode } from './selection'
+import { SelectionBar } from './selection-bar'
+import { TodayStrip } from './today-strip'
 import { GroupPanel } from './group-panel'
 import { ReservationPanel } from './reservation-panel'
 import { useGridData, useGridYears } from './use-calendar'
@@ -121,6 +133,7 @@ export function CalendarPage() {
           highlight={highlight}
           onOpenReservation={setOpenId}
           onNew={openNew}
+          onHourly={(roomId, date) => canBook && setHourly({ roomId, date })}
         />
       )}
       <ReservationPanel
@@ -147,6 +160,7 @@ interface DesktopProps {
   highlight: readonly number[]
   onOpenReservation: (reservationId: string) => void
   onNew: (roomId: string | null, date: LocalDate) => void
+  onHourly: (roomId: string, date: LocalDate) => void
 }
 
 /** What the group frame means (G-194): a ring in the group's colour and the group icon on every room of the group. */
@@ -219,6 +233,7 @@ function DesktopGrid({
   highlight,
   onOpenReservation,
   onNew,
+  onHourly,
   base,
   count,
   startAt,
@@ -289,14 +304,18 @@ function DesktopGrid({
   // Drag-and-drop (faz-15 madde 12): only a role that may change the calendar drags; the service checks anyway.
   const canMove = can('calendar', 'edit')
   const [move, setMove] = useState<StayMove | null>(null)
+  // Quick reservation bar and multi-select (P17c, G-195).
+  const [quick, setQuick] = useState<QuickSeed | null>(null)
+  const [selected, setSelected] = useState<ReadonlySet<string>>(new Set())
+  const anchor = useRef<GridStayView | null>(null)
   useEffect(() => {
     if (!flash) return
     const id = setTimeout(() => setFlash(null), FLASH_MS)
     return () => clearTimeout(id)
   }, [flash])
 
-  const anchor = dateAt(base, Math.min(count - 1, view.first + CONTEXT_DAYS))
-  useEffect(() => onAnchor(anchor), [anchor, onAnchor])
+  const anchorDay = dateAt(base, Math.min(count - 1, view.first + CONTEXT_DAYS))
+  useEffect(() => onAnchor(anchorDay), [anchorDay, onAnchor])
   const colOf = useCallback(
     (d: LocalDate) => Math.min(Math.max(0, diffDays(base, d)), count - 1),
     [base, count]
@@ -332,7 +351,47 @@ function DesktopGrid({
     goTo(r.checkIn)
   }
   const onOpenStay = useCallback((s: GridStayView) => onOpenReservation(s.reservationId), [onOpenReservation])
-  const onOpenCell = useCallback((roomId: string, date: LocalDate) => onNew(roomId, date), [onNew])
+  const roomNumberOf = useMemo(() => new Map(model.rooms.map((r) => [r.id, r.number])), [model.rooms])
+  // A click, Enter or N on an empty cell opens the quick bar; "Ayrıntı" (or the menu) hands it to the full form.
+  const onOpenCell = useCallback(
+    (roomId: string, date: LocalDate) => {
+      if (!canMove) return
+      setQuick({ roomId, roomNumber: roomNumberOf.get(roomId) ?? '', date })
+    },
+    [canMove, roomNumberOf]
+  )
+  const onSelect = useCallback(
+    (stay: GridStayView, mode: SelectMode) => {
+      setSelected((prev) => nextSelection(prev, model.stays, anchor.current, stay, mode))
+      anchor.current = stay
+    },
+    [model.stays]
+  )
+  const clearSelection = useCallback(() => {
+    setSelected(new Set())
+    anchor.current = null
+  }, [])
+  const picked = useMemo(() => pickedStays(selected, model.stays), [selected, model.stays])
+  const renderMenu = useCallback(
+    (target: GridMenuTarget) =>
+      target.kind === 'stay' ? (
+        <StayMenuItems stay={target.stay} today={today} />
+      ) : (
+        <CellMenuItems
+          roomId={target.roomId}
+          roomNumber={target.roomNumber}
+          date={target.date}
+          canBlock={can('rooms.block', 'edit')}
+          handlers={{
+            onQuick: (roomId, date) => onOpenCell(roomId, date),
+            onDetail: (roomId, date) => onNew(roomId, date),
+            onHourly,
+            onBlock: (roomId, date) => setBlock({ mode: 'new', roomId, date })
+          }}
+        />
+      ),
+    [today, can, onOpenCell, onNew, onHourly]
+  )
   const roomTypes = useMemo(() => {
     const seen = new Map<string, string>()
     for (const r of model.rooms)
@@ -363,18 +422,20 @@ function DesktopGrid({
     <>
       {/* Hidden as soon as the grid shows a stay: it never moves the grid while someone is writing. */}
       <FirstReservationHint hidden={model.stays.length > 0} />
+      <TodayStrip onOpenReservation={onOpenReservation} />
       <div className="flex flex-wrap items-center gap-2">
         <CalendarNavigation
-          anchor={anchor}
+          anchor={anchorDay}
           today={today}
           min={base}
           max={last}
           onToday={() => goTo(today)}
-          onShift={(days) => grid.current?.scrollToCol(colOf(addDays(anchor, days)))}
+          onShift={(days) => grid.current?.scrollToCol(colOf(addDays(anchorDay, days)))}
           onGoTo={goTo}
         />
         <div className="ms-auto flex flex-wrap items-center gap-2">
           <GuestJump onPick={onPickStay} />
+          <RecentEnded onOpenReservation={onOpenReservation} />
           <Button variant="outline" size="sm" onClick={() => setFreeOpen(true)}>
             <DoorOpenIcon aria-hidden />
             {t('calendar.freeRooms.button')}
@@ -383,7 +444,9 @@ function DesktopGrid({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setBlock({ mode: 'new', roomId: null, date: anchor < today ? today : anchor })}
+              onClick={() =>
+                setBlock({ mode: 'new', roomId: null, date: anchorDay < today ? today : anchorDay })
+              }
               data-testid="block-new"
             >
               <LockIcon aria-hidden />
@@ -391,7 +454,7 @@ function DesktopGrid({
             </Button>
           ) : null}
           {can('calendar.notes', 'edit') ? (
-            <Button variant="outline" size="sm" onClick={() => setBulkStart(anchor)}>
+            <Button variant="outline" size="sm" onClick={() => setBulkStart(anchorDay)}>
               <CalendarPlusIcon aria-hidden />
               {t('calendar.bulk.open')}
             </Button>
@@ -421,6 +484,18 @@ function DesktopGrid({
           </p>
         ) : null}
       </div>
+      {quick ? (
+        <QuickBookBar
+          key={`${quick.roomId}-${quick.date}`}
+          seed={quick}
+          onClose={() => setQuick(null)}
+          onDetail={(q) => {
+            setQuick(null)
+            onNew(q.roomId, q.date)
+          }}
+        />
+      ) : null}
+      {picked.length ? <SelectionBar picked={picked} today={today} onClear={clearSelection} /> : null}
       <CalendarGrid
         ref={grid}
         model={model}
@@ -440,11 +515,18 @@ function DesktopGrid({
         onOpenDay={setDayOpen}
         onView={onView}
         onMoveStay={canMove ? setMove : undefined}
+        renderMenu={renderMenu}
+        selected={selected}
+        onSelect={onSelect}
+        onClearSelection={clearSelection}
       />
       <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-2">
         <div className="grid gap-2">
           <Legend items={legend} />
           {hasGroups ? <GroupLegend /> : null}
+          <p className="text-muted-foreground text-xs" data-testid="ended-legend-note">
+            {t('calendar.quick.legendNote')}
+          </p>
         </div>
         {canMove ? (
           <p className="text-muted-foreground max-w-md text-xs" data-testid="drag-hint">
@@ -479,7 +561,7 @@ function DesktopGrid({
         <FreeRoomsDialog
           open
           onOpenChange={setFreeOpen}
-          start={anchor < today ? today : anchor}
+          start={anchorDay < today ? today : anchorDay}
           types={roomTypes}
           onFound={onFound}
         />

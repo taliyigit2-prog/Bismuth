@@ -39,6 +39,8 @@ import {
   localName,
   requestGroupPanel,
   requestPanel,
+  dropPanelIntent,
+  peekPanelIntent,
   useBooking,
   useBookingMutation,
   useBookingOptions,
@@ -172,6 +174,22 @@ function Panel({ view, scope }: { view: BookingView; scope: RefObject<HTMLDivEle
   const giveUps = editable ? inHouse : []
   useShortcutAction('addPayment', () => setPayOpen(true), { scope, enabled: mayPay })
 
+  // The calendar's right-click menu opens this panel with something to do ("Ödeme al", "Gelmedi"…): done once, as
+  // soon as the reservation has loaded, so every dialog is the panel's own.
+  const [intent, setIntent] = useState(() => peekPanelIntent(r.id))
+  if (intent) {
+    setIntent(null)
+    dropPanelIntent(r.id)
+    if (intent.kind === 'pay' && mayPay) setPayOpen(true)
+    else if (intent.kind === 'park' && canPark) setParkOpen(true)
+    else if (intent.kind === 'noShow' && (canPark || parked) && !arrivalAhead) setNoShowOpen(true)
+    else if (intent.kind === 'cancel' && (canCancel || parked)) setCancelOpen(true)
+    else if (intent.kind === 'checkOut' && editable && intent.stayId) setCheckoutStay(intent.stayId)
+    else if (intent.kind === 'giveUp' && editable && intent.stayId) setGiveUpStay(intent.stayId)
+    else if (intent.kind === 'stays') setTab('stay')
+    else if (intent.kind === 'note' || intent.kind === 'history') setTab('summary')
+  }
+
   return (
     <>
       <SheetHeader className="gap-2 border-b text-start">
@@ -203,6 +221,7 @@ function Panel({ view, scope }: { view: BookingView; scope: RefObject<HTMLDivEle
               size="xs"
               variant="outline"
               onClick={() => requestGroupPanel(r.group!.id)}
+              title={t('booking.group.open')}
               data-testid="panel-group"
             >
               <UsersIcon aria-hidden />
@@ -215,7 +234,8 @@ function Panel({ view, scope }: { view: BookingView; scope: RefObject<HTMLDivEle
             ? arriving.map((s) => (
                 <Button
                   key={s.id}
-                  size="sm"
+                  size="lg"
+                  className="max-md:flex-1"
                   onClick={() => checkIn.mutate({ stayId: s.id })}
                   disabled={checkIn.isPending}
                   data-testid="panel-check-in"
@@ -227,11 +247,18 @@ function Panel({ view, scope }: { view: BookingView; scope: RefObject<HTMLDivEle
                 </Button>
               ))
             : null}
+          {editable && !arriving.length ? (
+            <Button size="lg" className="max-md:flex-1" disabled data-testid="panel-check-in-off">
+              <LogInIcon aria-hidden />
+              {t('calendar.panel.checkIn')}
+            </Button>
+          ) : null}
           {editable
             ? inHouse.map((s) => (
                 <Button
                   key={s.id}
-                  size="sm"
+                  size="lg"
+                  className="max-md:flex-1"
                   variant="secondary"
                   onClick={() => setCheckoutStay(s.id)}
                   data-testid="panel-check-out"
@@ -243,8 +270,26 @@ function Panel({ view, scope }: { view: BookingView; scope: RefObject<HTMLDivEle
                 </Button>
               ))
             : null}
+          {editable && !inHouse.length ? (
+            <Button
+              size="lg"
+              variant="secondary"
+              className="max-md:flex-1"
+              disabled
+              data-testid="panel-check-out-off"
+            >
+              <LogOutIcon aria-hidden />
+              {t('calendar.panel.checkOut')}
+            </Button>
+          ) : null}
           {mayPay ? (
-            <Button size="sm" variant="outline" onClick={() => setPayOpen(true)} data-testid="panel-pay">
+            <Button
+              size="lg"
+              variant="outline"
+              className="max-md:flex-1"
+              onClick={() => setPayOpen(true)}
+              data-testid="panel-pay"
+            >
               <BanknoteIcon aria-hidden />
               {t('calendar.panel.takePayment')}
             </Button>

@@ -26,13 +26,18 @@ import {
   MAX_STAY_NIGHTS
 } from '@shared/contract/reservations'
 import {
+  MAX_GROUP_ROOMS,
+  groupAttachSchema,
   groupCancelSchema,
   groupCreateSchema,
   groupNoteSchema,
+  groupPaySchema,
   groupStaysSchema,
+  type GroupAttachInput,
   type GroupCancelInput,
   type GroupCreateInput,
   type GroupNoteInput,
+  type GroupPayInput,
   type GroupStaysInput,
   type GroupViewDto
 } from '@shared/contract/groups'
@@ -128,6 +133,14 @@ export interface ReservationHooks {
   onCheckout?: (ctx: Ctx, roomId: string, date: LocalDate) => void
   /** A refund row written inside the caller's transaction (the cancellation that gives the money back, K-55). */
   recordRefund?: (
+    ctx: Ctx,
+    tx: Tx,
+    audit: (entry: AuditEntry) => void,
+    now: Date,
+    input: PaymentCreateInput
+  ) => void
+  /** A payment row written inside the caller's transaction (a group's single-account payment, S-106). */
+  recordPayment?: (
     ctx: Ctx,
     tx: Tx,
     audit: (entry: AuditEntry) => void,
@@ -1182,6 +1195,15 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
 
   // ---- Group reservations (P17b, G-194, S-101, S-106) ----
 
+  /** The follow-up of a committed check-out (tasks): its failure never turns the committed write into an error. */
+  function afterCheckout(ctx: Ctx, roomId: string, day: LocalDate): void {
+    try {
+      deps.hooks?.onCheckout?.(ctx, roomId, day)
+    } catch {
+      // Nothing to undo: the follow-up is opened again by the next check-out or by hand.
+    }
+  }
+
   function groupOf(tx: Pick<Tx, 'select'>, groupId: string) {
     const group = tx.select().from(reservationGroups).where(eq(reservationGroups.id, groupId)).get()
     if (!group) throw notFound('reservation_group', groupId)
@@ -1987,7 +2009,8 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
         })
         return { view: groupView(tx, data.groupId, ctx.can('payments', 'view')), moved }
       })
-      for (const roomId of result.moved) deps.hooks?.onCheckout?.(ctx, roomId, today(deps.clock()))
+      // The check-ins are committed; a failing follow-up must not report them as failed.
+      for (const roomId of result.moved) afterCheckout(ctx, roomId, today(deps.clock()))
       return result.view
     },
 
@@ -2008,7 +2031,7 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
         })
         return { view: groupView(tx, data.groupId, ctx.can('payments', 'view')), left }
       })
-      for (const l of result.left) deps.hooks?.onCheckout?.(ctx, l.roomId, l.day)
+      for (const l of result.left) afterCheckout(ctx, l.roomId, l.day)
       return result.view
     },
 
@@ -2075,10 +2098,120 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
           entity: 'reservation_groups',
           entityId: data.groupId,
           action: 'cancel',
+          before: {
+            reservationIds: open.map((m) => m.id),
+            statuses: open.map((m) => m.status),
+            voided: false
+          },
           after: { reservationIds: open.map((m) => m.id), voided: !stillOpen },
           reason: data.reason
         })
         return groupView(tx, data.groupId, ctx.can('payments', 'view'))
+      })
+    },
+
+    /**
+     * One payment on the group's single account (S-106): the amount covers the rooms' open balances in booking
+     * order, a payment row per room, all in one transaction. It never overpays: the amount may not exceed what is
+     * open, and the folios must all be in the payment's currency.
+     */
+    payGroup(ctx: Ctx, input: GroupPayInput): GroupViewDto {
+      requirePermission(ctx, 'payments', 'edit')
+      const data = parseInput(groupPaySchema, input)
+      return inTransaction(deps, ctx, (tx, audit, now) => {
+        const group = groupOf(tx, data.groupId)
+        if (group.voidedAt) throw invalid('errors.groupClosed')
+        const open = groupMembers(tx, data.groupId)
+          .filter((m) => m.status === 'tentative' || m.status === 'confirmed' || m.status === 'checked_in')
+          .map((m) => ({ id: m.id, folio: detail(tx, m.id).folio }))
+        if (open.some((m) => m.folio.currency !== data.currency)) throw invalid('errors.groupPayCurrency')
+        const due = open.reduce((sum, m) => sum + Math.max(0, m.folio.balanceMinor), 0)
+        if (data.amountMinor > due) throw invalid('errors.groupPayExceeds', { balanceMinor: due })
+        let left = data.amountMinor
+        const parts: { reservationId: string; amountMinor: number }[] = []
+        for (const m of open) {
+          if (left <= 0) break
+          const part = Math.min(left, Math.max(0, m.folio.balanceMinor))
+          if (part <= 0) continue
+          parts.push({ reservationId: m.id, amountMinor: part })
+          left -= part
+        }
+        const record = deps.hooks?.recordPayment
+        if (!record) throw invalid('errors.internal')
+        for (const part of parts)
+          record(ctx, tx, audit, now, {
+            reservationId: part.reservationId,
+            date: data.date,
+            kind: 'payment',
+            methodId: data.methodId,
+            amountMinor: part.amountMinor,
+            currency: data.currency,
+            reference: data.reference,
+            note: data.note ?? group.name,
+            dayClosedReason: data.dayClosedReason
+          })
+        audit({
+          entity: 'reservation_groups',
+          entityId: data.groupId,
+          action: 'update',
+          after: { amountMinor: data.amountMinor, currency: data.currency, parts }
+        })
+        return groupView(tx, data.groupId, ctx.can('payments', 'view'))
+      })
+    },
+
+    /**
+     * Existing reservations into a group (G-194): a group that exists or a new one named here, led by the first
+     * reservation's guest. Reservations already in a group stay where they are; closed ones cannot be linked.
+     * Nothing about the stays or the money changes.
+     */
+    attachToGroup(ctx: Ctx, input: GroupAttachInput): GroupViewDto {
+      requirePermission(ctx, 'calendar', 'edit')
+      const data = parseInput(groupAttachSchema, input)
+      const ids = [...new Set(data.reservationIds)]
+      return inTransaction(deps, ctx, (tx, audit, now) => {
+        const rows = tx.select().from(reservations).where(inArray(reservations.id, ids)).all()
+        if (rows.length !== ids.length) throw notFound('reservation', ids.join(','))
+        if (rows.some((r) => r.groupId)) throw invalid('errors.groupAttachTaken')
+        if (
+          rows.some(
+            (r) => !(r.status === 'tentative' || r.status === 'confirmed' || r.status === 'checked_in')
+          )
+        )
+          throw invalid('errors.groupAttachClosed')
+        let groupId = data.groupId ?? ''
+        if (groupId) {
+          if (groupOf(tx, groupId).voidedAt) throw invalid('errors.groupClosed')
+          if (groupMembers(tx, groupId).length + ids.length > MAX_GROUP_ROOMS)
+            throw invalid('errors.groupTooLarge')
+        } else {
+          if (ids.length < 2) throw invalid('errors.groupAttachTooFew')
+          const first = ids.map((id) => rows.find((r) => r.id === id)!)[0]!
+          const row = {
+            id: newId(now),
+            name: data.name ?? '',
+            leaderGuestId: first.primaryGuestId,
+            folioMode: readSetting(tx, 'booking.groupFolioMode'),
+            ...stamps(now)
+          }
+          tx.insert(reservationGroups).values(row).run()
+          audit({ entity: 'reservation_groups', entityId: row.id, action: 'create', after: row })
+          groupId = row.id
+        }
+        for (const r of rows) {
+          tx.update(reservations)
+            .set({ groupId, updatedAt: now.toISOString() })
+            .where(eq(reservations.id, r.id))
+            .run()
+          audit({
+            entity: 'reservation',
+            entityId: r.id,
+            action: 'update',
+            before: { groupId: null },
+            after: { groupId }
+          })
+        }
+        return groupView(tx, groupId, ctx.can('payments', 'view'))
       })
     },
 

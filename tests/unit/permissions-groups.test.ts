@@ -7,7 +7,7 @@ import { createHandlers } from '../../src/main/api/handlers'
 import { handleIpcRequest } from '../../src/main/ipc/handle'
 import { createServices } from '../../src/main/services'
 import type { DatabaseHandle } from '../../src/main/db/client'
-import { roomTypes, salesChannels } from '../../src/main/db/schema'
+import { paymentMethods, roomTypes, salesChannels } from '../../src/main/db/schema'
 import type { SystemRoleCode } from '../../src/shared/permissions'
 import { roleCtx, testClock } from '../factories/ctx'
 import { seededDatabase } from '../factories/db'
@@ -93,5 +93,45 @@ describe('grup rezervasyonu yordamları ve roller', () => {
     expect((await call('reception', 'booking.checkInMany', { groupId, stayIds: [] })).status).toBe(400)
     const one = { ...groupInput, rooms: (groupInput['rooms'] as unknown[]).slice(0, 1) }
     expect((await call('reception', 'booking.createGroup', one)).status).toBe(400)
+  })
+})
+
+describe('grup ödemesi, gruba bağlama ve son iptaller (P17c)', () => {
+  it('payGroup: kat hizmetleri reddedilir (403), resepsiyon öder; aşan tutar 400 döner', async () => {
+    const later = (groupInput['rooms'] as { stay: Record<string, unknown>; guest: unknown }[]).map((r) => ({
+      ...r,
+      stay: { ...r.stay, checkIn: '2026-11-01', checkOut: '2026-11-02' }
+    }))
+    const made = await call('reception', 'booking.createGroup', {
+      ...groupInput,
+      name: 'Ödeme grubu',
+      rooms: later
+    })
+    const id = made.body['id'] as string
+    const methodId = handle.db.select().from(paymentMethods).where(eq(paymentMethods.code, 'cash')).get()!.id
+    const pay = (amountMinor: number) => ({
+      groupId: id,
+      methodId,
+      amountMinor,
+      currency: 'TRY',
+      date: '2026-10-01'
+    })
+    expect((await call('housekeeping', 'booking.payGroup', pay(100_000))).status).toBe(403)
+    expect((await call('reception', 'booking.payGroup', pay(999_999_999))).status).toBe(400)
+    const ok = await call('reception', 'booking.payGroup', pay(100_000))
+    expect(ok.status).toBe(200)
+  })
+
+  it('attachToGroup: muhasebeci ve kat hizmetleri reddedilir; bozuk girdi 400 döner', async () => {
+    const body = { name: 'Yeni grup', reservationIds: ['x', 'y'] }
+    expect((await call('accountant', 'booking.attachToGroup', body)).status).toBe(403)
+    expect((await call('housekeeping', 'booking.attachToGroup', body)).status).toBe(403)
+    expect((await call('reception', 'booking.attachToGroup', { reservationIds: ['x'] })).status).toBe(400)
+  })
+
+  it('reservations.recentEnded: kat hizmetleri reddedilir, muhasebeci ve resepsiyon görür', async () => {
+    expect((await call('housekeeping', 'reservations.recentEnded', { days: 7 })).status).toBe(403)
+    expect((await call('accountant', 'reservations.recentEnded', { days: 7 })).status).toBe(200)
+    expect((await call('reception', 'reservations.recentEnded', { days: 0 })).status).toBe(400)
   })
 })

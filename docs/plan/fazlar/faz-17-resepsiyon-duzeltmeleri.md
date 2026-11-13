@@ -54,7 +54,7 @@ konaklama türü filtresi + aylık saatlik sayısı; S-106 tek hesap (varsayıla
 - [x] İptal penceresi tahsilat varsa tutar + üç seçenek; iade satırı `ledger.day`'de ve kasa tesliminde (servis + e2e).
 - [x] "Girdi, vazgeçti, iade" e2e masaüstü + telefon yeşil.
 - [x] 3 odalı grup: oda başına ad, toplu giriş atomik, takvimde desen (migrasyon + servis + grid + e2e). Testler: `reservation-groups.test.ts` (3 odalı grup, atomik giriş), `group.spec.ts` (masaüstü + telefon).
-- [ ] Sağ tık menüsü ve hızlı çubuk klavyeyle erişilebilir; telefonda uzun basma (e2e).
+- [x] Sağ tık menüsü ve hızlı çubuk klavyeyle erişilebilir; telefonda uzun basma (e2e `quick-actions.spec.ts` masaüstü: "menü tuşu ve boşluk", telefon: "gün listesinde uzun basma…"; vitest `quick-actions.test.tsx`).
 - [x] Betik C senaryosu: ikinci tur çıkışından sonra oda o gece satılabilir (servis testi `hourly-stays.test.ts` "A girip öğleden sonra çıkar, B geceyi alıp…", kırmızıdan yeşile).
 - [x] Aynı gün üç saatlik satış saat çakışmazsa olur, çakışırsa saatli `roomOccupied`; temizlik arası dolmadan uyarı ama
       engel yok (domain testi 8 senaryo `stays.test.ts` + servis `hourly-stays.test.ts` + e2e `hourly.spec.ts`).
@@ -102,3 +102,23 @@ fiyatlama; kamera (Faz 20).
 - Varsayılanlar: grup için en az 2 oda; tek hesap kipinde her oda yine kendi folyosunu tutar (raporlar/KBS değişmez), grup paneli
   birleşik bakiyeyi gösterir. Açık: grup tek ödemesi ve çoklu seçimden gruba bağlama P17c (toplu ödeme) ile; grup iptali iade satırı
   yazmaz (iade odanın kendi panelinden).
+
+### P17c — hızlı takvim işlemleri (feature-builder)
+- Yapılanlar: sağ tık menüsü (çubukta 10 işlem, boş hücrede 4; `context-menu.tsx`, `stay-actions.ts`; işlemler rezervasyon panelinin kendi
+  diyaloglarını `requestPanel(id, intent)` ile açar, "Giriş yap" doğrudan servis), Shift+F10 / Menü tuşu ve Boşluk (seçim) kısayolları
+  `registry.ts`'te, telefonda gün/hafta listesinde uzun basma (shadcn `context-menu`, yeni bağımlılık yok); hızlı rezervasyon çubuğu
+  (`quick-book-bar.tsx`: ad, kişi, gece, gecelik fiyat = oda tipi önerisi, kanal; Enter kaydeder, "Ayrıntı" tam formu açar; N ve Enter da çubuğu açar);
+  Ctrl/Shift çoklu seçim + `selection-bar.tsx` (toplu giriş/çıkış/not/ödeme, gruba bağla; aynı grubun odaları grubun atomik çağrısıyla);
+  bugün şeridi (`today.summary`); "Son iptaller" (7 gün, yeni okuma `reservations.recentEnded`) + lejant notu; panel başlığında üç büyük düğme
+  (uygun olmayan Giriş/Çıkış pasif görünür). Park nedeni etiketi park alanında zaten vardı (`calendar.park.reason.*`), değişmedi.
+- EK (a): `booking.payGroup` (S-106 tek hesap: tutar odaların açık bakiyelerine rezervasyon sırasıyla dağıtılır, tek transaction, `payments.createIn`
+  kancası; aşan tutar ve farklı para birimi reddedilir) + grup panelinde "Grup ödemesi al"; `booking.attachToGroup` (mevcut rezervasyonları yeni/mevcut
+  gruba bağlar, audit önce/sonra); oda başına kipte satırda bakiye + "Ödeme al". (b): `cancelGroup` audit `before`; `onCheckout` kancası commit sonrası try/catch.
+  (c): grup panelinde başlık/satır metni ayrıldı (`.charges`), 44 px düğmeler, gömülü " – " ve ":" i18n'e; `.description` ve `booking.group.open` kullanıldı.
+- Karşılanan: G-195, G-194 (grup tek ödeme + bağlama), S-106. Varsayılanlar: zincir simgesi yok (S-101 a); toplu ödeme her rezervasyonun kendi bakiyesini kapatır
+  (tutar seçimi yok); karma seçimde toplu giriş/çıkış konaklama konaklama çağrılır, kısmi başarısızlık sayılıp bildirilir (varsayılan).
+- Servis ekleri (kart "servis değişikliği yok" demişti): `booking.payGroup`, `booking.attachToGroup`, `reservations.recentEnded`; migrasyon yok.
+- Test: `group-pay.test.ts`, `permissions-groups.test.ts`, `quick-actions.test.tsx`, `stay-actions.test.ts`, `selection.test.ts`, `group-panel.test.tsx`,
+  e2e `electron/quick-actions.spec.ts` (5 senaryo), `mobile/quick-actions.spec.ts` (2). Güncellenen: `calendar-page.test.tsx` (N artık çubuğu açar),
+  `reservation-panel.test.tsx` (pasif "Çıkış yap" düğmesi nedeniyle tarih düğmesi seçicisi), e2e `calendar.spec.ts` (N → çubuk → Ayrıntı).
+

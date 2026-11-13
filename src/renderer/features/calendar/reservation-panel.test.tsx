@@ -236,7 +236,7 @@ describe('rezervasyon paneli', () => {
     })
     const panel = await screen.findByTestId('reservation-panel')
     await user.click(await within(panel).findByRole('tab', { name: 'Geceler' }))
-    await user.click(within(panel).getByRole('button', { name: /^Çıkış/ }))
+    await user.click(within(panel).getByRole('button', { name: /^Çıkış(?! yap)/ }))
     await user.click(await screen.findByRole('gridcell', { name: /^4 Ekim 2026/ }))
     await user.click(within(panel).getByTestId('stay-save-dates'))
     const ask = await screen.findByTestId('day-use-ask')

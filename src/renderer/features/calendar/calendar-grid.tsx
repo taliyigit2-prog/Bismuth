@@ -16,6 +16,7 @@ import {
   type KeyboardEvent,
   type MouseEvent,
   type PointerEvent,
+  type ReactNode,
   type Ref
 } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -23,6 +24,7 @@ import {
   AlertTriangleIcon,
   BabyIcon,
   CheckIcon,
+  CircleCheckIcon,
   CoinsIcon,
   ConciergeBellIcon,
   CrownIcon,
@@ -40,6 +42,7 @@ import {
 import type { StatusKey } from '@shared/contract'
 import { diffDays, weekday, type LocalDate } from '@shared/date'
 import type { LegendItem } from '@/components/legend'
+import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from '@/components/ui/context-menu'
 import type { CellPaint, StayIcon } from '@/components/tape-chart/tape-chart'
 import { useFormat } from '@/hooks/use-format'
 import { STATUS_BORDER, STATUS_FILL, tagBorder, tagFill } from '@/lib/status-style'
@@ -48,6 +51,7 @@ import { cn } from '@/lib/utils'
 import { matchesShortcut, shortcutById, type ShortcutDef } from '@/lib/shortcuts/registry'
 import { countRender } from '@/lib/render-count'
 import { dropTarget, sameMove, type StayMove } from './drag'
+import type { SelectMode } from './selection'
 import {
   blockAt,
   blockSpan,
@@ -73,6 +77,8 @@ import {
   type StayPaint
 } from './grid-model'
 
+const NO_SELECTION: ReadonlySet<string> = new Set()
+
 /** Fallback sizes before the first measurement (and in tests): 3.5rem day, 9.5rem room column. */
 const DAY_PX = 56
 const ROOM_PX = 152
@@ -86,8 +92,14 @@ const gridKey = (id: string): ShortcutDef => {
 const GRID_KEYS = {
   today: gridKey('calendar-today'),
   open: gridKey('calendar-open'),
-  new: gridKey('calendar-new')
+  new: gridKey('calendar-new'),
+  select: gridKey('calendar-select'),
+  menu: gridKey('calendar-menu')
 }
+
+/** What a right click (or the menu key, or a long press) landed on: a stay's bar or an empty cell. */
+export type GridMenuTarget =
+  { kind: 'stay'; stay: GridStayView } | { kind: 'cell'; roomId: string; roomNumber: string; date: LocalDate }
 
 export interface GridHandle {
   /** Scrolls so `col` is the first column after a few days of context. */
@@ -137,6 +149,13 @@ export interface CalendarGridProps {
    * without it (a role that may not change the calendar) bars do not drag.
    */
   onMoveStay?: (move: StayMove) => void
+  /** The right-click menu's items for what was hit (P17c); without it the grid has no menu. */
+  renderMenu?: (target: GridMenuTarget) => ReactNode
+  /** Stays picked with Ctrl/Shift-click or Space (P17c); drawn with an outline and a tick. */
+  selected?: ReadonlySet<string>
+  onSelect?: (stay: GridStayView, mode: SelectMode) => void
+  /** Esc in the grid drops the selection. */
+  onClearSelection?: () => void
   ref?: Ref<GridHandle>
 }
 
@@ -256,6 +275,10 @@ export const CalendarGrid = memo(function CalendarGrid({
   onOpenDay,
   onView,
   onMoveStay,
+  renderMenu,
+  selected = NO_SELECTION,
+  onSelect,
+  onClearSelection,
   ref
 }: CalendarGridProps) {
   const { t } = useTranslation()
@@ -479,12 +502,72 @@ export const CalendarGrid = memo(function CalendarGrid({
     endDrag()
     if (target) onMoveStay?.(target)
   }
-  const onBarClick = (stay: GridStayView): void => {
+  const onBarClick = (e: MouseEvent<HTMLButtonElement>, stay: GridStayView): void => {
     if (swallowClick.current) {
       swallowClick.current = false
       return
     }
+    // Ctrl/⌘ picks the stay, Shift picks a run of the room's stays (P17c); a plain click opens the panel.
+    if (onSelect && (e.ctrlKey || e.metaKey)) return onSelect(stay, 'toggle')
+    if (onSelect && e.shiftKey) return onSelect(stay, 'range')
     onOpenStay(stay)
+  }
+
+  // ── Right-click menu (P17c): what the pointer (or the cursor, for the menu key) is on ──
+  const [menu, setMenu] = useState<GridMenuTarget | null>(null)
+  const targetAt = (cell: Cursor): GridMenuTarget | null => {
+    const room = rooms[cell.row]
+    if (!room) return null
+    const date = dateAt(base, cell.col)
+    const stay = staysAt(model.stays, room.id, date)[0]
+    if (stay) return { kind: 'stay', stay }
+    if (blockAt(model.blocks, room.id, date)) return null
+    return { kind: 'cell', roomId: room.id, roomNumber: room.number, date }
+  }
+  const targetOfEvent = (e: { target: EventTarget | null; clientX: number }): GridMenuTarget | null => {
+    const el = e.target as HTMLElement | null
+    if (!el || el === scroller.current) return targetAt(cursor)
+    const bar = el.closest<HTMLElement>('[data-stay-id]')
+    if (bar) {
+      const stay = model.stays.find((s) => s.id === bar.dataset['stayId'])
+      return stay ? { kind: 'stay', stay } : null
+    }
+    const track = el.closest<HTMLElement>('[data-room-id]')
+    if (!track || el.closest('[data-bar]')) return null
+    const col = Math.floor((e.clientX - track.getBoundingClientRect().left) / metrics.current.day)
+    const row = rooms.findIndex((r) => r.id === track.dataset['roomId'])
+    return col >= 0 && col < count && row >= 0 ? targetAt({ row, col }) : null
+  }
+  const onContextCapture = (e: MouseEvent<HTMLDivElement>) => {
+    if (!renderMenu) return
+    const target = targetOfEvent(e)
+    if (!target) {
+      // Not a bar or a cell (header, room column, a block): no menu, and not the browser's either.
+      e.preventDefault()
+      e.stopPropagation()
+      setMenu(null)
+      return
+    }
+    setMenu(target)
+  }
+  // A touch screen opens the menu by a long press without a contextmenu event: the target is read at the press.
+  const onPointerDownCapture = (e: PointerEvent<HTMLDivElement>) => {
+    if (renderMenu && e.pointerType !== 'mouse') setMenu(targetOfEvent(e))
+  }
+  /** The menu key (Shift+F10, Menu): a contextmenu event at the cursor's cell, which the menu above answers. */
+  const openMenuAtCursor = () => {
+    const el = scroller.current
+    if (!el) return
+    const rect = el.getBoundingClientRect()
+    const m = metrics.current
+    el.dispatchEvent(
+      new window.MouseEvent('contextmenu', {
+        bubbles: true,
+        cancelable: true,
+        clientX: rect.left + m.room + cursor.col * m.day - el.scrollLeft + m.day / 2,
+        clientY: rect.top + 64 + cursor.row * m.row - el.scrollTop + m.row / 2
+      })
+    )
   }
 
   // The keys are listed in lib/shortcuts/registry.ts (the "?" list and the guide read the same list).
@@ -493,6 +576,11 @@ export const CalendarGrid = memo(function CalendarGrid({
       e.preventDefault()
       swallowClick.current = !!drag.current.moved
       endDrag()
+      return
+    }
+    if (e.key === 'Escape' && selected.size && onClearSelection) {
+      e.preventDefault()
+      onClearSelection()
       return
     }
     if (e.altKey || e.ctrlKey || e.metaKey) return
@@ -511,6 +599,15 @@ export const CalendarGrid = memo(function CalendarGrid({
       if (!room) return
       e.preventDefault()
       onOpenCell(room.id, dateAt(base, cursor.col))
+    } else if (onSelect && matchesShortcut(e, GRID_KEYS.select)) {
+      const room = rooms[cursor.row]
+      const stay = room ? staysAt(model.stays, room.id, dateAt(base, cursor.col))[0] : undefined
+      if (!stay) return
+      e.preventDefault()
+      onSelect(stay, 'toggle')
+    } else if (renderMenu && matchesShortcut(e, GRID_KEYS.menu)) {
+      e.preventDefault()
+      openMenuAtCursor()
     }
   }
 
@@ -541,7 +638,7 @@ export const CalendarGrid = memo(function CalendarGrid({
     () => ({
       trackClick: (e, row) => latest.current?.trackClick(e, row),
       openBlock: (b) => latest.current?.openBlock(b),
-      barClick: (stay) => latest.current?.barClick(stay),
+      barClick: (e, stay) => latest.current?.barClick(e, stay),
       pointerDown: (e, stay, row) => latest.current?.pointerDown(e, stay, row),
       pointerMove: (e) => latest.current?.pointerMove(e),
       pointerUp: () => latest.current?.pointerUp(),
@@ -575,7 +672,7 @@ export const CalendarGrid = memo(function CalendarGrid({
   const pastStatus = emptyCellStatus(true, setup.enabled)
   const futureStatus = emptyCellStatus(false, setup.enabled)
 
-  return (
+  const chart = (
     <div
       ref={scroller}
       dir="ltr"
@@ -585,6 +682,8 @@ export const CalendarGrid = memo(function CalendarGrid({
       aria-describedby="calendar-grid-help"
       tabIndex={0}
       onKeyDown={onKeyDown}
+      onContextMenuCapture={onContextCapture}
+      onPointerDownCapture={onPointerDownCapture}
       onScroll={onScroll}
       className="group/grid bg-card focus-visible:ring-ring/50 relative max-h-[calc(100dvh-16rem)] min-h-64 overflow-auto rounded-xl border outline-none focus-visible:ring-[3px]"
     >
@@ -728,6 +827,7 @@ export const CalendarGrid = memo(function CalendarGrid({
                 blockedEnabled={setup.enabled.has('blocked')}
                 flashStayId={has(flashStayId)}
                 ghostStayId={has(ghost?.stay.id ?? null)}
+                selected={selected}
                 draggable={!!onMoveStay}
                 actions={actions}
               />
@@ -763,13 +863,24 @@ export const CalendarGrid = memo(function CalendarGrid({
       </div>
     </div>
   )
+  if (!renderMenu) return chart
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger asChild>{chart}</ContextMenuTrigger>
+      {menu ? (
+        <ContextMenuContent className="w-60" data-testid="grid-menu">
+          {renderMenu(menu)}
+        </ContextMenuContent>
+      ) : null}
+    </ContextMenu>
+  )
 })
 
 /** What a row asks of the grid; one stable object, so a row draws again only when its own data changes. */
 interface RowActions {
   trackClick: (e: MouseEvent<HTMLDivElement>, row: number) => void
   openBlock: (block: GridBlockView) => void
-  barClick: (stay: GridStayView) => void
+  barClick: (e: MouseEvent<HTMLButtonElement>, stay: GridStayView) => void
   pointerDown: (e: PointerEvent<HTMLButtonElement>, stay: GridStayView, row: number) => void
   pointerMove: (e: PointerEvent<HTMLButtonElement>) => void
   pointerUp: () => void
@@ -796,6 +907,7 @@ const GridRow = memo(function GridRow({
   blockedEnabled,
   flashStayId,
   ghostStayId,
+  selected,
   draggable,
   actions
 }: {
@@ -814,6 +926,7 @@ const GridRow = memo(function GridRow({
   blockedEnabled: boolean
   flashStayId: string | null
   ghostStayId: string | null
+  selected: ReadonlySet<string>
   draggable: boolean
   actions: RowActions
 }) {
@@ -861,6 +974,7 @@ const GridRow = memo(function GridRow({
       <div
         className="relative min-w-0 flex-1 cursor-cell"
         onClick={(e) => actions.trackClick(e, row)}
+        data-room-id={room.id}
         data-testid={`tape-track-${room.number}`}
       >
         {isFree ? (
@@ -949,12 +1063,15 @@ const GridRow = memo(function GridRow({
               key={s.id}
               tabIndex={-1}
               data-bar
+              data-stay-id={s.id}
+              data-selected={selected.has(s.id) ? '' : undefined}
+              aria-pressed={selected.size ? selected.has(s.id) : undefined}
               data-testid={`stay-${s.id}`}
               data-icons={icons.join(' ')}
               data-group={s.groupId ?? undefined}
               aria-label={label}
               title={label}
-              onClick={() => actions.barClick(s)}
+              onClick={(e) => actions.barClick(e, s)}
               onPointerDown={(e) => actions.pointerDown(e, s, row)}
               onPointerMove={actions.pointerMove}
               onPointerUp={actions.pointerUp}
@@ -964,6 +1081,7 @@ const GridRow = memo(function GridRow({
                 bar.lanes > 1 ? 'top-0' : 'inset-y-1',
                 draggable && s.stayStatus !== 'done' && 'cursor-grab touch-none active:cursor-grabbing',
                 ghostStayId === s.id && 'opacity-60',
+                selected.has(s.id) && 'outline-primary outline-2 outline-offset-1',
                 paintFill(paint.nights[0]?.fill ?? null),
                 s.groupId && ['ring-2', groupRing(s.groupId)],
                 framed && 'border-2',
@@ -1011,6 +1129,9 @@ const GridRow = memo(function GridRow({
                 )}
                 style={{ left: labelLeft(bar.start, -inset) }}
               >
+                {selected.has(s.id) ? (
+                  <CircleCheckIcon className="size-3.5 shrink-0" aria-hidden data-testid={`picked-${s.id}`} />
+                ) : null}
                 {/* Half a cell (a split day) has room for the initials only; the name is in the label. */}
                 {hours && bar.width >= 1 ? (
                   <bdi className="shrink-0 tabular-nums" data-testid={`stay-hours-${s.id}`}>

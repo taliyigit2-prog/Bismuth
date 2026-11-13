@@ -91,7 +91,8 @@ describe('misafir listesi: oda ve tarih süzgeci (G-190)', () => {
     expect(screen.getByTestId('stay-filter-toggle')).toHaveTextContent('filtre açık')
     await user.click(within(fields).getByRole('button', { name: 'Temizle' }))
     expect(await within(table).findByText('Cem Deneme')).toBeInTheDocument()
-    expect(transport.callsTo('guests.list').at(-1)).not.toHaveProperty('room')
+    // The cleared query may land after the old rows are shown again; wait for the last call.
+    await waitFor(() => expect(transport.callsTo('guests.list').at(-1)).not.toHaveProperty('room'))
   })
 
   it('aramaya uyan yoksa boş durum "Filtreyi temizle" ile süzgeci de kaldırır', async () => {

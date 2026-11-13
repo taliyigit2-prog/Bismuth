@@ -180,6 +180,8 @@ Bütün kısayollar:
 | Bugüne dön | <kbd>Home</kbd> |
 | Seçili hücreyi aç | <kbd>Enter</kbd> |
 | Seçili hücrede yeni rezervasyon | <kbd>N</kbd> |
+| Çubuğu seç ya da seçimden çıkar (Ctrl veya Shift + tık) | <kbd>Space</kbd> |
+| Çubuğun ya da hücrenin işlem menüsü (sağ tık) | <kbd>Shift</kbd> + <kbd>F10</kbd> ya da <kbd>Menu</kbd> |
 
 **Pencerelerde ve formlarda**
 

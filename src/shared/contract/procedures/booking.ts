@@ -28,9 +28,11 @@ import {
   reservationUpdateSchema
 } from '../booking'
 import {
+  groupAttachSchema,
   groupCancelSchema,
   groupCreateSchema,
   groupNoteSchema,
+  groupPaySchema,
   groupStaysSchema,
   groupViewSchema
 } from '../groups'
@@ -183,5 +185,9 @@ export const bookingProcedures = {
   'booking.checkInMany': proc(groupStaysSchema, groupViewSchema),
   'booking.checkOutMany': proc(groupStaysSchema, groupViewSchema),
   'booking.addGroupNote': proc(groupNoteSchema, groupViewSchema),
-  'booking.cancelGroup': proc(groupCancelSchema, groupViewSchema)
+  'booking.cancelGroup': proc(groupCancelSchema, groupViewSchema),
+  /** One payment on the group's single account, spread over the rooms' open balances (S-106). */
+  'booking.payGroup': proc(groupPaySchema, groupViewSchema),
+  /** Existing reservations into a group (new or existing). */
+  'booking.attachToGroup': proc(groupAttachSchema, groupViewSchema)
 } as const satisfies Record<string, Procedure>

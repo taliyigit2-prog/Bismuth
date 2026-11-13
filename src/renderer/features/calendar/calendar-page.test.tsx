@@ -286,6 +286,9 @@ describe('takvim (açılış ekranı, gerçek servis)', () => {
     await waitFor(() => expect(screen.queryByTestId('reservation-panel')).not.toBeInTheDocument())
     act(() => chart.focus())
     await user.keyboard('n')
+    // N on a cell opens the quick bar (P17c); "Ayrıntı" hands the cell to the full form.
+    expect(await screen.findByTestId('quick-book')).toBeInTheDocument()
+    await user.click(screen.getByTestId('quick-detail'))
     expect(await screen.findByRole('dialog', { name: 'Yeni rezervasyon' })).toBeInTheDocument()
   })
 
@@ -542,6 +545,7 @@ describe('takvim (açılış ekranı, gerçek servis)', () => {
     await user.keyboard('{Enter}')
     await user.keyboard('n')
     expect(screen.queryByRole('dialog', { name: 'Yeni rezervasyon' })).not.toBeInTheDocument()
+    expect(screen.queryByTestId('quick-book')).not.toBeInTheDocument()
     // Drag-and-drop is off too (faz-15 madde 12): no hint, a dragged bar draws no target.
     expect(screen.queryByTestId('drag-hint')).not.toBeInTheDocument()
     const planned = hotel.reservations.find((r) => r.status === 'confirmed' && r.stays[0]!.checkIn > DAY)!

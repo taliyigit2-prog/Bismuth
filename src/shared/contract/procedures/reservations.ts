@@ -181,7 +181,29 @@ export const freeRoomsInputSchema = z
     message: 'range too long'
   })
 
+/** Most rows "Son iptaller" lists. */
+export const RECENT_ENDED_MAX = 50
+
+export const recentEndedSchema = z.object({ days: z.int().min(1).max(31).default(7) }).strict()
+
+/** A reservation cancelled or marked "gelmedi" lately: the calendar's small "Son iptaller" list. */
+export const recentEndedRowSchema = z.object({
+  reservationId: idSchema,
+  code: z.string(),
+  guestName: z.string(),
+  status: z.enum(['cancelled', 'no_show']),
+  /** ISO time of the cancellation. */
+  endedAt: z.string(),
+  reason: z.string().nullable(),
+  rooms: z.array(z.string()),
+  checkIn: localDateSchema.nullable(),
+  checkOut: localDateSchema.nullable()
+})
+export type RecentEnded = z.input<typeof recentEndedRowSchema>
+
 export const reservationsProcedures = {
+  /** Cancelled and "gelmedi" reservations of the last days (default 7), newest first. */
+  'reservations.recentEnded': proc(recentEndedSchema, z.array(recentEndedRowSchema)),
   /** The tape chart of [from, to): rooms, stays with night statuses, blocks, holidays and notes. */
   'reservations.grid': proc(gridRangeSchema, gridSchema),
   /** First and last year of the grid: the start-year setting or the oldest stay, ten years on or the furthest record. */

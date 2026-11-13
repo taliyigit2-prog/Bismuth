@@ -112,6 +112,9 @@ export function createServices(handle: DatabaseHandle, runtime: RuntimeInfo, sto
       },
       recordRefund: (ctx, tx, audit, now, input) => {
         payments.createIn(ctx, tx, audit, now, input)
+      },
+      recordPayment: (ctx, tx, audit, now, input) => {
+        payments.createIn(ctx, tx, audit, now, input)
       }
     }
   })

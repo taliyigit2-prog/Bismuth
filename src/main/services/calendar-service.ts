@@ -2,7 +2,7 @@
 // G-16, G-40, K-04). Holidays come from the offline rule engine (calendar/holidays.ts) the first time a year is
 // shown; a person's edit turns a generated row into `source = user`, which regeneration never touches.
 // Nothing is deleted: cancelled days keep their row with `cancelled_at`.
-import { and, asc, eq, gte, inArray, isNull, lt } from 'drizzle-orm'
+import { and, asc, desc, eq, gte, inArray, isNull, lt, or } from 'drizzle-orm'
 import {
   CALENDAR_BULK_MAX,
   calendarDayEditSchema,
@@ -14,8 +14,13 @@ import {
 } from '@shared/contract/operations'
 import { addDays, diffDays, weekday, type LocalDate } from '@shared/date'
 import { clampedDate } from '@shared/domain/local-datetime'
-import { calendarDays, calendarGeneration } from '../db/schema'
-import type { GridData } from '@shared/contract/procedures/reservations'
+import { calendarDays, calendarGeneration, guests, reservationRooms, reservations, rooms } from '../db/schema'
+import {
+  RECENT_ENDED_MAX,
+  recentEndedSchema,
+  type GridData,
+  type RecentEnded
+} from '@shared/contract/procedures/reservations'
 import { createCalendarGrid } from './calendar/grid'
 import { generateTurkishHolidays, HOLIDAY_SOURCE_VERSION } from './calendar/holidays'
 import type { Ctx } from './context'
@@ -488,6 +493,73 @@ export function createCalendarService(deps: ServiceDeps) {
         estimated: e.estimated
       }))
       return { ...base, days }
+    },
+
+    /**
+     * Reservations cancelled or marked "gelmedi" in the last `days` days (nothing is deleted: the calendar's "Son
+     * iptaller" list; the full record is on the guest card → Geçmiş). Newest first.
+     */
+    recentEnded(ctx: Ctx, input: { days?: number }): RecentEnded[] {
+      requirePermission(ctx, 'calendar', 'view')
+      const { days } = parseInput(recentEndedSchema, input)
+      const cutoff = new Date(deps.clock().getTime() - days * 86_400_000).toISOString()
+      const rows = deps.db
+        .select({
+          id: reservations.id,
+          code: reservations.code,
+          status: reservations.status,
+          cancelledAt: reservations.cancelledAt,
+          updatedAt: reservations.updatedAt,
+          reason: reservations.cancelReason,
+          first: guests.firstName,
+          last: guests.lastName
+        })
+        .from(reservations)
+        .innerJoin(guests, eq(guests.id, reservations.primaryGuestId))
+        .where(
+          and(
+            inArray(reservations.status, ['cancelled', 'no_show']),
+            or(
+              gte(reservations.cancelledAt, cutoff),
+              and(isNull(reservations.cancelledAt), gte(reservations.updatedAt, cutoff))
+            )
+          )
+        )
+        .orderBy(desc(reservations.updatedAt))
+        .limit(RECENT_ENDED_MAX)
+        .all()
+      if (rows.length === 0) return []
+      const stays = deps.db
+        .select({
+          reservationId: reservationRooms.reservationId,
+          number: rooms.number,
+          checkIn: reservationRooms.checkIn,
+          checkOut: reservationRooms.checkOut
+        })
+        .from(reservationRooms)
+        .innerJoin(rooms, eq(rooms.id, reservationRooms.roomId))
+        .where(
+          inArray(
+            reservationRooms.reservationId,
+            rows.map((r) => r.id)
+          )
+        )
+        .orderBy(asc(reservationRooms.checkIn))
+        .all()
+      return rows.map((r) => {
+        const own = stays.filter((x) => x.reservationId === r.id)
+        return {
+          reservationId: r.id,
+          code: r.code,
+          guestName: `${r.first} ${r.last}`.trim(),
+          status: r.status === 'no_show' ? 'no_show' : 'cancelled',
+          endedAt: r.cancelledAt ?? r.updatedAt,
+          reason: r.reason,
+          rooms: [...new Set(own.map((x) => x.number))],
+          checkIn: own[0]?.checkIn ?? null,
+          checkOut: own.length ? own[own.length - 1]!.checkOut : null
+        }
+      })
     },
 
     /** Guest name, phone or reservation code → stays to jump to on the grid. */

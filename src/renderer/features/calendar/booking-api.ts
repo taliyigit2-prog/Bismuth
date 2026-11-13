@@ -140,9 +140,29 @@ export function rateTextToMicro(text: string): number | null {
 let requestedPanel: string | null = null
 const panelListeners = new Set<() => void>()
 
+/** What the panel does as soon as it has loaded (the calendar's right-click menu: "Ödeme al", "Gelmedi"…). */
+export interface PanelIntent {
+  kind: 'checkOut' | 'pay' | 'park' | 'noShow' | 'giveUp' | 'cancel' | 'stays' | 'note' | 'history'
+  /** The room (stay) the intent is about, where it matters. */
+  stayId?: string
+}
+
+let panelIntent: { reservationId: string; intent: PanelIntent } | null = null
+
+/** The intent waiting for reservation `id`'s panel (read without consuming: safe to call twice). */
+export function peekPanelIntent(id: string): PanelIntent | null {
+  return panelIntent && panelIntent.reservationId === id ? panelIntent.intent : null
+}
+
+/** The panel has done what was asked. */
+export function dropPanelIntent(id: string): void {
+  if (panelIntent?.reservationId === id) panelIntent = null
+}
+
 /** Opens the reservation panel on `id` (null closes it), from anywhere on the calendar screen. */
-export function requestPanel(id: string | null): void {
+export function requestPanel(id: string | null, intent?: PanelIntent): void {
   requestedPanel = id
+  panelIntent = id && intent ? { reservationId: id, intent } : null
   for (const listener of panelListeners) listener()
 }
 

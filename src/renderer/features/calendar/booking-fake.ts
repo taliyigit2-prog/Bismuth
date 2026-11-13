@@ -9,7 +9,7 @@ import {
   type ProcedureName,
   type ProcedureOutput
 } from '@shared/contract'
-import { localDate, type LocalDate } from '@shared/date'
+import { addDays, localDate, type LocalDate } from '@shared/date'
 import { matchBlacklist } from '@shared/domain/blacklist'
 import { cellStyle } from '@shared/domain/cell-status'
 import { normalizeName } from '@shared/domain/normalize'
@@ -349,7 +349,11 @@ export function bookingTransport(
         chargesMinor: v.folio.chargesMinor,
         balanceMinor: v.folio.balanceMinor
       })),
-      totals: { currency: 'TRY', chargesMinor: 0, balanceMinor: 0 },
+      totals: {
+        currency: 'TRY',
+        chargesMinor: rooms.reduce((sum, v) => sum + v.folio.chargesMinor, 0),
+        balanceMinor: rooms.reduce((sum, v) => sum + (v.folio.balanceMinor ?? 0), 0)
+      },
       notes: group.notes.map((text, n) => ({
         id: `note-${n}`,
         reservationId: rooms[0]?.reservation.id ?? '',
@@ -576,6 +580,38 @@ export function bookingTransport(
         if (!view) throw new ApiError('NOT_FOUND', 404, 'errors.notFound')
         for (const s of view.stays) if (s.id === i['stayId']) s.status = 'cancelled'
         return structuredClone(view)
+      }
+      case 'booking.suggestPrices': {
+        const room = state.options.rooms.find((r) => r.id === i['roomId'])
+        if (!room || room.basePriceMinor === null) return null
+        const nights: { date: LocalDate; priceMinor: number; reason: 'base' }[] = []
+        for (let d = localDate(String(i['checkIn'])); d < String(i['checkOut']); d = addDays(d, 1))
+          nights.push({ date: d, priceMinor: room.basePriceMinor, reason: 'base' })
+        return { currency: room.priceCurrency ?? 'TRY', nights }
+      }
+      case 'booking.checkIn': {
+        const view = Object.values(state.views).find((v) => v.stays.some((s) => s.id === i['stayId']))
+        if (!view) throw new ApiError('NOT_FOUND', 404, 'errors.notFound')
+        for (const s of view.stays) if (s.id === i['stayId']) s.status = 'in_house'
+        view.reservation.status = 'checked_in'
+        return structuredClone(view)
+      }
+      case 'booking.addNote': {
+        const view = state.views[String(i['reservationId'])]
+        if (!view) throw new ApiError('NOT_FOUND', 404, 'errors.notFound')
+        return structuredClone(view)
+      }
+      case 'booking.payGroup': {
+        const group = state.groups?.[String(i['groupId'])]
+        if (!group) throw new ApiError('NOT_FOUND', 404, 'errors.notFound')
+        let left = Number(i['amountMinor'])
+        for (const view of Object.values(state.views)) {
+          if (view.reservation.group?.id !== i['groupId'] || left <= 0) continue
+          const part = Math.min(left, Math.max(0, view.folio.balanceMinor ?? 0))
+          if (part > 0) addPayment(view.reservation.id, 'payment', part, String(i['methodId']))
+          left -= part
+        }
+        return groupView(String(i['groupId']))
       }
       case 'booking.checkOut': {
         const view = Object.values(state.views).find((v) => v.stays.some((s) => s.id === i['stayId']))

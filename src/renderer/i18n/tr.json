@@ -319,7 +319,90 @@
       "confirm": "Taşı",
       "hint": "Rezervasyonu başka bir odaya ya da tarihe taşımak için çubuğu sürükleyin; bırakınca onay sorulur. Klavyeyle: rezervasyonu açın, Geceler sekmesini kullanın."
     },
-    "groupLegend": "Aynı renkli çerçeve ve simge aynı gruba aittir"
+    "groupLegend": "Aynı renkli çerçeve ve simge aynı gruba aittir",
+    "quick": {
+      "menu": {
+        "checkIn": "Giriş yap",
+        "checkOut": "Çıkış yap",
+        "pay": "Ödeme al",
+        "move": "Taşı",
+        "extend": "Uzat ya da kısalt",
+        "note": "Not ekle",
+        "park": "Park et",
+        "noShow": "Gelmedi",
+        "giveUp": "Vazgeçme ve iade",
+        "guest": "Misafir kartı",
+        "cellTitle": "Oda {{room}} · {{date}}",
+        "quick": "Hızlı rezervasyon",
+        "detail": "Ayrıntılı rezervasyon",
+        "hourly": "Saatlik satış",
+        "block": "Odayı kapat"
+      },
+      "title": "Hızlı rezervasyon · Oda {{room}} · {{date}}",
+      "name": "Misafir adı",
+      "people": "Kişi",
+      "nights": "Gece",
+      "price": "Gecelik fiyat",
+      "detail": "Ayrıntı",
+      "errors": {
+        "name": "Misafir adını yazın.",
+        "nights": "Gece sayısı 1 ile 400 arasında olmalı.",
+        "price": "Gecelik fiyatı yazın."
+      },
+      "today": {
+        "label": "Bugünün özeti",
+        "arrivals": "Bugün gelecekler: {{count}}",
+        "departures": "Gidecekler: {{count}}",
+        "inHouse": "Otelde: {{count}} oda",
+        "done": "Yapıldı",
+        "failed": "Bugünün özeti yüklenemedi."
+      },
+      "recent": {
+        "button": "Son iptaller",
+        "title": "Son {{days}} günün iptalleri",
+        "empty": "Son günlerde iptal ya da gelmedi kaydı yok.",
+        "failed": "Liste yüklenemedi.",
+        "note": "İptal ve gelmedi kayıtları Misafir kartı → Geçmiş bölümünde de durur.",
+        "status": {
+          "cancelled": "İptal edildi",
+          "no_show": "Gelmedi"
+        },
+        "rooms": "Oda {{rooms}}",
+        "meta": "{{place}} · {{ended}}",
+        "metaDates": "{{place}} · {{from}} – {{to}} · {{ended}}"
+      },
+      "legendNote": "İptal ve gelmedi kayıtları takvimde görünmez; Misafir kartı → Geçmiş bölümünde durur.",
+      "bulk": {
+        "label": "Toplu işlemler",
+        "count": "Seçilen: {{count}}",
+        "checkIn": "Toplu giriş",
+        "checkOut": "Toplu çıkış",
+        "note": "Toplu not",
+        "pay": "Toplu ödeme",
+        "attach": "Gruba bağla",
+        "clear": "Seçimi temizle",
+        "checkInDone": "Giriş yapılan oda: {{count}}",
+        "checkOutDone": "Çıkış yapılan oda: {{count}}",
+        "noteDone": "Not eklenen rezervasyon: {{count}}",
+        "payDone": "Ödeme alınan rezervasyon: {{count}}",
+        "attachDone": "Gruba bağlanan rezervasyon: {{count}}",
+        "partial": "{{ok}} işlem tamam, {{failed}} işlem yapılamadı.",
+        "noteTitle": "Seçilen rezervasyonlara not",
+        "noteBody": "Not, seçilen {{count}} rezervasyonun hepsine eklenir.",
+        "noteLabel": "Not",
+        "payTitle": "Toplu ödeme",
+        "payBody": "Her rezervasyon kendi açık bakiyesini öder. Tutarlar aşağıda.",
+        "paySave": "Ödemeleri kaydet",
+        "payNone": "Seçilen rezervasyonlarda açık bakiye yok.",
+        "payTotal": "Toplam",
+        "method": "Ödeme yöntemi",
+        "attachTitle": "Gruba bağla",
+        "attachBodyJoin": "Seçilen {{count}} rezervasyon gruba eklenir. Konaklama ve tutarlar değişmez.",
+        "attachBodyNew": "Seçilen {{count}} rezervasyon yeni bir grupta birleşir. Konaklama ve tutarlar değişmez.",
+        "attachSave": "Gruba bağla",
+        "groupName": "Grup adı"
+      }
+    }
   },
   "today": {
     "title": "Bugün",
@@ -1545,7 +1628,13 @@
     "dayUseFreeNeedsConfirm": "Ücret 0 yazıldı. Ücretsiz çıkışı onaylayın ya da bir tutar yazın.",
     "hoursRequired": "Aynı gün giriş‑çıkış için saat aralığını yazın.",
     "groupStayMismatch": "Seçilen oda bu gruba ait değil. Grup panelini kapatıp yeniden açın.",
-    "groupClosed": "Bu grup iptal edilmiş. Gerekirse yeni bir grup oluşturun."
+    "groupClosed": "Bu grup iptal edilmiş. Gerekirse yeni bir grup oluşturun.",
+    "groupPayCurrency": "Grubun odaları bu para biriminde değil. Ödemeyi odaların kendi hesabından alın.",
+    "groupPayExceeds": "Tutar grubun açık bakiyesinden fazla. Tutarı azaltın.",
+    "groupAttachTaken": "Seçilen rezervasyonlardan biri zaten bir grupta.",
+    "groupAttachClosed": "Kapanmış ya da iptal edilmiş rezervasyon gruba bağlanamaz.",
+    "groupTooLarge": "Bir grupta en çok 30 oda olabilir.",
+    "groupAttachTooFew": "Yeni grup için en az iki rezervasyon seçin."
   },
   "common": {
     "close": "Kapat",
@@ -1641,8 +1730,8 @@
       "selectAll": "Tümünü seç",
       "view": "Görünüm",
       "resetZoom": "Gerçek boyut",
-      "zoomIn": "Büyüt",
-      "zoomOut": "Küçült",
+      "zoomIn": "Yakınlaştır",
+      "zoomOut": "Uzaklaştır",
       "fullScreen": "Tam ekran",
       "window": "Pencere",
       "minimize": "Simge durumuna küçült",
@@ -5829,7 +5918,7 @@
         "selectAll": "Tümünü seç",
         "selectRoom": "Oda {{room}} seç",
         "openReservation": "Rezervasyonu aç",
-        "notDue": "Giriş günü gelmedi",
+        "notDue": "Giriş günü henüz değil",
         "checkIn": "Toplu giriş",
         "checkOut": "Toplu çıkış",
         "note": "Toplu not",
@@ -5840,7 +5929,12 @@
         "mixedCurrency": "Odalar farklı para birimlerinde; toplam gösterilmiyor.",
         "notes": "Grup notları",
         "noNotes": "Henüz grup notu yok. İlk notu eklemek için \"Toplu not\"a basın.",
-        "charges": "Konaklama tutarı"
+        "charges": "Konaklama tutarı",
+        "pay": "Grup ödemesi al",
+        "roomPay": "Ödeme al",
+        "roomBalance": "Bakiye: {{amount}}",
+        "stayRange": "{{from}} – {{to}}",
+        "stayRangeNotDue": "{{from}} – {{to}} · Giriş günü gelmedi"
       },
       "noteDialog": {
         "title": "Tüm odalara not",
@@ -5856,7 +5950,18 @@
         "checkedIn": "Seçilen odalar giriş yaptı",
         "checkedOut": "Seçilen odalar çıkış yaptı",
         "noteAdded": "Not tüm odalara eklendi",
-        "cancelled": "Grup iptal edildi"
+        "cancelled": "Grup iptal edildi",
+        "paid": "Grup ödemesi kaydedildi"
+      },
+      "payDialog": {
+        "title": "Grup ödemesi",
+        "body": "Grubun açık bakiyesi {{amount}}.",
+        "amount": "Tutar",
+        "method": "Ödeme yöntemi",
+        "note": "Not",
+        "needAmount": "Tutarı yazın.",
+        "tooMuch": "Tutar açık bakiyeyi ({{amount}}) aşıyor.",
+        "spread": "Tutar odaların açık bakiyelerine rezervasyon sırasıyla dağıtılır; her oda için ayrı ödeme satırı yazılır."
       }
     }
   },
@@ -6850,7 +6955,9 @@
       "week": "Bir hafta ileri ya da geri",
       "today": "Bugüne dön",
       "open": "Seçili hücreyi aç",
-      "new": "Seçili hücrede yeni rezervasyon"
+      "new": "Seçili hücrede yeni rezervasyon",
+      "select": "Çubuğu seç ya da seçimden çıkar (Ctrl veya Shift + tık)",
+      "menu": "Çubuğun ya da hücrenin işlem menüsü (sağ tık)"
     },
     "forms": {
       "save": "Kaydet",
