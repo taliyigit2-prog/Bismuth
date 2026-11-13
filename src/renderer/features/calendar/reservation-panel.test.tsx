@@ -1,8 +1,10 @@
 import { beforeAll, describe, expect, it } from 'vitest'
-import { screen, waitFor, within } from '@testing-library/react'
+import { act, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { FAKE_ACCOUNTS, renderWithProviders } from '@/test/render'
 import { bookingTransport, type BookingTransport } from './booking-fake'
+import { requestGroupPanel } from './booking-api'
+import { GroupPanel } from './group-panel'
 import { ReservationPanel } from './reservation-panel'
 
 beforeAll(() => {
@@ -254,5 +256,41 @@ describe('rezervasyon paneli', () => {
     )
     const panel = await screen.findByTestId('reservation-panel')
     expect(await within(panel).findByRole('alert')).toHaveTextContent('Kayıt bulunamadı')
+  })
+
+  it('gruba bağlı rezervasyonda "Grup: ad" düğmesi çıkar ve grup panelini açar; grupsuzda çıkmaz', async () => {
+    const transport = bookingTransport()
+    const grouped = (await transport.call('booking.createGroup', {
+      name: 'Örnek tur grubu',
+      leader: { firstName: 'Deniz', lastName: 'Lider' },
+      channelId: 'ch-direct',
+      rooms: ['room-101', 'room-102'].map((roomId) => ({
+        stay: { roomId, checkIn: '2026-10-04', checkOut: '2026-10-06', nightlyPriceMinor: 200_000 }
+      }))
+    })) as { rooms: { reservationId: string }[] }
+    const user = userEvent.setup()
+    const { unmount } = await renderWithProviders(
+      <>
+        <ReservationPanel
+          reservation={{ id: grouped.rooms[0]!.reservationId }}
+          onOpenChange={() => undefined}
+        />
+        <GroupPanel />
+      </>,
+      { transport }
+    )
+    const panel = await screen.findByTestId('reservation-panel')
+    await user.click(await within(panel).findByTestId('panel-group'))
+    expect(await screen.findByTestId('group-panel')).toBeInTheDocument()
+    expect(await screen.findByTestId('group-name')).toHaveTextContent('Örnek tur grubu')
+    unmount()
+    act(() => requestGroupPanel(null))
+    const plain = bookingTransport()
+    const id = await seeded(plain)
+    await renderWithProviders(<ReservationPanel reservation={{ id }} onOpenChange={() => undefined} />, {
+      transport: plain
+    })
+    await within(await screen.findByTestId('reservation-panel')).findByTestId('panel-guest')
+    expect(screen.queryByTestId('panel-group')).not.toBeInTheDocument()
   })
 })

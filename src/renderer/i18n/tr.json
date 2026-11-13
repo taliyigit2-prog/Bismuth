@@ -190,7 +190,9 @@
       "vip": "VIP",
       "standing": "Misafir notu: {{text}}",
       "openIssues_one": "Açık arıza: {{count}}",
-      "openIssues_other": "Açık arıza: {{count}}"
+      "openIssues_other": "Açık arıza: {{count}}",
+      "group": "Grup rezervasyonu",
+      "groupNamed": "Grup: {{name}}"
     },
     "nav": {
       "month": "Ay",
@@ -316,7 +318,8 @@
       "datesBody": "{{guest}}, Oda {{room}}: {{from}} → {{to}}. Gece sayısı aynı kalır; her gece kendi fiyatıyla taşınır, toplam tutar değişmez.",
       "confirm": "Taşı",
       "hint": "Rezervasyonu başka bir odaya ya da tarihe taşımak için çubuğu sürükleyin; bırakınca onay sorulur. Klavyeyle: rezervasyonu açın, Geceler sekmesini kullanın."
-    }
+    },
+    "groupLegend": "Aynı renkli çerçeve ve simge aynı gruba aittir"
   },
   "today": {
     "title": "Bugün",
@@ -1210,7 +1213,11 @@
       "startYear": "Takvim başlangıç yılı",
       "startYearHelp": "Takvim bu yıldan başlar; daha eski bir konaklama varsa onun yılından. Boş bırakırsanız en eski konaklamanın yılından başlar.",
       "startYearEmpty": "Örn. 2020",
-      "startYearInvalid": "Yıl {{min}} ile {{max}} arasında olmalı."
+      "startYearInvalid": "Yıl {{min}} ile {{max}} arasında olmalı.",
+      "groupFolio": "Grup rezervasyonunda hesap",
+      "groupFolioHelp": "Yeni açılan gruplar bu seçimle başlar; açılmış gruplar değişmez.",
+      "groupFolioSingle": "Tek hesap",
+      "groupFolioPerRoom": "Oda başına hesap"
     },
     "currencyNote": {
       "body": "Döviz kurları Döviz ekranında girilir ve izlenir. Kabul ettiğiniz para birimlerini “Otel” bölümünden seçin.",
@@ -1536,7 +1543,9 @@
     "undoCheckInMoved": "Bu oda, oda değişikliği günü girişle açıldı; geri alınamaz. Önce çıkış yaptırın.",
     "undoCheckInKbs": "{{names}} KBS'ye bildirilmiş. Onaylayarak geri alabilirsiniz.",
     "dayUseFreeNeedsConfirm": "Ücret 0 yazıldı. Ücretsiz çıkışı onaylayın ya da bir tutar yazın.",
-    "hoursRequired": "Aynı gün giriş‑çıkış için saat aralığını yazın."
+    "hoursRequired": "Aynı gün giriş‑çıkış için saat aralığını yazın.",
+    "groupStayMismatch": "Seçilen oda bu gruba ait değil. Grup panelini kapatıp yeniden açın.",
+    "groupClosed": "Bu grup iptal edilmiş. Gerekirse yeni bir grup oluşturun."
   },
   "common": {
     "close": "Kapat",
@@ -5415,7 +5424,8 @@
       "takeover": "Ana bilgisayarı devralma",
       "import_batch": "İçe aktarma",
       "guest_tag": "Misafir etiketi",
-      "room_capacity_change": "Oda kapasitesi"
+      "room_capacity_change": "Oda kapasitesi",
+      "reservation_groups": "Grup rezervasyonu"
     },
     "fieldName": {
       "name": "Ad",
@@ -5514,7 +5524,8 @@
       "openIssue": "Açık arıza: {{title}}",
       "blocked": "Satışa kapalı",
       "takenChosen": "Seçilen tarihlerde dolu: oda {{rooms}}. Başka bir oda ya da tarih seçin.",
-      "notForSale": "Satılmaz"
+      "notForSale": "Satılmaz",
+      "remove": "Oda {{room}} seçimini kaldır"
     },
     "price": {
       "reason": {
@@ -5787,6 +5798,66 @@
       },
       "hoursLabel": "Saatler",
       "kind": "Saatlik"
+    },
+    "group": {
+      "title": "Grup rezervasyonu",
+      "option": "Grup rezervasyonu olarak kaydet",
+      "optionHelp": "Her oda ayrı rezervasyon olur; odalar tek grupta toplanır, giriş ve çıkış topluca yapılabilir.",
+      "name": "Grup adı",
+      "namePlaceholder": "Örn. tur grubu",
+      "needName": "Grubun adını yazın.",
+      "needRooms": "Grup için en az iki oda seçin.",
+      "leaderHelp": "Yukarıdaki misafir grup lideri olur; adı yazılmayan odalara o yazılır.",
+      "roomGuest": "Oda {{room}} misafir adı",
+      "roomGuestPlaceholder": "Grup lideri",
+      "created": "Grup kaydedildi",
+      "badge": "Grup: {{name}}",
+      "open": "Grup panelini aç",
+      "panel": {
+        "title": "Grup",
+        "description": "Grubun odaları, misafirleri ve toplu işlemleri",
+        "loading": "Grup yükleniyor",
+        "leader": "Grup lideri: {{name}}",
+        "rooms_one": "{{count}} oda",
+        "rooms_other": "{{count}} oda",
+        "folio": {
+          "single": "Tek hesap (grup lideri öder)",
+          "per_room": "Oda başına hesap"
+        },
+        "voided": "Grup iptal edildi",
+        "roomsHeading": "Odalar",
+        "selectAll": "Tümünü seç",
+        "selectRoom": "Oda {{room}} seç",
+        "openReservation": "Rezervasyonu aç",
+        "notDue": "Giriş günü gelmedi",
+        "checkIn": "Toplu giriş",
+        "checkOut": "Toplu çıkış",
+        "note": "Toplu not",
+        "cancel": "Grubu iptal et",
+        "atomic": "Seçilen odaların hepsi birlikte yapılır; biri olmazsa hiçbiri yapılmaz.",
+        "total": "Grup toplamı",
+        "balance": "Bakiye",
+        "mixedCurrency": "Odalar farklı para birimlerinde; toplam gösterilmiyor.",
+        "notes": "Grup notları",
+        "noNotes": "Henüz grup notu yok. İlk notu eklemek için \"Toplu not\"a basın.",
+        "charges": "Konaklama tutarı"
+      },
+      "noteDialog": {
+        "title": "Tüm odalara not",
+        "description": "Yazdığınız not grubun her odasının rezervasyonuna eklenir.",
+        "label": "Not"
+      },
+      "cancelDialog": {
+        "title": "Grup iptal edilsin mi?",
+        "body": "Henüz gelmemiş odaların geceleri boşalır. Ödemeler kayıtta kalır; iade için ilgili odanın rezervasyonunu açın.",
+        "reason": "İptal nedeni"
+      },
+      "toast": {
+        "checkedIn": "Seçilen odalar giriş yaptı",
+        "checkedOut": "Seçilen odalar çıkış yaptı",
+        "noteAdded": "Not tüm odalara eklendi",
+        "cancelled": "Grup iptal edildi"
+      }
     }
   },
   "holidayCheck": {

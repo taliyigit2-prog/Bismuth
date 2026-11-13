@@ -258,6 +258,8 @@ export const bookingViewSchema = z.object({
     parkedReason: z.enum(['no_show_paid', 'refund_pending', 'postponed', 'other']).nullable(),
     parkedNote: z.string().nullable(),
     cancelReason: z.string().nullable(),
+    /** The group booking this reservation belongs to (G-194); null = none. */
+    group: z.object({ id: idSchema, name: z.string() }).nullable(),
     createdAt: iso
   }),
   guest: z.object({

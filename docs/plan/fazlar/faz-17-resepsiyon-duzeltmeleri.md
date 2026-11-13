@@ -53,7 +53,7 @@ konaklama türü filtresi + aylık saatlik sayısı; S-106 tek hesap (varsayıla
 - [x] `undoCheckIn`: yalnız giriş günü, yetki, audit; yetkisiz rol reddi (servis testi).
 - [x] İptal penceresi tahsilat varsa tutar + üç seçenek; iade satırı `ledger.day`'de ve kasa tesliminde (servis + e2e).
 - [x] "Girdi, vazgeçti, iade" e2e masaüstü + telefon yeşil.
-- [ ] 3 odalı grup: oda başına ad, toplu giriş atomik, takvimde desen (migrasyon + servis + grid + e2e).
+- [x] 3 odalı grup: oda başına ad, toplu giriş atomik, takvimde desen (migrasyon + servis + grid + e2e). Testler: `reservation-groups.test.ts` (3 odalı grup, atomik giriş), `group.spec.ts` (masaüstü + telefon).
 - [ ] Sağ tık menüsü ve hızlı çubuk klavyeyle erişilebilir; telefonda uzun basma (e2e).
 - [x] Betik C senaryosu: ikinci tur çıkışından sonra oda o gece satılabilir (servis testi `hourly-stays.test.ts` "A girip öğleden sonra çıkar, B geceyi alıp…", kırmızıdan yeşile).
 - [x] Aynı gün üç saatlik satış saat çakışmazsa olur, çakışırsa saatli `roomOccupied`; temizlik arası dolmadan uyarı ama
@@ -89,3 +89,16 @@ fiyatlama; kamera (Faz 20).
 - Ekran: saatlik satış penceresi (takvim başlığı), saatli çubuk (şeritli), panel/gün listesinde saatler, Ayarlar → Odalar ve tipler'de
   saat ücreti + temizlik süresi, kurulum sihirbazında isteğe bağlı 7. adım (adım sayısı 13), raporlarda konaklama türü süzgeci.
 - Varsayılanlar: saatlik tutar pozitif olmalı (0 yazılamaz); saat ücreti dakika oranıyla hesaplanır; "Ayarlar → Fiyatlar" = Odalar ve tipler sekmesi.
+
+### P17b adım 2 — grup rezervasyonu servis + ekran (calendar-specialist)
+- Servis (`reservations-service.ts`): `createGroup` (oda başına bir rezervasyon + misafir adı; adsız oda lideri alır; `folio_mode`
+  oluştururken `booking.groupFolioMode` ayarından kopyalanır), `checkInMany` / `checkOutMany` (tek transaction, biri başarısızsa
+  hiçbiri), `addGroupNote` (her odanın rezervasyonuna), `cancelGroup` (gelecek odalar iptal, hepsi kapanınca `voided_at`), `group`
+  (görünüm). `create`/`checkIn`/`checkOut` gövdeleri `createIn`/`checkInIn`/`checkOutIn` olarak ayrıldı (davranış aynı).
+  Sözleşme `contract/groups.ts`; yordamlar `booking.group/createGroup/checkInMany/checkOutMany/addGroupNote/cancelGroup`.
+- Ekran: `group-panel.tsx` (oda listesi, toplu giriş/çıkış/not/iptal, grup toplamı), yeni rezervasyonda "Grup rezervasyonu" seçeneği
+  (oda başına ad; oda rozetleri = 21st A5 kalıbı, bağımlılık yok), takvimde grup halkası (`--group-1…6`) + simge + lejant satırı,
+  telefon gün listesinde grup simgesi, rezervasyon panelinde "Grup: ad" düğmesi, Ayarlar → Takvim'de grup hesabı seçimi.
+- Varsayılanlar: grup için en az 2 oda; tek hesap kipinde her oda yine kendi folyosunu tutar (raporlar/KBS değişmez), grup paneli
+  birleşik bakiyeyi gösterir. Açık: grup tek ödemesi ve çoklu seçimden gruba bağlama P17c (toplu ödeme) ile; grup iptali iade satırı
+  yazmaz (iade odanın kendi panelinden).

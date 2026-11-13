@@ -5,7 +5,7 @@
 // and the issue's title (G-180).
 import { useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { AlertTriangleIcon, BedDoubleIcon, ChevronsUpDownIcon } from 'lucide-react'
+import { AlertTriangleIcon, BedDoubleIcon, ChevronsUpDownIcon, XIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -21,7 +21,8 @@ export function RoomMultiPicker({
   occupied,
   blocked,
   label,
-  allowOverride = false
+  allowOverride = false,
+  chips = false
 }: {
   rooms: readonly BookingRoom[]
   value: readonly string[]
@@ -31,6 +32,8 @@ export function RoomMultiPicker({
   label: string
   /** Blocked and not-for-sale rooms can be ticked (the user may write "yine de" with a reason). */
   allowOverride?: boolean
+  /** Chosen rooms also as removable badges under the list (21st.dev A5 pattern; group booking, 44 px on a phone). */
+  chips?: boolean
 }) {
   const { t } = useTranslation()
   const f = useFormat()
@@ -142,6 +145,26 @@ export function RoomMultiPicker({
           </ScrollArea>
         </PopoverContent>
       </Popover>
+      {chips && chosen.length > 1 ? (
+        <ul className="flex flex-wrap gap-1.5" data-testid="room-chips">
+          {chosen.map((r) => (
+            <li key={r.id}>
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                className="gap-1 max-md:min-h-11"
+                aria-label={t('booking.rooms.remove', { room: r.number })}
+                onClick={() => toggle(r.id, false)}
+                data-testid={`room-chip-${r.number}`}
+              >
+                <span className="tabular-nums">{r.number}</span>
+                <XIcon className="size-3.5" aria-hidden />
+              </Button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
     </div>
   )
 }

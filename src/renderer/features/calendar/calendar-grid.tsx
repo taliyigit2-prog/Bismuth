@@ -34,6 +34,7 @@ import {
   StarIcon,
   StickyNoteIcon,
   TicketIcon,
+  UsersIcon,
   WrenchIcon
 } from 'lucide-react'
 import type { StatusKey } from '@shared/contract'
@@ -61,6 +62,7 @@ import {
   stayBars,
   staysAt,
   stayIcons,
+  groupRing,
   type Cursor,
   type GridBlockView,
   type GridDayView,
@@ -145,7 +147,8 @@ const ICON: Record<StayIcon, typeof CrownIcon> = {
   kbs: ShieldAlertIcon,
   warn: AlertTriangleIcon,
   deposit: CoinsIcon,
-  child: BabyIcon
+  child: BabyIcon,
+  group: UsersIcon
 }
 
 const DAY_ICON: Record<GridDayView['kind'], typeof FlagIcon> = {
@@ -928,6 +931,7 @@ const GridRow = memo(function GridRow({
           const words = [
             ...(hours ? [hours] : []),
             ...paintNames(legend, [labelPaint, paint.border]),
+            ...(s.groupId ? [t('calendar.grid.group')] : []),
             ...(s.reservationStatus === 'tentative' ? [t('calendar.resStatus.tentative')] : []),
             ...(s.kbsMissing ? [t('calendar.grid.kbs')] : []),
             ...(s.vip ? [t('calendar.grid.vip')] : []),
@@ -947,6 +951,7 @@ const GridRow = memo(function GridRow({
               data-bar
               data-testid={`stay-${s.id}`}
               data-icons={icons.join(' ')}
+              data-group={s.groupId ?? undefined}
               aria-label={label}
               title={label}
               onClick={() => actions.barClick(s)}
@@ -960,6 +965,7 @@ const GridRow = memo(function GridRow({
                 draggable && s.stayStatus !== 'done' && 'cursor-grab touch-none active:cursor-grabbing',
                 ghostStayId === s.id && 'opacity-60',
                 paintFill(paint.nights[0]?.fill ?? null),
+                s.groupId && ['ring-2', groupRing(s.groupId)],
                 framed && 'border-2',
                 framed && (paint.border ? paintBorder(paint.border) : 'border-foreground/60'),
                 s.reservationStatus === 'tentative' && 'border-dashed',

@@ -232,6 +232,7 @@ export function emptyCellStatus(past: boolean, enabled: ReadonlySet<StatusKey>):
 /** Small marks on a bar, most urgent first; colour never carries the meaning alone. */
 export function stayIcons(stay: GridStayView, depositIcon: boolean): StayIcon[] {
   const icons: StayIcon[] = []
+  if (stay.groupId) icons.push('group')
   if (stay.standingNote?.level === 'warn') icons.push('warn')
   if (stay.kbsMissing) icons.push('kbs')
   if (stay.vip) icons.push('vip')
@@ -240,6 +241,23 @@ export function stayIcons(stay: GridStayView, depositIcon: boolean): StayIcon[] 
   if (stay.children > 0) icons.push('child')
   if (depositIcon) icons.push('deposit')
   return icons
+}
+
+/** Frame colours of group reservations (G-194), in rotation: `--group-1…6` in globals.css (full class names for Tailwind). */
+const GROUP_RINGS = [
+  'ring-(--group-1)',
+  'ring-(--group-2)',
+  'ring-(--group-3)',
+  'ring-(--group-4)',
+  'ring-(--group-5)',
+  'ring-(--group-6)'
+] as const
+
+/** The same group always gets the same frame colour (a small hash of its id). */
+export function groupRing(groupId: string): string {
+  let h = 0
+  for (const ch of groupId) h = (h * 31 + ch.charCodeAt(0)) % 997
+  return GROUP_RINGS[h % GROUP_RINGS.length]!
 }
 
 /** Legend: the automatic statuses kept on, then the hotel's own tags (G-33). */

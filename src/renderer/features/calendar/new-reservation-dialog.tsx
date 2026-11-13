@@ -36,6 +36,7 @@ import { deferForPendingAmount } from '@/features/settings/use-admin'
 import { cn } from '@/lib/utils'
 import {
   localName,
+  requestGroupPanel,
   requestPanel,
   useBookingMutation,
   useBookingOptions,
@@ -44,7 +45,7 @@ import {
   type BookingRoom
 } from './booking-api'
 import { GuestSummaryCard, StandingNoteAlert } from './guest-summary-card'
-import { CHANNEL_REF_MAX, GUEST_NAME_MAX, RESERVATION_NOTE_MAX } from './booking-limits'
+import { CHANNEL_REF_MAX, GROUP_NAME_MAX, GUEST_NAME_MAX, RESERVATION_NOTE_MAX } from './booking-limits'
 import { NightPriceTable } from './night-price-table'
 import { OverrideReasonField } from './override-dialog'
 import { RoomMultiPicker } from './room-multi-picker'
@@ -126,6 +127,11 @@ export function NewReservationDialog({
             if (onCreated) onCreated(id)
             else requestPanel(id)
           }}
+          onGroupDone={(groupId, firstReservationId) => {
+            onOpenChange(false)
+            if (onCreated) onCreated(firstReservationId)
+            else requestGroupPanel(groupId)
+          }}
         />
       )}
     </ResponsiveDialog>
@@ -135,11 +141,14 @@ export function NewReservationDialog({
 function NewReservationForm({
   seed,
   options,
-  onDone
+  onDone,
+  onGroupDone
 }: {
   seed: NewReservationSeed
   options: NonNullable<ReturnType<typeof useBookingOptions>['data']>
   onDone: (reservationId: string) => void
+  /** A group was booked (G-194): its id and the id of its first reservation. */
+  onGroupDone: (groupId: string, firstReservationId: string) => void
 }) {
   const { t } = useTranslation()
   const f = useFormat()
@@ -169,6 +178,10 @@ function NewReservationForm({
   const [status, setStatus] = useState<'confirmed' | 'tentative'>('confirmed')
   const [tagIds, setTagIds] = useState<string[]>([])
   const [notes, setNotes] = useState('')
+  /** "Grup rezervasyonu" (G-194): one reservation per room, a guest name per room, one group. */
+  const [groupOn, setGroupOn] = useState(false)
+  const [groupName, setGroupName] = useState('')
+  const [roomNames, setRoomNames] = useState<Record<string, string>>({})
   /** The person and the entries the blacklist tick was given for (another person needs a tick of their own). */
   const [blacklistOkFor, setBlacklistOkFor] = useState<string | null>(null)
   const [standingOk, setStandingOk] = useState(false)
@@ -296,19 +309,26 @@ function NewReservationForm({
     setOverrides({})
   }
 
+  const onCreateError = (e: ApiError): boolean => {
+    if (e.messageKey === 'errors.blacklistMatch') {
+      const details = e.details as { hits?: BlacklistHit[] } | undefined
+      setServerHits(details?.hits ?? [])
+      setBlacklistOkFor(null)
+      return true
+    }
+    return false
+  }
   const create = useBookingMutation('booking.create', {
     success: t('booking.toast.created'),
     onSuccess: (view) => onDone(view.reservation.id),
-    onError: (e: ApiError) => {
-      if (e.messageKey === 'errors.blacklistMatch') {
-        const details = e.details as { hits?: BlacklistHit[] } | undefined
-        setServerHits(details?.hits ?? [])
-        setBlacklistOkFor(null)
-        return true
-      }
-      return false
-    }
+    onError: onCreateError
   })
+  const createGroup = useBookingMutation('booking.createGroup', {
+    success: t('booking.group.created'),
+    onSuccess: (view) => onGroupDone(view.id, view.rooms[0]?.reservationId ?? ''),
+    onError: onCreateError
+  })
+  const asGroup = groupOn && rooms.length >= 2
 
   const submit = (e: FormEvent<HTMLFormElement>): void => {
     e.preventDefault()
@@ -330,27 +350,49 @@ function NewReservationForm({
     if (closedChosen.length && !canOverride) return setError(t('booking.override.noRight'))
     if (closedChosen.length && overrideReason.trim().length < 3)
       return setError(t('booking.override.needReason'))
+    const guestInput =
+      guest.kind === 'existing'
+        ? { id: guest.id }
+        : {
+            firstName: guest.firstName.trim(),
+            lastName: guest.lastName.trim(),
+            phone: guest.phone.trim() || null,
+            email: guest.email.trim() || null
+          }
+    const stayOf = (r: BookingRoom) => ({
+      roomId: r.id,
+      checkIn,
+      checkOut,
+      prices: slots.map((date) => ({ date, priceMinor: priceOf(r, date) ?? 0 })),
+      ...(sameDay ? { startTime, endTime } : {})
+    })
+    if (groupOn && rooms.length === 1) return setError(t('booking.group.needRooms'))
+    if (asGroup) {
+      if (!groupName.trim()) return setError(t('booking.group.needName'))
+      return createGroup.mutate({
+        name: groupName.trim(),
+        leader: guestInput,
+        channelId,
+        channelRef: channelRef.trim() || null,
+        status,
+        currency,
+        rooms: rooms.map((r) => {
+          const named = (roomNames[r.id] ?? '').trim()
+          return { stay: stayOf(r), ...(named ? { guest: splitFullName(named) } : {}) }
+        }),
+        notes: notes.trim() || null,
+        tagIds,
+        blacklistConfirmed: hits.length ? blacklistOk : undefined,
+        ...(closedChosen.length ? { overrideBlockReason: overrideReason.trim() } : {})
+      })
+    }
     create.mutate({
-      guest:
-        guest.kind === 'existing'
-          ? { id: guest.id }
-          : {
-              firstName: guest.firstName.trim(),
-              lastName: guest.lastName.trim(),
-              phone: guest.phone.trim() || null,
-              email: guest.email.trim() || null
-            },
+      guest: guestInput,
       channelId,
       channelRef: channelRef.trim() || null,
       status,
       currency,
-      stays: rooms.map((r) => ({
-        roomId: r.id,
-        checkIn,
-        checkOut,
-        prices: slots.map((date) => ({ date, priceMinor: priceOf(r, date) ?? 0 })),
-        ...(sameDay ? { startTime, endTime } : {})
-      })),
+      stays: rooms.map(stayOf),
       notes: notes.trim() || null,
       tagIds,
       blacklistConfirmed: hits.length ? blacklistOk : undefined,
@@ -503,8 +545,51 @@ function NewReservationForm({
           occupied={occupied}
           blocked={blocked}
           allowOverride={canOverride}
+          chips
         />
       </div>
+      {rooms.length >= 2 ? (
+        <fieldset className="grid gap-3 rounded-lg border p-3 sm:col-span-2" data-testid="group-fieldset">
+          <legend className="px-1 text-xs font-medium">{t('booking.group.title')}</legend>
+          <div className="flex items-start gap-2">
+            <Checkbox
+              id="new-group-on"
+              checked={groupOn}
+              onCheckedChange={(c) => setGroupOn(c === true)}
+              data-testid="group-toggle"
+            />
+            <Label htmlFor="new-group-on" className="grid gap-0.5 font-normal">
+              <span className="font-medium">{t('booking.group.option')}</span>
+              <span className="text-muted-foreground text-xs">{t('booking.group.optionHelp')}</span>
+            </Label>
+          </div>
+          {groupOn ? (
+            <>
+              <TextField
+                label={t('booking.group.name')}
+                value={groupName}
+                onChange={setGroupName}
+                maxLength={GROUP_NAME_MAX}
+                placeholder={t('booking.group.namePlaceholder')}
+                testId="group-name-input"
+              />
+              <p className="text-muted-foreground text-xs">{t('booking.group.leaderHelp')}</p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {rooms.map((r) => (
+                  <TextField
+                    key={r.id}
+                    label={t('booking.group.roomGuest', { room: r.number })}
+                    value={roomNames[r.id] ?? ''}
+                    onChange={(v) => setRoomNames({ ...roomNames, [r.id]: v })}
+                    placeholder={t('booking.group.roomGuestPlaceholder')}
+                    testId={`group-room-guest-${r.number}`}
+                  />
+                ))}
+              </div>
+            </>
+          ) : null}
+        </fieldset>
+      ) : null}
       {rooms.some((r) => occupied.has(r.id) || (blocked.has(r.id) && !canOverride)) ? (
         <p role="alert" className="text-destructive text-sm sm:col-span-2">
           {t('booking.rooms.takenChosen', {
@@ -650,6 +735,7 @@ function TextField({
   type = 'text',
   ltr = false,
   maxLength,
+  placeholder,
   testId
 }: {
   label: string
@@ -658,6 +744,7 @@ function TextField({
   type?: string
   ltr?: boolean
   maxLength?: number
+  placeholder?: string
   testId?: string
 }) {
   const id = useId()
@@ -671,6 +758,7 @@ function TextField({
         dir={ltr ? 'ltr' : undefined}
         autoComplete="off"
         maxLength={maxLength}
+        placeholder={placeholder}
         data-testid={testId}
         onChange={(e) => onChange(e.target.value)}
       />

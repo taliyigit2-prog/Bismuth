@@ -51,6 +51,11 @@ export interface BookingState {
   /** What `booking.hourlyCheck` answers besides the suggested price (a clash, a cleaning-gap warning). */
   hourly?: Partial<ProcedureOutput<'booking.hourlyCheck'>>
   payments: Record<string, { kind: 'payment' | 'deposit' | 'refund'; amountMinor: number }[]>
+  /** Groups booked in this session (P17b): id → name, leader and folio mode; the rooms are the views with that group. */
+  groups?: Record<
+    string,
+    { name: string; leader: string; folioMode: 'single' | 'per_room'; voided: boolean; notes: string[] }
+  >
 }
 
 const TODAY = localDate('2026-10-04')
@@ -209,6 +214,7 @@ export function bookingTransport(
         parkedReason: null,
         parkedNote: null,
         cancelReason: null,
+        group: null,
         createdAt: '2026-10-04T09:00:00.000Z'
       },
       guest: {
@@ -314,6 +320,45 @@ export function bookingTransport(
     return state.views[id]
   }
 
+  /** The group panel's view, built from the reservations the fake holds for the group. */
+  const groupView = (groupId: string): ProcedureOutput<'booking.group'> => {
+    const group = state.groups?.[groupId]
+    if (!group) throw new ApiError('NOT_FOUND', 404, 'errors.notFound')
+    const rooms = Object.values(state.views).filter((v) => v.reservation.group?.id === groupId)
+    return {
+      id: groupId,
+      name: group.name,
+      folioMode: group.folioMode,
+      voided: group.voided,
+      leader: { id: 'leader', name: group.leader },
+      rooms: rooms.map((v) => ({
+        reservationId: v.reservation.id,
+        code: v.reservation.code,
+        status: v.reservation.status,
+        guestId: v.guest.id,
+        guestName: `${v.guest.firstName} ${v.guest.lastName}`.trim(),
+        stays: v.stays.map((s) => ({
+          stayId: s.id,
+          roomId: s.roomId,
+          roomNumber: s.roomNumber,
+          checkIn: s.checkIn,
+          checkOut: s.checkOut,
+          status: s.status
+        })),
+        currency: v.folio.currency,
+        chargesMinor: v.folio.chargesMinor,
+        balanceMinor: v.folio.balanceMinor
+      })),
+      totals: { currency: 'TRY', chargesMinor: 0, balanceMinor: 0 },
+      notes: group.notes.map((text, n) => ({
+        id: `note-${n}`,
+        reservationId: rooms[0]?.reservation.id ?? '',
+        text,
+        createdAt: '2026-10-04T09:00:00.000Z'
+      }))
+    }
+  }
+
   const handle = (name: ProcedureName, input: unknown): unknown => {
     const i = input as Record<string, unknown>
     switch (name) {
@@ -417,6 +462,66 @@ export function bookingTransport(
         if (!view) throw new ApiError('NOT_FOUND', 404, 'errors.notFound')
         // A copy, like a real answer: tests change the state in place between calls.
         return structuredClone(view)
+      }
+      case 'booking.createGroup': {
+        const g = input as ProcedureInput<'booking.createGroup'>
+        const groupId = `group-${next++}`
+        const leaderName =
+          'id' in g.leader
+            ? guestName(g.leader.id)
+            : `${g.leader.firstName} ${g.leader.lastName ?? ''}`.trim()
+        const groups = (state.groups ??= {})
+        groups[groupId] = { name: g.name, leader: leaderName, folioMode: 'single', voided: false, notes: [] }
+        for (const room of g.rooms) {
+          const view = create({
+            guest: room.guest ?? g.leader,
+            channelId: g.channelId,
+            status: g.status,
+            currency: g.currency,
+            stays: [room.stay]
+          })
+          view.reservation.group = { id: groupId, name: g.name }
+        }
+        return groupView(groupId)
+      }
+      case 'booking.group':
+        return groupView(String(i['id']))
+      case 'booking.checkInMany':
+      case 'booking.checkOutMany': {
+        const ids = i['stayIds'] as string[]
+        const entering = name === 'booking.checkInMany'
+        const views = Object.values(state.views)
+        // One transaction in the service: a stay that cannot take the step stops the whole request.
+        for (const id of ids) {
+          const stay = views.flatMap((v) => v.stays).find((s) => s.id === id)
+          if (!stay) throw new ApiError('NOT_FOUND', 404, 'errors.notFound')
+          if (stay.status !== (entering ? 'planned' : 'in_house'))
+            throw new ApiError('VALIDATION', 400, 'errors.invalidStayState', { status: stay.status })
+        }
+        for (const view of views)
+          for (const stay of view.stays)
+            if (ids.includes(stay.id)) {
+              stay.status = entering ? 'in_house' : 'done'
+              view.reservation.status = entering ? 'checked_in' : 'checked_out'
+            }
+        return groupView(String(i['groupId']))
+      }
+      case 'booking.addGroupNote': {
+        const group = state.groups?.[String(i['groupId'])]
+        if (!group) throw new ApiError('NOT_FOUND', 404, 'errors.notFound')
+        group.notes.push(String(i['text']))
+        return groupView(String(i['groupId']))
+      }
+      case 'booking.cancelGroup': {
+        const group = state.groups?.[String(i['groupId'])]
+        if (!group) throw new ApiError('NOT_FOUND', 404, 'errors.notFound')
+        for (const view of Object.values(state.views))
+          if (view.reservation.group?.id === i['groupId']) {
+            view.reservation.status = 'cancelled'
+            for (const s of view.stays) if (s.status === 'planned') s.status = 'cancelled'
+          }
+        group.voided = true
+        return groupView(String(i['groupId']))
       }
       case 'booking.listParked':
         return state.parked

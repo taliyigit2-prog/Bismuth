@@ -46,6 +46,7 @@ export const AUDIT_ENTITIES = [
   'recovery_codes',
   'replica_grant',
   'reservation',
+  'reservation_groups',
   'reservation_note',
   'reservation_room',
   'role',

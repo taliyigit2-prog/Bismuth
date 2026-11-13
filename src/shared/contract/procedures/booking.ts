@@ -28,6 +28,13 @@ import {
   reservationUpdateSchema
 } from '../booking'
 import {
+  groupCancelSchema,
+  groupCreateSchema,
+  groupNoteSchema,
+  groupStaysSchema,
+  groupViewSchema
+} from '../groups'
+import {
   cancelRefundSchema,
   undoThenSchema,
   changeDatesSchema,
@@ -167,5 +174,14 @@ export const bookingProcedures = {
     z.object({ id: idSchema, patch: occupantInputSchema.partial() }).strict(),
     okSchema
   ),
-  'booking.markKbs': proc(kbsMarkSchema, okSchema)
+  'booking.markKbs': proc(kbsMarkSchema, okSchema),
+
+  // Group reservations (G-194, P17b): each room is its own reservation, linked by the group.
+  'booking.group': proc(byId, groupViewSchema),
+  'booking.createGroup': proc(groupCreateSchema, groupViewSchema),
+  /** Every named room or none: one transaction. */
+  'booking.checkInMany': proc(groupStaysSchema, groupViewSchema),
+  'booking.checkOutMany': proc(groupStaysSchema, groupViewSchema),
+  'booking.addGroupNote': proc(groupNoteSchema, groupViewSchema),
+  'booking.cancelGroup': proc(groupCancelSchema, groupViewSchema)
 } as const satisfies Record<string, Procedure>

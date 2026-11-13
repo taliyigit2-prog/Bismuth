@@ -13,7 +13,8 @@ import {
   LogInIcon,
   LogOutIcon,
   MoreHorizontalIcon,
-  ShieldAlertIcon
+  ShieldAlertIcon,
+  UsersIcon
 } from 'lucide-react'
 import { localDateOf } from '@shared/date'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -36,10 +37,12 @@ import { useShortcutAction } from '@/lib/shortcuts/actions'
 import { cn } from '@/lib/utils'
 import {
   localName,
+  requestGroupPanel,
   requestPanel,
   useBooking,
   useBookingMutation,
   useBookingOptions,
+  useGroupPanelRequest,
   usePanelRequest,
   type BookingView
 } from './booking-api'
@@ -64,7 +67,9 @@ export function ReservationPanel({
 }) {
   const isMobile = useIsMobile()
   const requested = usePanelRequest()
-  const id = reservation?.id ?? requested
+  // The group panel (opened from this panel's group button) takes this one's place instead of stacking on it.
+  const groupOpen = useGroupPanelRequest()
+  const id = groupOpen ? null : (reservation?.id ?? requested)
   const close = (open: boolean): void => {
     if (open) return
     if (requested) requestPanel(null)
@@ -192,6 +197,18 @@ function Panel({ view, scope }: { view: BookingView; scope: RefObject<HTMLDivEle
           <span data-testid="panel-status">{t(`calendar.resStatus.${r.status}`)}</span>
           {channel ? <span>{localName(f, channel)}</span> : null}
           {r.channelRef ? <span className="font-mono text-xs">#{r.channelRef}</span> : null}
+          {r.group ? (
+            <Button
+              type="button"
+              size="xs"
+              variant="outline"
+              onClick={() => requestGroupPanel(r.group!.id)}
+              data-testid="panel-group"
+            >
+              <UsersIcon aria-hidden />
+              {t('booking.group.badge', { name: r.group.name })}
+            </Button>
+          ) : null}
         </SheetDescription>
         <div className="flex flex-wrap gap-2">
           {editable

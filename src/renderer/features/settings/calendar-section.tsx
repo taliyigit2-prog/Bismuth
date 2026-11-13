@@ -239,6 +239,38 @@ export function CalendarSection({
 
       <Card>
         <CardHeader>
+          <CardTitle id="group-folio-title">{t('settings.calendar.groupFolio')}</CardTitle>
+          <CardDescription>{t('settings.calendar.groupFolioHelp')}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ToggleGroup
+            type="single"
+            variant="outline"
+            disabled={!canEdit}
+            value={values['booking.groupFolioMode']}
+            onValueChange={(v) => v && onSave({ 'booking.groupFolioMode': v as 'single' | 'per_room' }, true)}
+            aria-labelledby="group-folio-title"
+            className="max-md:grid max-md:w-full max-md:grid-cols-2"
+            data-testid="settings-group-folio"
+          >
+            <ToggleGroupItem
+              value="single"
+              className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground max-md:min-h-11"
+            >
+              {t('settings.calendar.groupFolioSingle')}
+            </ToggleGroupItem>
+            <ToggleGroupItem
+              value="per_room"
+              className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground max-md:min-h-11"
+            >
+              {t('settings.calendar.groupFolioPerRoom')}
+            </ToggleGroupItem>
+          </ToggleGroup>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>{t('settings.calendar.closingTitle')}</CardTitle>
         </CardHeader>
         <CardContent>

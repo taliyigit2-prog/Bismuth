@@ -123,6 +123,15 @@
   --status-empty-fg: #0a0a0a;
   --status-blocked-fg: #ffffff;
 
+  /* Group reservation frames on the calendar (G-194): one colour per group in rotation, always with the group icon
+     (colour never alone). Dark enough to read on every status fill; the dark theme has its own lighter set. */
+  --group-1: oklch(0.42 0.17 265);
+  --group-2: oklch(0.45 0.13 160);
+  --group-3: oklch(0.4 0.17 330);
+  --group-4: oklch(0.42 0.1 220);
+  --group-5: oklch(0.38 0.1 60);
+  --group-6: oklch(0.3 0.02 280);
+
   /* Housekeeping status (floor plan, room list) and message tones. */
   --hk-clean: oklch(0.62 0.15 155);
   --hk-dirty: oklch(0.72 0.16 70);
@@ -182,6 +191,12 @@
   --status-past-empty-fg: #ffffff;
   --status-empty-fg: #ffffff;
   --status-blocked-fg: #ffffff;
+  --group-1: oklch(0.75 0.14 265);
+  --group-2: oklch(0.78 0.14 160);
+  --group-3: oklch(0.75 0.16 330);
+  --group-4: oklch(0.8 0.1 220);
+  --group-5: oklch(0.82 0.12 60);
+  --group-6: oklch(0.9 0.01 280);
   --hk-clean: oklch(0.72 0.15 155);
   --hk-dirty: oklch(0.8 0.15 75);
   --hk-inspected: oklch(0.72 0.12 240);

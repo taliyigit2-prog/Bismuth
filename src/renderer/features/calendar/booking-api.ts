@@ -18,6 +18,7 @@ export type BookingView = ProcedureOutput<'booking.get'>
 export type BookingStay = BookingView['stays'][number]
 export type BookingOptions = ProcedureOutput<'booking.options'>
 export type BookingRoom = BookingOptions['rooms'][number]
+export type GroupView = ProcedureOutput<'booking.group'>
 export type BlacklistHit = ProcedureOutput<'booking.checkBlacklist'>[number]
 
 /** Reads a reservation write can change: the tape chart, the panel, the ledger and cash drawer (payments taken
@@ -33,6 +34,10 @@ export const useBookingOptions = (enabled = true) =>
 
 export function useBooking(id: string | null) {
   return useApiQuery('booking.get', { id: id ?? '' }, { enabled: !!id })
+}
+
+export function useGroup(id: string | null) {
+  return useApiQuery('booking.group', { id: id ?? '' }, { enabled: !!id })
 }
 
 /** A seeded name in the UI language; the hotel's own rows keep their own words. */
@@ -148,6 +153,27 @@ export function usePanelRequest(): string | null {
       return () => panelListeners.delete(listener)
     },
     () => requestedPanel
+  )
+}
+
+// ---- which group the group panel shows (after "Grup rezervasyonu" is saved, from a reservation's group button) ----
+
+let requestedGroup: string | null = null
+const groupListeners = new Set<() => void>()
+
+/** Opens the group panel on `id` (null closes it), from anywhere on the calendar screen. */
+export function requestGroupPanel(id: string | null): void {
+  requestedGroup = id
+  for (const listener of groupListeners) listener()
+}
+
+export function useGroupPanelRequest(): string | null {
+  return useSyncExternalStore(
+    (listener) => {
+      groupListeners.add(listener)
+      return () => groupListeners.delete(listener)
+    },
+    () => requestedGroup
   )
 }
 

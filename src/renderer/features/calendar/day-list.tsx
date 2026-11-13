@@ -10,7 +10,8 @@ import {
   ChevronRightIcon,
   DoorOpenIcon,
   LogInIcon,
-  LogOutIcon
+  LogOutIcon,
+  UsersIcon
 } from 'lucide-react'
 import { addDays, today as todayOf, type LocalDate } from '@shared/date'
 import { useShortcutAction } from '@/lib/shortcuts/actions'
@@ -21,7 +22,7 @@ import { StatusTagBadge } from '@/components/status-tag-badge'
 import { useFormat } from '@/hooks/use-format'
 import { useApiQuery } from '@/lib/api/hooks'
 import { cn } from '@/lib/utils'
-import { dayActivity, nightStatusOn, type GridStayView } from './grid-model'
+import { dayActivity, groupRing, nightStatusOn, type GridStayView } from './grid-model'
 
 type Section = 'arrivals' | 'departures' | 'staying'
 
@@ -128,6 +129,20 @@ export function DayList({ onOpen }: { onOpen: (reservationId: string) => void })
                       </span>
                     ) : null}
                   </span>
+                  {s.groupId ? (
+                    <span
+                      role="img"
+                      aria-label={t('calendar.grid.group')}
+                      title={t('calendar.grid.group')}
+                      data-testid={`day-group-${s.id}`}
+                      className={cn(
+                        'grid size-7 shrink-0 place-items-center rounded-md ring-2',
+                        groupRing(s.groupId)
+                      )}
+                    >
+                      <UsersIcon className="size-3.5" aria-hidden />
+                    </span>
+                  ) : null}
                   {status ? (
                     <StatusTagBadge subject={{ kind: 'auto', code: status }} label={t(`status.${status}`)} />
                   ) : null}

@@ -310,6 +310,20 @@ describe('Takvim', () => {
   })
 })
 
+describe('Takvim: grup hesabı (S-106)', () => {
+  it('varsayılan tek hesap; oda başına hesaba geçilince ayar kaydedilir', async () => {
+    const user = userEvent.setup()
+    const onSave = vi.fn()
+    await renderWithProviders(<CalendarSection values={SETTINGS_DEFAULTS} onSave={onSave} />, {
+      transport: adminTransport()
+    })
+    const mode = await screen.findByTestId('settings-group-folio')
+    expect(within(mode).getByRole('radio', { name: 'Tek hesap' })).toHaveAttribute('data-state', 'on')
+    await user.click(within(mode).getByRole('radio', { name: 'Oda başına hesap' }))
+    expect(onSave).toHaveBeenCalledWith({ 'booking.groupFolioMode': 'per_room' }, true)
+  })
+})
+
 describe('Otel', () => {
   it('yalnız değişen ayarlar kaydedilir; ana para birimi her zaman kabul edilir', async () => {
     const onSave = vi.fn()

@@ -111,6 +111,31 @@ describe('takvim (açılış ekranı, gerçek servis)', () => {
     expect(calls.map((c) => c.from)).toContain('2026-10-01')
   })
 
+  it('gruba bağlı konaklama grup çerçevesi ve simgesiyle çizilir, lejantta grup satırı çıkar; grupsuzlarda çıkmaz', async () => {
+    const hotel = demoHotel(DAY)
+    const grouped = await renderCalendar(hotel, {
+      grid: async ({ from, to }) => {
+        const page = gridFromDemo(hotel, from, to)
+        return { ...page, stays: page.stays.map((s, i) => (i === 0 ? { ...s, groupId: 'grp-1' } : s)) }
+      }
+    })
+    const chart = await screen.findByTestId('tape-chart')
+    await within(chart).findByTestId('tape-row-101')
+    const framed = chart.querySelectorAll('[data-group="grp-1"]')
+    expect(framed).toHaveLength(1)
+    expect(framed[0]!.className).toMatch(/ring-\(--group-[1-6]\)/)
+    expect(framed[0]!.getAttribute('data-icons')).toContain('group')
+    expect(framed[0]).toHaveAccessibleName(/Grup rezervasyonu/)
+    expect(await screen.findByTestId('group-legend')).toHaveTextContent('Aynı renkli çerçeve ve simge')
+    expect(chart.querySelectorAll('[data-group]').length).toBe(1)
+    grouped.unmount()
+    await renderCalendar(demoHotel(DAY))
+    const plain = await screen.findByTestId('tape-chart')
+    await within(plain).findByTestId('tape-row-101')
+    expect(plain.querySelectorAll('[data-group]')).toHaveLength(0)
+    expect(screen.queryByTestId('group-legend')).not.toBeInTheDocument()
+  })
+
   it('yalnız görünen günler çizilir (sanallaştırma): on yıllık ızgarada birkaç hafta', async () => {
     await renderCalendar()
     const chart = await screen.findByTestId('tape-chart')
@@ -610,5 +635,26 @@ describe('takvim telefonda (gün listesi)', () => {
       await within(await screen.findByTestId('reservation-panel')).findByText('Maryam Hosseini')
     ).toBeInTheDocument()
     expect(hotel.reservations.some((r) => r.id === 'res-0432')).toBe(true)
+  })
+
+  it('telefon listesinde gruba bağlı konaklama grup simgesiyle çıkar, grupsuzlarda çıkmaz (G-194)', async () => {
+    phone()
+    const hotel = demoHotel(DAY)
+    await renderCalendar(hotel, {
+      grid: async ({ from, to }) => {
+        const page = gridFromDemo(hotel, from, to)
+        return {
+          ...page,
+          stays: page.stays.map((s) => (s.reservationId === 'res-0432' ? { ...s, groupId: 'grp-1' } : s))
+        }
+      }
+    })
+    const list = await screen.findByTestId('day-list')
+    await within(list).findByRole('heading', { name: /^Gelenler/ })
+    const marks = within(list).getAllByRole('img', { name: 'Grup rezervasyonu' })
+    expect(marks.length).toBeGreaterThan(0)
+    expect(marks[0]!.className).toMatch(/ring-\(--group-[1-6]\)/)
+    const rows = within(list).getAllByRole('button')
+    expect(marks.length).toBeLessThan(rows.length)
   })
 })

@@ -162,6 +162,12 @@ export const bookingHandlers = (services: Services): HandlersFor<keyof typeof bo
       services.occupants.update(ctx, input.id, input.patch)
       return ok
     },
+    'booking.group': (ctx, input) => services.reservations.group(ctx, input.id),
+    'booking.createGroup': (ctx, input) => services.reservations.createGroup(ctx, input),
+    'booking.checkInMany': (ctx, input) => services.reservations.checkInMany(ctx, input),
+    'booking.checkOutMany': (ctx, input) => services.reservations.checkOutMany(ctx, input),
+    'booking.addGroupNote': (ctx, input) => services.reservations.addGroupNote(ctx, input),
+    'booking.cancelGroup': (ctx, input) => services.reservations.cancelGroup(ctx, input),
     'booking.markKbs': (ctx, input) => {
       const o = services.occupants
       if (input.mark === 'reported') o.markKbsReported(ctx, input.occupantId)

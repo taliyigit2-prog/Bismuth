@@ -26,6 +26,7 @@ import {
   guests,
   paymentMethods,
   payments,
+  reservationGroups,
   reservationRooms,
   reservations,
   reservationTags,
@@ -156,6 +157,7 @@ export interface BookingView {
     parkedReason: ReservationDetail['reservation']['parkedReason']
     parkedNote: string | null
     cancelReason: string | null
+    group: { id: string; name: string } | null
     createdAt: string
   }
   guest: {
@@ -406,6 +408,13 @@ export function bookingView(tx: Reader, detail: ReservationDetail, opts: ViewOpt
         }))
     : null
   const r = detail.reservation
+  const group = r.groupId
+    ? (tx
+        .select({ id: reservationGroups.id, name: reservationGroups.name })
+        .from(reservationGroups)
+        .where(eq(reservationGroups.id, r.groupId))
+        .get() ?? null)
+    : null
   return {
     reservation: {
       id: r.id,
@@ -420,6 +429,7 @@ export function bookingView(tx: Reader, detail: ReservationDetail, opts: ViewOpt
       parkedReason: r.parkedReason,
       parkedNote: r.parkedNote,
       cancelReason: r.cancelReason,
+      group,
       createdAt: r.createdAt
     },
     guest: {

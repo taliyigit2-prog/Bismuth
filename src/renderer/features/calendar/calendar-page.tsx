@@ -12,6 +12,7 @@ import {
   DoorOpenIcon,
   LockIcon,
   PlusIcon,
+  UsersIcon,
   XIcon
 } from 'lucide-react'
 import { addDays, diffDays, today as todayOf, type LocalDate } from '@shared/date'
@@ -49,6 +50,7 @@ import { GuestJump, type FoundStayView } from './guest-jump'
 import { HourlyStayDialog, type HourlySeed } from './hourly-stay-dialog'
 import { NewReservationDialog, type NewReservationSeed } from './new-reservation-dialog'
 import { ParkArea } from './park-area'
+import { GroupPanel } from './group-panel'
 import { ReservationPanel } from './reservation-panel'
 import { useGridData, useGridYears } from './use-calendar'
 
@@ -125,6 +127,7 @@ export function CalendarPage() {
         reservation={openId ? { id: openId } : null}
         onOpenChange={(o) => !o && setOpenId(null)}
       />
+      <GroupPanel onOpenReservation={setOpenId} />
       <HourlyStayDialog
         key={hourly ? `${hourly.roomId}-${hourly.date}` : 'hourly-closed'}
         seed={hourly}
@@ -144,6 +147,22 @@ interface DesktopProps {
   highlight: readonly number[]
   onOpenReservation: (reservationId: string) => void
   onNew: (roomId: string | null, date: LocalDate) => void
+}
+
+/** What the group frame means (G-194): a ring in the group's colour and the group icon on every room of the group. */
+function GroupLegend() {
+  const { t } = useTranslation()
+  return (
+    <p className="flex items-center gap-1.5 text-xs" data-testid="group-legend">
+      <span
+        aria-hidden
+        className="bg-muted inline-flex size-3.5 shrink-0 items-center justify-center rounded-sm ring-2 ring-(--group-1)"
+      >
+        <UsersIcon className="size-2.5" />
+      </span>
+      {t('calendar.groupLegend')}
+    </p>
+  )
 }
 
 function GridSkeleton() {
@@ -245,6 +264,7 @@ function DesktopGrid({
   const tags = useApiQuery('statusTags.list', {})
   const setup = useMemo(() => statusSetup(tags.data), [tags.data])
   const legend = useMemo(() => legendItems(tags.data, (tag) => tagLabel(tag, t)), [tags.data, t])
+  const hasGroups = useMemo(() => model.stays.some((s) => s.groupId), [model.stays])
   useTagStyles(tags.data?.filter((tag) => tag.kind === 'custom'))
   // Open issues of the rooms (G-180): a wrench in the room column. A refusal only hides the marks.
   const openIssues = useApiQuery('housekeeping.openIssuesByRoom', {}, { staleTime: 30_000 })
@@ -422,7 +442,10 @@ function DesktopGrid({
         onMoveStay={canMove ? setMove : undefined}
       />
       <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-2">
-        <Legend items={legend} />
+        <div className="grid gap-2">
+          <Legend items={legend} />
+          {hasGroups ? <GroupLegend /> : null}
+        </div>
         {canMove ? (
           <p className="text-muted-foreground max-w-md text-xs" data-testid="drag-hint">
             {t('calendar.move.hint')}

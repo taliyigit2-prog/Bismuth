@@ -20,6 +20,7 @@ import {
   stayBars,
   staysAt,
   stayIcons,
+  groupRing,
   statusSetup,
   type GridPage,
   type GridStayView
@@ -408,3 +409,18 @@ function tagView(code: string, kind: 'auto' | 'custom', sort: number) {
     updatedAt: '2026-10-01T00:00:00.000Z'
   }
 }
+
+describe('grup rezervasyonu işareti (G-194)', () => {
+  it('gruba bağlı konaklamanın simgeleri "group" ile başlar; grupsuzda yoktur', () => {
+    const s = stay('g1', '2026-10-04', '2026-10-06', { groupId: 'grp-1' })
+    expect(stayIcons(s, false)[0]).toBe('group')
+    expect(stayIcons(stay('g2', '2026-10-04', '2026-10-06'), false)).not.toContain('group')
+  })
+
+  it('aynı grup her zaman aynı çerçeve rengini alır; renkler lejanttaki altı CSS değişkenindendir', () => {
+    expect(groupRing('01JABCDEF')).toBe(groupRing('01JABCDEF'))
+    const seen = new Set(Array.from({ length: 40 }, (_, i) => groupRing(`group-${i}`)))
+    expect(seen.size).toBeGreaterThan(3)
+    for (const ring of seen) expect(ring).toMatch(/^ring-\(--group-[1-6]\)$/)
+  })
+})

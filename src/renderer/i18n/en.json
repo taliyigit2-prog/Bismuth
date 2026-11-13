@@ -190,7 +190,9 @@
       "vip": "VIP",
       "standing": "Guest note: {{text}}",
       "openIssues_one": "{{count}} open issue",
-      "openIssues_other": "{{count}} open issues"
+      "openIssues_other": "{{count}} open issues",
+      "group": "Group reservation",
+      "groupNamed": "Group: {{name}}"
     },
     "nav": {
       "month": "Month",
@@ -316,7 +318,8 @@
       "datesBody": "{{guest}}, room {{room}}: {{from}} → {{to}}. The number of nights stays the same; each night moves with its own price, so the total does not change.",
       "confirm": "Move",
       "hint": "Drag a bar to move the reservation to another room or other dates; you are asked to confirm when you drop it. With the keyboard: open the reservation and use the Nights tab."
-    }
+    },
+    "groupLegend": "The same coloured frame and icon belong to one group"
   },
   "today": {
     "title": "Today",
@@ -1210,7 +1213,11 @@
       "startYear": "Calendar start year",
       "startYearHelp": "The calendar starts in this year, or in the year of an older stay if there is one. Leave it empty to start from the oldest stay.",
       "startYearEmpty": "e.g. 2020",
-      "startYearInvalid": "The year must be between {{min}} and {{max}}."
+      "startYearInvalid": "The year must be between {{min}} and {{max}}.",
+      "groupFolio": "Folio of a group reservation",
+      "groupFolioHelp": "New groups start with this choice; groups already made do not change.",
+      "groupFolioSingle": "One folio",
+      "groupFolioPerRoom": "A folio per room"
     },
     "currencyNote": {
       "body": "Exchange rates are entered and followed on the “Exchange rates” screen. Pick the currencies you accept in the “Hotel” section.",
@@ -1536,7 +1543,9 @@
     "undoCheckInMoved": "This room was opened by a room move; it cannot be taken back. Check out first.",
     "undoCheckInKbs": "{{names}} is reported to KBS. Confirm to take it back.",
     "dayUseFreeNeedsConfirm": "The price is 0. Confirm a free check-out or enter an amount.",
-    "hoursRequired": "Enter the hours for a same-day stay."
+    "hoursRequired": "Enter the hours for a same-day stay.",
+    "groupStayMismatch": "The chosen room does not belong to this group. Close and reopen the group panel.",
+    "groupClosed": "This group was cancelled. Make a new group if needed."
   },
   "common": {
     "close": "Close",
@@ -5415,7 +5424,8 @@
       "takeover": "Main computer takeover",
       "import_batch": "Import",
       "guest_tag": "Guest tag",
-      "room_capacity_change": "Room capacity"
+      "room_capacity_change": "Room capacity",
+      "reservation_groups": "Group reservation"
     },
     "fieldName": {
       "name": "Name",
@@ -5514,7 +5524,8 @@
       "openIssue": "Open issue: {{title}}",
       "blocked": "Not for sale",
       "takenChosen": "Taken in the chosen dates: room {{rooms}}. Choose another room or other dates.",
-      "notForSale": "Not for sale"
+      "notForSale": "Not for sale",
+      "remove": "Remove room {{room}}"
     },
     "price": {
       "reason": {
@@ -5787,6 +5798,66 @@
       },
       "hoursLabel": "Hours",
       "kind": "Hourly"
+    },
+    "group": {
+      "title": "Group reservation",
+      "option": "Book as a group",
+      "optionHelp": "Each room becomes its own reservation; the rooms are kept in one group and can be checked in and out together.",
+      "name": "Group name",
+      "namePlaceholder": "e.g. Tour group",
+      "needName": "Enter the group name.",
+      "needRooms": "Choose at least two rooms for the group.",
+      "leaderHelp": "The guest above is the group leader and is put in every room left without a name.",
+      "roomGuest": "Room {{room}} guest name",
+      "roomGuestPlaceholder": "Group leader",
+      "created": "Group saved",
+      "badge": "Group: {{name}}",
+      "open": "Open the group panel",
+      "panel": {
+        "title": "Group",
+        "description": "The group's rooms, guests and bulk actions",
+        "loading": "Loading the group",
+        "leader": "Group leader: {{name}}",
+        "rooms_one": "{{count}} room",
+        "rooms_other": "{{count}} rooms",
+        "folio": {
+          "single": "One folio (the group leader pays)",
+          "per_room": "A folio per room"
+        },
+        "voided": "Group cancelled",
+        "roomsHeading": "Rooms",
+        "selectAll": "Select all",
+        "selectRoom": "Select room {{room}}",
+        "openReservation": "Open reservation",
+        "notDue": "Not the check-in day yet",
+        "checkIn": "Check in together",
+        "checkOut": "Check out together",
+        "note": "Note for all",
+        "cancel": "Cancel the group",
+        "atomic": "All chosen rooms are done together; if one fails none is done.",
+        "total": "Group total",
+        "balance": "Balance due",
+        "mixedCurrency": "The rooms use different currencies; no total is shown.",
+        "notes": "Group notes",
+        "noNotes": "No group notes yet. Press \"Note for all\" to add the first one.",
+        "charges": "Room charges"
+      },
+      "noteDialog": {
+        "title": "Note on every room",
+        "description": "The note is added to the reservation of every room of the group.",
+        "label": "Note"
+      },
+      "cancelDialog": {
+        "title": "Cancel the group?",
+        "body": "The nights of the rooms yet to arrive are freed. Payments stay on record; for a refund open the room's reservation.",
+        "reason": "Reason"
+      },
+      "toast": {
+        "checkedIn": "The chosen rooms checked in",
+        "checkedOut": "The chosen rooms checked out",
+        "noteAdded": "Note added to every room",
+        "cancelled": "Group cancelled"
+      }
     }
   },
   "holidayCheck": {
