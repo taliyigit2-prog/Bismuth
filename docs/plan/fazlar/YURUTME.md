@@ -86,8 +86,8 @@ Harcama sütunu: başlatıcının yazdığı `$` (dalga toplamı, gerçek).
 
 | Dalga | Paket | Faz | Modül dosyası / ad alanı | Ajan | Tahmin | Harcama | Durum |
 |---|---|---|---|---|---|---|---|
-| 1 | P17a Vazgeçme ve iade akışı (undoCheckIn, iptal/çıkışta ödeme + iade, kapalı rezervasyonda menü, raporda iptal/gelmedi/iade satırları) | 17 | booking, calendar, reports | calendar-specialist | $12–18 | | ⬜ |
-| 1 | P19c Depo temizliği (prototypes arşiv, faz0 iş akışları, icon, yerel yollar, kanca istisnaları) | 19 | — | feature-builder-lite | $2–4 | | ⬜ |
+| 1 | P17a Vazgeçme ve iade akışı (undoCheckIn, iptal/çıkışta ödeme + iade, kapalı rezervasyonda menü, raporda iptal/gelmedi/iade satırları) | 17 | booking, calendar, reports | calendar-specialist | $12–18 | | 🔄 |
+| 1 | P19c Depo temizliği (prototypes arşiv, faz0 iş akışları, icon, yerel yollar, kanca istisnaları) | 19 | — | feature-builder-lite | $2–4 | | 🔄 |
 | 2 | P17d Gündüz kullanımı 2.0 + ikinci tur hatası + H-06 (migrasyon **0019**) | 17 | booking, reservations, settings | db-migration-builder → calendar-specialist | $15–22 | | ⬜ |
 | 2 | P18a ui-shot çoklu boyut/ölçek/dil + ölçüm JSON; Electron e2e Codespace'te yeşil | 18 | scripts, tests/e2e | feature-builder-lite | $2–4 | | ⬜ |
 | 3 | P17b Grup rezervasyonu + toplu giriş (migrasyon **0020**) | 17 | booking, reservations | db-migration-builder → calendar-specialist | $15–22 | | ⬜ |
@@ -230,3 +230,5 @@ QA2b, akış testleri C/D) bu plana **Son** satırında katılır; ayrı yürüt
   + Faz 22 (14–16); "doğrulanmadı" maddeleri kapatıldı; 33 route'un tamamı gerçek Electron'da akış testinden geçti
   (H-19…H-47, Kritik/Yüksek yok); Windows paketi Linux'ta üretildi (wine64+wine32); Ponytail becerisi (K-61), 21st.dev MCP
   (K-60, `12-…md`), Rust/Tauri raporu ve ölçüm (`11-…md`, K-62 taslak). Fable harcaması 2. oturum ≈ $40+.
+- 2026-11-13: **Opus oturumu.** Sahip cevapları S-119…S-123 işlendi (06-kararlar 8. tur); başlatıcı maliyet sayacı düzeltildi
+  (tur başına en büyük kümülatif değer). Dalga 1 başladı: P17a (calendar-specialist) + P19c (feature-builder-lite), taban e5281e6.
