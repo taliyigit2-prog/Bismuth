@@ -110,6 +110,18 @@ Gerekçeler ve ayrıntılar `docs/analiz/` altında: K-48 ve K-55 → `03-reseps
 `00-ozet.md`'deki soruları cevaplamasıyla kesinleşir; cevap gelmezse Opus varsayılanla uygular ve satırı
 "varsayılan (tarih)" yapar (K-39).
 
+## Sahip cevapları (2026-11-13, 8. tur — S-119…S-123)
+
+> Kaynak: sahibin terminalden verdiği cevaplar (Opus oturumu, 2026-11-13).
+
+| Soru | Cevap | Etki |
+|---|---|---|
+| S-119 | "Takvim vurgusu bilinçli." | Hafta sonu ayrımı bilinçli: fiyat Cuma + Cumartesi (K-44), takvim vurgusu Cumartesi + Pazar (G-40); kod değişmez, K-44 detayına not (P19b) |
+| S-120 | "Otel bilgisayarında şikâyet yok." | Faz 22 ölçümü genel; belirli ekran hedeflenmez (K-62 karar noktası ölçüme göre) |
+| S-121 | "Evet, internetsiz kurulum." | Çevrimdışı kurulum şart (G-03); Tauri seçilirse WebView2 çevrimdışı paket dahil (+127 MB) |
+| S-122 | "Evet, Mac'te yazdırma ve tarih seçici kusursuz." | Tauri değerlendirmesinde Mac yazdırma/PDF ve tarih seçici kabul ölçütü (Faz 22) |
+| S-123 | varsayılan | InsightFace izin e-postası gönderilmez; mevcut modellerle devam, risk sahipte (K-57) |
+
 ## Sahip cevapları (2026-11-12, 7. tur — analiz turu soruları S-100…S-119)
 
 > Kaynak: sahibin ayrı sohbette verdiği cevaplar (`docs/sahip-cevaplari-2026-11-12.md`, `claude/wizardly-feynman-0t0ywb`
@@ -136,7 +148,7 @@ Gerekçeler ve ayrıntılar `docs/analiz/` altında: K-48 ve K-55 → `03-reseps
 | S-116 | "Takvim, gelir-gider sekmesi, bugünkü doluluk, kasa." | P21c portföy: iki otelin takvimi (otel seçerek ya da yan yana), gelir-gider, bugünkü doluluk, kasa |
 | S-117 | "Aynı personel iki otelde çalışmıyor." | Personel otel bazında; ortak bordro yok |
 | S-118 | "Ücretli üyeliğim var, kullanalım; bolca hakkım var… 'Apps' sekmesi geldi… Opus ya da Fable kendisi seçebilir… direkt alsın." | **K-60 (yeni):** 21st.dev kullanılır; seçimler `docs/analiz/12-21st-tasarim-secimi.md`; anahtar Codespaces secret `API_KEY_21ST`; uygulama Opus (Faz 17/18 paketlerine bağlı) |
-| S-119 | cevapsız | varsayılan: hafta sonu ayrımı bilinçli; K-44 detayına not (P19b) |
+| S-119 | cevapsız (8. turda cevaplandı) | hafta sonu ayrımı bilinçli; K-44 detayına not (P19b) |
 
 Yeni yönergeler (aynı dosya §B): Rust'a geçiş araştırması → `docs/analiz/11-rust-gecisi.md` (K-62 önerisi); Ponytail becerisi
 → K-61; 21st.dev → K-60.

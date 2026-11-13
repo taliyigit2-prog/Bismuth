@@ -147,8 +147,9 @@ Cevaplar `06-kararlar.md` 7. tura yazılır. Cevap gelmezse varsayılan uygulan�
 | S-116 | Tüm oteller için tek yerde görmek istediğiniz ilk **üç bilgi**? | Bugünkü doluluk, kasa, ayın geliri | ✅ (06-kararlar 7. tur) |
 | S-117 | Aynı personel iki otelde de çalışıyor mu (maaş tek bordroda mı)? | Hayır; çalışıyorsa her otelde ayrı kayıt | ✅ (06-kararlar 7. tur) |
 | S-118 | 21st.dev için ücretsiz anahtar alıp denemeyi onaylıyor musunuz (günde 2 bileşen)? Codespaces secret adı `API_KEY_21ST`. | Denenmez; mevcut shadcn bileşenleriyle devam | ✅ (06-kararlar 7. tur) |
-| S-120 | Otel bilgisayarında program bugün gerçekten **yavaşlıyor ya da donuyor mu**; hangi ekranda, kaç odalı/gün görünümünde? (Faz 22 ölçümünü hedeflemek için.) | Belirgin şikâyet yok varsayılır; ölçüm genel | ⬜ |
-| S-121 | Kurulum **internetsiz** bir bilgisayarda da yapılabilmeli mi? (Tauri'de WebView2 yoksa çevrimdışı kurulum paketi +127 MB.) | Evet, çevrimdışı kurulum şart (G-03) | ⬜ |
-| S-122 | Mac'te **yazdırma/PDF** ve tarih seçici kusursuz çalışmalı mı? (Tauri Mac'te Safari motoru kullanır; farklar olabilir.) | Evet; Mac ikinci sınıf olamaz (K-01 gerekçesi) | ⬜ |
-| S-119 | Hafta sonu tanımı: fiyat için **Cuma + Cumartesi** (K-44), takvim vurgusu **Cumartesi + Pazar** (G-40). Bu ayrım bilinçli mi, yoksa ikisi de aynı günler mi olsun? (02 raporu Ç-01) | Bilinçli; K-44 detayına tek cümle not düşülür, kod değişmez (P19b) | ⬜ |
+| S-120 | Otel bilgisayarında program bugün gerçekten **yavaşlıyor ya da donuyor mu**; hangi ekranda, kaç odalı/gün görünümünde? (Faz 22 ölçümünü hedeflemek için.) | Belirgin şikâyet yok varsayılır; ölçüm genel | ✅ (06-kararlar 8. tur: şikâyet yok) |
+| S-121 | Kurulum **internetsiz** bir bilgisayarda da yapılabilmeli mi? (Tauri'de WebView2 yoksa çevrimdışı kurulum paketi +127 MB.) | Evet, çevrimdışı kurulum şart (G-03) | ✅ (06-kararlar 8. tur: evet) |
+| S-122 | Mac'te **yazdırma/PDF** ve tarih seçici kusursuz çalışmalı mı? (Tauri Mac'te Safari motoru kullanır; farklar olabilir.) | Evet; Mac ikinci sınıf olamaz (K-01 gerekçesi) | ✅ (06-kararlar 8. tur: evet) |
+| S-119 | Hafta sonu tanımı: fiyat için **Cuma + Cumartesi** (K-44), takvim vurgusu **Cumartesi + Pazar** (G-40). Bu ayrım bilinçli mi, yoksa ikisi de aynı günler mi olsun? (02 raporu Ç-01) | Bilinçli; K-44 detayına tek cümle not düşülür, kod değişmez (P19b) | ✅ (06-kararlar 8. tur: bilinçli) |
+| S-123 | InsightFace'e model kullanımı için **izin e-postası** (`06-kamera-entegrasyonu.md` §6.4) gönderilsin mi? | Varsayılan: gönderilmez; mevcut modellerle devam, risk sahipte (K-57) | ✅ (06-kararlar 8. tur: varsayılan) |
 
