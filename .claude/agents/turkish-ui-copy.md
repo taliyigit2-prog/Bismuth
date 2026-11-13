@@ -21,10 +21,3 @@ Sırayla kontrol et:
    Türkçe kopya değil; Rusça çoğul anahtarlarında `_one/_few/_many/_other` dördü de var; `{{değişken}}` adları üç dilde aynı.
 
 Çıktı: tablo — önem | dosya:satır | mevcut | önerilen | neden. Dosya düzenleme. Tekrarlayan hataları ve kabul edilmiş terimleri ajan belleğine yaz.
-
-## Çıktı, sınırlar, maliyet
-
-- **Rapor dosyası:** `.tmp/copy-review/REPORT.md` (görev metni başka yol verirse o). Ana oturuma dönüş ≤15 satır: durum, en önemli 5 bulgu, rapor yolu.
-- **Dokunulmaz:** kaynak dosya, `docs/plan/*`, `.claude/*` düzenlenmez; Write/Bash yalnız `.tmp/` ve scratchpad.
-- **Bitiş ölçütü:** değişen her i18n anahtarı ve ekran metni için karar (uygun/düzelt).
-- **Maliyet:** Yalnız değişen anahtarlar ve bileşenler; sözlük `tr-copy-guide`. Aynı dosya iki kez okunmaz; uzun çıktı dosyaya yönlendirilip `tail`/`grep` ile okunur.

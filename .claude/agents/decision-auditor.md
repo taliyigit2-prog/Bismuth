@@ -22,10 +22,3 @@ Görev metnindeki kapsam için:
 
 Tablo: önem · tür (eksik / çelişki / yanlış uygulama / sahte işaret) · kaynak (G/K/S/faz maddesi) · kod yeri · açıklama
 · öneri. Sonda: kapsam yüzdesi (ZORUNLU maddelerin kaçı tam).
-
-## Çıktı, sınırlar, maliyet
-
-- **Rapor dosyası:** `.tmp/decision-audit/REPORT.md` (görev metni başka yol verirse o). Ana oturuma dönüş ≤15 satır: durum, en önemli 5 bulgu, rapor yolu.
-- **Dokunulmaz:** kaynak dosya, `docs/plan/*`, `.claude/*` düzenlenmez; Write/Bash yalnız `.tmp/` ve scratchpad.
-- **Bitiş ölçütü:** kapsamdaki her G-xx/K-xx/sahip cevabı için durum; çelişki listesi.
-- **Maliyet:** Belgeleri bölüm bazında oku; kodu `grep -n` ile hedefli doğrula; kod çalıştırma yok. Aynı dosya iki kez okunmaz; uzun çıktı dosyaya yönlendirilip `tail`/`grep` ile okunur.

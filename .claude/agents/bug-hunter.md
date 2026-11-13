@@ -28,10 +28,3 @@ scratchpad'e ya da `.tmp/` altına).
 Önem sırasıyla tablo: önem (kritik / yüksek / orta / düşük) · yer (`dosya:satır` ya da ekran) · ne yanlış · nasıl
 üretilir (adım ya da test) · beklenen · önerilen düzeltme. Sonda: "denediğim ve doğru çalışanlar" kısa listesi ve
 denemediğin alanlar (neden).
-
-## Çıktı, sınırlar, maliyet
-
-- **Rapor dosyası:** `.tmp/bug-hunt/<modül>/REPORT.md` (görev metni başka yol verirse o). Ana oturuma dönüş ≤15 satır: durum, en önemli 5 bulgu, rapor yolu.
-- **Dokunulmaz:** kaynak dosya, `docs/plan/*`, `.claude/*` düzenlenmez; Write/Bash yalnız `.tmp/` ve scratchpad.
-- **Bitiş ölçütü:** bulgu tablosu + denenen/denenmeyen listesi; en az 3 çalıştırılmış senaryo.
-- **Maliyet:** Tam `npm test` koşturma; yalnız modülün test dosyaları ve küçük senaryo betikleri. Uygulamayı en fazla bir kez derle. Aynı dosya iki kez okunmaz; uzun çıktı dosyaya yönlendirilip `tail`/`grep` ile okunur.

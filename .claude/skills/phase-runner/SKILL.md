@@ -10,7 +10,6 @@ allowed-tools: Bash(npm run *) Bash(npm test *) Bash(npx vitest *) Bash(git stat
 ## Durum
 
 !`cat docs/plan/fazlar/DURUM.md 2>/dev/null | head -30`
-!`grep -E '🔄|⬜' docs/plan/fazlar/YURUTME.md | head -12`
 !`git status --short | head -20`
 
 ## Kurallar (tüm çalışma boyunca geçerli)
@@ -27,8 +26,3 @@ allowed-tools: Bash(npm run *) Bash(npm test *) Bash(npx vitest *) Bash(git stat
 6. UI değişen görevlerden sonra `turkish-ui-copy` ve `ui-reviewer` ajanlarını, servis/şema değiştiyse `db-reviewer`, main/preload/sunucu değiştiyse `security-reviewer` ajanını **tek mesajda paralel** çalıştır; bulguları paketleyip aynı yolla düzelt. Uzun kontrol çıktısı için `/qa` (ayrı bağlam).
 7. Tüm kabul ölçütleri geçince: faz dosyasında kutuları işaretle, sonuna "## Sonuç" ekle (yapılanlar, karşılanan G-xx, açık sorular, ölçümler), `DURUM.md` güncelle, `requirements-tracer` ajanını çalıştır, commit + push. Ekranı olan fazlarda `owner-review` becerisiyle sahibe onay sayfası hazırla; faz, sahip onaylayınca ✅ olur.
 8. Bir madde bir `G-xx` ile çelişiyorsa dur ve sahibe sor; sessizce yorumlama.
-9. **Durma koşulları** (`/orkestra` §5 ile aynı): sahip kararı gereken soru, aynı görevde 2 başarısız deneme, kancanın
-   engellediği yasak işlem, bütçe eşiği, G-xx çelişkisi. Durunca `YURUTME.md` günlüğüne "⏸ durdu: neden" yaz ve
-   mesajı `❓ SORULARIM` ile bitir.
-10. **İlerleme kaydı:** her görev kapanışında `YURUTME.md` paket durumu ve günlük satırı güncellenir (bağlam
-    sıkıştırmasından sonra önce o okunur). Birden fazla faz/dalga art arda yürütülecekse bu beceri yerine `/orkestra`.

@@ -73,8 +73,6 @@ if (args.resume) {
   const last = JSON.parse(readFileSync(lastSessionFile, 'utf8'))
   sessionId = last.sessionId
   if (!process.argv.includes('--model')) args.model = last.model
-  // Budget is cumulative across --devam runs: the owner's limit is per task, not per process.
-  spent = Number(last.spent ?? 0) || 0
 }
 
 const APPEND = [
@@ -132,7 +130,7 @@ async function runTurn(prompt) {
     if (msg.session_id) sessionId = msg.session_id
     if (msg.type === 'system' && msg.subtype === 'init') {
       say(`▶ Model: ${msg.model ?? args.model} · oturum: ${msg.session_id} · bütçe: $${remaining.toFixed(2)}`)
-      writeFileSync(lastSessionFile, JSON.stringify({ sessionId: msg.session_id, model: args.model, spent }, null, 2))
+      writeFileSync(lastSessionFile, JSON.stringify({ sessionId: msg.session_id, model: args.model }, null, 2))
     } else if (msg.type === 'assistant') {
       const sub = msg.parent_tool_use_id ? '   [alt ajan] ' : ''
       if (msg.error) say(`${sub}⚠️  ${msg.error}`)
@@ -149,7 +147,6 @@ async function runTurn(prompt) {
       }
     } else if (msg.type === 'result') {
       spent += msg.total_cost_usd ?? 0
-      if (sessionId) writeFileSync(lastSessionFile, JSON.stringify({ sessionId, model: args.model, spent }, null, 2))
       const status =
         msg.subtype === 'success'
           ? 'tamamlandı'

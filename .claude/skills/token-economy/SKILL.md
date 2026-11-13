@@ -5,16 +5,12 @@ description: Ajan dağıtırken ve uzun işlerde token harcamasını düşürme 
 
 # Token ekonomisi
 
-## Model ve çaba (ajan dosyalarında sabit; tablo `docs/analiz/09-ajan-sistemi.md` §2)
-- Kod yazan: `feature-builder`, `calendar-specialist`*, `db-migration-builder`*, `camera-integrator`*, `packager` sonnet
-  (* = high çaba); küçük/mekanik iş `feature-builder-lite` haiku.
-- Kontrol: `decision-auditor` opus/medium (tek opus); `bug-hunter`, `flow-tester`, `security-reviewer`, `db-reviewer`
-  sonnet/high; `ui-reviewer`, `screen-auditor`, `privacy-auditor` sonnet/medium.
-- Tarama/metin: `requirements-tracer`, `turkish-ui-copy`, `researcher` haiku/medium (hukuk/lisans araştırması için
-  `model: sonnet` ile çağır).
-- Orkestra şefi: ana oturum (Opus 5.5). Fable yalnız sahibin açık isteğiyle.
+## Model ve çaba (ajan dosyalarında sabit)
+- Kod yazan: `feature-builder` sonnet/medium; küçük/mekanik iş `feature-builder-lite` haiku/medium.
+- Muhakeme gerektiren kontrol: `decision-auditor`, `flow-tester`, `db-reviewer`, `ui-reviewer` opus/medium;
+  `bug-hunter`, `security-reviewer` sonnet/high.
+- Tarama/metin: `requirements-tracer`, `turkish-ui-copy`, `researcher` haiku/medium.
 - Tek dosya bulmak için ajan açma; `rg`/`code-graph` yeter.
-- Aynı anda en çok 2 kodlayan ajan (2 çekirdek); yük > 6 ise ajan başlatma.
 
 ## Görev metni
 - Ortak bilgi bir kez dosyaya (scratchpad `*-common.md`); ajana yalnız yol + kendi maddeleri (≤40 satır).

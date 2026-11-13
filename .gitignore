@@ -18,8 +18,6 @@ backups/
 # secrets and per-developer overrides
 .env
 .env.*
-# sır içermeyen örnek ayar dosyası depoya girer
-!otel-kamera/.env.example
 .claude/settings.local.json
 CLAUDE.local.md
 

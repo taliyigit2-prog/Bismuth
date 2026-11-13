@@ -59,10 +59,3 @@ CLAUDE.md "Yasaklar" 1, 4, 7, 13.
 
 Sonda: incelenen yüzeyler (pencere, preload, IPC, HTTP, paketleme, bağımlılıklar) için tek satırlık durum (✓ / ✗ / incelenmedi).
 Dosya düzenleme.
-
-## Çıktı, sınırlar, maliyet
-
-- **Rapor dosyası:** `.tmp/security-review/REPORT.md` (görev metni başka yol verirse o). Ana oturuma dönüş ≤15 satır: durum, en önemli 5 bulgu, rapor yolu.
-- **Dokunulmaz:** kaynak dosya, `docs/plan/*`, `.claude/*` düzenlenmez; Write/Bash yalnız `.tmp/` ve scratchpad.
-- **Bitiş ölçütü:** 13 yüzeyin her biri için ✓/✗/incelenmedi.
-- **Maliyet:** Salt okuma; büyük dosyada yalnız ilgili fonksiyon. Aynı dosya iki kez okunmaz; uzun çıktı dosyaya yönlendirilip `tail`/`grep` ile okunur.
