@@ -86,8 +86,8 @@ Harcama sütunu: başlatıcının yazdığı `$` (dalga toplamı, gerçek).
 
 | Dalga | Paket | Faz | Modül dosyası / ad alanı | Ajan | Tahmin | Harcama | Durum |
 |---|---|---|---|---|---|---|---|
-| 1 | P17a Vazgeçme ve iade akışı (undoCheckIn, iptal/çıkışta ödeme + iade, kapalı rezervasyonda menü, raporda iptal/gelmedi/iade satırları) | 17 | booking, calendar, reports | calendar-specialist (bu oturumda feature-builder ile, rol dosyası okundu) | $12–18 | | 🔄 |
-| 1 | P19c Depo temizliği (prototypes arşiv, faz0 iş akışları, icon, yerel yollar, kanca istisnaları) | 19 | — | feature-builder-lite | $2–4 | | 🔄 |
+| 1 | P17a Vazgeçme ve iade akışı (undoCheckIn, iptal/çıkışta ödeme + iade, kapalı rezervasyonda menü, raporda iptal/gelmedi/iade satırları) | 17 | booking, calendar, reports | calendar-specialist | $12–18 | | ⬜ |
+| 1 | P19c Depo temizliği (prototypes arşiv, faz0 iş akışları, icon, yerel yollar, kanca istisnaları) | 19 | — | feature-builder-lite | $2–4 | | ⬜ |
 | 2 | P17d Gündüz kullanımı 2.0 + ikinci tur hatası + H-06 (migrasyon **0019**) | 17 | booking, reservations, settings | db-migration-builder → calendar-specialist | $15–22 | | ⬜ |
 | 2 | P18a ui-shot çoklu boyut/ölçek/dil + ölçüm JSON; Electron e2e Codespace'te yeşil | 18 | scripts, tests/e2e | feature-builder-lite | $2–4 | | ⬜ |
 | 3 | P17b Grup rezervasyonu + toplu giriş (migrasyon **0020**) | 17 | booking, reservations | db-migration-builder → calendar-specialist | $15–22 | | ⬜ |
@@ -219,8 +219,5 @@ QA2b, akış testleri C/D) bu plana **Son** satırında katılır; ayrı yürüt
   ajan sistemi v2 (6 yeni ajan, `/orkestra`, `workflow-guard`, `camera-data-guard`, belge-yalnız commit kapısı);
   baz: typecheck ✓, lint ✓, 2427 birim test ✓, kanca 89/89. Faz 5–16'nın 🔄 satırları "Son" dalgasına taşındı.
   Opus devir notu `docs/analiz/OPUS-BASLANGIC.md`. Sonraki adım: `/orkestra` dalga 1.
-- 2026-11-13: Fable analiz dalı (24881d9, `claude/fable-analiz` worktree'si) ana dala birleştirildi (164d40e, çakışmasız).
-  `/orkestra 1` başladı: P17a (feature-builder, calendar-specialist rolüyle; bu oturumda calendar-specialist türü
-  kayıtlı değildi) ve P19c (feature-builder-lite) arka planda, taban 164d40e. Commit ana oturumda.
 - 2026-11-12 (kapanış): analiz turu commit'leri `claude/fable-analiz` dalında (8346aec → 07a3fad + bu). `npm run check` ✓
   (2427 test), kanca testleri 89/89. Fable harcaması ≈ $45. Opus: `OPUS-BASLANGIC.md` → `/orkestra 1`.
