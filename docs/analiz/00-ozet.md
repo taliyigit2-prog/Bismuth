@@ -45,10 +45,10 @@ Tam liste: `02-hata-raporu.md` (18 hata, 9 çelişki), `06-…` §7 ve `ekler/ka
 | 1–4 | **Faz 17 Resepsiyon:** vazgeçme/iade, gündüz kullanımı 2.0, grup + toplu giriş, hızlı takvim, kritik hatalar; + depo temizliği, ekran betiği, düzen düzeltmeleri | $95–135 |
 | 5 | **Faz 18 Ekran:** pencere/tam ekran, çalışmayan öğeler | $20–30 |
 | 6 | **Faz 19 Kurulum:** sürüm iş akışı, belgeler, ajan bakımı | $15–25 |
-| 7–9 | **Faz 20 Kamera:** yan süreç, sekme, veri, açık lisanslı modeller, KVKK, paketleme | $85–130 |
-| 10–11 | **Faz 21 Çoklu otel + diğer:** otel profilleri, portföy özeti, geç çıkış/no-show/gece raporu | $40–60 |
+| 7–11 | **Faz 20 Kamera:** yan süreç + Telegram (ayarlı), sekme, veri, model sabitleme (mevcut modeller), KVKK (aydınlatma), kurulum sihirbazı, paketleme | $107–197 |
+| 11–13 | **Faz 21 Çoklu otel + diğer:** istemci otel listesi, takvimli portföy, geç çıkış/no-show/gece raporu, isteğe bağlı profiller | $60–110 |
 | Son | Tam kontrol sürüsü + sahip onay sayfası | $40–60 |
-| **Toplam** | | **$315–575** (Opus orkestra + decision-auditor ≈ $50–130, Sonnet ≈ $250–415, Haiku ≈ $15–30; 13 dalga + Son, `08` §6) |
+| **Toplam** | | **$320–580** (Opus orkestra + decision-auditor ≈ $50–130, Sonnet ≈ $255–420, Haiku ≈ $15–30; 13 dalga + Son, `08` §6) |
 
 Kısa bütçeyle: yalnız dalga 1–5 ($110–210) resepsiyonun dört maddesini ve ekran düzeltmelerini kapatır. Opus `node tools/ajan/ajan.mjs --model claude-opus-5-5
 --butce 200 "…"` ile başlar (`OPUS-BASLANGIC.md`); bütçe bitince `--devam` ile sürer.
@@ -60,6 +60,10 @@ Kısa bütçeyle: yalnız dalga 1–5 ($110–210) resepsiyonun dört maddesini 
 4. Sürüm etiketini (v1.0.x) siz atarsınız; ajanlar GitHub Actions'ı tetikleyemez.
 
 ## 5. ❓ Sahibe sorular (tek liste; cevap gelmezse yanındaki varsayılan uygulanır)
+
+> **Güncelleme 2026-11-13:** S-100…S-118 cevaplandı ve plana işlendi (`06-kararlar.md` 7. tur, `08` §8). Açık kalan yalnız
+> S-119 (hafta sonu tanımı; varsayılan: bilinçli ayrım). Yeni yönergeler: Rust araştırması (`11-rust-gecisi.md`),
+> Ponytail becerisi, 21st.dev tasarım seçimi (`12-21st-tasarim-secimi.md`).
 
 **Resepsiyon ve takvim**
 1. (S-100) Resepsiyon kendi başına **iade** girebilsin mi, yoksa her iade müdür/sahip onayı mı istesin? — *Varsayılan: giremez; "İade bekliyor" diye park eder, siz telefondan onaylarsınız.*

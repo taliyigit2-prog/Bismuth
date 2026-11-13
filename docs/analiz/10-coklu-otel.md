@@ -57,7 +57,13 @@ karşılanır; bu ekran Mac'teki salt-okunur kopya altyapısının (Faz 13) doğ
 
 Varsayılan (sahip cevaplamazsa): K-54 uygulanır, portföy özeti Faz 21 içinde son pakete ertelenir (önce profil altyapısı).
 
-## 4. Sahibe sorular (S-114…S-117)
+## 4. Sahibe sorular (S-114…S-117) — cevaplandı 2026-11-13 (K-54 kesin)
+
+Cevaplar: 2 otel, aynı şehir, farklı adres; **her otelin kendi bilgisayarı ana bilgisayar**, birbirine bağlanabilir; tek
+ekranda takvim, gelir-gider, bugünkü doluluk, kasa; ortak personel yok. Sonuç: otel başına ayrı veritabanı (seçenek A)
+doğrulandı; "program içinde otel değiştirme" (P21a) isteğe bağlı oldu, asıl ihtiyaç **istemci kayıtlı bağlantı listesi**
+(P21b, NetBird üzerinden diğer otelin sunucu modu) ve **takvimli portföy ekranı** (P21c). Dalgalar 11–13.
+
 
 - S-114 Kaç oteliniz var ya da olacak; aynı şehirde mi? (Varsayılan: 2, farklı adreslerde.)
 - S-115 İkinci otelin resepsiyonu kendi bilgisayarını mı kullanacak? (Varsayılan: evet, her otelin kendi ana bilgisayarı.)
@@ -68,6 +74,6 @@ Varsayılan (sahip cevaplamazsa): K-54 uygulanır, portföy özeti Faz 21 içind
 
 | Paket | İçerik | Büyüklük | Bağımlılık |
 |---|---|---|---|
-| P21a Profil altyapısı | `paths.ts` profil kökü, taşıma, otel seçici, "Oteller" ayarı, sahip hesabı kopyalama, yedek yolu | M | — |
-| P21b İstemci çoklu ana bilgisayar | Bağlan ekranında kayıt listesi, kopya klasörleri otel başına | M | P21a |
-| P21c Portföy özeti | `features/portfolio/`, özet üretici, owner yetkisi, telefon düzeni | M | P21a, P21b |
+| P21b İstemci çoklu ana bilgisayar | Bağlan ekranında kayıtlı otel listesi (ad + adres + parmak izi), otel değiştirince oturum yenilenir, kopya klasörleri otel başına | M | — (dalga 11) |
+| P21c Portföy özeti | `features/portfolio/`: iki otelin takvimi (seçici / yan yana), gelir-gider, bugünkü doluluk, kasa; owner yetkisi; telefon düzeni | M | P21b (dalga 12) |
+| P21a Profil altyapısı (isteğe bağlı) | `paths.ts` profil kökü, taşıma, otel seçici, "Oteller" ayarı | M | — (dalga 13, bütçe yetmezse atlanır) |

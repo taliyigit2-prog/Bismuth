@@ -6,7 +6,7 @@
 > Her paket: kimlik · amaç · dosya/ad alanları · bağımlılık · kabul ölçütleri · testler · ajan (model/çaba ajan
 > dosyasında) · büyüklük (S ≈ ½ gün ajan işi, M ≈ 1–2, L ≈ 3+).
 
-## 1. Faz 17 — Resepsiyon düzeltmeleri (G-193…G-196, K-48, K-55)
+## 1. Faz 17 — Resepsiyon düzeltmeleri (G-193…G-196, K-48, K-55 — sahip cevapları 2026-11-13 işlendi)
 
 ### P17a · Vazgeçme ve iade akışı (Kritik)
 - **Amaç:** Madde 1 ve 3. Check-in sonrası vazgeçme, iptal/çıkışta ödeme uyarısı ve iade, kapalı rezervasyonda menü.
@@ -15,7 +15,8 @@
   `booking.cancel` girdi: `refund?`), `src/main/api/handlers/booking.ts`, `src/renderer/features/calendar/`
   (`reservation-panel.tsx`, `stay-dialogs.tsx`, `payment-dialog.tsx`, yeni `giveup-dialog.tsx`), i18n `booking.*`,
   `errors.*`; `docs/kullanim-kilavuzu.md` §3 iptal/iade; `src/renderer/guide/`.
-- **Bağımlılık:** yok (ilk dalga). S-100 cevabı yoksa varsayılan (resepsiyon iade giremez, park eder).
+- **Bağımlılık:** yok (ilk dalga). S-100 cevabı (2026-11-13): **resepsiyon iade girebilir** → `payments.refund` resepsiyon
+  rolünde varsayılan E (rol ayarından kapatılabilir), her iade audit; "İade bekliyor" parkı yalnız yetkisiz kullanıcı için.
 - **Kabul:** (1) `in_house` rezervasyonda üç nokta menüsünde "Vazgeçme ve iade" var, üç seçenek sunar; (2) `checked_out`
   rezervasyonda üç nokta menüsü görünür ("İade gir", "Geçmiş", "Not"); (3) iptal penceresi tahsilat varsa tutarı
   gösterir ve "İade gir / İade bekliyor park / Tahsilat kalsın (neden)" sunar; (4) `undoCheckIn` yalnız giriş gününde,
@@ -52,28 +53,32 @@
 - **Kabul:** boş hücre tık → çubuk (ad, kişi, gece, fiyat, kanal; Enter kaydeder; "Ayrıntı" diyaloğu açar); sağ tık
   menüsü 10 işlem; Ctrl/Shift seçimle toplu not/giriş/çıkış/**ödeme**; bugün şeridi `today.summary` ile; klavyeyle
   erişilebilir; telefonda uzun basma; takvim üst çubuğunda **"Son iptaller" (7 gün)** küçük listesi + lejant notu
-  ("iptal/gelmedi kayıtları Misafir kartı → Geçmiş"); park alanında **park nedeni etiketi** (04 §3); S-101 cevabı (b)
-  ise aynı misafirin başka odadaki konaklaması için **zincir simgesi** (03 §3).
+  ("iptal/gelmedi kayıtları Misafir kartı → Geçmiş"); park alanında **park nedeni etiketi** (04 §3). S-101 = (a):
+  zincir simgesi yapılmaz.
 - **Testler:** vitest (çubuk doğrulama, menü görünürlüğü yetkiye göre), e2e (sağ tık → giriş yap; hızlı rezervasyon).
 - **Ajan:** `feature-builder`. **Büyüklük:** M.
 
-### P17d · Gündüz kullanımı 2.0 ve ikinci tur hatası (G-196, K-48)
-- **Amaç:** Madde 4. Saat aralıklı gündüz yuvası, çoklu gündüz satışı (ayar), temizlik arası uyarısı, gündüz fiyatı,
-  rapor satırı; hata C düzeltmesi.
+### P17d · Saatlik konaklama — gündüz kullanımı 2.0 ve ikinci tur hatası (G-196, K-48 kesin)
+- **Amaç:** Madde 4. Saat aralıklı gündüz yuvası ("saatlik konaklama"), aynı odada aynı gün sınırsız saatlik satış,
+  temizlik arası uyarısı, tutarı resepsiyon girer, raporlara dahil + tür filtresi; hata C düzeltmesi. Sahip cevapları
+  S-102…S-105 (2026-11-13) uygulanır; `dayUse.maxPerRoomPerDay`, `dayUse.priceMode`, `dayUse.countsInOccupancy`,
+  `dayUse.kbsReport` ayarları **yoktur** (sabit kural: sınırsız, resepsiyon girer, dahil, bildirilir).
 - **Dosyalar:** migrasyon **0019** (`room_nights.start_time/end_time`, indeks `(room_id,date,slot,start_time)`,
-  `room_types.day_use_price_minor`), `src/shared/domain/stays.ts` (saat çakışması), `booking.ts` (`checkoutPlan`),
-  `reservations-service.ts` (`checkOut` :1388-1421, `checkSlots`), `settings.ts` (`dayUse.*`), `features/calendar/`
-  (yarım çubuk, saat alanı, çıkış penceresi), `features/settings/` (gündüz bölümü), `reports/queries.ts`
-  (gündüz satırı), `tourism/ministry-table.ts` değişmez; i18n `booking.dayUse.*`, `settings.dayUse.*`.
+  `room_types.hourly_price_minor` isteğe bağlı), `src/shared/domain/stays.ts` (saat çakışması), `booking.ts`
+  (`checkoutPlan`, `createHourlyStay` girdi: oda, tarih, başlangıç-bitiş saati, tutar), `reservations-service.ts`
+  (`checkOut` :1388-1421, `checkSlots`), `settings.ts` (`dayUse.turnoverMinutes`), `features/calendar/` (saatli çubuk,
+  saat alanı, çıkış penceresi), `features/settings/` (Fiyatlar: oda tipi saat ücreti), `features/setup/` (sihirbazda
+  isteğe bağlı saat ücreti adımı), `reports/queries.ts` (konaklama türü filtresi, aylık saatlik sayısı), KBS listesi
+  (saatlik misafir dahil), `tourism/ministry-table.ts` değişmez; i18n `booking.hourly.*`, `settings.hourly.*`.
 - **Bağımlılık:** P17a birleşmiş olmalı (çıkış penceresi). Migrasyon 0019 (`db-migration-builder`). Dalga 2.
-- **Kabul:** betikteki C senaryosu: ikinci tur çıkışında oda o gece satılabilir; aynı gün iki gündüz (ayar 2) saat
-  çakışmazsa olur, çakışırsa `roomOccupied` saatli mesaj; temizlik arası dolmadan satışta uyarı; gündüz fiyat kipi
-  ayardan; raporda "Gündüz" satırı; doluluğa katılım ayarı; istatistik kuralı değişmedi; eski verilerde `start_time`
-  null = tüm gün (geriye uyumlu); **H-06**: çıkış penceresinde "aynı gün ücreti" varsayılanı `dayUse` fiyat ayarından,
-  0 için onay, gündüz yuvası doluysa alan gizli (sözleşme `dayUsePriceMinor` `nonnegative` → 0 kabul ediliyor,
-  `booking.ts:104`).
+- **Kabul:** betikteki C senaryosu: ikinci tur çıkışında oda o gece satılabilir; aynı gün üç saatlik satış saat çakışmazsa
+  olur, çakışırsa `roomOccupied` saatli mesaj; temizlik arası dolmadan satışta uyarı (engel değil); tutar alanı zorunlu,
+  saat ücreti ayarlıysa önerilir; raporlarda saatlik satışlar dahil, "konaklama türü" filtresi ve aylık saatlik sayısı;
+  saatlik misafir KBS listesinde; istatistik kuralı değişmedi; eski verilerde `start_time` null = tüm gün (geriye
+  uyumlu); **H-06**: çıkış penceresinde "aynı gün ücreti" varsayılanı saat ücretinden, 0 için onay, gündüz yuvası
+  doluysa alan gizli (sözleşme `dayUsePriceMinor` `nonnegative` → 0 kabul ediliyor, `booking.ts:104`).
 - **Testler:** domain (saat çakışması 8 senaryo), servis (C, B, D betik senaryoları beklenen davranışa), migrasyon,
-  grid, e2e "sabah gündüz, akşam gece, ertesi sabah gündüz".
+  grid, rapor filtresi, e2e "sabah saatlik, akşam gece, ertesi sabah saatlik" + sihirbaz adımı.
 - **Ajan:** `db-migration-builder` (0019) → `calendar-specialist`. **Büyüklük:** L.
 
 ### P17e · Yüksek ve orta hata düzeltmeleri (02-hata-raporu)
@@ -140,28 +145,29 @@
 - `protect-files` kaçış değişkeni, `stop-gate` kapsamı, `deps-guard` yarn, `owner-review` kalıcı yol. **Ajan:**
   `feature-builder-lite`. **S**.
 
-## 4. Faz 20 — Kamera entegrasyonu (`06-kamera-entegrasyonu.md` §8; K-49…K-53)
+## 4. Faz 20 — Kamera entegrasyonu (`06-kamera-entegrasyonu.md` §8; K-49…K-53, K-57…K-59 kesin)
 
 | Paket | 06 aşaması | İçerik | Ajan | Büyüklük | Bağımlılık |
 |---|---|---|---|---|---|
-| P20a | K1 + K2 | Python hijyen (requirements `==`, `.env.example` ✅, yerel yol temizliği, döngüde try/except, sağlık; **kod bulguları** `ekler/kamera-kod-bulgulari.md` §0'da "P20a" işaretli maddeler; `AI_GELISTIRICI_NOTLARI.md` kodla eşitlenir, Ç-08; `docs/plan/bagimliliklar.md`'ye kamera bölümü), `src/main/camera/sidecar.ts` + `bridge.ts` (belirteç, 127.0.0.1, yeniden başlatma), `camera` yetki alanı, ayar anahtarları `camera.*` | `camera-integrator` | M | S-107…S-112 cevapları ya da varsayılan; dalga 7 (tek paket) |
-| P20b | K3 | `features/camera/` Kamera sekmesi (canlı yayın MJPEG, durum, alarm listesi), CSP istisnası, telefon alarm listesi, menü + yetki | `camera-integrator` | M | P20a; dalga 8 (P20d ile; ayrı dizinler) |
-| P20c | K4 | migrasyon 0021 `guest_faces`, `camera_events`; şifreleme (`crypto.ts`); "Kameradan yüz al" (rıza); check-in/out eşitleme; alarm → bildirim; "misafir olarak kaydet"; dışa aktarma/yedek dışı | `db-migration-builder` → `camera-integrator` | L | P20b; dalga 9 (tek paket) |
-| P20d | K5 | Model değişimi: YuNet + SFace/AuraFace + ByteTrack (ONNX), torch/ultralytics/insightface kaldırılır, eşik ölçüm betiği, CPU ölçümü; kod bulguları §0'da "P20d" işaretli maddeler (etiketler renderer'da, `cv2.putText` Türkçe sorunu dahil) | `camera-integrator` | L | P20a; dalga 8 (P20b ile) |
-| P20e | K6 | KVKK paketi: rıza kaydı, aydınlatma metni şablonu (3 dil), saklama/imha ayarları ve raporu, çalışan dışlama listesi; `privacy-auditor` | `camera-integrator` | M | P20c; dalga 10 |
-| P20f | K7 | Paketleme: gömülü Python + bağımlılıklar `resources/camera/`, model dosyaları, `extraResources`, boyut/açılış ölçümü, kurulum belgesi bölümü, `THIRD_PARTY_NOTICES` | `packager` | L | P20d (P20e ile aynı dalga 10; ayrı dizinler) |
+| P20a | K1 + K2 | Python hijyen (requirements `==`, `.env.example` ✅, yerel yol temizliği, döngüde try/except, sağlık; **kod bulguları** `ekler/kamera-kod-bulgulari.md` §0'da "P20a" işaretli maddeler; `AI_GELISTIRICI_NOTLARI.md` kodla eşitlenir, Ç-08; `docs/plan/bagimliliklar.md`'ye kamera bölümü), `src/main/camera/sidecar.ts` + `bridge.ts` (belirteç, 127.0.0.1, yeniden başlatma), `camera` yetki alanı, ayar anahtarları `camera.*`; **Telegram Python'dan çıkar, Bismuth'a taşınır** (K-50): `src/main/network/telegram/` (ayarlı, 5 sn, sessiz, fotoğraf eki ayarı), `no-network-guard` kancası `src/main/camera/` için güncellenir | `camera-integrator` | M | Cevaplar S-107…S-112 işlendi; dalga 7 (tek paket) |
+| P20b | K3 | `features/camera/` Kamera sekmesi (canlı yayın MJPEG yalnız ana bilgisayarda, durum, alarm listesi), CSP istisnası, telefon/Mac alarm listesi (S-108), menü + yetki | `camera-integrator` | M | P20a; dalga 8 (P20d ile; ayrı dizinler) |
+| P20c | K4 | migrasyon 0021 `guest_faces` (`enrolled_at/enrolled_by`, rıza alanı yok — K-58), `camera_events`; şifreleme (`crypto.ts`); "Kameradan yüz al" (Kişiler sekmesi); check-in/out eşitleme; alarm → bildirim; "misafir olarak kaydet"; dışa aktarma/yedek dışı | `db-migration-builder` → `camera-integrator` | L | P20b; dalga 9 (tek paket) |
+| P20d | K5' | **Model sabitleme ve çevrimdışı (K-57):** mevcut InsightFace `buffalo_s` + YOLO11n kalır; `ultralytics settings.update({"sync": False})` + çevrimdışı test (ağ kapalıyken çalışır, indirme yok); model dosyaları `resources/camera/models/` lisans notlarıyla; `THIRD_PARTY_NOTICES` kamera bölümü + K-57 lisans uyarısı; kod bulguları §0 "P20d" maddeleri (etiket çizimi renderer'a, eşikler); **alternatif model geçiş planı** (YuNet + SFace) yalnız belge (`06` §6.2) | `camera-integrator` | S/M | P20a; dalga 8 (P20b ile) |
+| P20e | K6' | KVKK paketi (K-58): aydınlatma metni şablonu (3 dil, yazdırılabilir; kurulum sihirbazı + Kamera sekmesi), saklama/imha ayarları ve imha raporu, personel dışlama listesi (S-107); rıza kaydı **yok**; `privacy-auditor` sahibin kararını not eder | `camera-integrator` | M | P20c; dalga 10 |
+| P20g | K8 | **Kamera kurulum sihirbazı (K-59):** donanım otomatik (CPU/RAM/OS → `camera.profile`), yerel ağ keşfi (ONVIF WS-Discovery + Hikvision SADP; Python `discovery.py` + `src/main/camera/discovery.ts`), IP/kullanıcı/şifre formu, Hikvision RTSP kalıbı önerisi, bağlantı + görüntü testi, kanal sayısı; şifre `safeStorage`; `features/setup/camera-step.tsx` + Ayarlar → Kamera "yeniden tara" | `camera-integrator` | M | P20b; dalga 10 (P20e ile; ayrı dizinler) |
+| P20f | K7 | Paketleme: gömülü Python + bağımlılıklar (torch CPU + ultralytics + insightface + onnxruntime; ~1–1,5 GB) `resources/camera/`, model dosyaları, `extraResources`, boyut/açılış ölçümü, kurulum belgesi bölümü, `THIRD_PARTY_NOTICES`; gerekirse ayrı "kamera eki" kurulum dosyası (`Bismuth-Kamera-Setup.exe`) | `packager` | L | P20d, P20g; dalga 11 |
 
 Kabul ölçütleri aşama tablosunda (06 §8). Sahip onay paketi: gerçek kamera ve otel bilgisayarında deneme; avukat görüşü.
 
-## 5. Faz 21 — Çoklu otel ve diğer iyileştirmeler
+## 5. Faz 21 — Çoklu otel ve diğer iyileştirmeler (K-54 kesin: her otel kendi bilgisayarı, bağlantı NetBird ile)
 
 | Paket | İçerik | Ajan | Büyüklük | Bağımlılık |
 |---|---|---|---|---|
-| P21a | Profil altyapısı (K-54): `userData/hotels/<kod>/`, taşıma, otel seçici, "Oteller" ayarı, sahip hesabı kopyalama, yedek yolu | `feature-builder` | M | S-114…S-117; dalga 11 |
-| P21b | İstemci çoklu ana bilgisayar: bağlan ekranı kayıt listesi, kopya klasörleri otel başına | `feature-builder` | M | P21a; dalga 12 |
-| P21c | Portföy özeti `features/portfolio/` (owner), telefon düzeni | `feature-builder` | M | P21a, P21b; dalga 13 |
+| P21b | İstemci çoklu ana bilgisayar (K-54): bağlan ekranı kayıtlı otel listesi (ad + adres + parmak izi), otel değiştirince oturum yenilenir, kopya klasörleri otel başına; NetBird üzerinden diğer otelin sunucu moduna bağlanma belgesi | `feature-builder` | M | —; dalga 11 (öne alındı) |
 | P21d | Geç çıkış ücreti, no-show bedeli kalemi, hasar depozitosu (iade edilecek emanet) kalemi (04 §2), yazdırılabilir gece raporu (Ö-22) | `feature-builder` | M | P17d; dalga 11 |
-| P21e | 02 raporundaki Orta/Düşük bulgular + 04 §3 küçük maddeler (mükerrer misafir kartı uyarısı, Ayarlar "sık kullanılan" sekmesi, telefon "çıkış yaptı" rozeti, `?` kısayolu) — liste faz-21'de | `feature-builder-lite` / `feature-builder` | M | —; dalga 12 |
+| P21c | Portföy özeti `features/portfolio/` (owner): S-116 → **iki otelin takvimi** (otel seçici ya da yan yana), gelir-gider, bugünkü doluluk, kasa; kaynak canlı bağlantı (P21b) ya da kopya; para birimi otel başına; telefon düzeni | `feature-builder` | M | P21b; dalga 12 |
+| P21e | 02 raporundaki Orta/Düşük bulgular + 04 §3 küçük maddeler (mükerrer misafir kartı uyarısı, Ayarlar "sık kullanılan" sekmesi, telefon "çıkış yaptı" rozeti, sheet geri tuşu) — liste faz-21'de | `feature-builder-lite` / `feature-builder` | M | —; dalga 12 |
+| P21a | **İsteğe bağlı** profil altyapısı: tek makinede birden çok otel (`userData/hotels/<kod>/`), taşıma, otel seçici; sahip her otelde ayrı bilgisayar dediği için düşük öncelik | `feature-builder` | M | dalga 13 (son) |
 
 ## 6. Dalgalar (YURUTME.md ile aynı), tahmini maliyet ve süre
 
@@ -176,17 +182,17 @@ $3–9/paket, kontrol $1–6, orkestra opus $8–15/dalga; 09 §2).
 | 4 | P17c (feature-builder), P17e (feature-builder / calendar-specialist) | ui-reviewer, turkish-ui-copy, flow-tester (takvim), bug-hunter (takvim) | $22–40 | 4–5 sa |
 | 5 | P18b, P18d | screen-auditor, flow-tester, decision-auditor | $20–38 | 3–4 sa |
 | 6 | P19a (packager), P19b + P19d (lite) | security-reviewer, turkish-ui-copy | $15–32 | 2–3 sa |
-| 7 | P20a (tek paket; `otel-kamera/` + `main/camera/`) | security-reviewer, privacy-auditor | $18–36 | 3–4 sa |
-| 8 | P20b, P20d | ui-reviewer, privacy-auditor, security-reviewer | $26–48 | 5–6 sa |
+| 7 | P20a (tek paket; `otel-kamera/` + `main/camera/` + `main/network/telegram/`) | security-reviewer, privacy-auditor | $18–36 | 3–4 sa |
+| 8 | P20b, P20d (model sabitleme) | ui-reviewer, privacy-auditor, security-reviewer | $18–34 | 3–4 sa |
 | 9 | P20c (db-migration-builder → camera-integrator; migrasyon 0021) | db-reviewer, privacy-auditor | $21–38 | 4–5 sa |
-| 10 | P20e, P20f | privacy-auditor, security-reviewer, decision-auditor | $24–43 | 4–5 sa |
-| 11 | P21a, P21d | db-reviewer, security-reviewer | $22–40 | 3–4 sa |
-| 12 | P21b, P21e | ui-reviewer, turkish-ui-copy | $18–34 | 3–4 sa |
-| 13 | P21c | ui-reviewer, requirements-tracer | $14–28 | 2–3 sa |
+| 10 | P20e, P20g (kurulum sihirbazı) | privacy-auditor, security-reviewer, ui-reviewer | $24–43 | 4–5 sa |
+| 11 | P20f (paketleme), P21b (çoklu ana bilgisayar) | security-reviewer, decision-auditor | $26–46 | 4–5 sa |
+| 12 | P21c, P21d | ui-reviewer, db-reviewer, turkish-ui-copy | $20–37 | 3–4 sa |
+| 13 | P21e, P21a (isteğe bağlı) | ui-reviewer, requirements-tracer | $20–37 | 3–4 sa |
 | Son | Tam kontrol: modül başına bug-hunter + flow-tester, decision-auditor, security, db, ui, screen, privacy, copy, tracer → düzeltme turu → `/owner-review` | hepsi | $45–70 | 6–8 sa |
-| **Toplam** | paketler $232–356 + dalga başına kontrol $3–8 + orkestra $3–8 | | **$315–575** | ~55–65 sa ajan süresi |
+| **Toplam** | paketler $236–361 + dalga başına kontrol $3–8 + orkestra $3–8 | | **$320–580** | ~55–65 sa ajan süresi |
 
-Model başına kabaca: Opus (orkestra + decision-auditor) $50–130 · Sonnet (kodlayan + kontrol) $250–415 · Haiku (lite
+Model başına kabaca: Opus (orkestra + decision-auditor) $50–130 · Sonnet (kodlayan + kontrol) $255–420 · Haiku (lite
 paketler + haiku kontroller) $15–30. Dalga sırası kuralı: bağımlı paket bir sonraki dalgada; aynı dalgada aynı dizine
 dokunan iki paket yok; migrasyon numaraları dalga sırasıyla (0019 P17d, 0020 P17b, 0021 P20c). Codespace 2026-11-12
 ölçümü 4 çekirdek / 15 GB; kodlayan ajan sınırı yine 2.
@@ -196,3 +202,19 @@ Bütçe küçükse öncelik sırası dalga sırasıdır: dalga 1–5 ($110–210
 - `01-gereksinimler.md`: G-193…G-196 (ZORUNLU/ÖNEMLİ), G-37 notu, Ö-20…Ö-24 (`/requirement-change` yolu ile).
 - `06-kararlar.md`: K-48…K-56 taslak + 7. tur "Sahip cevapları" boş tablo.
 - `05-sorular.md`: S-100…S-118 varsayılanlarıyla.
+
+## 8. Sahip cevaplarıyla değişenler (2026-11-13; `06-kararlar.md` 7. tur)
+
+| Cevap | Plan etkisi |
+|---|---|
+| S-100 resepsiyon iade girebilir | P17a: `payments.refund` resepsiyon E (rol ayarı) |
+| S-101 (a) | P17b grup; P17c'de zincir simgesi kalktı |
+| S-102…S-105 saatlik, sınırsız, KBS, raporlara dahil | P17d yeniden yazıldı (K-48 kesin); dört `dayUse.*` ayarı kalktı, `room_types.hourly_price_minor` + sihirbaz adımı eklendi |
+| S-108/S-109 Telegram kalır | P20a: Telegram Bismuth tarafına (`src/main/network/telegram/`) taşınır, ayarlı; CLAUDE.md yasak 1 ve 14 güncellendi |
+| S-110 modeller korunur | P20d "model değişimi" → "model sabitleme ve çevrimdışı" (S/M); P20f paket boyutu büyür (torch); lisans notu `06` §6.3 |
+| S-111 aydınlatma yeterli | P20c/P20e'de rıza akışı yok; aydınlatma şablonu sihirbaz + sekme |
+| S-112 Hikvision, otomatik donanım | yeni **P20g** kamera kurulum sihirbazı (dalga 10) |
+| S-114…S-117 iki otel, ayrı bilgisayar, bağlanabilir | P21b öne (dalga 11), P21c portföy takvimli (dalga 12), P21a isteğe bağlı (dalga 13) |
+| S-118 21st.dev kullanılacak | `12-21st-tasarim-secimi.md`; Faz 17/18 paketlerine bağlanan tasarım alımları (§9) |
+| B.1 Rust | `11-rust-gecisi.md`; karar ve paketler (§9) |
+| B.2 Ponytail | `/ponytail` becerisi + `/orkestra` sadeleştirme adımı (`09-ajan-sistemi.md`) |

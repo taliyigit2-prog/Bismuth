@@ -156,7 +156,7 @@ Amaç: en sık beş işlem tek tıkla, geri kalanı sağ tık menüsünde.
    (`booking.checkInMany` yeni yordam, var olan `checkIn`'i döngüde çağırır, tek transaction).
 6. **Bugün şeridi**: takvimin üstünde "Bugün gelecekler N · Gidecekler N · Otelde N" ve tıklayınca liste (mevcut
    `today.summary` yordamı kullanılabilir).
-7. Oda satırında misafir adının yanına **aynı misafir başka odada da varsa** küçük zincir simgesi (yorum (a)/(b) için
+7. (S-101 = a cevabıyla **yapılmayacak**) Oda satırında misafir adının yanına **aynı misafir başka odada da varsa** küçük zincir simgesi (yorum (a)/(b) için
    görünür açıklama).
 
 Bu tasarım G-30…G-48'i bozmaz; yeni gereksinim satırları gerektirir (G-194 grup rezervasyonu ve toplu giriş,
@@ -264,7 +264,13 @@ Gereksinim etkisi: G-37 değişir ("ayrı fiyat yok" kalkar), yeni G-196 (saat a
 çoklu satış, ayarlı), K-44'e ek (K-48 taslağı). Hata C düzeltmesi gereksinim değişikliği beklemeden yapılabilir (K-44
 metni zaten "yeniden satılabilir" diyor).
 
-**Sahibe sorular (S-102…S-105):** sabit gündüz fiyatı mı saatlik mi; günde kaç gündüz satışı; temizlik arası kaç dakika;
+**Sahip kararı (2026-11-13, K-48 kesin):** saatlik konaklama; tutarı resepsiyon satış anında girer, oda tipi başına isteğe
+bağlı saat ücreti (kurulum sihirbazı + ayarlar); aynı odada aynı gün **sınırsız** satış (yalnız saat çakışması engel;
+temizlik arası uyarı); KBS'ye bildirilir; raporlara **dahil**, "konaklama türü" filtresi ve aylık saatlik sayısı. Yukarıdaki
+`dayUse.maxPerRoomPerDay`, `priceMode`, `countsInOccupancy`, `kbsReport` ayarları **yapılmaz**; tasarımın kalanı geçerli
+(paket kartı `08` P17d).
+
+**Sahibe sorular (S-102…S-105, cevaplandı):** sabit gündüz fiyatı mı saatlik mi; günde kaç gündüz satışı; temizlik arası kaç dakika;
 gündüz misafiri KBS'ye bildiriliyor mu ve istatistikte geceleme sayılsın mı. Varsayılanlar yukarıda.
 
 ## 6. Test ve kabul ölçütleri (plan paketlerine girecek)

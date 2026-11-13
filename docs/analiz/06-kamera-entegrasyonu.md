@@ -124,7 +124,7 @@ Python sidecar (resources/camera/, gömülü Python 3.12 + venv yok, site-packag
 | Çatışma | Bugün | Öneri (K-xx taslağı) |
 |---|---|---|
 | Ağ kodu yalnız dört klasörde | RTSP (`cv2.VideoCapture`) ve `127.0.0.1` HTTP yeni yüzey | **K-49:** `src/main/camera/` beşinci izinli klasör; yalnız `127.0.0.1` ve RTSP (yerel ağ) hedefleri; `no-network-guard` kancası bu klasörde yalnız `127.0.0.1`/`rtsp://` desenlerine izin verir, `fetch` dış adres yasak |
-| Telegram = dış servis (G-07, çevrimdışı ilke) | `api.telegram.org`'a fotoğraf | **K-50:** Telegram kaldırılır. Bildirim = Bismuth bildirim merkezi + telefon arayüzü. İsteğe bağlı fotoğrafsız metin bildirimi ileride `src/main/network/notify/` altında, `network.enabled` ve `camera.externalNotify` ikisi de açıkken, 5 sn zaman aşımı, sessiz başarısızlık |
+| Telegram = dış servis (G-07, çevrimdışı ilke) | `api.telegram.org`'a fotoğraf | **K-50 (kesin, sahip S-109):** Telegram **kalır**, G-07/yasak 14'e tek ayarlı istisna: alarm her zaman Bismuth bildirim merkezine; `camera.telegram.enabled` açıksa Bismuth `src/main/network/telegram/` üzerinden Telegram'a da gönderir (fotoğraf eki `camera.telegram.photo`, varsayılan açık — mevcut davranış); 5 sn zaman aşımı, sessiz başarısızlık, kuyruk yok, `network.enabled=false` ile kapanır; Python yan süreç dış servise bağlanmaz |
 | KBS/kimlik verisi depoya girmez | Yüz = biyometrik, kimlikten hassas | **K-51:** yüz vektörü/kırpma `userData/camera/` ve `guest_faces` tablosunda AES-GCM şifreli (anahtar `safeStorage`); yedek/dışa aktarma dışı; kanca `camera-data-guard` (mevcut) `.npy/.onnx-embedding/guest_photos` desenlerini engeller; test verisi sentetik |
 | Veri silinmez (yasak 11) | Kamera 30 günde siler | **K-52:** biyometrik veri bu kuralın **istisnasıdır** (KVKK ölçülülük): `guest_faces` çıkışta/sürede fiziksel silinir, `audit_log`'a "face.deleted" yazılır; `camera_events` kırpmaları `camera.alertRetentionDays` (varsayılan 3) sonra silinir, olay satırı kalır |
 | Tek giriş (G-60) | Kamera panelinde elle ad/oda | **K-53:** kamera tarafında misafir girişi yok; tek kaynak Bismuth |
@@ -152,6 +152,12 @@ Python sidecar (resources/camera/, gömülü Python 3.12 + venv yok, site-packag
 - 1774 sayılı Kimlik Bildirme Kanunu yüz tanımayı kapsamaz; Kurul Aralık 2025 kararı kimlik fotokopisi saklamayı
   aykırı buldu → yüz fotoğrafı + kimlik eşleştirmesi aynı gerekçeyle sorgulanabilir.
 
+**Sahibin hukuki değerlendirmesi (S-111, 2026-11-13, K-58):** Sahip avukatıyla görüştü; "Bu otelde kamera ile kayıt
+alınmaktadır" tabelasının yeterli olduğunu, yazılı rıza gerekmediğini bildirdi. Program buna göre rıza akışı yapmaz;
+aydınlatma metni şablonu sunar; şifreleme ve saklama süreleri (K-51, K-52) aynen uygulanır. Fable'ın notu (yukarıdaki
+Kurul rehberi ve 7499 analizi: yüz tanıma için fiilen açık rıza beklentisi) **sahibin kararından farklıdır** ve burada
+kayıt için kalır; sorumluluk sahibin avukat görüşündedir. Telegram fotoğraf eki de (K-50) aynı değerlendirmeye bağlıdır.
+
 ### 6.2 Lisanslar
 
 | Bileşen | Lisans | Kapalı kaynak ticari ürüne gömme | Kaynak (2026-11-12) |
@@ -171,6 +177,36 @@ Python sidecar (resources/camera/, gömülü Python 3.12 + venv yok, site-packag
 **Önerilen kombinasyon:** YuNet + SFace (hız) ya da YuNet + AuraFace (doğruluk) + ByteTrack; kişi tespiti şart değilse
 YOLOX hiç eklenmez (CPU ve lisans yükü düşer). Mevcut eşikler (0,36) ArcFace için gevşek; yeni modelde sahada
 FAR/FRR ölçümü yapılıp tek ayarlı eşik + "emin değil" bandı kullanılmalı.
+
+### 6.3 Sahibin kararı: mevcut modeller korunur (S-110, K-57) — lisans değerlendirmesi (2026-11-13, resmî kaynaklar)
+
+Sahip: "Mevcut sistemin ticariye uygun olduğunu biliyorum… Kendi otelimde kişisel olarak kullanacağım, şimdilik satmayı
+düşünmüyorum." Yeniden araştırma (`researcher`, kaynaklar aşağıda; hukuki tavsiye değildir):
+
+| Bileşen | Lisans metni ne diyor | Kendi otelinde kullanım | Satış / başka otele verme |
+|---|---|---|---|
+| **Ultralytics YOLO11n** (AGPL-3.0) | AGPL §2: "You may make, run and propagate covered works that you do not convey, without conditions"; §0: ağ üzerinden etkileşim kopya aktarmıyorsa "conveying" değildir; §13: **değiştirilmiş** sürümle ağ üzerinden etkileşen kullanıcılara kaynak sunma yükümlülüğü | AGPL metnine göre **dağıtım yok = yükümlülük yok**. Ancak Ultralytics'in kendi lisans sayfası "Internal business tools or private company applications" ve "R&D projects that are not fully open-sourced" için Enterprise lisans gerekir diyor — şirketin ticari tutumu metinden katı; bağlayıcılığı hukuki soru. Yan süreç olarak ayrı tutmak (Bismuth koduyla aynı süreçte bağlanmaz) riski düşürür. Telefon/sunucu modundan personel erişimi "uzak kullanıcı" sayılabilir; §13 yalnız ultralytics kodu değiştirilmişse işler — **ultralytics kodu değiştirilmez** (yalnız çağrılır) | Enterprise lisans ya da model değişimi (eski P20d planı, §6.2) |
+| **InsightFace kodu** (MIT) | "no limitation for both academic and commercial usage" | serbest | serbest |
+| **InsightFace `buffalo_s` ağırlıkları** | "available for **non-commercial research purposes only**"; elle ya da otomatik indirilen modeller aynı kurala tabi; iletişim: `recognition-oss-pack@insightface.ai` (açık kaynak tanıma modelleri), `contact@insightface.ai` | Otelde güvenlik amaçlı kullanım "araştırma" değildir; metin ticari/ticari olmayanı tanımlamıyor → **risk var**. Öneri: sahip lisans sahibine tek e-posta yazıp yazılı izin ister (metin §6.4); cevap gelmezse risk sahibin kararıyla kabul edilir | izin olmadan verilemez |
+| **Ultralytics telemetrisi** | `settings.sync` varsayılan `True` ("Send anonymized analytics and crash reports"); `settings.update({"sync": False})` kapatır, Sentry de kapanır (docs.ultralytics.com/help/privacy) | P20d'de zorunlu; ağ kapalı test | — |
+| **Paket boyutu** | `ultralytics` 8.4.x wheel ~1,4 MB ama `torch` (CPU) + `torchvision` + `opencv` ile yüz MB'lar; `ultralytics-platform` bağımlılığının ağ davranışı incelenmeli | P20f paketleme büyür (~1–1,5 GB); gerekirse ayrı kamera eki kurulumu | — |
+
+**Sonuç (tek paragraf, sahibe):** Kendi otelinizde, kimseye vermeden kullanmak AGPL metnine göre serbesttir; Ultralytics
+şirketi iç kullanımı da ücretli saymak istiyor ama bu lisans metninden değil, şirket politikasından geliyor. Asıl risk
+InsightFace model dosyalarıdır: "yalnız ticari olmayan araştırma" yazıyor ve otelde güvenlik kullanımı buna girmez.
+Program mevcut modellerle devam edecek (kararınız), telemetri kapatılacak, ve satış gündeme gelirse açık lisanslı
+modellere geçiş planı (§6.2) hazır. Tavsiye: InsightFace'e kısa bir e-posta ile izin isteyin.
+
+Kaynaklar: https://www.gnu.org/licenses/agpl-3.0.html · https://www.ultralytics.com/license ·
+https://github.com/deepinsight/insightface/blob/master/README.md · https://docs.ultralytics.com/help/privacy/ ·
+https://docs.ultralytics.com/usage/settings/ · https://pypi.org/pypi/ultralytics/json (2026-11-13).
+
+### 6.4 InsightFace izin e-postası taslağı (İngilizce; sahip gönderir)
+
+> Subject: Permission request — buffalo_s models, single-hotel internal use
+> Hello, I run a small hotel in Istanbul and use InsightFace `buffalo_s` (via the Python package) only inside my own
+> hotel for door security; the software is not sold or distributed. Could you confirm whether this use is permitted
+> under the model license, or what a commercial license for this scope would cost? Thank you.
 
 ## 7. Kamera kodunun kalitesi (en önemli 15 bulgu; tam liste 28 madde ajan notunda, `ekler/kamera-kod-bulgulari.md`)
 
@@ -199,18 +235,19 @@ sınıfı bilgisayarda ~5–8 analiz/sn, 4 çekirdek %60–100; RAM 1,5–2,5 GB
 
 | Aşama | İçerik | Kabul ölçütü | Büyüklük |
 |---|---|---|---|
-| K0 Karar | Sahip: hukuk danışmanlığı, model değişimi, Telegram'ın kaldırılması, sekme kapsamı (S-107…S-110) | K-49…K-53 kesinleşir | — |
+| K0 Karar | ✅ 2026-11-13: sahip cevapları geldi; modeller korunur (K-57), Telegram kalır (K-50), aydınlatma yeterli (K-58), kurulum sihirbazı (K-59) | K-49…K-53, K-57…K-59 kesin | — |
 | K1 Depo ve güvenlik hijyeni (**hemen, kod yazmadan**) | `otel-kamera/.gitignore` tamamlama, `.env.example`, `requirements.txt` sabitleme, yerel yolların belgelerden silinmesi, kanca (`camera-data-guard`) | Kanca testleri geçer; depoda `.env`/db/foto yok | S |
 | K2 Yan süreç iskeleti | `src/main/camera/sidecar.ts` + `bridge.ts`; Python tarafına belirteç ve `127.0.0.1` zorunluluğu; Electron'dan başlat/durdur; sağlık | Bismuth kapanınca süreç ölür; 3 çökme → bildirim; e2e sahte sidecar ile | M |
 | K3 Kamera sekmesi | `features/camera/` canlı yayın + durum + alarm listesi; CSP istisnası; yetki `camera.view`; telefon: yalnız alarm listesi | ui-reviewer + turkish-ui-copy; 1366 ve 390 ekran görüntüleri | M |
 | K4 Veri entegrasyonu | `guest_faces`, `camera_events` tabloları (migrasyon), "Kameradan yüz al", check-in/out eşitlemesi, alarm → bildirim, "misafir olarak kaydet" | Birim testler (şifreleme, silme, yetki), e2e: giriş→yüz kaydı→alarm→çıkış→silme | L |
-| K5 Model değişimi | YuNet + SFace/AuraFace + ByteTrack, ONNX; eşik ölçüm betiği; torch/ultralytics/insightface kaldırılır | Sentetik test seti ile FAR/FRR raporu; CPU ölçümü | L |
-| K6 KVKK paketi | Rıza kaydı (`guest_faces.consent_at`), aydınlatma metni şablonu (3 dil), saklama/imha ayarları ve raporu, çalışan dışlama listesi | decision-auditor + privacy-auditor geçer | M |
+| K5' Model sabitleme (P20d) | Mevcut modeller kalır (K-57); `ultralytics` `sync=False`, çevrimdışı test, model dosyaları paket içinde, lisans notları; eski K5 (YuNet + SFace) yalnız belge | Telemetri kapalı testi; ağ kapalı çalışır; `THIRD_PARTY_NOTICES` | S/M |
+| K6' KVKK paketi (P20e) | Aydınlatma metni şablonu (3 dil; sihirbaz + sekme), saklama/imha ayarları ve raporu, çalışan dışlama listesi; rıza kaydı yok (K-58) | decision-auditor + privacy-auditor geçer | M |
+| K8 Kamera kurulum sihirbazı (P20g) | Donanım otomatik → profil; ONVIF/SADP keşif; Hikvision RTSP kalıbı; görüntü testi; şifre `safeStorage` (K-59) | Sahte keşif yanıtıyla e2e | M |
 | K7 Paketleme | Gömülü Python + bağımlılıklar `resources/camera/` (Windows x64, macOS arm64/x64), electron-builder `extraResources`, boyut ve açılış süresi ölçümü, kurulum kılavuzu bölümü | Paket Codespace'te üretilir (Windows: wine gerekebilir, doğrulanmadı); gerçek otel bilgisayarında deneme (sahip) | L |
 
-Bağımlılık: K2 → K3 → K4; K5 K2'den sonra paralel; K6 K4'ten sonra; K7 en son. Toplam tahmini: 7 paket, 2–3 dalga.
+Bağımlılık: K2 → K3 → K4; K5' K2'den sonra paralel; K6' ve K8 K4'ten sonra; K7 en son. Toplam: 7 paket (P20a–P20g), dalga 7–11.
 
-## 9. Sahibe sorular (bu rapor; numaralar `00-ozet.md` ile aynı)
+## 9. Sahibe sorular (bu rapor; numaralar `00-ozet.md` ile aynı) — **cevaplandı 2026-11-13, `06-kararlar.md` 7. tur**
 
 S-107 Kameralar personeli de görüyor mu? · S-108 Kamera görüntüsü telefonda/Mac'te de görünsün mü yoksa yalnız alarm
 listesi mi? · S-109 Telegram'ı tamamen kaldırmayı kabul ediyor musunuz (fotoğrafsız metin bildirimi seçeneğiyle)? ·
