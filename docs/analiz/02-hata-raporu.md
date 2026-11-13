@@ -17,6 +17,7 @@
 | `node .claude/hooks/test-hooks.mjs` | ✓ 89/89 | önce 73/73; yeni kancalarla 89 |
 | `npm run build` | ✓ 13,6 s | |
 | `npm run check` | ✓ (2026-11-12, oturum sonu) | typecheck + lint + format:check + 2427 test; `.claude/.checks-passed` yazıldı |
+| `npm run check` (2. oturum, 2026-11-13) | ✓ 277 dosya / **2427 test**, 7 dk 53 s (4 çekirdek, boşta) | Yük 10'daki ilk koşuda tek zamanlama testi (`tests/unit/large-data.test.ts` misafir arama 969 ms > 900 ms hedefi) kaldı, boşta geçti → hedef yük altında kırılgan (not: P19d test altyapısı, eşik ya da `SLACK` çarpanı) |
 | e2e | 1. oturum: koşulmadı (Electron `libgtk-3`/`xauth` eksikliğiyle açılmıyordu; devcontainer düzeltildi). **2. oturum (2026-11-12, 4 çekirdek):** Electron `xvfb-run -a` ile açıldı; `flow-tester` doğrulama ve modül turlarını **gerçek Electron'da** koştu | tam `npm run e2e` koşusu P18a kabulünde |
 
 ## 2. Mantık hataları, yarım akışlar, çalışmayan öğeler (koddan ve gerçek uygulamadan)

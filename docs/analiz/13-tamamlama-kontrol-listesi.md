@@ -30,14 +30,14 @@
 | 2 | Her bulgunun paketi var | ✅ | `verify-plan` 22 boşluk → `08` P17a/c, P19b, P20a/d, P21d/e; `kamera-kod-bulgulari.md` §0 |
 | 2 | Her paketin ajanı ve modeli var | ✅ | `08` kartları + `YURUTME` "Ajan" sütunu; 18 ajan dosyasında `model:` |
 | 2 | Kancalar testli | ✅ | 89/89 |
-| 2 | `npm run check` geçiyor | ⏳ bekliyor | oturum sonunda koşulur; sonuç bu satıra yazılır |
+| 2 | `npm run check` geçiyor | ✅ 2026-11-13 01:28 — typecheck, lint, format, 277 dosya / 2427 test (7 dk 53 s) | `.tmp/check3.log`; ilk koşuda yük altında tek zamanlama testi kaldı (02 §1 notu) |
 | 3 | "Doğrulanmadı" maddeleri | ✅ 11/11 madde doğrulandı ya da "doğrulanamadı + neden" | `grep -rniE "doğrulanmadı" docs/analiz` → kalanlar yalnız tarihsel not (ör. "ilk turda doğrulanmadı") ya da "doğrulanamadı: <neden>" |
 | 4 | Akış testi kapsamı: denenmemiş modüller `flow-tester` ile | ✅ 33 route'un tamamı (iki ajan, ~950 öğe; 7 Orta, 22 Düşük; Kritik/Yüksek yok) | `05` §5 tablosu; `02` H-19…H-47 |
 | 5 | Sahip cevapları S-100…S-118 işlendi | ✅ | `06-kararlar.md` 7. tur; `05-sorular.md` ✅; K-48…K-55 kesin, K-57…K-62; faz/paket/dalga/maliyet/OB güncel |
 | B.1 | Rust raporu (ölç, karşılaştır, karar, paketler) | ✅ | `11-rust-gecisi.md` (ölçüm §2: boşta 693 MB / taban 421 MB; CPU yoğun %19), Faz 22, K-62, `rust-shell-builder` |
 | B.2 | Ponytail: oku, güvenlik, kur, çatışma notu, orkestra adımı, 09 güncel | ✅ | `.claude/skills/ponytail/SKILL.md`; `09` §3.2a; K-61 |
 | B.3 | 21st.dev: secret adımları, Apps + bileşen tarama, seçim, `enabledMcpjsonServers`, bağlantı denemesi | ✅ | `12-21st-tasarim-secimi.md` (§1 `get_usage` → paid); `.claude/settings.json` |
-| 6 | Bitiş bloğu | ⏳ | son mesaj |
+| 6 | Bitiş bloğu | ✅ | son mesaj (`✅ FABLE İŞİ BİTTİ`) |
 
 ## C. Oturum ortam notları (yeni Codespace için)
 - 4 çekirdek / 15 GB ölçüldü (2026-11-12); kodlayan ajan sınırı 2 kalır.

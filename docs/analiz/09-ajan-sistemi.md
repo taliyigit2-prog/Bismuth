@@ -132,6 +132,9 @@ sonunda). Durunca `YURUTME.md` günlüğü + `❓ SORULARIM`.
 
 ## 6. Açık işler (plan P19d "ajan sistemi bakımı")
 `ponytail` sürüm takibi: üç ayda bir raw `SKILL.md` sha256 karşılaştırması (elle; otomatik indirme yok).
+`pre-commit-gate`: komut çalışmadan önce değerlendirdiği için "düzenle + git add + commit" tek Bash komutunda verilince belge
+tespiti çalışmaz ve tam test koşar; zaman aşımında yetim `vitest` kalabiliyor (2026-11-13'te gözlendi) → kanca `spawnSync`
+sonrası süreç ağacını öldürmeli (P19d). `large-data` zamanlama eşiği yük altında kırılgan (P19d).
 
 `protect-files` kaçış değişkenini kaldır; `stop-gate` izleme kapsamına `drizzle/`, `scripts/`, `package.json`;
 `deps-guard` yarn eşleşmesi; `prototypes/` istisnaları prototipler silinince kaldır; `owner-review` becerisinde
