@@ -44,7 +44,8 @@ konaklama türü filtresi + aylık saatlik sayısı; S-106 tek hesap (varsayıla
    H-05 telefon numarası maskesi (+90/0 ayıklama, yapıştırma), H-07 misafir adı uzunluk sınırı + istemci 400'leri,
    H-08 gecelik fiyat doğrulama (negatif/üst sınır/`abc`/0 onayı), H-09 yetkisiz ayar sekmesi adı sızıntısı; 2. oturum:
    H-19 serbest metin üst sınırları (zod `max` + sayaç), H-21 firma formu (telefon maskesi, benzersizlik, alan altı hata),
-   H-24 tutar üst sınırı hata metni, H-25 rehber telefon/ad sınırı; her biri için yeniden üretim testi.
+   H-24 tutar üst sınırı hata metni, H-25 rehber telefon/ad sınırı, H-44 `maxLength` sessiz kesme → ortak sayaç; her biri
+   için yeniden üretim testi.
 
 ## Kabul ölçütleri
 - [ ] `in_house` rezervasyonda "Vazgeçme ve iade" menüsü üç seçeneği sunar; `checked_out` rezervasyonda üç nokta menüsü

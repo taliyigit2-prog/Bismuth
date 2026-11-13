@@ -43,11 +43,11 @@ Kiosk modu; yeni tema; tablet düzeni.
 
 ## Bulgu listesi
 - **P18b (05 §3):** #1 takvim üç kaydırma çubuğu / tam yükseklik düzeni; #2 panel genişliği ve üst düğmeler; #3 çubuk ad
-  kısaltma / gün sütunu genişliği; #4 telefon 44 px hedefler (ayarlar radyoları, görev anahtarları, H-28 defter/ay sonu onay kutuları, döviz anahtarı); #5 kenar çubuğu alt
+  kısaltma / gün sütunu genişliği; #4 telefon 44 px hedefler (ayarlar radyoları, görev anahtarları, H-28 defter/ay sonu onay kutuları, döviz anahtarı; H-35 ayarlar/görev anahtar ve çipleri); #5 kenar çubuğu alt
   grupları 768 px; #6 bugün/kılavuz/ayarlar tek kaydırma, yedek uyarısı tek satır.
 - **P18c (05 §3):** #7 zoom üst sınırı; #8 tam ekran durumu hatırlama + debounce kayıt; #9 F11 / Ctrl+Shift+F; #10 `ui.zoom`
   kalıcı; #11 çoklu monitör sığdırma (isteğe bağlı).
-- **P18d (02 §2):** H-04 telefon tarih seçici taşması + akış testi modül turlarında (2. oturum) "çalışmıyor" çıkan öğeler
-  (02 §2 "P18d" işaretli). H-16 çürütüldü (sheet kapanıyor; geri tuşu pürüzü P21e); Electron e2e doğrulaması P18a'da.
+- **P18d (02 §2):** H-04 telefon tarih seçici taşması; H-34 tedarik telefon düzeninde eksik düğmeler; H-36 ayar formlarında
+  sessiz pasif Kaydet (alan altı hata + `aria-invalid`, ortak kalıp). H-16 çürütüldü (sheet kapanıyor; geri tuşu pürüzü P21e); Electron e2e doğrulaması P18a'da.
 
 ## Sonuç

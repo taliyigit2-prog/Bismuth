@@ -32,7 +32,7 @@
 | 2 | Kancalar testli | ✅ | 89/89 |
 | 2 | `npm run check` geçiyor | ⏳ bekliyor | oturum sonunda koşulur; sonuç bu satıra yazılır |
 | 3 | "Doğrulanmadı" maddeleri | ✅ 11/11 madde doğrulandı ya da "doğrulanamadı + neden" | `grep -rniE "doğrulanmadı" docs/analiz` → kalanlar yalnız tarihsel not (ör. "ilk turda doğrulanmadı") ya da "doğrulanamadı: <neden>" |
-| 4 | Akış testi kapsamı: denenmemiş modüller `flow-tester` ile | ⏳ bekliyor (2 ajan sürüyor: defter/raporlar/… ve odalar/ayarlar/…) | `05` §5 tablosu oturum sonunda |
+| 4 | Akış testi kapsamı: denenmemiş modüller `flow-tester` ile | ✅ 33 route'un tamamı (iki ajan, ~950 öğe; 7 Orta, 22 Düşük; Kritik/Yüksek yok) | `05` §5 tablosu; `02` H-19…H-47 |
 | 5 | Sahip cevapları S-100…S-118 işlendi | ✅ | `06-kararlar.md` 7. tur; `05-sorular.md` ✅; K-48…K-55 kesin, K-57…K-62; faz/paket/dalga/maliyet/OB güncel |
 | B.1 | Rust raporu (ölç, karşılaştır, karar, paketler) | ✅ | `11-rust-gecisi.md` (ölçüm §2: boşta 693 MB / taban 421 MB; CPU yoğun %19), Faz 22, K-62, `rust-shell-builder` |
 | B.2 | Ponytail: oku, güvenlik, kur, çatışma notu, orkestra adımı, 09 güncel | ✅ | `.claude/skills/ponytail/SKILL.md`; `09` §3.2a; K-61 |

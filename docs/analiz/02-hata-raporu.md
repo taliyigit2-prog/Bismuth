@@ -67,6 +67,34 @@ ters tarih aralığı (betik zaman aşımı; Denetim'de eşdeğeri doğru), Deft
 (tohumda ürün yok), maaş/personel tabloları dolu hali, en/ru görünümü. **Çalışan akışlar:** kayıt/düzenleme/iptal/teslim
 alma/dışa aktarma/filtre/içe aktarma/kopyalama; telefonda 9 ekranda yatay taşma 0.
 
+**2. oturum akış testi, 2. grup (2026-11-13; odalar, görevler, bakım, arıza, kayıp eşya, çamaşır, tedarik, personel, kara
+liste, takvim notları, Ayarlar'ın tüm sekmeleri, hakkında, kılavuz, şifre değiştirme, kilit, giriş/kurtarma, bağlan, temiz
+klasörde kurulum sihirbazı 12 adım, resepsiyon + temizlik rolleri, telefon 390×844; ~770 kayıt; `pageerror`/`console.error`/
+başarısız istek yok; Kritik/Yüksek yok; EN/RU taramasında Türkçe artık metin yok):**
+
+| # | Önem | Bulgu | Etki | Kanıt (`.tmp/flow-tester/modules-2/`) | Çözüm | Büyüklük | Paket |
+|---|---|---|---|---|---|---|---|
+| H-33 | Orta | Bağlan ekranı: geçersiz/erişilemeyen adres ("abc", "http://", ":99999", kapalı port) gönderilebiliyor; yalnız genel "bulunamadı" metni, hangi adres neden başarısız yazmıyor | İstemci kurulumu körlemesine | `s15.mjs` | Adres doğrulama (zod URL/port) + nedenli hata ("bağlantı reddedildi", "zaman aşımı") | S | P21b |
+| H-34 | Orta | Tedarik telefon düzeninde "Ürün ekle" ve "Alım gir" düğmeleri yok; boş durum metni o düğmelere gönderiyor | Telefondan tedarik girilemiyor | `s7.mjs`, `mobile.json` | Telefon düzenine düğmeler ya da metni düzelt | S | P18d |
+| H-35 | Orta | Telefonda 44 px altı hedefler: anahtarlar 32×18, radyo/para birimi çipleri 16×16 (Görevler, Ayarlar sekmeleri, Arıza/Not diyalogları; Görev önerileri 36, Otel/Takvim 14'er hedef) | Dokunma zorluğu | `mobile.json` | Satır tıklanabilir / `min-h-11` (05 #4, H-14, H-28 ile tek düzeltme) | S | P18b |
+| H-36 | Orta | Ayarlar → Yedek: saat "25:61"/boş, saklama 0/-5/99999/1.5, kopya -1/1000 girilince Kaydet sessizce pasif; alanda hata metni ve `aria-invalid` yok (aynı desen Otel/Personel kuralları) | Kullanıcı neyi düzelteceğini bilmiyor | `s12.mjs`, `s12b.mjs` | Alan altı hata + `aria-invalid`; ortak form kalıbı | S | P18d |
+| H-37 | Düşük | Görev satırında başlığa tıklamak görevi "yapıldı" yapıyor (satır onay kutusunun etiketi); geri alma var | Yanlışlıkla tamamlama, yapan/saat yazılır | `s2b.mjs` | Yalnız onay kutusu/düğme tamamlar; başlık ayrıntıyı açar | S | P21e |
+| H-38 | Düşük | Aynı adlı ikinci vardiya kabul ediliyor (oda tipi, liste öğesi, kullanıcı adı yinelenince hata var) | Çizelgede karışıklık | `s10.mjs` | Benzersizlik denetimi | S | P21e |
+| H-39 | Düşük | Mesai → Gün ekle: geliş/çıkış boşken "Saatler kaydedildi" | Anlamsız kayıt | `s5e.mjs`, `shots/staff-mesai-empty.png` | Saat zorunlu ya da "izin/yok" seçeneği | S | P21e |
+| H-40 | Düşük | Personel kuralları: bayram katsayısı 0 ve 99 kabul | Maaş hesabı bozulur | `s18.mjs` | 1–5 aralığı + hata metni | S | P21e |
+| H-41 | Düşük | Uzaktan erişim: Drive klasörü/anahtar yokken "Şimdi yaz" → "Kutu ve özet yazıldı" başarı toast'ı; aynı ekranda "bulunamadı/anahtar yok" uyarıları | Yanıltıcı | `s13.mjs` | Ön koşul yoksa düğme pasif + neden | S | P21e |
+| H-42 | Düşük | Oda sheet'inde not yazılıp kaydetmeden kapatınca uyarısız kaybolur | Küçük veri kaybı | `s1.mjs` | Kapatırken uyarı ya da blur'da kaydet | S | P21e |
+| H-43 | Düşük | Tedarik fiyat geçmişi tek alımda ₺12,48–₺12,52 eksenli grafik | Kozmetik | `s7.mjs` | Tek noktada ekseni gizle | S | P21e |
+| H-44 | Düşük | Birçok formda `maxLength` fazlasını sessizce kesiyor (çalışan adı 100→60, otel adı 300→80, kullanıcı adı 500→40); sayaç yalnız rol adında | Kullanıcı kesildiğini fark etmez | `s5c.mjs`, `s9.mjs` | Ortak sayaç/ipucu (H-19, H-25 ile) | S | P17e |
+| H-45 | Düşük | Dolu odayı "Bakımda/Kullanım dışı" yapınca takvim bloğu açılmıyor; toast "misafir çıkınca yeniden seçin" | Unutulursa oda satılabilir kalır (tasarım gereği) | `s1.mjs` | Çıkış gününe otomatik hatırlatıcı/görev | S | P21e |
+| H-46 | Düşük | Kurtarma ekranında eski "kod yanlış" hatası sonraki denemenin alan hatalarıyla yan yana kalıyor | Karışık görünüm | `s16.mjs` | Yeni gönderimde eski hatayı temizle | S | P21e |
+| H-47 | Düşük | Toast'lar 8 sn'den uzun kalıp yığılıyor (3–4 üst üste; telefonda kalabalık) | Gürültü (H-32 ile aynı) | `run1.txt` | Süre 4 sn, aynı tür tek toast | S | P21e |
+
+Denenemeyenler (2. grup): yedekten geri yükleme ve dosya seçerek içe/dışa aktarma (dosya seçici sahte), gerçek ağ keşfi ve
+gerçek ana bilgisayara bağlanma, rollerde her düğmeye tek tek basış (rota kapıları + servis 403'leri doğrulandı), telefon
+gerçek HTTP cihazı yerine Electron 390×844 emülasyonu. **Sağlam:** giriş, kilit (5 yanlış denemede oturum kapanır), kurtarma,
+zorunlu şifre değiştirme; kurulum sihirbazı 12 adım temiz klasörde; resepsiyon/temizlik rolünde yetki ihlali yok.
+
 **Çalıştığı doğrulananlar (1. oturum akış testi):** takvim araç çubuğu (bugün, ok, ay/yıl, tarihe git, misafir ara, boş oda, toplu not,
 yeni rezervasyon), panel düğmeleri, sürükle-bırak (dolu odaya 409 + anlaşılır toast; Esc iptal), kısayollar N/T/"/"/Ctrl K/F1/ok
 tuşları, çok odalı rezervasyon (oda başına giriş/çıkış/iptal menüsü), çift kayıt uyarısı ve birleştirme yolu, Otelde kalanlar

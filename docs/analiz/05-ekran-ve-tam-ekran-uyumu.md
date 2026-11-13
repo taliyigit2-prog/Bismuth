@@ -65,10 +65,22 @@ cihaz denemesi (S-80) ile kapanır.
 | Yazı boyutu | `ui.fontSize` normal/%112,5/%125 (rem ölçeği) — ölçekle birlikte çalışır | `settings.ts:78` |
 | Kısayollar | renderer'da 15 kısayol; Electron `globalShortcut` yok (doğru: yalnız pencere odaklıyken) | `registry.ts:47` |
 
-## 5. Her düğme, menü, sekme, form
+## 5. Her düğme, menü, sekme, form — akış testi kapsamı
 
-Ekran denetimi 24 diyalog/menüyü açtı. Tam etkileşim taraması (`flow-tester`) ayrı raporlandı: `02-hata-raporu.md` §3
-(akış testi) — çalışmayan ya da yanlış davranan öğeler orada P17e/P18d paketlerine bağlanmıştır.
+Ekran denetimi 24 diyalog/menüyü açtı. Tam etkileşim taraması (`flow-tester`, her düğme/sekme/form geçerli + geçersiz
+veriyle) üç turda yapıldı; bulgular `02-hata-raporu.md` §2 (H-01…H-47) ve paketler P17e/P18b/P18d/P21b/P21e.
+
+| Tur | Ortam | Modüller (route) | Öğe | Sonuç |
+|---|---|---|---|---|
+| 1 (2026-11-12) | mobil harness (HTTP taşıma) 1440×900 + 390×844, sahip + resepsiyon | `/calendar` (araç çubuğu, panel, sürükle-bırak, kısayollar, çok odalı, çift kayıt), `/in-house`, `/guests`, `/today`, `/settings` Genel/Görünüm, telefon gün listesi + alt gezinme, resepsiyon rolü yetki denetimleri | ~410 | H-01…H-18 |
+| 2 doğrulama (2026-11-12) | **gerçek Electron** `xvfb-run` + telefon | iptal/gelmedi → ızgara, `?` kısayolu, telefon defter sheet'i | 3 madde | hepsi doğrulandı/çürütüldü (02 H-15, H-16) |
+| 2 grup 1 (2026-11-13) | gerçek Electron 1440×900 + telefon 390×844, sahip | `/ledger`, `/reports`, `/month-end`, `/shift`, `/currency`, `/companies`, `/contacts`, `/tourism`, `/audit` | ~180 | H-19…H-32 (3 Orta, 11 Düşük) |
+| 2 grup 2 (2026-11-13) | gerçek Electron + telefon emülasyonu, sahip + resepsiyon + temizlik | `/rooms`, `/tasks`, `/maintenance`, `/issues`, `/lost-items`, `/laundry`, `/supply`, `/staff`, `/blacklist`, `/calendar-notes`, `/settings` (tüm diğer sekmeler), `/about`, `/guide`, `/change-password`, `/lock`, `/login`, `/recover`, `/connect`, `/setup` (12 adım, temiz klasör); EN/RU artık metin taraması (26 rota, 15 diyalog) | ~770 | H-33…H-47 (4 Orta, 11 Düşük) |
+
+Kapsam: `router.tsx`'teki 33 route'un tamamı (`/theme-preview` geliştirici ekranı hariç) en az bir turda tıklanarak denendi.
+Denenemeyenler (ortam): gerçek yazdırma penceresi (`window.print` çağrısı doğrulandı), dosya seçici gerektiren geri
+yükleme/içe-dışa aktarma, gerçek ağ keşfi ve ana bilgisayara bağlanma, gerçek telefon donanımı, Mac. Bunlar sahip onay
+paketinde (S-80) ve "Son" dalgasında.
 
 ## 6. Öneri özeti (Faz 18)
 - **P18a** çoklu boyut ekran görüntüsü betiği + ölçüm JSON (bu denetimin betikleri `.tmp/screen-audit/shot.mjs`,

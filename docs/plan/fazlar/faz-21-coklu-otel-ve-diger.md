@@ -19,7 +19,8 @@ takvim, gelir-gider, bugünkü doluluk, kasa; ortak personel yok. K-54 kesin.
 1. **P21a Profil altyapısı (isteğe bağlı, dalga 13)** — `userData/hotels/<kod>/` (db, attachments, backups, logs); ilk
    açılışta taşıma (onaylı); giriş ekranında otel seçici; Ayarlar → Oteller; sahip hesabı kopyalama; Drive yolu
    `Bismuth/<kod>/yedekler`. Sahip her otelde ayrı bilgisayar dediği için öncelik düşük; bütçe yetmezse atlanır.
-2. **P21b İstemci çoklu ana bilgisayar** — Bağlan ekranında kayıt listesi (ad + adres + parmak izi); kopya klasörleri
+2. **P21b İstemci çoklu ana bilgisayar** — Bağlan ekranında kayıt listesi (ad + adres + parmak izi); adres doğrulama ve
+   nedenli bağlantı hatası (H-33); kopya klasörleri
    `replica/<kod>`; otel değiştirince oturum yenilenir.
 3. **P21c Portföy özeti** — `features/portfolio/` (owner): S-116'ya göre **iki otelin takvimi** (otel seçici ya da yan
    yana salt-okunur takvim), gelir-gider özeti, bugünkü doluluk, kasa; kaynak canlı bağlantı (P21b) ya da kopya; para
@@ -29,7 +30,7 @@ takvim, gelir-gider, bugünkü doluluk, kasa; ortak personel yok. K-54 kesin.
 5. **P21e Orta/Düşük bulgular** — 02 raporunda "P21e" işaretli bulgular: H-13 telefon "çıkış yaptı" rozeti; H-16 telefon
    sheet'i geri tuşuyla kapanmıyor; 04 §3: mükerrer misafir kartı uyarısı (ad yazılınca mevcut kart önerisi), Ayarlar
    "sık kullanılan" sekmesi; akış testi 2. oturum Orta/Düşük maddeleri (02 §2 "P21e": H-20 denetim paneli etiketleri,
-   H-22, H-23, H-26, H-27, H-29, H-30, H-31, H-32).
+   H-22, H-23, H-26, H-27, H-29, H-30, H-31, H-32; 2. grup: H-37…H-43, H-45…H-47).
 
 ## Kabul ölçütleri
 - [ ] (P21a yapılırsa) tek otel kurulumu veri kaybı olmadan `hotels/<kod>/` altına taşınır; iki profil arasında geçiş ≤ 3 sn; veri sızmaz.
