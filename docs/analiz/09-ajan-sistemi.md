@@ -39,6 +39,7 @@ sonnet (Faz 5–16'da sonnet/medium ile 30+ paket bitmiş); tarama/metin haiku; 
 | `db-migration-builder` | sonnet | high | Geri alınamaz veri taşıma | $3–6 / paket |
 | `camera-integrator` | sonnet | high | İki dil, güvenlik sınırı, lisans | $6–12 / paket |
 | `packager` | sonnet | medium | Yapılandırma + belge | $2–4 / paket |
+| `rust-shell-builder` (2026-11-13) | sonnet | high | Faz 22: Rust/Tauri 2 prototipi, ölçüm karşılaştırması; iki dil + paketleme; opus gereksiz (prototip, ürün dışı) | $10–40 / paket |
 | `feature-builder-lite` | haiku | medium | Mekanik işler | $0,3–0,8 / paket |
 | `researcher` | haiku (hukuk: sonnet) | medium | Kaynak toplama; hukuk/lisans için sonnet'in daha güvenilir okuduğu görüldü | $0,2–1 |
 | `bug-hunter` | sonnet | high | Yeniden üretilebilir bulgu kalitesi | $3–5 / modül |
@@ -58,7 +59,7 @@ sonnet (Faz 5–16'da sonnet/medium ile 30+ paket bitmiş); tarama/metin haiku; 
 
 ## 3. Yeni/değişen parçalar
 
-### 3.1 Ajanlar (17)
+### 3.1 Ajanlar (18; `rust-shell-builder` 2026-11-13'te Faz 22 için eklendi)
 Yeni: `calendar-specialist`, `db-migration-builder`, `camera-integrator`, `packager` (yapan); `screen-auditor`,
 `privacy-auditor` (kontrol). Hepsinde: görev tanımı, girdi, çıktı ve rapor yolu, dokunabileceği/dokunamayacağı yerler,
 bitiş ölçütü, maliyet kuralları. Mevcut 11 ajana aynı bölüm eklendi ve model/çaba güncellendi.
