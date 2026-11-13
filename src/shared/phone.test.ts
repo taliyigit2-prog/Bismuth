@@ -27,6 +27,13 @@ describe('telefon girişi tek yerde okunur (H-05)', () => {
     expect(splitPhoneInput('+90 905 320 00 00 00')).toEqual({ code: '90', number: '5320000000' })
   })
 
+  it('listede olmayan ülke kodu (+86) olduğu gibi korunur, +90 altına konmaz', () => {
+    expect(splitPhoneInput('+86 138 0013 8000')).toEqual({ code: '', number: '8613800138000' })
+    expect(splitPhoneInput('0086 138 0013 8000', '49')).toEqual({ code: '', number: '8613800138000' })
+    // Written again from what the field shows ("+" + digits) it reads the same.
+    expect(splitPhoneInput('+8613800138000', '90')).toEqual({ code: '', number: '8613800138000' })
+  })
+
   it('boş metin boş numara verir', () => {
     expect(splitPhoneInput('  ')).toEqual({ code: '90', number: '' })
   })

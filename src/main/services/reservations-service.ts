@@ -2113,7 +2113,8 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
     /**
      * One payment on the group's single account (S-106): the amount covers the rooms' open balances in booking
      * order, a payment row per room, all in one transaction. It never overpays: the amount may not exceed what is
-     * open, and the folios must all be in the payment's currency.
+     * open, and the folios must all be in the payment's currency. Only for a single-folio group; a per-room group
+     * is refused (`errors.groupPayPerRoom`).
      */
     payGroup(ctx: Ctx, input: GroupPayInput): GroupViewDto {
       requirePermission(ctx, 'payments', 'edit')
@@ -2121,6 +2122,8 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
       return inTransaction(deps, ctx, (tx, audit, now) => {
         const group = groupOf(tx, data.groupId)
         if (group.voidedAt) throw invalid('errors.groupClosed')
+        // One payment on one account only exists in a single-folio group; a per-room group is paid room by room.
+        if (group.folioMode !== 'single') throw invalid('errors.groupPayPerRoom')
         const open = groupMembers(tx, data.groupId)
           .filter((m) => m.status === 'tentative' || m.status === 'confirmed' || m.status === 'checked_in')
           .map((m) => ({ id: m.id, folio: detail(tx, m.id).folio }))

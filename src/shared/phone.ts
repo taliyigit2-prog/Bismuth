@@ -12,6 +12,13 @@ export const PHONE_MAX_DIGITS = 14
 export const PHONE_MIN_TOTAL_DIGITS = 6
 export const PHONE_MAX_TOTAL_DIGITS = 17
 
+/** Digits of a whole international number (E.164: 15 at most, the country code included). */
+export const PHONE_MAX_INTL_DIGITS = 15
+
+/**
+ * `code` is one of DIAL_CODES, or '' for an international number whose country code is not on that list ("+86 …"):
+ * then `number` holds all the digits, code included, and the text is kept as written ("+" + digits).
+ */
 export interface PhoneParts {
   code: string
   number: string
@@ -22,7 +29,8 @@ const byLength = [...DIAL_CODES].sort((a, b) => b.length - a.length)
 /**
  * Splits typed or pasted text into a country code and national digits. `fallbackCode` is the code the field shows;
  * it is kept when the text carries no code of its own. Rules, in order:
- *  - "+" or "00" in front: the digits start with the code (a known one is cut off, another stays in the number);
+ *  - "+" or "00" in front: the digits start with the code (a known one is cut off; an unknown one — "+86 …" — leaves
+ *    code '' and the whole number, so it is kept as written);
  *  - a Turkish number written with its code but no plus ("90532…", 12 digits): the 90 is the code;
  *  - a leading trunk 0 is dropped ("0532…" → "532…").
  */
@@ -40,7 +48,8 @@ export function splitPhoneInput(raw: string | null | undefined, fallbackCode = '
       if (code === '90' && number.startsWith('90') && number.length === 12) number = number.slice(2)
       return { code, number: number.slice(0, PHONE_MAX_DIGITS) }
     }
-    return { code: fallbackCode, number: digits.slice(0, PHONE_MAX_DIGITS) }
+    // A country code the field does not list: the number stays as typed, never put under another country's code.
+    return { code: '', number: digits.slice(0, PHONE_MAX_INTL_DIGITS) }
   }
   // Written with the Turkish code and no plus: "905321234567" in a +90 field.
   if (fallbackCode === '90' && digits.startsWith('90') && digits.length >= 12)

@@ -5,6 +5,7 @@
 // still go through — and the bar says so, never silently.
 import { useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { useQueries, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { BanknoteIcon, LinkIcon, LogInIcon, LogOutIcon, MessageSquarePlusIcon, XIcon } from 'lucide-react'
@@ -16,7 +17,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
 import { ResponsiveDialog } from '@/components/responsive-dialog'
-import { useFormat } from '@/hooks/use-format'
+import { ClosedDayReason, useMayWriteClosedDay } from '@/components/closed-day-reason'
+import { useFormat, type Format } from '@/hooks/use-format'
+import { ApiError } from '@/lib/transport/types'
 import { useTransport } from '@/lib/api/api-context'
 import { useCan } from '@/lib/view-as'
 import {
@@ -54,6 +57,17 @@ async function eachOf<T>(
   return { ok, failed, firstError }
 }
 
+type EachResult = { ok: number; failed: number; firstError: unknown }
+
+/** "3 done, 1 could not be done. <why the first one was refused>" — one sentence, one key. */
+function partialText(t: TFunction, f: Format, r: EachResult): string {
+  return t('calendar.quick.bulk.partial', {
+    ok: r.ok,
+    failed: r.failed,
+    reason: bookingErrorText(t, f, r.firstError)
+  })
+}
+
 export function SelectionBar({
   picked,
   today,
@@ -87,12 +101,7 @@ export function SelectionBar({
     r: { ok: number; failed: number; firstError: unknown }
   ): void => {
     if (r.failed === 0) toast.success(t(`calendar.quick.bulk.${key}Done`, { count: r.ok }))
-    else
-      toast.error(
-        t('calendar.quick.bulk.partial', { ok: r.ok, failed: r.failed }) +
-          ' ' +
-          bookingErrorText(t, f, r.firstError)
-      )
+    else toast.error(partialText(t, f, r))
   }
   const run = async (key: 'checkIn' | 'checkOut', stays: readonly GridStayView[]): Promise<void> => {
     setBusy(true)
@@ -143,7 +152,7 @@ export function SelectionBar({
             data-testid="bulk-check-in"
           >
             <LogInIcon aria-hidden />
-            {t('calendar.quick.bulk.checkIn')} ({toCheckIn.length})
+            {t('calendar.quick.bulk.checkInCount', { count: toCheckIn.length })}
           </Button>
           <Button
             size="sm"
@@ -153,7 +162,7 @@ export function SelectionBar({
             data-testid="bulk-check-out"
           >
             <LogOutIcon aria-hidden />
-            {t('calendar.quick.bulk.checkOut')} ({toCheckOut.length})
+            {t('calendar.quick.bulk.checkOutCount', { count: toCheckOut.length })}
           </Button>
           <Button size="sm" variant="outline" onClick={() => setOpen('note')} data-testid="bulk-note">
             <MessageSquarePlusIcon aria-hidden />
@@ -240,12 +249,7 @@ function BulkReservationNote({
     if (r.failed === 0) {
       toast.success(t('calendar.quick.bulk.noteDone', { count: r.ok }))
       onDone()
-    } else
-      toast.error(
-        t('calendar.quick.bulk.partial', { ok: r.ok, failed: r.failed }) +
-          ' ' +
-          bookingErrorText(t, f, r.firstError)
-      )
+    } else toast.error(partialText(t, f, r))
   }
   return (
     <ResponsiveDialog
@@ -312,6 +316,11 @@ function BulkPayDialog({
   const id = useId()
   const [methodPick, setMethodPick] = useState('')
   const [busy, setBusy] = useState(false)
+  // Shown once the service says the day is closed (G-72): the same reason field as the single payment form.
+  const [closed, setClosed] = useState(false)
+  const [closedReason, setClosedReason] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const mayWriteClosed = useMayWriteClosedDay()
   const views = useQueries({
     queries: reservationIds.map((rid) => ({
       queryKey: ['booking.get', { id: rid }],
@@ -329,6 +338,9 @@ function BulkPayDialog({
     totals.set(v.folio.currency, (totals.get(v.folio.currency) ?? 0) + (v.folio.balanceMinor ?? 0))
   const pay = async (): Promise<void> => {
     if (!methodId || !due.length) return
+    if (closed && !mayWriteClosed) return setError(t('ledger.closed.lockedHint'))
+    if (closed && closedReason.trim().length < 3) return setError(t('ledger.closed.reasonNeeded'))
+    setError(null)
     setBusy(true)
     const r = await eachOf(due, (v) =>
       transport.call('booking.addPayment', {
@@ -337,20 +349,21 @@ function BulkPayDialog({
         kind: 'payment',
         methodId,
         amountMinor: v.folio.balanceMinor ?? 0,
-        currency: v.folio.currency
+        currency: v.folio.currency,
+        ...(closed ? { dayClosedReason: closedReason.trim() } : {})
       })
     )
     await client.invalidateQueries({ predicate: isCalendarQuery })
     setBusy(false)
+    // Today is a closed day: nothing was written; ask for the reason (or say it is locked) instead of a refusal.
+    if (r.ok === 0 && r.firstError instanceof ApiError && r.firstError.messageKey === 'errors.dayClosed') {
+      setClosed(true)
+      return setError(t(mayWriteClosed ? 'ledger.closed.reasonNeeded' : 'ledger.closed.lockedHint'))
+    }
     if (r.failed === 0) {
       toast.success(t('calendar.quick.bulk.payDone', { count: r.ok }))
       onDone()
-    } else
-      toast.error(
-        t('calendar.quick.bulk.partial', { ok: r.ok, failed: r.failed }) +
-          ' ' +
-          bookingErrorText(t, f, r.firstError)
-      )
+    } else toast.error(partialText(t, f, r))
   }
   return (
     <ResponsiveDialog
@@ -420,6 +433,12 @@ function BulkPayDialog({
                 </span>
               ))}
             </span>
+          </p>
+        ) : null}
+        {closed ? <ClosedDayReason value={closedReason} onChange={setClosedReason} /> : null}
+        {error ? (
+          <p className="text-destructive text-sm" role="alert" data-testid="bulk-pay-error">
+            {error}
           </p>
         ) : null}
         <div className="grid gap-1.5">

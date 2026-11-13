@@ -329,7 +329,7 @@
         "extend": "Uzat ya da kısalt",
         "note": "Not ekle",
         "park": "Park et",
-        "noShow": "Gelmedi",
+        "noShow": "Gelmedi olarak işaretle",
         "giveUp": "Vazgeçme ve iade",
         "guest": "Misafir kartı",
         "cellTitle": "Oda {{room}} · {{date}}",
@@ -343,19 +343,22 @@
       "people": "Kişi",
       "nights": "Gece",
       "price": "Gecelik fiyat",
-      "detail": "Ayrıntı",
+      "detail": "Ayrıntılı rezervasyon",
       "errors": {
         "name": "Misafir adını yazın.",
-        "nights": "Gece sayısı 1 ile 400 arasında olmalı.",
-        "price": "Gecelik fiyatı yazın."
+        "nights": "Gece sayısı 1 ile {{max}} arasında olmalı.",
+        "price": "Gecelik fiyatı yazın.",
+        "people": "Kişi sayısı 1 ile {{max}} arasında olmalı.",
+        "nameLong": "Ad ve soyad en çok {{max}} karakter olabilir."
       },
       "today": {
         "label": "Bugünün özeti",
         "arrivals": "Bugün gelecekler: {{count}}",
-        "departures": "Gidecekler: {{count}}",
-        "inHouse": "Otelde: {{count}} oda",
+        "departures": "Bugün gidecekler: {{count}}",
         "done": "Yapıldı",
-        "failed": "Bugünün özeti yüklenemedi."
+        "failed": "Bugünün özeti yüklenemedi.",
+        "inHouse_one": "Otelde: {{count}} oda",
+        "inHouse_other": "Otelde: {{count}} oda"
       },
       "recent": {
         "button": "Son iptaller",
@@ -381,14 +384,8 @@
         "pay": "Toplu ödeme",
         "attach": "Gruba bağla",
         "clear": "Seçimi temizle",
-        "checkInDone": "Giriş yapılan oda: {{count}}",
-        "checkOutDone": "Çıkış yapılan oda: {{count}}",
-        "noteDone": "Not eklenen rezervasyon: {{count}}",
-        "payDone": "Ödeme alınan rezervasyon: {{count}}",
-        "attachDone": "Gruba bağlanan rezervasyon: {{count}}",
-        "partial": "{{ok}} işlem tamam, {{failed}} işlem yapılamadı.",
+        "partial": "{{ok}} işlem tamam, {{failed}} işlem yapılamadı. {{reason}}",
         "noteTitle": "Seçilen rezervasyonlara not",
-        "noteBody": "Not, seçilen {{count}} rezervasyonun hepsine eklenir.",
         "noteLabel": "Not",
         "payTitle": "Toplu ödeme",
         "payBody": "Her rezervasyon kendi açık bakiyesini öder. Tutarlar aşağıda.",
@@ -397,10 +394,26 @@
         "payTotal": "Toplam",
         "method": "Ödeme yöntemi",
         "attachTitle": "Gruba bağla",
-        "attachBodyJoin": "Seçilen {{count}} rezervasyon gruba eklenir. Konaklama ve tutarlar değişmez.",
-        "attachBodyNew": "Seçilen {{count}} rezervasyon yeni bir grupta birleşir. Konaklama ve tutarlar değişmez.",
         "attachSave": "Gruba bağla",
-        "groupName": "Grup adı"
+        "groupName": "Grup adı",
+        "checkInCount": "Toplu giriş ({{count}})",
+        "checkOutCount": "Toplu çıkış ({{count}})",
+        "checkInDone_one": "Giriş yapılan oda: {{count}}",
+        "checkInDone_other": "Giriş yapılan oda: {{count}}",
+        "checkOutDone_one": "Çıkış yapılan oda: {{count}}",
+        "checkOutDone_other": "Çıkış yapılan oda: {{count}}",
+        "noteDone_one": "Not eklenen rezervasyon: {{count}}",
+        "noteDone_other": "Not eklenen rezervasyon: {{count}}",
+        "payDone_one": "Ödeme alınan rezervasyon: {{count}}",
+        "payDone_other": "Ödeme alınan rezervasyon: {{count}}",
+        "attachDone_one": "Gruba bağlanan rezervasyon: {{count}}",
+        "attachDone_other": "Gruba bağlanan rezervasyon: {{count}}",
+        "noteBody_one": "Not, seçilen {{count}} rezervasyonun hepsine eklenir.",
+        "noteBody_other": "Not, seçilen {{count}} rezervasyonun hepsine eklenir.",
+        "attachBodyJoin_one": "Seçilen {{count}} rezervasyon gruba eklenir. Konaklama ve tutarlar değişmez.",
+        "attachBodyJoin_other": "Seçilen {{count}} rezervasyon gruba eklenir. Konaklama ve tutarlar değişmez.",
+        "attachBodyNew_one": "Seçilen {{count}} rezervasyon yeni bir grupta birleşir. Konaklama ve tutarlar değişmez.",
+        "attachBodyNew_other": "Seçilen {{count}} rezervasyon yeni bir grupta birleşir. Konaklama ve tutarlar değişmez."
       }
     }
   },
@@ -1634,7 +1647,8 @@
     "groupAttachTaken": "Seçilen rezervasyonlardan biri zaten bir grupta.",
     "groupAttachClosed": "Kapanmış ya da iptal edilmiş rezervasyon gruba bağlanamaz.",
     "groupTooLarge": "Bir grupta en çok 30 oda olabilir.",
-    "groupAttachTooFew": "Yeni grup için en az iki rezervasyon seçin."
+    "groupAttachTooFew": "Yeni grup için en az iki rezervasyon seçin.",
+    "groupPayPerRoom": "Bu grupta her oda kendi hesabını öder. Ödemeyi odanın rezervasyonundan alın."
   },
   "common": {
     "close": "Kapat",

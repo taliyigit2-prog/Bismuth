@@ -5,7 +5,15 @@ import { eq } from 'drizzle-orm'
 import { depsOf, roleCtx, testClock } from '../../../tests/factories/ctx'
 import { seededDatabase } from '../../../tests/factories/db'
 import type { DatabaseHandle } from '../db/client'
-import { auditLog, payments, paymentMethods, reservations, roomTypes, salesChannels } from '../db/schema'
+import {
+  auditLog,
+  payments,
+  paymentMethods,
+  reservationGroups,
+  reservations,
+  roomTypes,
+  salesChannels
+} from '../db/schema'
 import { createServices } from './index'
 
 const owner = roleCtx('owner')
@@ -17,6 +25,7 @@ afterEach(() => handle?.close())
 
 async function setup() {
   handle = await seededDatabase()
+  const clock = testClock('2026-10-01T09:00:00.000Z')
   const svc = createServices(
     handle,
     {
@@ -27,7 +36,7 @@ async function setup() {
       electron: null,
       chrome: null
     },
-    { clock: depsOf(handle, testClock('2026-10-01T09:00:00.000Z')).clock }
+    { clock: depsOf(handle, clock).clock }
   )
   const standard = handle.db.select().from(roomTypes).where(eq(roomTypes.code, 'standard')).get()!
   const rooms = ['611', '612', '613'].map(
@@ -45,7 +54,7 @@ async function setup() {
       guest: { firstName: `Misafir${i}`, lastName: 'Örnek' }
     }))
   })
-  return { svc, rooms, channelId, methodId, group }
+  return { svc, rooms, channelId, methodId, group, clock }
 }
 
 const pay = (groupId: string, methodId: string, amountMinor: number) => ({
@@ -87,6 +96,19 @@ describe('grup tek ödeme', () => {
     expect(() =>
       svc.reservations.payGroup(reception, { ...pay(group.id, methodId, 100_000), currency: 'EUR' })
     ).toThrowError(/groupPayCurrency/)
+  })
+
+  it('oda başına hesaplı grupta tek ödeme reddedilir ve hiçbir satır yazılmaz', async () => {
+    const { svc, methodId, group } = await setup()
+    handle.db
+      .update(reservationGroups)
+      .set({ folioMode: 'per_room' })
+      .where(eq(reservationGroups.id, group.id))
+      .run()
+    expect(() => svc.reservations.payGroup(reception, pay(group.id, methodId, 100_000))).toThrowError(
+      /groupPayPerRoom/
+    )
+    expect(handle.db.select().from(payments).all()).toHaveLength(0)
   })
 
   it('yetki: kat hizmetleri grup ödemesi alamaz', async () => {
@@ -166,6 +188,24 @@ describe('grup iptali denetim kaydı ve son iptaller', () => {
     expect(list.find((r) => r.status === 'cancelled')?.reason).toBe('Misafir vazgeçti')
     expect(list[0]?.rooms.length).toBe(1)
     expect(handle.db.select().from(reservations).all()).toHaveLength(3)
+  })
+
+  it('gelmedi kaydı, işaretlendiği günle süzülür; sonradan değişen güncelleme zamanı onu geri getirmez', async () => {
+    const { svc, group, clock } = await setup()
+    const [a, b] = group.rooms
+    svc.reservations.noShow(reception, a!.reservationId)
+    // 20 days later: the second one is marked, and a late edit touches the first one's updatedAt.
+    clock.advance(20 * 24 * 60)
+    svc.reservations.noShow(reception, b!.reservationId)
+    handle.db
+      .update(reservations)
+      .set({ updatedAt: clock().toISOString() })
+      .where(eq(reservations.id, a!.reservationId))
+      .run()
+    expect(svc.calendar.recentEnded(reception, { days: 7 }).map((r) => r.reservationId)).toEqual([
+      b!.reservationId
+    ])
+    expect(svc.calendar.recentEnded(reception, { days: 31 })).toHaveLength(2)
   })
 
   it('son iptaller: kat hizmetleri takvimi göremez', async () => {

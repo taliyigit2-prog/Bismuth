@@ -3,7 +3,9 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import type { ProcedureName } from '@shared/contract'
 import { localDate } from '@shared/date'
+import { ApiError } from '@/lib/transport/types'
 import { demoHotel } from '@/mocks/demo-source'
 import type { DemoHotel } from '@/mocks/types'
 import { calendarTransport } from '@/test/grid-fixture'
@@ -64,6 +66,44 @@ describe('hızlı rezervasyon çubuğu', () => {
     expect(sent.stays[0]).toMatchObject({ roomId: 'room-102' })
     expect(sent.stays[0]!.prices).toHaveLength(2)
     await waitFor(() => expect(screen.queryByTestId('quick-book')).not.toBeInTheDocument())
+  })
+
+  it('ad ve soyad sözleşme sınırını (80) aşarsa alan hatası çıkar ve kaydedilmez', async () => {
+    const { chart, booking } = await renderCalendar()
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+    fireEvent.click(within(chart).getByTestId('tape-track-102'), { clientX: 3 * 56 + 5 })
+    const bar = await screen.findByTestId('quick-book')
+    // One long word is a first name of 81 characters.
+    fireEvent.change(within(bar).getByTestId('quick-name'), { target: { value: 'A'.repeat(81) } })
+    await user.click(within(bar).getByTestId('quick-save'))
+    expect(within(bar).getByText('Ad ve soyad en çok 80 karakter olabilir.')).toBeInTheDocument()
+    expect(booking.callsTo('booking.create')).toHaveLength(0)
+    // 80 + 80 characters in two words is within the limits of both fields.
+    fireEvent.change(within(bar).getByTestId('quick-name'), {
+      target: { value: `${'A'.repeat(80)} ${'B'.repeat(80)}` }
+    })
+    await user.click(within(bar).getByTestId('quick-save'))
+    await waitFor(() => expect(booking.callsTo('booking.create')).toHaveLength(1))
+  })
+
+  it('gecelik fiyat 0 ise "Fiyat 0 olarak kaydedilsin mi?" sorulur; onaylanınca kaydedilir', async () => {
+    const { chart, booking } = await renderCalendar()
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+    fireEvent.click(within(chart).getByTestId('tape-track-102'), { clientX: 3 * 56 + 5 })
+    const bar = await screen.findByTestId('quick-book')
+    await user.type(within(bar).getByTestId('quick-name'), 'Ece Kaya')
+    const price = within(bar).getByLabelText('Gecelik fiyat')
+    await user.clear(price)
+    await user.type(price, '0')
+    await user.click(within(bar).getByTestId('quick-save'))
+    const ask = await screen.findByTestId('over-amount-dialog')
+    expect(within(ask).getByText('Fiyat 0 olarak kaydedilsin mi?')).toBeInTheDocument()
+    expect(booking.callsTo('booking.create')).toHaveLength(0)
+    await user.click(within(ask).getByTestId('over-amount-confirm'))
+    await waitFor(() => expect(booking.callsTo('booking.create')).toHaveLength(1))
+    expect(booking.callsTo('booking.create')[0]).toMatchObject({
+      stays: [expect.objectContaining({ nightlyPriceMinor: 0 })]
+    })
   })
 
   it('ad boşken kaydedilmez ve açıklama çıkar; Esc çubuğu kapatır', async () => {
@@ -163,6 +203,52 @@ describe('çoklu seçim ve toplu işlemler', () => {
     await waitFor(() => expect(screen.queryByTestId('selection-bar')).not.toBeInTheDocument())
   })
 
+  it('Toplu ödeme kapalı güne denk gelirse gerekçe sorar ve gerekçeyle her rezervasyona yazar', async () => {
+    const { chart, booking, hotel } = await renderCalendar()
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+    const bars = await waitFor(() => {
+      const found = within(chart).getAllByTestId(/^stay-/)
+      expect(found.length).toBeGreaterThan(1)
+      return found
+    })
+    const first = bars[0]!
+    const second = bars.find(
+      (b) => b.dataset['stayId']!.split('-stay')[0] !== first.dataset['stayId']!.split('-stay')[0]
+    )!
+    for (const bar of [first, second]) {
+      const reservationId = hotel.reservations.find((r) =>
+        r.stays.some((st) => st.id === bar.dataset['stayId'])
+      )!.id
+      const made = (await booking.call('booking.create', {
+        guest: { firstName: 'Örnek', lastName: reservationId },
+        channelId: 'ch-direct',
+        stays: [{ roomId: 'room-101', checkIn: DAY, checkOut: '2026-10-06', nightlyPriceMinor: 200_000 }]
+      })) as { reservation: { id: string } }
+      booking.booking.views[reservationId] = booking.booking.views[made.reservation.id]!
+    }
+    // The service says today's business day is closed until a reason comes with the payment (G-72).
+    const inner = booking.call.bind(booking)
+    booking.call = (async (name: ProcedureName, input: unknown) => {
+      if (name === 'booking.addPayment' && !(input as { dayClosedReason?: string }).dayClosedReason) {
+        booking.calls.push({ name, input })
+        throw new ApiError('CONFLICT', 409, 'errors.dayClosed')
+      }
+      return inner(name, input as never)
+    }) as typeof booking.call
+    fireEvent.click(first, { ctrlKey: true })
+    fireEvent.click(second, { ctrlKey: true })
+    await user.click(await screen.findByTestId('bulk-pay'))
+    await waitFor(() => expect(screen.getByTestId('bulk-pay-save')).toBeEnabled())
+    await user.click(screen.getByTestId('bulk-pay-save'))
+    const reason = await screen.findByTestId('closed-day-reason')
+    expect(screen.queryByText(/işlem yapılamadı/)).not.toBeInTheDocument()
+    await user.type(within(reason).getByRole('textbox'), 'geç gelen ödeme')
+    await user.click(screen.getByTestId('bulk-pay-save'))
+    await waitFor(() => expect(booking.callsTo('booking.addPayment')).toHaveLength(4))
+    for (const call of booking.callsTo('booking.addPayment').slice(2))
+      expect(call).toMatchObject({ dayClosedReason: 'geç gelen ödeme' })
+  })
+
   it('Esc seçimi temizler', async () => {
     const { chart } = await renderCalendar()
     const bars = await waitFor(() => {
@@ -183,7 +269,7 @@ describe('bugün şeridi ve son iptaller', () => {
     const { transport } = await renderCalendar()
     const strip = await screen.findByTestId('today-strip')
     expect(within(strip).getByTestId('today-arrivals')).toHaveTextContent(/Bugün gelecekler: \d+/)
-    expect(within(strip).getByTestId('today-departures')).toHaveTextContent(/Gidecekler: \d+/)
+    expect(within(strip).getByTestId('today-departures')).toHaveTextContent(/Bugün gidecekler: \d+/)
     expect(within(strip).getByTestId('today-inhouse')).toHaveTextContent(/Otelde: \d+ oda/)
     expect(transport.calls.some((c) => c.name === 'today.summary')).toBe(true)
   })

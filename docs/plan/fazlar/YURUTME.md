@@ -281,3 +281,6 @@ QA2b, akış testleri C/D) bu plana **Son** satırında katılır; ayrı yürüt
   açılır penceresi genişliği sınırlandı, e2e koruma); H-26, H-30, H-37, H-39…H-42, H-46 → P21e. Dalga 4 denetimi:
   Kritik/Yüksek yok; Orta 4 (hızlı çubuk ad sınırı ve 0 fiyat onayı, `payGroup` servis tarafında folyo kipi denetimi,
   `+86` gibi bilinmeyen ülke kodu) + Rusça çoğullar → P17fix.
+- 2026-11-13: P17fix ✅ — hızlı çubuk ad sınırı sözleşmeden (80) ve 0 fiyat onayı, `payGroup` `per_room` grupta servis
+  tarafında ret, bilinmeyen ülke kodlu telefon E.164 olarak korunur, "Son iptaller" gelmedi zamanı audit'ten, toplu ödemede
+  kapalı gün gerekçesi, mantıksal CSS, Rusça çoğullar ve gömülü sayılar `{{max}}` (2690 test). Faz 17 kabul maddeleri tamam.

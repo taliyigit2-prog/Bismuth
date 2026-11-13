@@ -54,6 +54,9 @@ describe('bileşen kuralları (saf)', () => {
     expect(parsePhone('0532 000 11 22')).toEqual({ code: '90', number: '5320001122' })
     expect(parsePhone('+7 900 123 4567')).toEqual({ code: '7', number: '9001234567' })
     expect(formatPhone({ code: '90', number: '5320001122' })).toBe('+90 532 000 11 22')
+    // A country code the list does not have survives a save and a read (E.164).
+    expect(formatPhone(parsePhone('+86 138 0013 8000'))).toBe('+8613800138000')
+    expect(parsePhone('+8613800138000')).toEqual({ code: '', number: '8613800138000' })
   })
 
   it('ay ekleme günü taşırmaz; ay görünümü pazartesiden başlar, 42 gün', () => {

@@ -13,17 +13,25 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { FieldError } from '@/components/field-error'
 import { isAmount, MoneyInput, type MoneyValue } from '@/components/money-input'
+import { useOverAmountConfirm } from '@/components/money-input-confirm'
 import { useFormat } from '@/hooks/use-format'
 import { deferForPendingAmount } from '@/features/settings/use-admin'
 import { useApiQuery } from '@/lib/api/hooks'
 import { splitGuestName } from './split-guest-name'
 import { localName, useBookingMutation, useBookingOptions } from './booking-api'
+import { GUEST_NAME_MAX } from './booking-limits'
+
+/** The contract's longest first / last name; no limit read = none enforced. */
+const NAME_MAX = GUEST_NAME_MAX ?? Number.POSITIVE_INFINITY
 
 export interface QuickSeed {
   roomId: string
   roomNumber: string
   date: LocalDate
 }
+
+/** The contract's most adults on one reservation (reservationCreateSchema.adults). */
+const MAX_ADULTS = 50
 
 const intOf = (text: string): number => (/^\d{1,4}$/.test(text.trim()) ? Number(text.trim()) : Number.NaN)
 
@@ -48,6 +56,9 @@ export function QuickBookBar({
   const [touched, setTouched] = useState(false)
   const [channelPick, setChannelPick] = useState('')
   const [tried, setTried] = useState(false)
+  /** The nightly prices the "0 price" question was answered "save anyway" for (same rule as the full form, H-08). */
+  const [zeroOkFor, setZeroOkFor] = useState<string | null>(null)
+  const zero = useOverAmountConfirm()
   const nameRef = useRef<HTMLInputElement>(null)
   const nightsN = intOf(nights)
   const nightsOk = Number.isInteger(nightsN) && nightsN >= 1 && nightsN <= MAX_STAY_NIGHTS
@@ -70,10 +81,13 @@ export function QuickBookBar({
     onSuccess: onClose
   })
 
+  const guest = splitGuestName(name)
   const problems = {
     name: !name.trim(),
+    // The contract takes a first and a last name of at most GUEST_NAME_MAX each; the field is split the same way.
+    nameLong: guest.firstName.length > NAME_MAX || guest.lastName.length > NAME_MAX,
     nights: !nightsOk,
-    adults: !Number.isInteger(intOf(adults)) || intOf(adults) > 50,
+    adults: !(intOf(adults) >= 1 && intOf(adults) <= MAX_ADULTS),
     price: touched ? !isAmount(shown) : !suggested && !isAmount(shown)
   }
   const submit = (e: FormEvent): void => {
@@ -83,7 +97,21 @@ export function QuickBookBar({
     if (!touched && suggestion.isFetching) return
     setTried(true)
     if (Object.values(problems).some(Boolean) || !channelId) return
-    const guest = splitGuestName(name)
+    const prices =
+      !touched && suggested ? suggested.nights.map((n) => n.priceMinor) : [shown.amountMinor ?? 0]
+    const priceKey = `${currency}:${prices.join(',')}`
+    if (prices.some((p) => p === 0) && zeroOkFor !== priceKey) {
+      return zero.ask({
+        title: t('booking.price.zeroTitle'),
+        body: t('booking.price.zeroBody'),
+        action: t('booking.price.zeroAction'),
+        go: () => {
+          setZeroOkFor(priceKey)
+          // Sent again once the answer is kept (the state is read by the next submit).
+          setTimeout(() => (document.getElementById(formId) as HTMLFormElement | null)?.requestSubmit(), 0)
+        }
+      })
+    }
     save.mutate({
       guest,
       channelId,
@@ -136,12 +164,18 @@ export function QuickBookBar({
             autoFocus
             autoComplete="off"
             value={name}
-            maxLength={160}
-            aria-invalid={tried && problems.name ? true : undefined}
+            maxLength={Number.isFinite(NAME_MAX) ? 2 * NAME_MAX + 1 : undefined}
+            aria-invalid={tried && (problems.name || problems.nameLong) ? true : undefined}
             onChange={(e) => setName(e.target.value)}
             data-testid="quick-name"
           />
-          <FieldError message={tried && problems.name && t('calendar.quick.errors.name')} />
+          <FieldError
+            message={
+              tried &&
+              ((problems.name && t('calendar.quick.errors.name')) ||
+                (problems.nameLong && t('calendar.quick.errors.nameLong', { max: NAME_MAX })))
+            }
+          />
         </div>
         <div className="grid gap-1.5">
           <Label htmlFor={`${formId}-adults`}>{t('calendar.quick.people')}</Label>
@@ -154,6 +188,9 @@ export function QuickBookBar({
             aria-invalid={tried && problems.adults ? true : undefined}
             onChange={(e) => setAdults(e.target.value)}
             data-testid="quick-adults"
+          />
+          <FieldError
+            message={tried && problems.adults && t('calendar.quick.errors.people', { max: MAX_ADULTS })}
           />
         </div>
         <div className="grid gap-1.5">
@@ -168,7 +205,9 @@ export function QuickBookBar({
             onChange={(e) => setNights(e.target.value)}
             data-testid="quick-nights"
           />
-          <FieldError message={tried && problems.nights && t('calendar.quick.errors.nights')} />
+          <FieldError
+            message={tried && problems.nights && t('calendar.quick.errors.nights', { max: MAX_STAY_NIGHTS })}
+          />
         </div>
         {options.data ? (
           <MoneyInput
@@ -213,6 +252,7 @@ export function QuickBookBar({
           {t('common.save')}
         </Button>
       </div>
+      {zero.dialog}
     </form>
   )
 }

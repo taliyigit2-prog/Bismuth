@@ -329,8 +329,8 @@
         "extend": "Extend or shorten",
         "note": "Add note",
         "park": "Park",
-        "noShow": "No-show",
-        "giveUp": "Gave up and refund",
+        "noShow": "Mark as no-show",
+        "giveUp": "Give up and refund",
         "guest": "Guest card",
         "cellTitle": "Room {{room}} · {{date}}",
         "quick": "Quick reservation",
@@ -343,19 +343,22 @@
       "people": "Guests",
       "nights": "Nights",
       "price": "Nightly rate",
-      "detail": "Details",
+      "detail": "Detailed reservation",
       "errors": {
         "name": "Enter the guest's name.",
-        "nights": "The number of nights must be between 1 and 400.",
-        "price": "Enter the nightly rate."
+        "nights": "The number of nights must be between 1 and {{max}}.",
+        "price": "Enter the nightly rate.",
+        "people": "The number of guests must be between 1 and {{max}}.",
+        "nameLong": "The first and the last name can each be at most {{max}} characters."
       },
       "today": {
         "label": "Today's summary",
         "arrivals": "Arriving today: {{count}}",
         "departures": "Departing today: {{count}}",
-        "inHouse": "In the hotel: {{count}} rooms",
         "done": "Done",
-        "failed": "Today's summary could not be loaded."
+        "failed": "Today's summary could not be loaded.",
+        "inHouse_one": "In the hotel: {{count}} room",
+        "inHouse_other": "In the hotel: {{count}} rooms"
       },
       "recent": {
         "button": "Recent cancellations",
@@ -381,14 +384,8 @@
         "pay": "Bulk payment",
         "attach": "Link to a group",
         "clear": "Clear selection",
-        "checkInDone": "Rooms checked in: {{count}}",
-        "checkOutDone": "Rooms checked out: {{count}}",
-        "noteDone": "Reservations with a note: {{count}}",
-        "payDone": "Reservations paid: {{count}}",
-        "attachDone": "Reservations linked to the group: {{count}}",
-        "partial": "{{ok}} done, {{failed}} could not be done.",
+        "partial": "{{ok}} done, {{failed}} could not be done. {{reason}}",
         "noteTitle": "Note for the chosen reservations",
-        "noteBody": "The note is added to all {{count}} chosen reservations.",
         "noteLabel": "Note",
         "payTitle": "Bulk payment",
         "payBody": "Each reservation pays its own open balance. The amounts are below.",
@@ -397,10 +394,26 @@
         "payTotal": "Total",
         "method": "Payment method",
         "attachTitle": "Link to a group",
-        "attachBodyJoin": "The {{count}} chosen reservations join the group. Stays and amounts do not change.",
-        "attachBodyNew": "The {{count}} chosen reservations are joined in a new group. Stays and amounts do not change.",
         "attachSave": "Link to the group",
-        "groupName": "Group name"
+        "groupName": "Group name",
+        "checkInCount": "Bulk check-in ({{count}})",
+        "checkOutCount": "Bulk check-out ({{count}})",
+        "checkInDone_one": "Room checked in: {{count}}",
+        "checkInDone_other": "Rooms checked in: {{count}}",
+        "checkOutDone_one": "Room checked out: {{count}}",
+        "checkOutDone_other": "Rooms checked out: {{count}}",
+        "noteDone_one": "Reservation with a note: {{count}}",
+        "noteDone_other": "Reservations with a note: {{count}}",
+        "payDone_one": "Reservation paid: {{count}}",
+        "payDone_other": "Reservations paid: {{count}}",
+        "attachDone_one": "Reservation linked to the group: {{count}}",
+        "attachDone_other": "Reservations linked to the group: {{count}}",
+        "noteBody_one": "The note is added to the chosen reservation.",
+        "noteBody_other": "The note is added to all {{count}} chosen reservations.",
+        "attachBodyJoin_one": "The chosen reservation joins the group. Stays and amounts do not change.",
+        "attachBodyJoin_other": "The {{count}} chosen reservations join the group. Stays and amounts do not change.",
+        "attachBodyNew_one": "The chosen reservation is joined in a new group. Stays and amounts do not change.",
+        "attachBodyNew_other": "The {{count}} chosen reservations are joined in a new group. Stays and amounts do not change."
       }
     }
   },
@@ -1634,7 +1647,8 @@
     "groupAttachTaken": "One of the chosen reservations is already in a group.",
     "groupAttachClosed": "A closed or cancelled reservation cannot be linked to a group.",
     "groupTooLarge": "A group can hold at most 30 rooms.",
-    "groupAttachTooFew": "Choose at least two reservations for a new group."
+    "groupAttachTooFew": "Choose at least two reservations for a new group.",
+    "groupPayPerRoom": "In this group every room pays on its own account. Take the payment from the room's reservation."
   },
   "common": {
     "close": "Close",
