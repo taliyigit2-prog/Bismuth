@@ -19,13 +19,16 @@ Görev metni: route listesi (yoksa `src/renderer/router.tsx`'teki tüm route'lar
 ## Yöntem
 1. `out/` yoksa `npm run build`. Başlatma deseni `tests/e2e/electron/fixtures.ts` (`_electron.launch`, `--no-sandbox`,
    `xvfb-run -a`), kurulum `tests/e2e/setup-draft.*`, örnek veri `tests/e2e/seed-*.ts`. Portlar görev metninden.
-2. Her (çözünürlük × ölçek × tema × dil × route) için pencereyi `setContentSize` ile boyutlandır, `ui.theme`/`ui.language`
-   ayarla, 500 ms bekle, tam sayfa görüntü al. Çok sayıda kombinasyon için önce **temsilci set** (1366×768 ve 1920×1080 ×
-   açık × tr tüm route'lar), sonra diğer kombinasyonları yalnız üç ana ekranda (takvim, bugün, ayarlar) çek.
-3. Her sayfada ölçüm betiği (`page.evaluate`): `document.documentElement.scrollWidth > clientWidth` (yatay taşma);
-   `overflow:hidden` + `scrollWidth > clientWidth` olan metin öğeleri (kesilme); `getBoundingClientRect` ile viewport
-   dışına taşan ya da üst üste binen etkileşimli öğeler; telefonda `button/a/[role=menuitem]` kutuları < 44×44; `fixed`
-   öğelerin içerikle çakışması; kontrast kontrolü yalnız kod (CSS değişkeni) üzerinden.
+2. Çekim ve ölçüm için **`npm run ui:shot`** kullan (betik ve ölçüm alanları: `docs/gelistirici.md` §5.2a). Tüm
+   kombinasyonlar tek komutla, ölçüm dosyasıyla:
+   `PW_CHROMIUM_PATH=/opt/pw-browsers/chromium xvfb-run -a npm run ui:shot -- --routes calendar,today,settings --size 1280x720,1366x768,1440x900,1536x864,1920x1080,2560x1440,3840x2160 --scale 1,1.25,1.5 --langs tr,en,ru --port <PORT> --metrics .tmp/screen-audit/metrics.json`
+   (`--scale 1.25,1.5` yalnız %125/%150 için; her ölçek ayrı Electron açar.) Ekran görüntüleri `--out .tmp/screen-audit/shots`.
+   Diğer route'lar için `--routes` listesini genişlet; 150 görüntü sınırı geçerse ölçüm dosyası yeterlidir, görüntüleri
+   yalnız şüpheli kombinasyonlarda aç.
+3. Ölçümler `metrics.json` içindedir (`summary` + `records[]`): `horizontalOverflowPx` (yatay taşma), `clipped` (kesilen
+   metin), `offViewport` (ekran dışına taşan etkileşimli öğe), `horizontalScrollers` (takvim şeridi gibi bilinçli
+   kaydırıcılar; her birini tek tek değerlendir), `smallTargets` (telefonda 44×44 px altı). Bulguları bu sayılara ve
+   görüntüye bakarak yaz. Üst üste binen öğeler ve kontrast yalnız kod (CSS değişkeni) üzerinden denetlenir.
 4. Pencere davranışı: `win.maximize()`, `setFullScreen(true)`, `minWidth/minHeight` altına küçültme denemesi,
    kapatıp açınca `window-state.json` geri yüklemesi, ikinci bir `BrowserWindow` yok; menü → Görünüm → Tam Ekran rolü.
    Çoklu monitör ve gerçek DPI yalnız kod incelemesi (`src/main/windows/main-window.ts`, `src/main/app/window-state.ts`)

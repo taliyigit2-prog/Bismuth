@@ -1,0 +1,1 @@
+- [Tekrarlayan metin hataları](recurring-copy-errors.md) — ASCII tire, eylem adı tutarsızlığı, yetkisiz mesaj yönlendirmesi, ru düğme uyumu (P17a)

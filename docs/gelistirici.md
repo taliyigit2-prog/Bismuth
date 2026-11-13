@@ -36,6 +36,7 @@ Kullanıcıya dönük belgeler: [`kurulum.md`](kurulum.md), [`yedek-ve-tasima.md
 | `npm run build` | `out/` altına main, preload, renderer. e2e ve paketleme bundan önce gelir. |
 | `npm run e2e` / `npm run e2e:mobile` | Playwright: gerçek Electron uygulaması / telefon görünümü (aşağıda §6). Önce `npm run build`. |
 | `npm run ui:shot -- [--routes calendar,settings] [--lang ru] [--out dir]` | Önce derler; sonra masaüstü (1366×768) ve telefon ekran görüntüleri, açık + koyu tema. Ayrıntı: `scripts/ui-shot.mjs` başlığı. |
+| `npm run ui:shot -- --size WxH,… --scale k,… --langs tr,en,ru --metrics <dosya.json>` | Çoklu boyut, ölçek ve dil (aşağıda §5.2a). Ölçüm JSON'u: yatay taşma, kesilen metin, ekran dışı etkileşimli öğe, yatay kaydırıcı kapsayıcılar, telefonda 44 px altı hedefler. |
 | `npm run package:dir` / `package:win` / `package:mac` | Paketleme (electron-builder). §3. |
 | `npm run db:generate -- --name <ad>` | Şema değişikliğinden **yeni numaralı** migrasyon (`drizzle/`). Commit edilmiş migrasyon değişmez (§5.3). |
 | `npm run i18n:check` | Kodda kullanılan her sabit `t('…')` anahtarı `tr.json`'da var mı; en/ru anahtar kümesi tr ile aynı mı. Dinamik anahtarları `typecheck` denetler. |
@@ -204,6 +205,30 @@ yedeği yerine koyar.
 
 Kurallar: `.claude/rules/ui.md`. Yalnızca `components/ui` ve proje bileşenleri; inline stil yok (sanallaştırılmış ızgarada
 hesaplanan konum/boyut hariç); renkler CSS değişkeni; yön sınıfları mantıksal (`ms-`, `pe-`, `start-`).
+
+### 5.2a Çoklu boyut ekran görüntüsü ve ölçüm
+
+`npm run ui:shot` bayraklarla çoklu boyut, ölçek ve dilde çalışır (betik başlığı ayrıntılı):
+
+- `--size 1280x720,1366x768,1440x900,1536x864,1920x1080,2560x1440,3840x2160`: masaüstü pencere içerik boyutları
+  (varsayılan 1366×768). Telefon bu bayraktan etkilenmez; genişliği `--width` (390).
+- `--scale 1,1.25,1.5`: Electron cihaz ölçeği (Windows %125 = 1.25). Her değer için Electron ayrı açılır.
+- `--langs tr,en,ru`: her dil için; `--lang` tek dil olarak kalır.
+- `--metrics .tmp/ui-shot/metrics.json`: her görüntü için ölçümler (`records`) ve özet (`summary`). Görüntü adı bu
+  bayraklardan biri verildiğinde boyut, ölçek ve dili içerir.
+
+Tek komut, 7 boyut × 2 tema × 3 dil (ana ekranlar):
+
+```bash
+PW_CHROMIUM_PATH=/opt/pw-browsers/chromium xvfb-run -a npm run ui:shot -- --routes calendar,today,settings \
+  --size 1280x720,1366x768,1440x900,1536x864,1920x1080,2560x1440,3840x2160 --langs tr,en,ru \
+  --metrics .tmp/ui-shot/metrics.json
+```
+
+Ölçüm alanları: `horizontalOverflowPx` (belge yatay taşması), `offViewport` (ekran dışına taşan etkileşimli öğe),
+`clipped` (`overflow` ya da üç nokta ile kesilen metin), `horizontalScrollers` (yatay kaydıran kapsayıcılar; takvim
+şeridi gibi bilinçli olanlar burada listelenir, sayılmaz), `smallTargets` (yalnız telefon; 44×44 px altı). Her liste
+`{count, sample}` biçimindedir. `screen-auditor` bu dosyayı kullanır.
 
 ### 5.3 Yeni migrasyon
 

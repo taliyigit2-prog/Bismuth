@@ -89,7 +89,7 @@ Harcama sütunu: başlatıcının yazdığı `$` (dalga toplamı, gerçek).
 | 1 | P17a Vazgeçme ve iade akışı (undoCheckIn, iptal/çıkışta ödeme + iade, kapalı rezervasyonda menü, raporda iptal/gelmedi/iade satırları) | 17 | booking, calendar, reports | calendar-specialist | $12–18 | ~$15 | ✅ |
 | 1 | P19c Depo temizliği (prototypes arşiv, faz0 iş akışları, icon, yerel yollar, kanca istisnaları) | 19 | — | feature-builder-lite | $2–4 | ~$3 | ✅ |
 | 2 | P17d Gündüz kullanımı 2.0 + ikinci tur hatası + H-06 (migrasyon **0019**) | 17 | booking, reservations, settings | db-migration-builder → calendar-specialist | $15–22 | | ⬜ |
-| 2 | P18a ui-shot çoklu boyut/ölçek/dil + ölçüm JSON; Electron e2e Codespace'te yeşil | 18 | scripts, tests/e2e | feature-builder-lite | $2–4 | | 🔄 |
+| 2 | P18a ui-shot çoklu boyut/ölçek/dil + ölçüm JSON; Electron e2e Codespace'te yeşil | 18 | scripts, tests/e2e | feature-builder-lite | $2–4 | ~$3 | ✅ |
 | 3 | P17b Grup rezervasyonu + toplu giriş (migrasyon **0020**) | 17 | booking, reservations | db-migration-builder → calendar-specialist | $15–22 | | ⬜ |
 | 3 | P18c Pencere: F11, tam ekran/zoom hatırlama, çoklu monitör | 18 | main/windows, main/app | feature-builder | $6–10 | | ⬜ |
 | 4 | P17c Hızlı takvim: sağ tık, hızlı çubuk, çoklu seçim (+ toplu ödeme), bugün şeridi, son iptaller listesi, park nedeni etiketi | 17 | calendar | feature-builder | $8–12 | | ⬜ |
@@ -242,3 +242,7 @@ QA2b, akış testleri C/D) bu plana **Son** satırında katılır; ayrı yürüt
   yetkisi varsayılan E (S-100). `npm run check` 2459 test ✓; e2e giveup masaüstü + telefon ✓. Ajan oturum kapanışında iki kez
   yarım kaldı; ana oturumda birleştirildi. Not → P17d: mevcut kurulumlarda resepsiyon `payments.refund` satırı tohumla
   güncellenmez (onConflictDoNothing) → 0019'da veri güncellemesi.
+- 2026-11-13: P18a ✅ — `ui-shot` `--size/--scale/--langs/--metrics` (7 boyut × 2 tema × 3 dil = 144 görüntü, ölçüm JSON:
+  taşma 0, kesilme 0, telefonda 44 px altı 54 hedef → P18b), Electron e2e Codespace'te tam yeşil (85 geçti, 7 atlandı, 13,5 dk).
+  Dalga 1 kontrolleri: decision-auditor (Kritik/Yüksek yok), db-reviewer (Yüksek: S-100 mevcut kurulumda etkisiz → P17d 0019
+  kabulüne eklendi), turkish-ui-copy (4 metin düzeltildi). Orta bulgular P17afix'te.
