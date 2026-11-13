@@ -328,3 +328,4 @@ QA2b, akış testleri C/D) bu plana **Son** satırında katılır; ayrı yürüt
   (yalnız id/zaman; S-108 gereği bilinçli). P21e'ye: telefonda durum kartında boş sarmalayıcı, filtre sekmeleri 2×2 kenarlık, "Gördüm/
   Hallettim" düğme dili, `numberInvalid` ondalık biçimi, ru `crashedBody` çoğul anahtarları, P20d'nin 3 yeni ayarı için ayar alanı,
   canlı etiket yazı boyutu. 2805 test yeşil. **Dalga 8 bitti.**
+- 2026-11-13: Sadeleştirme (dalga 7–8, Ponytail lite): yalnız `camera-service.ts` `setSecrets` kısaltıldı (net −12 satır, 2805 test aynı); diğer dosyalarda değer bulunmadı.

@@ -165,24 +165,12 @@ export function createCameraService(deps: CameraServiceDeps) {
       requirePermission(ctx, 'camera', 'edit')
       desktopOnly(ctx)
       const input = parseInput(cameraSecretsInputSchema, raw)
-      const changed: string[] = []
-      if (
-        input.source !== undefined &&
-        input.source !== null &&
-        input.source !== '' &&
-        !isValidSource(input.source)
-      )
-        throw invalid('errors.cameraSourceInvalid')
-      if (
-        input.telegramToken !== undefined &&
-        input.telegramToken !== null &&
-        input.telegramToken !== '' &&
-        !isValidToken(input.telegramToken)
-      )
+      if (input.source && !isValidSource(input.source)) throw invalid('errors.cameraSourceInvalid')
+      if (input.telegramToken && !isValidToken(input.telegramToken))
         throw invalid('errors.cameraTelegramInvalid')
       let chats: string | null | undefined
       if (input.telegramChatIds !== undefined) {
-        if (input.telegramChatIds === null || input.telegramChatIds === '') chats = null
+        if (!input.telegramChatIds) chats = null
         else {
           const parsed = parseChatIds(input.telegramChatIds)
           const typed = input.telegramChatIds.split(/[,;\s]+/).filter(Boolean)
@@ -195,7 +183,7 @@ export function createCameraService(deps: CameraServiceDeps) {
       if (input.source !== undefined) writes.push(['camera.source', input.source || null])
       if (input.telegramToken !== undefined) writes.push(['telegram.token', input.telegramToken || null])
       if (chats !== undefined) writes.push(['telegram.chatIds', chats])
-      for (const [key] of writes) changed.push(key)
+      const changed = writes.map(([key]) => key)
       // Which secrets changed, never their values. The file is written after the audit row is committed:
       // a file write cannot be rolled back, so a failed audit must not leave an unrecorded secret behind.
       inTransaction(deps, ctx, (_tx, audit) => {
