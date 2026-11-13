@@ -129,7 +129,10 @@ export const settingsShape = {
   'tasks.everyNStays': z.number().int().min(1).max(500),
   /** Day closing (G-72): off by default, many hotels switch it on. */
   'businessDay.closingEnabled': z.boolean(),
-  /** Same-day (day-use) stays count as sold nights in occupancy reports (§6.10); off = shown apart. */
+  /**
+   * No longer read (P17d, S-105): same-day and hourly stays always count in occupancy. The key stays so a stored value
+   * (and a backup that has it) still loads; nothing changes it and no screen shows it.
+   */
   'reports.dayUseInOccupancy': z.boolean(),
   /**
    * Minutes the desk wants between two hourly stays in one room for cleaning (K-48, S-103): selling inside the gap is

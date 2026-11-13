@@ -1243,7 +1243,17 @@
     "fontSizeLarger": "Larger",
     "colorsTitle": "Hotel colours",
     "colorsHelp": "The accent and status colours are the same for everyone. Change them in the theme preview and see the result at once.",
-    "openThemePreview": "Open theme preview"
+    "openThemePreview": "Open theme preview",
+    "hourly": {
+      "price": "Hourly price",
+      "col": "Hourly price",
+      "priceHelp": "Optional. Shown as a suggestion at an hourly sale; you still enter the amount at the sale.",
+      "turnover": "Cleaning time between sales (min)",
+      "turnoverHelp": "A new hourly sale inside this time after the previous one shows a warning; it never blocks the sale.",
+      "turnoverInvalid": "Enter a number from 0 to 240.",
+      "turnoverSaved": "Cleaning time saved",
+      "title": "Hourly stays"
+    }
   },
   "status": {
     "paid": "Paid",
@@ -1521,7 +1531,8 @@
     "noShowTooEarly": "A reservation cannot be marked as a no-show before its arrival day. If the guest cancelled, cancel the reservation.",
     "undoCheckInNotToday": "A check-in can only be taken back on the day it was made. Check out instead or ask the hotel owner.",
     "undoCheckInMoved": "This room was opened by a room move; it cannot be taken back. Check out first.",
-    "undoCheckInKbs": "{{names}} is reported to KBS. Confirm to take it back."
+    "undoCheckInKbs": "{{names}} is reported to KBS. Confirm to take it back.",
+    "dayUseFreeNeedsConfirm": "The price is 0. Confirm a free check-out or enter an amount."
   },
   "common": {
     "close": "Close",
@@ -2143,6 +2154,10 @@
       "summary": {
         "title": "Summary",
         "body": "Check the details. You can change most of it later in Settings."
+      },
+      "hourly": {
+        "title": "Hourly sales",
+        "body": "If you also sell rooms by the hour, enter an hourly price per room type. You can leave it empty."
       }
     },
     "hotel": {
@@ -2434,7 +2449,14 @@
       "role": "Pick a role."
     },
     "stepComplete": "completed",
-    "skipToStep": "Skip to the step"
+    "skipToStep": "Skip to the step",
+    "hourly": {
+      "title": "Hourly price (optional)",
+      "help": "At an hourly sale you always enter the amount; the price here is only a suggestion.",
+      "noTypes": "Choose the room types first.",
+      "price": "Hourly price",
+      "optional": "If you do not sell by the hour, skip this step. You can also enter the prices later in Settings → Rooms and types."
+    }
   },
   "auth": {
     "title": "Sign in",
@@ -4155,7 +4177,9 @@
       "dayUseOut_other": "Day use ({{count}}) is not counted in sold nights; it is shown apart.",
       "dayUseIn_one": "Day use ({{count}}) counts as a sold night.",
       "dayUseIn_other": "Day use ({{count}}) counts as sold nights.",
-      "dayUseSwitch": "Count in occupancy"
+      "dayUseSwitch": "Count in occupancy",
+      "hourlyCount_one": "{{count}} hourly or same-day sale in this period",
+      "hourlyCount_other": "{{count}} hourly or same-day sales in this period"
     },
     "cash": {
       "methods": "By payment method",
@@ -4281,6 +4305,12 @@
       "refund": "Refunded",
       "refundHint_one": "{{count}} refund; already taken off the revenue",
       "refundHint_other": "{{count}} refunds; already taken off the revenue"
+    },
+    "stayKind": {
+      "label": "Stay type",
+      "all": "All",
+      "overnight": "Overnight",
+      "hourly": "Hourly"
     }
   },
   "currency": {
@@ -5451,7 +5481,8 @@
   "booking": {
     "conflict": {
       "occupied": "Room {{room}} is taken on {{dates}} ({{codes}}). Choose another room or other dates.",
-      "blocked": "Room {{room}} is not for sale on {{dates}}. Choose another room or other dates."
+      "blocked": "Room {{room}} is not for sale on {{dates}}. Choose another room or other dates.",
+      "occupiedHours": "Room {{room}} is taken on {{dates}} at these hours: {{hours}}. Choose other hours or another room."
     },
     "standing": {
       "infoTitle": "Guest's standing note",
@@ -5600,7 +5631,11 @@
       "release_one": "{{count}} night will be freed; the room can be sold again that night.",
       "release_other": "{{count}} nights will be freed; the room can be sold again those nights.",
       "sameDay": "The guest leaves on the check-in day: the first night stays as a day use.",
-      "dayUsePrice": "Day use price"
+      "dayUsePrice": "Day use price",
+      "dayUseHours": "Hours used: {{start}}–{{end}}",
+      "dayUseSuggested": "Suggested: {{amount}} (room type hourly price × time used)",
+      "freeConfirm": "Free check-out: record the amount as 0",
+      "freeNeeded": "The amount is 0: confirm the free check-out or enter an amount."
     },
     "park": {
       "title": "Park this reservation?",
@@ -5725,6 +5760,33 @@
       "needNote": "Write the reason.",
       "parkConfirm": "Park as refund pending",
       "menu": "Enter a refund"
+    },
+    "hourly": {
+      "button": "Hourly sale",
+      "title": "Hourly sale",
+      "description": "Sell a room for set hours within one day. You enter the amount.",
+      "room": "Room",
+      "roomPlaceholder": "Choose a room",
+      "date": "Date",
+      "start": "Start time",
+      "end": "End time",
+      "amount": "Amount",
+      "channel": "Sales channel",
+      "suggested": "Suggested: {{amount}} (room type hourly price × duration)",
+      "noSuggestion": "This room type has no hourly price. Enter the amount.",
+      "needGuest": "Enter the guest's name.",
+      "needRoom": "Choose a room.",
+      "needAmount": "Enter the amount.",
+      "badRange": "The end time must be after the start time.",
+      "taken": "Room {{room}} is taken at these hours: {{hours}}. Choose other hours or another room.",
+      "takenDay": "Room {{room}} is taken that day. Choose another day or room.",
+      "blocked": "Room {{room}} is not for sale that day.",
+      "turnover": "There are {{gap}} min between this and the {{start}}–{{end}} sale; {{min}} min are advised for cleaning. You can still save.",
+      "toast": {
+        "created": "Hourly sale saved"
+      },
+      "hoursLabel": "Hours",
+      "kind": "Hourly"
     }
   },
   "holidayCheck": {

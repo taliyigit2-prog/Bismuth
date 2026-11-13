@@ -5,7 +5,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
-import { CalendarDaysIcon, CalendarPlusIcon, DoorOpenIcon, LockIcon, PlusIcon, XIcon } from 'lucide-react'
+import {
+  CalendarDaysIcon,
+  CalendarPlusIcon,
+  ClockIcon,
+  DoorOpenIcon,
+  LockIcon,
+  PlusIcon,
+  XIcon
+} from 'lucide-react'
 import { addDays, diffDays, today as todayOf, type LocalDate } from '@shared/date'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -38,6 +46,7 @@ import {
   type GridStayView
 } from './grid-model'
 import { GuestJump, type FoundStayView } from './guest-jump'
+import { HourlyStayDialog, type HourlySeed } from './hourly-stay-dialog'
 import { NewReservationDialog, type NewReservationSeed } from './new-reservation-dialog'
 import { ParkArea } from './park-area'
 import { ReservationPanel } from './reservation-panel'
@@ -58,6 +67,7 @@ export function CalendarPage() {
   const highlight = settings.data?.['calendar.highlightWeekdays'] ?? DEFAULT_HIGHLIGHT
   const [openId, setOpenId] = useState<string | null>(null)
   const [seed, setSeed] = useState<NewReservationSeed | null>(null)
+  const [hourly, setHourly] = useState<HourlySeed | null>(null)
   const [clientToday] = useState(todayOf)
   // A role that only looks at the calendar (Muhasebeci) gets no new-reservation form from the button, a cell, Enter
   // or N (ui.md: hidden; the service refuses anyway).
@@ -73,10 +83,20 @@ export function CalendarPage() {
   useShortcutAction('newReservation', () => openNew(null, todayOf()), { enabled: canBook })
 
   const actions = canBook ? (
-    <Button onClick={() => openNew(null, todayOf())}>
-      <PlusIcon aria-hidden />
-      {t('calendar.newReservation')}
-    </Button>
+    <>
+      <Button
+        variant="outline"
+        onClick={() => setHourly({ roomId: null, date: todayOf() })}
+        data-testid="hourly-new"
+      >
+        <ClockIcon aria-hidden />
+        {t('booking.hourly.button')}
+      </Button>
+      <Button onClick={() => openNew(null, todayOf())}>
+        <PlusIcon aria-hidden />
+        {t('calendar.newReservation')}
+      </Button>
+    </>
   ) : undefined
 
   return (
@@ -102,6 +122,11 @@ export function CalendarPage() {
       <ReservationPanel
         reservation={openId ? { id: openId } : null}
         onOpenChange={(o) => !o && setOpenId(null)}
+      />
+      <HourlyStayDialog
+        key={hourly ? `${hourly.roomId}-${hourly.date}` : 'hourly-closed'}
+        seed={hourly}
+        onOpenChange={(o) => !o && setHourly(null)}
       />
       <NewReservationDialog
         key={seed ? `${seed.roomId}-${seed.date}` : 'closed'}

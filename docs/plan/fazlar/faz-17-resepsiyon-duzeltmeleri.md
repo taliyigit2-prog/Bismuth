@@ -55,12 +55,14 @@ konaklama türü filtresi + aylık saatlik sayısı; S-106 tek hesap (varsayıla
 - [x] "Girdi, vazgeçti, iade" e2e masaüstü + telefon yeşil.
 - [ ] 3 odalı grup: oda başına ad, toplu giriş atomik, takvimde desen (migrasyon + servis + grid + e2e).
 - [ ] Sağ tık menüsü ve hızlı çubuk klavyeyle erişilebilir; telefonda uzun basma (e2e).
-- [ ] Betik C senaryosu: ikinci tur çıkışından sonra oda o gece satılabilir (servis testi, kırmızıdan yeşile).
-- [ ] Aynı gün üç saatlik satış saat çakışmazsa olur, çakışırsa saatli `roomOccupied`; temizlik arası dolmadan uyarı ama
-      engel yok (domain testi 8 senaryo).
-- [ ] Saatlik tutar resepsiyonun girdiği değerdir; saat ücreti ayarlıysa önerilir; raporlarda saatlik satışlar dahil ve
+- [x] Betik C senaryosu: ikinci tur çıkışından sonra oda o gece satılabilir (servis testi `hourly-stays.test.ts` "A girip öğleden sonra çıkar, B geceyi alıp…", kırmızıdan yeşile).
+- [x] Aynı gün üç saatlik satış saat çakışmazsa olur, çakışırsa saatli `roomOccupied`; temizlik arası dolmadan uyarı ama
+      engel yok (domain testi 8 senaryo `stays.test.ts` + servis `hourly-stays.test.ts` + e2e `hourly.spec.ts`).
+- [x] Saatlik tutar resepsiyonun girdiği değerdir; saat ücreti ayarlıysa önerilir; raporlarda saatlik satışlar dahil ve
       türe göre süzülebilir, aylık sayı görünür; saatlik misafir KBS listesinde; turizm istatistiği kuralı değişmedi
-      (mevcut testler yeşil).
+      (`hourly-stays.test.ts`, `reports-service.test.ts` "konaklama türü süzgeci", `hourly-stay.test.tsx`; turizm testleri yeşil).
+- [x] H-06: çıkış penceresinde aynı gün ücreti saat ücretinden önerilir, 0 onay ister (servis `dayUseFreeNeedsConfirm` + panel
+      testi), gündüz yuvasında boş aralık yoksa alan gizli.
 - [ ] P17e listesindeki her bulgu için test kırmızıdan yeşile.
 - [ ] `npm run check`, hedefli e2e, `ui-reviewer` + `turkish-ui-copy` + `db-reviewer` + `decision-auditor` bulgularında Kritik/Yüksek yok.
 
@@ -79,3 +81,11 @@ fiyatlama; kamera (Faz 20).
 
 ## Sonuç
 (Opus doldurur: yapılanlar, karşılanan G-xx, varsayılanlar, ölçümler, kalanlar.)
+
+### P17d adım 2 — saatlik konaklama servis + ekran (calendar-specialist)
+- Servis: `room_nights` yazan her yer saat alanlarını taşır (ekleme, düzenleme, taşıma, oda değişimi, ikinci tur çıkış);
+  `findConflicts` saat aralığı denetler, tüm gün = null; `booking.createHourlyStay`, `booking.hourlyCheck`; çıkışta
+  gündüz yuvası gerçekten kullanılan saatlerle yazılır (hata C); `reports.dayUseInOccupancy` artık okunmaz (S-105: her zaman dahil).
+- Ekran: saatlik satış penceresi (takvim başlığı), saatli çubuk (şeritli), panel/gün listesinde saatler, Ayarlar → Odalar ve tipler'de
+  saat ücreti + temizlik süresi, kurulum sihirbazında isteğe bağlı 7. adım (adım sayısı 13), raporlarda konaklama türü süzgeci.
+- Varsayılanlar: saatlik tutar pozitif olmalı (0 yazılamaz); saat ücreti dakika oranıyla hesaplanır; "Ayarlar → Fiyatlar" = Odalar ve tipler sekmesi.

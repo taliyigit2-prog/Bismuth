@@ -76,7 +76,10 @@ export function SummaryTab({
     .sort()
     .at(-1)
   const nights = from && to ? diffDays(from, to) : 0
-  const people = live.flatMap((s) => s.occupants.filter((o) => !o.leftAt)).length
+  // After the check-out everybody has "left": the summary then names the people who stayed, not "0 kişi".
+  const present = live.flatMap((s) => s.occupants.filter((o) => !o.leftAt)).length
+  const people = present || live.flatMap((s) => s.occupants).length
+  const hours = shown.flatMap((s) => (s.startTime && s.endTime ? [`${s.startTime}–${s.endTime}`] : []))
   const [status, setStatus] = useState(r.status === 'tentative' ? 'tentative' : 'confirmed')
   const [channelId, setChannelId] = useState(r.channelId)
   const [channelRef, setChannelRef] = useState(r.channelRef ?? '')
@@ -111,9 +114,17 @@ export function SummaryTab({
         <div>
           <dt className="text-muted-foreground text-xs">{t('calendar.panel.guests')}</dt>
           <dd className="font-medium">
-            {view.occupantsVisible ? t('booking.people.count', { count: people }) : '—'}
+            {view.occupantsVisible && people > 0 ? t('booking.people.count', { count: people }) : '—'}
           </dd>
         </div>
+        {hours.length ? (
+          <div>
+            <dt className="text-muted-foreground text-xs">{t('booking.hourly.hoursLabel')}</dt>
+            <dd className="font-medium tabular-nums" data-testid="panel-hours">
+              <bdi>{hours.join(', ')}</bdi>
+            </dd>
+          </div>
+        ) : null}
         <div>
           <dt className="text-muted-foreground text-xs">{t('calendar.panel.checkInDate')}</dt>
           <dd className="font-medium">{from ? f.date(from, 'medium') : '—'}</dd>

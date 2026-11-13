@@ -30,6 +30,9 @@ import {
   addRoomSchema,
   availabilityInputSchema,
   guestCandidateInputSchema,
+  hourlyCheckInputSchema,
+  type HourlyCheck,
+  type HourlyCheckInput,
   priceSuggestionInputSchema,
   reservationUpdateSchema,
   type ReservationUpdateInput
@@ -46,9 +49,12 @@ import { normalizeName, normalizePhone } from '@shared/domain/normalize'
 import { isCountedStay } from '@shared/domain/reports'
 import {
   findConflicts,
+  hourlyAmountMinor,
   occupancyFrom,
   splitForRoomChange,
   staySlots,
+  turnoverWarnings,
+  type HourRange,
   type Slot,
   type StaySlot
 } from '@shared/domain/stays'
@@ -94,8 +100,10 @@ import {
   blacklistMatches,
   bookingView,
   formOptions,
+  occupiedSlots,
   parkedList,
   roomsTaken,
+  sameDayRange,
   type BookingView,
   type ParkedView
 } from './reservation-view'
@@ -120,6 +128,9 @@ export interface NightView {
   id: string
   date: LocalDate
   slot: Slot
+  /** 'HH:MM' of an hourly day slot (K-48); null = no hours. */
+  startTime: string | null
+  endTime: string | null
   priceMinor: number
   currency: string
   payStatus: NightPayStatus
@@ -146,6 +157,14 @@ type StayInput = z.output<typeof stayInputSchema>
 const ACTIVE_STAY = ['planned', 'in_house'] as const
 
 type AuditFn = (entry: AuditEntry) => void
+
+/** A slot's identity within its room: date, slot and (for an hourly day slot) its hours. */
+const slotKey = (s: {
+  date: string
+  slot: string
+  startTime?: string | null
+  endTime?: string | null
+}): string => `${s.date}|${s.slot}|${s.startTime ?? ''}|${s.endTime ?? ''}`
 
 export function createReservationsService(deps: ServiceDeps & { hooks?: ReservationHooks }) {
   const { db } = deps
@@ -266,6 +285,8 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
       .select({
         date: roomNights.date,
         slot: roomNights.slot,
+        startTime: roomNights.startTime,
+        endTime: roomNights.endTime,
         reservationId: reservationRooms.reservationId,
         stayId: roomNights.reservationRoomId
       })
@@ -297,11 +318,20 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
             .all()
             .map((r) => r.code)
         : []
+      // An hourly clash names the hours in the way ("10:00–12:00"), not only the day (K-48, S-103).
+      const hours = [
+        ...new Set(
+          taken
+            .filter((c) => c.slot === 'day' && c.startTime && c.endTime)
+            .map((c) => `${c.startTime}–${c.endTime}`)
+        )
+      ].sort()
       throw conflict('errors.roomOccupied', {
         roomId,
         room: number(),
         dates: [...new Set(taken.map((c) => c.date))].sort(),
-        codes
+        codes,
+        ...(hours.length ? { hours } : {})
       })
     }
     const blocked = conflicts.filter((c) => c.reason === 'blocked')
@@ -354,6 +384,8 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
         roomId: stay.roomId,
         date: slot.date,
         slot: slot.slot,
+        startTime: slot.startTime ?? null,
+        endTime: slot.endTime ?? null,
         priceMinor,
         currency: folio.currency,
         ...stamps(now)
@@ -414,7 +446,13 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
   ): string {
     const checkIn = localDate(stay.checkIn)
     const checkOut = localDate(stay.checkOut)
-    const slots = staySlots(checkIn, checkOut)
+    const slots = staySlots(
+      checkIn,
+      checkOut,
+      stay.startTime !== undefined && stay.endTime !== undefined
+        ? { start: stay.startTime, end: stay.endTime }
+        : undefined
+    )
     const room = roomOn(tx, roomOf(tx, stay.roomId), slots)
     assertSellable(ctx, room, overrideReason, audit)
     checkSlots(tx, ctx, room.id, slots, overrideReason, audit)
@@ -675,6 +713,8 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
               id: n.id,
               date: n.date as LocalDate,
               slot: n.slot,
+              startTime: n.startTime,
+              endTime: n.endTime,
               priceMinor: n.priceMinor,
               currency: n.currency,
               payStatus: a?.status ?? 'unpaid',
@@ -977,9 +1017,17 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
         const before = detail(tx, stay.reservationId)
         const folio = folioOfReservation(tx, stay.reservationId)
         const room = roomOf(tx, stay.roomId)
-        const wanted = staySlots(localDate(data.checkIn), localDate(data.checkOut))
-        const key = (s: { date: string; slot: string }) => `${s.date}|${s.slot}`
         const existing = tx.select().from(roomNights).where(eq(roomNights.reservationRoomId, stayId)).all()
+        // An hourly stay that stays a day-use keeps its hours on the new date (K-48).
+        const hourly = existing.find((n) => n.slot === 'day' && n.startTime && n.endTime)
+        const wanted = staySlots(
+          localDate(data.checkIn),
+          localDate(data.checkOut),
+          hourly && data.checkIn === data.checkOut
+            ? { start: hourly.startTime!, end: hourly.endTime! }
+            : undefined
+        )
+        const key = slotKey
         const wantedKeys = new Set(wanted.map(key))
         const existingKeys = new Set(existing.map(key))
         const toAdd = wanted.filter((s) => !existingKeys.has(key(s)))
@@ -1045,11 +1093,16 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
         const folio = folioOfReservation(tx, stay.reservationId)
         const room = roomOf(tx, stay.roomId)
         const checkOut = addDays(localDate(stay.checkOut), shift)
-        const key = (s: { date: string; slot: string }) => `${s.date}|${s.slot}`
+        const key = slotKey
         const existing = tx.select().from(roomNights).where(eq(roomNights.reservationRoomId, stayId)).all()
         const moved = existing.map((n) => ({
           night: n,
-          slot: { date: addDays(localDate(n.date), shift), slot: n.slot } as StaySlot
+          slot: {
+            date: addDays(localDate(n.date), shift),
+            slot: n.slot,
+            startTime: n.startTime,
+            endTime: n.endTime
+          } as StaySlot
         }))
         const wanted = moved.map((m) => m.slot)
         const existingKeys = new Set(existing.map(key))
@@ -1549,7 +1602,12 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
     checkOut(
       ctx: Ctx,
       stayId: string,
-      opts: { kbsCheckoutIds?: readonly string[]; dayUsePriceMinor?: number } = {}
+      opts: {
+        kbsCheckoutIds?: readonly string[]
+        dayUsePriceMinor?: number
+        /** The desk confirmed a free same-day stay (price 0, H-06). */
+        dayUseFreeConfirmed?: boolean
+      } = {}
     ): ReservationDetail {
       requirePermission(ctx, 'calendar', 'edit')
       const kbsIds = [...new Set(opts.kbsCheckoutIds ?? [])]
@@ -1585,26 +1643,20 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
             'early_departure'
           )
           const first = nights.find((n) => n.date === stay.checkIn && n.slot === 'night')
-          // K-44: left on the check-in day — the first night becomes that day's day-use (unless the day slot is
-          // taken by another booking: then the night stays as it was) and its price may be changed here.
-          const daySlotFree =
-            plan.kind === 'sameDay' &&
-            !!first &&
-            !tx
-              .select({ id: roomNights.id })
-              .from(roomNights)
-              .where(
-                and(
-                  eq(roomNights.roomId, stay.roomId),
-                  eq(roomNights.date, stay.checkIn),
-                  eq(roomNights.slot, 'day')
-                )
-              )
-              .get()
+          // K-44: left on the check-in day — the first night becomes that day's day-use and its price may be changed
+          // here. The day slot carries the hours the guest really used (check-in minute to now), so a second round
+          // in the same room and day fits beside it and the night is free to sell again (the K-44 promise, hata C).
+          // Without a free range (a clash with another day range) the night stays as it was.
+          const range: HourRange | null =
+            plan.kind === 'sameDay' && first ? sameDayRange(tx, stay, now) : null
+          const daySlotFree = !!range
           let dayUse: { date: string; priceMinor: number } | undefined
-          if (daySlotFree && first) {
+          if (daySlotFree && first && range) {
+            // H-06: a free same-day stay is a decision, not a slip of the keyboard.
+            if (opts.dayUsePriceMinor === 0 && !opts.dayUseFreeConfirmed)
+              throw invalid('errors.dayUseFreeNeedsConfirm')
             tx.update(roomNights)
-              .set({ slot: 'day', updatedAt: iso })
+              .set({ slot: 'day', startTime: range.start, endTime: range.end, updatedAt: iso })
               .where(eq(roomNights.id, first.id))
               .run()
             if (opts.dayUsePriceMinor !== undefined && opts.dayUsePriceMinor !== first.priceMinor)
@@ -1908,6 +1960,67 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
       if (diffDays(localDate(data.from), localDate(data.to)) > MAX_STAY_NIGHTS)
         throw invalid('errors.validation')
       return roomsTaken(db, localDate(data.from), localDate(data.to), data.excludeReservationId)
+    },
+
+    /**
+     * An hour range in a room's day (K-48): whether it is free, which cleaning gaps it leaves short (a warning only,
+     * S-103) and the suggested price from the room type's hour price. Nothing is written.
+     */
+    hourlyCheck(ctx: Ctx, input: HourlyCheckInput): HourlyCheck {
+      requirePermission(ctx, 'calendar', 'view')
+      const data = parseInput(hourlyCheckInputSchema, input)
+      const date = localDate(data.date)
+      const range = { start: data.startTime, end: data.endTime }
+      const occupied = occupiedSlots(db, date, addDays(date, 1)).filter((o) => o.roomId === data.roomId)
+      const blocks = db
+        .select()
+        .from(roomBlocks)
+        .where(
+          and(
+            eq(roomBlocks.roomId, data.roomId),
+            isNull(roomBlocks.cancelledAt),
+            lt(roomBlocks.dateFrom, addDays(date, 1))
+          )
+        )
+        .all()
+        .map((b) => ({ ...b, dateFrom: b.dateFrom as LocalDate, dateTo: b.dateTo as LocalDate }))
+      const conflicts = findConflicts(
+        data.roomId,
+        staySlots(date, date, range),
+        occupied,
+        blocks,
+        data.excludeReservationId
+      )
+      const taken = conflicts.filter((c) => c.reason === 'occupied')
+      const others = occupied
+        .filter((o) => o.date === date && o.slot === 'day' && o.startTime && o.endTime)
+        .map((o) => ({ reservationId: o.reservationId, start: o.startTime, end: o.endTime }))
+      const turnoverMinutes = readSetting(db, 'dayUse.turnoverMinutes')
+      const type = db
+        .select({ hourly: roomTypes.hourlyPriceMinor, currency: roomTypes.baseCurrency })
+        .from(rooms)
+        .innerJoin(roomTypes, eq(rooms.roomTypeId, roomTypes.id))
+        .where(eq(rooms.id, data.roomId))
+        .get()
+      const currency = type?.currency ?? baseCurrencyOf(db)
+      return {
+        taken: taken.length > 0,
+        hours: [
+          ...new Set(taken.filter((c) => c.startTime && c.endTime).map((c) => `${c.startTime}–${c.endTime}`))
+        ].sort(),
+        blocked: conflicts.some((c) => c.reason === 'blocked'),
+        warnings: turnoverWarnings(range, others, turnoverMinutes, data.excludeReservationId).map((w) => ({
+          startTime: w.other.start ?? '',
+          endTime: w.other.end ?? '',
+          gapMinutes: w.gapMinutes
+        })),
+        turnoverMinutes,
+        suggestedMinor:
+          type?.hourly != null
+            ? hourlyAmountMinor(type.hourly, currency, data.startTime, data.endTime)
+            : null,
+        currency
+      }
     },
 
     /** Parked reservations with what they paid and the rooms they had (G-39). */

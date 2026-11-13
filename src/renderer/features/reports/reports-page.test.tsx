@@ -232,19 +232,32 @@ describe('Raporlar ekranı', { timeout: 30_000 }, () => {
     expect(kpis).toHaveTextContent('3 misafirden 1 kişi')
     expect(screen.getByTestId('chart-heatmap')).toHaveTextContent('%60')
     expect(screen.getByTestId('rooms-table')).toHaveTextContent('101')
-    expect(screen.getByTestId('day-use')).toHaveTextContent('Aynı gün giriş‑çıkış (1)')
+    expect(screen.getByTestId('day-use')).toHaveTextContent('Bu dönemde 1 saatlik ya da aynı gün satış')
     expect(screen.getByTestId('top-guests')).toHaveTextContent('Deniz Arslan')
   })
 
-  it('aynı gün giriş‑çıkış anahtarı ayarı değiştirir', async () => {
+  it('konaklama türü süzgeci servise stayKind ile gider; Tümü düz dönemi gönderir', async () => {
     const user = userEvent.setup()
     const { transport } = await render()
     await user.click(await screen.findByTestId('tab-occupancy'))
-    await user.click(await screen.findByRole('switch', { name: 'Dolulukta say' }))
+    await screen.findByTestId('occupancy-kpis')
+    expect(screen.queryByRole('switch', { name: 'Dolulukta say' })).not.toBeInTheDocument()
+    await user.click(screen.getByTestId('stay-kind-hourly'))
     await waitFor(() =>
       expect(transport.calls).toContainEqual({
-        name: 'settings.set',
-        input: { 'reports.dayUseInOccupancy': true }
+        name: 'reports.occupancy',
+        input: { from: '2026-10-01', to: '2026-10-21', stayKind: 'hourly' }
+      })
+    )
+    expect(transport.calls).toContainEqual({
+      name: 'reports.summary',
+      input: { from: '2026-10-01', to: '2026-10-21', stayKind: 'hourly' }
+    })
+    await user.click(screen.getByTestId('stay-kind-overnight'))
+    await waitFor(() =>
+      expect(transport.calls).toContainEqual({
+        name: 'reports.occupancy',
+        input: { from: '2026-10-01', to: '2026-10-21', stayKind: 'overnight' }
       })
     )
   })

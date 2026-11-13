@@ -59,6 +59,18 @@ export function bookingErrorText(t: TFunction, f: Format, error: unknown): strin
     string,
     unknown
   >
+  // An hourly clash names the hours in the way (K-48), not only the day.
+  if (
+    error.messageKey === 'errors.roomOccupied' &&
+    d['room'] &&
+    Array.isArray(d['hours']) &&
+    d['hours'].length
+  )
+    return t('booking.conflict.occupiedHours', {
+      room: d['room'],
+      dates: dateList(f, d['dates']),
+      hours: d['hours'].join(', ')
+    })
   if (error.messageKey === 'errors.roomOccupied' && d['room'])
     return t('booking.conflict.occupied', {
       room: d['room'],

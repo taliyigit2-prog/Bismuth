@@ -29,6 +29,8 @@ const roomTypeFields = z.object({
   sizeM2: z.number().int().min(1).max(2000).nullish(),
   basePriceMinor: amountSchema.nonnegative().nullish(),
   weekendPriceMinor: amountSchema.nonnegative().nullish(),
+  /** Price of one hour of an hourly stay (K-48, S-102); optional: the desk may type the amount at the sale. */
+  hourlyPriceMinor: amountSchema.nonnegative().nullish(),
   baseCurrency: currencyCode.nullish(),
   sort: z.number().int().optional(),
   active: z.boolean().optional()

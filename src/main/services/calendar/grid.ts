@@ -234,6 +234,8 @@ function staysOf(db: Db, reservationIds: readonly string[], today: LocalDate, no
         checkIn: stay.checkIn,
         checkOut: stay.checkOut,
         dayUse: stay.checkIn === stay.checkOut,
+        startTime: nights.find((n) => n.reservationRoomId === stay.id && n.slot === 'day')?.startTime ?? null,
+        endTime: nights.find((n) => n.reservationRoomId === stay.id && n.slot === 'day')?.endTime ?? null,
         reservationStatus: r.status as OnGrid,
         stayStatus: stay.status,
         guestName: `${g.firstName} ${g.lastName}`.trim(),

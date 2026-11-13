@@ -597,6 +597,7 @@ export function adminTransport(
           active: true,
           basePriceMinor: (i.basePriceMinor as number | null) ?? null,
           weekendPriceMinor: (i.weekendPriceMinor as number | null) ?? null,
+          hourlyPriceMinor: (i.hourlyPriceMinor as number | null) ?? null,
           baseCurrency: (i.baseCurrency as string | null) ?? null
         })
         state.roomTypes.push(created)

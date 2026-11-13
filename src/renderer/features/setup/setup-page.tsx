@@ -50,6 +50,7 @@ import { CalendarStep } from './step-calendar'
 import { CurrenciesStep } from './step-currencies'
 import { EmployeesStep } from './step-employees'
 import { HotelStep } from './step-hotel'
+import { HourlyStep } from './step-hourly'
 import { LanguageStep } from './step-language'
 import { ModeStep } from './step-mode'
 import { MoneyStep } from './step-money'
@@ -71,6 +72,7 @@ const BODIES: Record<Step, (props: StepProps) => ReactNode> = {
   currencies: CurrenciesStep,
   roomTypes: RoomTypesStep,
   rooms: RoomsStep,
+  hourly: HourlyStep,
   money: MoneyStep,
   staff: StaffStep,
   employees: EmployeesStep,

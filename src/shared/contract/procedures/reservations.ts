@@ -50,6 +50,9 @@ export const gridStaySchema = z.object({
   checkIn: localDateSchema,
   checkOut: localDateSchema,
   dayUse: z.boolean(),
+  /** Hours of an hourly stay ('HH:MM', K-48); null/absent = a night stay or a day-use of the whole day. */
+  startTime: z.string().nullish(),
+  endTime: z.string().nullish(),
   reservationStatus: z.enum(['tentative', 'confirmed', 'checked_in', 'checked_out']),
   stayStatus: z.enum(['planned', 'in_house', 'done']),
   guestName: z.string(),

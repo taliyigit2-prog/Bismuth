@@ -49,7 +49,10 @@ export function RoomTypesStep({ draft, update, options, errors }: StepProps) {
   const toggle = (id: string, on: boolean): void =>
     update((d) => {
       const selected = on
-        ? [...d.roomTypes.selected, { id, basePriceMinor: null, weekendPriceMinor: null }]
+        ? [
+            ...d.roomTypes.selected,
+            { id, basePriceMinor: null, weekendPriceMinor: null, hourlyPriceMinor: null }
+          ]
         : d.roomTypes.selected.filter((p) => p.id !== id)
       const next = { ...d, roomTypes: { ...d.roomTypes, selected } }
       return on && !d.generator.roomType
@@ -71,7 +74,10 @@ export function RoomTypesStep({ draft, update, options, errors }: StepProps) {
         ...d,
         roomTypes: {
           ...d.roomTypes,
-          custom: [...d.roomTypes.custom, { tempKey, name, basePriceMinor: null, weekendPriceMinor: null }]
+          custom: [
+            ...d.roomTypes.custom,
+            { tempKey, name, basePriceMinor: null, weekendPriceMinor: null, hourlyPriceMinor: null }
+          ]
         }
       }
       return d.generator.roomType ? next : { ...next, generator: { ...d.generator, roomType: { tempKey } } }

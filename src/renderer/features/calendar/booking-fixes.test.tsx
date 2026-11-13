@@ -116,7 +116,12 @@ describe('çıkış penceresi (P5fix #2, K-44)', () => {
     const transport = bookingTransport()
     const today = todayOf()
     const id = await created(transport, [{ roomId: 'room-101', checkIn: today, checkOut: addDays(today, 2) }])
-    const stay = { ...transport.booking.views[id]!.stays[0]!, status: 'in_house' as const }
+    // The view says the day slot is free (the service's `sameDay`), so the same-day price field is offered.
+    const stay = {
+      ...transport.booking.views[id]!.stays[0]!,
+      status: 'in_house' as const,
+      sameDay: { startTime: null, endTime: null, suggestedMinor: null }
+    }
     const user = userEvent.setup()
     await renderWithProviders(
       <CheckoutDialog stay={stay} currency="TRY" open onOpenChange={() => undefined} />,

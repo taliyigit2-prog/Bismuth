@@ -1243,7 +1243,17 @@
     "fontSizeLarger": "Daha büyük",
     "colorsTitle": "Otelin renkleri",
     "colorsHelp": "Vurgu rengi ve durum renkleri herkes için aynıdır. Tema önizlemesinde değiştirip sonucu hemen görebilirsiniz.",
-    "openThemePreview": "Tema önizlemesini aç"
+    "openThemePreview": "Tema önizlemesini aç",
+    "hourly": {
+      "price": "Saat ücreti",
+      "col": "Saat ücreti",
+      "priceHelp": "İsteğe bağlı. Saatlik satışta tutar için öneri olarak gösterilir; tutarı satışta siz yazarsınız.",
+      "turnover": "Satışlar arası temizlik süresi (dk)",
+      "turnoverHelp": "Önceki satıştan sonra bu süre dolmadan yeni saatlik satışta uyarı çıkar; satışı engellemez.",
+      "turnoverInvalid": "0 ile 240 arasında bir sayı yazın.",
+      "turnoverSaved": "Temizlik süresi kaydedildi",
+      "title": "Saatlik konaklama"
+    }
   },
   "status": {
     "paid": "Ödendi",
@@ -1521,7 +1531,8 @@
     "noShowTooEarly": "Varış gününden önce \"Gelmedi\" işaretlenemez. Rezervasyondan vazgeçildiyse iptal edin.",
     "undoCheckInNotToday": "Giriş yalnız giriş yapılan gün geri alınır. Çıkış yaptırın ya da otel sahibine başvurun.",
     "undoCheckInMoved": "Bu oda, oda değişikliği günü girişle açıldı; geri alınamaz. Önce çıkış yaptırın.",
-    "undoCheckInKbs": "{{names}} KBS'ye bildirilmiş. Onaylayarak geri alabilirsiniz."
+    "undoCheckInKbs": "{{names}} KBS'ye bildirilmiş. Onaylayarak geri alabilirsiniz.",
+    "dayUseFreeNeedsConfirm": "Ücret 0 yazıldı. Ücretsiz çıkışı onaylayın ya da bir tutar yazın."
   },
   "common": {
     "close": "Kapat",
@@ -2143,6 +2154,10 @@
       "summary": {
         "title": "Özet",
         "body": "Bilgileri kontrol edin. Çoğunu sonra Ayarlar'dan değiştirebilirsiniz."
+      },
+      "hourly": {
+        "title": "Saatlik satış",
+        "body": "Odaları saatle de satıyorsanız oda tipi başına bir saat ücreti yazın. Boş bırakabilirsiniz."
       }
     },
     "hotel": {
@@ -2434,7 +2449,14 @@
       "role": "Bir rol seçin."
     },
     "stepComplete": "tamamlandı",
-    "skipToStep": "Adım içeriğine geç"
+    "skipToStep": "Adım içeriğine geç",
+    "hourly": {
+      "title": "Saat ücreti (isteğe bağlı)",
+      "help": "Saatlik satışta tutarı her zaman siz yazarsınız; buradaki ücret yalnızca öneri olarak çıkar.",
+      "noTypes": "Önce oda tiplerini seçin.",
+      "price": "Saat ücreti",
+      "optional": "Saatlik satış yapmıyorsanız bu adımı boş geçin. Ücretleri sonra Ayarlar → Odalar ve tipler bölümünden de yazabilirsiniz."
+    }
   },
   "auth": {
     "title": "Oturum aç",
@@ -4155,7 +4177,9 @@
       "dayUseOut_other": "Aynı gün giriş‑çıkışlar ({{count}}) satılan gecelere katılmıyor, ayrı gösteriliyor.",
       "dayUseIn_one": "Aynı gün giriş‑çıkış ({{count}}) satılan gecelere katılıyor.",
       "dayUseIn_other": "Aynı gün giriş‑çıkışlar ({{count}}) satılan gecelere katılıyor.",
-      "dayUseSwitch": "Dolulukta say"
+      "dayUseSwitch": "Dolulukta say",
+      "hourlyCount_one": "Bu dönemde {{count}} saatlik ya da aynı gün satış",
+      "hourlyCount_other": "Bu dönemde {{count}} saatlik ya da aynı gün satış"
     },
     "cash": {
       "methods": "Ödeme yöntemine göre",
@@ -4281,6 +4305,12 @@
       "refund": "İade edilen",
       "refundHint_one": "{{count}} iade kaydı; gelirden düşülmüştür",
       "refundHint_other": "{{count}} iade kaydı; gelirden düşülmüştür"
+    },
+    "stayKind": {
+      "label": "Konaklama türü",
+      "all": "Tümü",
+      "overnight": "Gecelik",
+      "hourly": "Saatlik"
     }
   },
   "currency": {
@@ -5451,7 +5481,8 @@
   "booking": {
     "conflict": {
       "occupied": "Oda {{room}} {{dates}} tarihinde dolu ({{codes}}). Başka bir oda ya da tarih seçin.",
-      "blocked": "Oda {{room}} {{dates}} tarihinde satışa kapalı. Başka bir oda ya da tarih seçin."
+      "blocked": "Oda {{room}} {{dates}} tarihinde satışa kapalı. Başka bir oda ya da tarih seçin.",
+      "occupiedHours": "Oda {{room}} {{dates}} günü şu saatlerde dolu: {{hours}}. Başka bir saat ya da oda seçin."
     },
     "standing": {
       "infoTitle": "Misafirin sürekli notu",
@@ -5600,7 +5631,11 @@
       "release_one": "{{count}} gece boşalacak; oda o gece yeniden satılabilir.",
       "release_other": "{{count}} gece boşalacak; oda o geceler yeniden satılabilir.",
       "sameDay": "Misafir giriş günü ayrılıyor: ilk gece aynı gün giriş‑çıkış olarak kalır.",
-      "dayUsePrice": "Aynı gün giriş‑çıkış ücreti"
+      "dayUsePrice": "Aynı gün giriş‑çıkış ücreti",
+      "dayUseHours": "Kullanılan saatler: {{start}}–{{end}}",
+      "dayUseSuggested": "Önerilen: {{amount}} (oda tipinin saat ücreti × kullanılan süre)",
+      "freeConfirm": "Ücretsiz çıkış: tutar 0 olarak kaydedilsin",
+      "freeNeeded": "Tutar 0: ücretsiz çıkışı onaylayın ya da bir tutar yazın."
     },
     "park": {
       "title": "Rezervasyon park edilsin mi?",
@@ -5725,6 +5760,33 @@
       "needNote": "Nedeni yazın.",
       "parkConfirm": "İade bekliyor olarak park et",
       "menu": "İade gir"
+    },
+    "hourly": {
+      "button": "Saatlik satış",
+      "title": "Saatlik satış",
+      "description": "Bir odayı aynı gün içinde belirli saatler için satın. Tutarı siz yazarsınız.",
+      "room": "Oda",
+      "roomPlaceholder": "Oda seçin",
+      "date": "Tarih",
+      "start": "Başlangıç saati",
+      "end": "Bitiş saati",
+      "amount": "Tutar",
+      "channel": "Satış kanalı",
+      "suggested": "Önerilen: {{amount}} (oda tipinin saat ücreti × süre)",
+      "noSuggestion": "Bu oda tipi için saat ücreti yok. Tutarı siz yazın.",
+      "needGuest": "Misafirin adını yazın.",
+      "needRoom": "Bir oda seçin.",
+      "needAmount": "Tutarı yazın.",
+      "badRange": "Bitiş saati başlangıçtan sonra olmalı.",
+      "taken": "Oda {{room}} bu saatlerde dolu: {{hours}}. Başka bir saat ya da oda seçin.",
+      "takenDay": "Oda {{room}} bu gün dolu. Başka bir gün ya da oda seçin.",
+      "blocked": "Oda {{room}} bu gün satışa kapalı.",
+      "turnover": "{{start}}–{{end}} satışıyla arada {{gap}} dk var; temizlik için {{min}} dk önerilir. Yine de kaydedebilirsiniz.",
+      "toast": {
+        "created": "Saatlik satış kaydedildi"
+      },
+      "hoursLabel": "Saatler",
+      "kind": "Saatlik"
     }
   },
   "holidayCheck": {

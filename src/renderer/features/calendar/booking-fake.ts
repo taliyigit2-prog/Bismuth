@@ -14,7 +14,7 @@ import { matchBlacklist } from '@shared/domain/blacklist'
 import { cellStyle } from '@shared/domain/cell-status'
 import { normalizeName } from '@shared/domain/normalize'
 import { allocatePayments, folioTotals } from '@shared/domain/payment-allocation'
-import { staySlots } from '@shared/domain/stays'
+import { hourlyAmountMinor, staySlots } from '@shared/domain/stays'
 import { fakeTransport, type FakeTransport, type FakeTransportOptions } from '@/test/render'
 import { ApiError } from '@/lib/transport/types'
 
@@ -48,6 +48,8 @@ export interface BookingState {
   parked: Parked[]
   days: Day[]
   taken: { occupied: string[]; blocked: string[]; notForSale?: string[] }
+  /** What `booking.hourlyCheck` answers besides the suggested price (a clash, a cleaning-gap warning). */
+  hourly?: Partial<ProcedureOutput<'booking.hourlyCheck'>>
   payments: Record<string, { kind: 'payment' | 'deposit' | 'refund'; amountMinor: number }[]>
 }
 
@@ -55,7 +57,14 @@ const TODAY = localDate('2026-10-04')
 const i18n = (tr: string, en = tr, ru = tr) => ({ tr, en, ru })
 
 export function defaultBookingState(): BookingState {
-  const room = (id: string, number: string, floor: string, base: number, weekend: number | null) => ({
+  const room = (
+    id: string,
+    number: string,
+    floor: string,
+    base: number,
+    weekend: number | null,
+    hourly: number | null = null
+  ) => ({
     id,
     number,
     floor,
@@ -67,6 +76,7 @@ export function defaultBookingState(): BookingState {
     hkStatus: 'clean',
     basePriceMinor: base,
     weekendPriceMinor: weekend,
+    hourlyPriceMinor: hourly,
     priceCurrency: 'TRY',
     openIssues: [] as Options['rooms'][number]['openIssues']
   })
@@ -77,7 +87,10 @@ export function defaultBookingState(): BookingState {
       currencies: ['TRY', 'EUR', 'USD'],
       highlightWeekdays: [6, 0],
       weekendNights: [5, 6],
-      rooms: [room('room-101', '101', '1', 280_000, 320_000), room('room-102', '102', '1', 270_000, null)],
+      rooms: [
+        room('room-101', '101', '1', 280_000, 320_000, 30_000),
+        room('room-102', '102', '1', 270_000, null)
+      ],
       channels: [
         { id: 'ch-direct', code: 'direct', name: 'Direkt', nameI18n: i18n('Direkt', 'Direct', 'Напрямую') },
         { id: 'ch-booking', code: 'booking', name: 'Booking.com', nameI18n: null }
@@ -223,10 +236,18 @@ export function bookingTransport(
           checkedInAt: null,
           checkedOutAt: null,
           dayUse: s.checkIn === s.checkOut,
-          nights: staySlots(localDate(s.checkIn), localDate(s.checkOut)).map((slot) => ({
+          startTime: s.startTime ?? null,
+          endTime: s.endTime ?? null,
+          nights: staySlots(
+            localDate(s.checkIn),
+            localDate(s.checkOut),
+            s.startTime && s.endTime ? { start: s.startTime, end: s.endTime } : undefined
+          ).map((slot) => ({
             id: `${id}-${i}-${slot.date}`,
             date: slot.date,
             slot: slot.slot,
+            startTime: slot.startTime ?? null,
+            endTime: slot.endTime ?? null,
             priceMinor: price.get(slot.date) ?? s.nightlyPriceMinor ?? 0,
             currency: input.currency ?? 'TRY',
             payStatus: 'unpaid' as const,
@@ -357,6 +378,40 @@ export function bookingTransport(
       }
       case 'booking.create':
         return create(input as ProcedureInput<'booking.create'>)
+      case 'booking.createHourlyStay': {
+        const h = input as ProcedureInput<'booking.createHourlyStay'>
+        return create({
+          guest: h.guest,
+          channelId: h.channelId,
+          status: h.status,
+          currency: h.currency,
+          blacklistConfirmed: h.blacklistConfirmed,
+          stays: [
+            {
+              roomId: h.roomId,
+              checkIn: h.date,
+              checkOut: h.date,
+              startTime: h.startTime,
+              endTime: h.endTime,
+              nightlyPriceMinor: h.priceMinor
+            }
+          ]
+        })
+      }
+      case 'booking.hourlyCheck': {
+        const c = input as ProcedureInput<'booking.hourlyCheck'>
+        const hourly = state.options.rooms.find((r) => r.id === c.roomId)?.hourlyPriceMinor ?? null
+        return {
+          taken: false,
+          hours: [],
+          blocked: false,
+          warnings: [],
+          turnoverMinutes: 60,
+          suggestedMinor: hourly === null ? null : hourlyAmountMinor(hourly, 'TRY', c.startTime, c.endTime),
+          currency: 'TRY',
+          ...state.hourly
+        }
+      }
       case 'booking.get': {
         const view = state.views[String(i['id'])]
         if (!view) throw new ApiError('NOT_FOUND', 404, 'errors.notFound')

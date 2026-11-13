@@ -69,7 +69,7 @@ describe('kurulum: para birimi ekleme', () => {
       const user = userEvent.setup()
       const scroll = vi.spyOn(Element.prototype, 'scrollIntoView')
       await renderSetup({ path: '/setup?step=4' })
-      expect(await screen.findByTestId('setup-step-of')).toHaveTextContent('Adım 4 / 12')
+      expect(await screen.findByTestId('setup-step-of')).toHaveTextContent('Adım 4 / 13')
       const button = screen.getByTestId('setup-currency-add')
 
       await user.click(button)

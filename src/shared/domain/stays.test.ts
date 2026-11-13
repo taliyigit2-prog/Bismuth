@@ -5,12 +5,14 @@ import {
   clockMinutes,
   findConflicts,
   findHourConflicts,
+  hourlyAmountMinor,
   hourRangesOverlap,
   isDayUse,
   isValidHourRange,
   splitForRoomChange,
   staySlots,
-  turnoverWarnings
+  turnoverWarnings,
+  usedHours
 } from './stays'
 
 describe('konaklama geceleri (§6.1)', () => {
@@ -155,5 +157,76 @@ describe('saatlik konaklama: saat aralığı çakışması (K-48)', () => {
     expect(findHourConflicts(clash, others).map((o) => o.reservationId)).toEqual(['A'])
     expect(turnoverWarnings(clash, others, 60).map((w) => w.other.reservationId)).toEqual([])
     expect(findHourConflicts(clash, others, 'A')).toEqual([])
+  })
+})
+
+describe('saatli gündüz yuvaları ve çakışma (K-48)', () => {
+  const day = d('2026-10-05')
+  const taken = (reservationId: string, startTime: string | null, endTime: string | null) => ({
+    roomId: 'r1',
+    reservationId,
+    date: day,
+    slot: 'day' as const,
+    startTime,
+    endTime
+  })
+  const want = (startTime: string, endTime: string) => staySlots(day, day, { start: startTime, end: endTime })
+
+  it('saatli yuva saatleriyle gelir; saat yalnız gündüz kullanımına uyar', () => {
+    expect(want('09:00', '12:00')).toEqual([{ date: day, slot: 'day', startTime: '09:00', endTime: '12:00' }])
+    expect(() => staySlots(day, d('2026-10-06'), { start: '09:00', end: '12:00' })).toThrow(RangeError)
+  })
+
+  it('aynı gün saat çakışmayan yuvalar bir arada olur; çakışan, çakışan saatleri söyler', () => {
+    const occupied = [taken('A', '09:00', '12:00')]
+    expect(findConflicts('r1', want('12:00', '15:00'), occupied, [])).toEqual([])
+    expect(findConflicts('r1', want('11:00', '13:00'), occupied, [])).toEqual([
+      {
+        roomId: 'r1',
+        date: day,
+        slot: 'day',
+        reason: 'occupied',
+        reservationId: 'A',
+        startTime: '09:00',
+        endTime: '12:00'
+      }
+    ])
+  })
+
+  it('tüm gün gündüz yuvası her saatli yuvayla çakışır, iki yönde', () => {
+    expect(findConflicts('r1', want('09:00', '10:00'), [taken('W', null, null)], [])).toHaveLength(1)
+    expect(findConflicts('r1', staySlots(day, day), [taken('A', '09:00', '10:00')], [])).toHaveLength(1)
+  })
+
+  it('gündüz yuvası gece konaklamasıyla çakışmaz; süren konaklamanın içinde çakışır (G-37)', () => {
+    const night = { roomId: 'r1', reservationId: 'N', date: day, slot: 'night' as const }
+    expect(findConflicts('r1', want('09:00', '10:00'), [night], [])).toEqual([])
+    const through = [night, { ...night, date: d('2026-10-04') }]
+    expect(findConflicts('r1', want('09:00', '10:00'), through, [])).toHaveLength(1)
+  })
+
+  it('uzatma, saatli yuvası olan günü kapsayamaz', () => {
+    const nights = staySlots(d('2026-10-04'), d('2026-10-06'))
+    expect(findConflicts('r1', nights, [taken('A', '09:00', '10:00')], [])).toHaveLength(1)
+  })
+})
+
+describe('gerçekten kullanılan saatler (hata C) ve saat ücreti', () => {
+  const day = d('2026-10-05')
+  const at = (hhmm: string) => new Date(`2026-10-05T${hhmm}:00`)
+
+  it('girişten şimdiye kadar; boş aralık bir dakikaya uzar; gün dışına taşan başka güne ait sayılır', () => {
+    expect(usedHours(at('10:15'), day, at('15:30'))).toEqual({ start: '10:15', end: '15:30' })
+    expect(usedHours(at('10:15'), day, at('10:15'))).toEqual({ start: '10:15', end: '10:16' })
+    expect(usedHours(new Date('2026-10-04T22:00:00'), day, at('15:30'))).toEqual({
+      start: '00:00',
+      end: '15:30'
+    })
+    expect(usedHours(at('23:59'), day, at('23:59'))).toBeNull()
+  })
+
+  it('saat ücreti × süre dakika oranıyla, kuruşa yuvarlanır', () => {
+    expect(hourlyAmountMinor(30_000, 'TRY', '10:00', '12:30')).toBe(75_000)
+    expect(hourlyAmountMinor(10_000, 'TRY', '10:00', '10:20')).toBe(3_333)
   })
 })

@@ -154,17 +154,67 @@ describe('doluluk (§6.10; kabul ölçütü: satılmaz blok paydadan düşer, ay
     expect(sum.occupancy).toMatchObject({ stays: 3, alosHundredths: 500 })
   })
 
-  it('aynı gün giriş‑çıkış ayrı sayılır; ayar açılınca satılan geceye eklenir', async () => {
+  it('aynı gün ve saatlik satışlar her zaman dolulukta sayılır; aynı oda-gün bir kez, satış sayısı ayrı', async () => {
     const h = await october()
     const day = h.book(1, '2026-10-25', '2026-10-25', 150_000)
     h.pay(day, 150_000, 'cash', '2026-10-25')
-    const off = h.s.reports.summary(owner, OCTOBER).occupancy
-    expect(off).toMatchObject({ soldNights: 15, dayUseNights: 1, sellableNights: 93, dayUseIncluded: false })
-    h.s.settings.set(owner, { 'reports.dayUseInOccupancy': true })
-    const on = h.s.reports.summary(owner, OCTOBER).occupancy
-    expect(on).toMatchObject({ soldNights: 16, dayUseNights: 1, dayUseIncluded: true })
-    expect(on.occupancyBp).toBe(1720)
+    const first = h.s.reports.summary(owner, OCTOBER).occupancy
+    expect(first).toMatchObject({ soldNights: 16, dayUseNights: 1, sellableNights: 93, dayUseIncluded: true })
+    expect(first.occupancyBp).toBe(1720)
+    // Two hourly sales of one room and day: two sales, one sold room-day.
+    const hourly = (startTime: string, endTime: string) =>
+      h.s.reservations.create(owner, {
+        guest: { firstName: 'Saatlik', lastName: 'Misafir' },
+        channelId: h.code(salesChannels, 'direct'),
+        stays: [
+          {
+            roomId: h.rooms[0]!.id,
+            checkIn: '2026-10-26',
+            checkOut: '2026-10-26',
+            startTime,
+            endTime,
+            nightlyPriceMinor: 90_000
+          }
+        ]
+      })
+    hourly('09:00', '12:00')
+    hourly('13:00', '16:00')
+    const all = h.s.reports.summary(owner, OCTOBER).occupancy
+    expect(all).toMatchObject({ soldNights: 17, dayUseNights: 3 })
     expect(h.s.reports.context(owner).dayUseIncluded).toBe(true)
+    expect(h.s.reports.occupancy(owner, OCTOBER).months[0]).toMatchObject({ dayUseNights: 3 })
+  })
+
+  it('konaklama türü süzgeci: gecelik yalnız geceleri, saatlik yalnız gündüz yuvalarını ve gelirini sayar', async () => {
+    const h = await october()
+    const day = h.book(1, '2026-10-25', '2026-10-25', 150_000)
+    h.pay(day, 150_000, 'cash', '2026-10-25')
+    h.s.reservations.create(owner, {
+      guest: { firstName: 'Saatlik', lastName: 'Misafir' },
+      channelId: h.code(salesChannels, 'direct'),
+      stays: [
+        {
+          roomId: h.rooms[0]!.id,
+          checkIn: '2026-10-26',
+          checkOut: '2026-10-26',
+          startTime: '09:00',
+          endTime: '12:00',
+          nightlyPriceMinor: 90_000
+        }
+      ]
+    })
+    const kind = (stayKind: 'all' | 'overnight' | 'hourly') =>
+      h.s.reports.summary(owner, { ...OCTOBER, stayKind })
+    expect(kind('overnight').occupancy).toMatchObject({ soldNights: 15, dayUseNights: 0, sellableNights: 93 })
+    expect(kind('overnight').finance?.roomRevenueMinor).toBe(3_730_000)
+    expect(kind('hourly').occupancy).toMatchObject({ soldNights: 2, dayUseNights: 2, sellableNights: 93 })
+    expect(kind('hourly').finance?.roomRevenueMinor).toBe(240_000)
+    expect(kind('all').finance?.roomRevenueMinor).toBe(3_970_000)
+    expect(h.s.reports.occupancy(owner, { ...OCTOBER, stayKind: 'hourly' }).months[0]).toMatchObject({
+      soldNights: 2,
+      dayUseNights: 2
+    })
+    expect(() => h.s.reports.summary(owner, { ...OCTOBER, stayKind: 'weekly' })).toThrow()
   })
 
   it('kapasite geçmişi: satıştan kaldırılan oda o günden sonra paydaya girmez', async () => {

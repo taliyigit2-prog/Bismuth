@@ -1,7 +1,8 @@
 // Reservation panel inputs and views (faz-05 madde 2, 3, 4, 7b; G-34…G-48, G-53, G-54, G-180, G-190, G-192).
 // The procedures are in ./procedures/booking.ts; the service validates the same inputs (G-23: rules there).
 import * as z from 'zod'
-import { localDateSchema, idSchema, minorSchema } from './rooms'
+import { isValidHourRange } from '../domain/stays'
+import { amountSchema, localDateSchema, idSchema, minorSchema } from './rooms'
 import { occupantInputSchema, reservationCreateSchema, stayInputSchema } from './reservations'
 
 const i18n = z.object({ tr: z.string(), en: z.string(), ru: z.string() }).partial().nullable()
@@ -12,6 +13,68 @@ export const bookingCreateSchema = reservationCreateSchema.extend({
   blacklistConfirmed: z.boolean().optional()
 })
 export type BookingCreateInput = z.input<typeof bookingCreateSchema>
+
+/**
+ * An hourly stay sale (K-48): one room, one day, a start and an end time and the amount the desk types (required;
+ * the room type's hour price is only a suggestion). Becomes a reservation with one day-use stay carrying the hours.
+ */
+export const hourlyStaySchema = z
+  .object({
+    guest: reservationCreateSchema.shape.guest,
+    channelId: idSchema,
+    channelRef: z.string().max(80).nullish(),
+    status: z.enum(['tentative', 'confirmed']).default('confirmed'),
+    roomId: idSchema,
+    date: localDateSchema,
+    startTime: z.string(),
+    endTime: z.string(),
+    priceMinor: amountSchema.positive(),
+    currency: reservationCreateSchema.shape.currency,
+    adults: z.number().int().min(0).max(50).nullish(),
+    notes: z.string().max(2000).nullish(),
+    soldByUserId: idSchema.nullish(),
+    overrideBlockReason: z.string().trim().min(3).max(200).optional(),
+    blacklistConfirmed: z.boolean().optional()
+  })
+  .strict()
+  .refine((s) => isValidHourRange(s.startTime, s.endTime), {
+    path: ['endTime'],
+    message: 'end must be after start'
+  })
+export type HourlyStayInput = z.input<typeof hourlyStaySchema>
+
+/** Whether an hour range fits a room's day: clashes, cleaning-gap warnings, the suggested price. */
+export const hourlyCheckInputSchema = z
+  .object({
+    roomId: idSchema,
+    date: localDateSchema,
+    startTime: z.string(),
+    endTime: z.string(),
+    excludeReservationId: idSchema.optional()
+  })
+  .strict()
+  .refine((s) => isValidHourRange(s.startTime, s.endTime), {
+    path: ['endTime'],
+    message: 'end must be after start'
+  })
+
+export const hourlyCheckSchema = z.object({
+  /** Another stay holds the hours (or the night through the day): the sale is refused. */
+  taken: z.boolean(),
+  /** Hours of the clashing day ranges, 'HH:MM–HH:MM'; empty when it is a whole day or a night. */
+  hours: z.array(z.string()),
+  blocked: z.boolean(),
+  /** Day ranges that leave less than the cleaning time before or after (a warning, never a block, S-103). */
+  warnings: z.array(
+    z.object({ startTime: z.string(), endTime: z.string(), gapMinutes: z.number().int().min(0) })
+  ),
+  turnoverMinutes: z.number().int().min(0),
+  /** The room type's hour price × the hours; null when the type has none. */
+  suggestedMinor: minorSchema.nullable(),
+  currency: z.string()
+})
+export type HourlyCheck = z.output<typeof hourlyCheckSchema>
+export type HourlyCheckInput = z.input<typeof hourlyCheckInputSchema>
 
 /** One line of the reservation's note log. */
 export const bookingNoteTextSchema = z.string().trim().min(1).max(2000)
@@ -111,6 +174,8 @@ const nightSchema = z.object({
   id: idSchema,
   date: localDateSchema,
   slot: z.enum(['night', 'day']),
+  startTime: z.string().nullish(),
+  endTime: z.string().nullish(),
   priceMinor: minorSchema,
   currency: z.string(),
   payStatus: z.enum(['paid', 'partial', 'unpaid']),
@@ -135,6 +200,17 @@ const stayViewSchema = z.object({
   checkedInAt: iso.nullable(),
   checkedOutAt: iso.nullable(),
   dayUse: z.boolean(),
+  /** Hours of an hourly stay ('HH:MM', K-48); null/absent = no hours. */
+  startTime: z.string().nullish(),
+  endTime: z.string().nullish(),
+  /** What leaving today makes of the stay's first night (K-44): hours and suggested price; null = n/a (H-06). */
+  sameDay: z
+    .object({
+      startTime: z.string().nullable(),
+      endTime: z.string().nullable(),
+      suggestedMinor: minorSchema.nullable()
+    })
+    .nullish(),
   nights: z.array(nightSchema),
   occupants: z.array(occupantViewSchema),
   kbsIssues: z.array(
@@ -245,6 +321,7 @@ export const bookingOptionsSchema = z.object({
       hkStatus: z.string(),
       basePriceMinor: minorSchema.nullable(),
       weekendPriceMinor: minorSchema.nullable(),
+      hourlyPriceMinor: minorSchema.nullish(),
       priceCurrency: z.string().nullable(),
       openIssues: z.array(openIssueSchema)
     })

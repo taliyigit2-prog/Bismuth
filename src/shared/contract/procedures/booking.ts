@@ -17,6 +17,9 @@ import {
   guestCandidateInputSchema,
   guestHitSchema,
   guestSummarySchema,
+  hourlyCheckInputSchema,
+  hourlyCheckSchema,
+  hourlyStaySchema,
   kbsMarkSchema,
   occupantAddSchema,
   parkedViewSchema,
@@ -66,6 +69,9 @@ export const bookingProcedures = {
   'booking.checkBlacklist': proc(guestCandidateInputSchema, z.array(blacklistHitSchema)),
 
   'booking.create': proc(bookingCreateSchema, bookingViewSchema),
+  /** An hourly stay sale (K-48): room, day, hours and the amount typed at the desk. */
+  'booking.createHourlyStay': proc(hourlyStaySchema, bookingViewSchema),
+  'booking.hourlyCheck': proc(hourlyCheckInputSchema, hourlyCheckSchema),
   'booking.update': proc(
     z.object({ id: idSchema, patch: reservationUpdateSchema }).strict(),
     bookingViewSchema
@@ -103,7 +109,9 @@ export const bookingProcedures = {
         stayId: idSchema,
         kbsCheckoutIds: z.array(idSchema).max(50).default([]),
         /** Leaving on the check-in day (K-44): the day-use price instead of the first night's. */
-        dayUsePriceMinor: amountSchema.nonnegative().optional()
+        dayUsePriceMinor: amountSchema.nonnegative().optional(),
+        /** 0 only with this (H-06): the desk said the same-day stay is free. */
+        dayUseFreeConfirmed: z.boolean().optional()
       })
       .strict(),
     bookingViewSchema

@@ -19,6 +19,7 @@ import { DateInput } from '@/components/date-input'
 import { MoneyInput, type MoneyValue } from '@/components/money-input'
 import { ResponsiveDialog } from '@/components/responsive-dialog'
 import { deferForPendingAmount } from '@/features/settings/use-admin'
+import { useFormat } from '@/hooks/use-format'
 import { useApiQuery } from '@/lib/api/hooks'
 import { useCan } from '@/lib/view-as'
 import { useBookingMutation, useBookingOptions, type BookingStay } from './booking-api'
@@ -76,15 +77,22 @@ export function CheckoutDialog({
   onCheckedOut?: () => void
 }) {
   const { t } = useTranslation()
+  const f = useFormat()
   const people = stay.occupants.filter((o) => !o.kbsCheckoutAt)
   const [ticked, setTicked] = useState<Set<string>>(new Set())
   const gaps = checkoutKbsGaps(stay.occupants, ticked)
   const plan = checkoutPlan(stay, localDateOf(new Date()))
   const firstNight = stay.nights.find((n) => n.date === stay.checkIn)
+  // H-06: the same-day price starts from the room type's hour price × the hours used (else the first night's price);
+  // the field is hidden when the day slot has no free range (the service then keeps the night as it was).
+  const sameDay = stay.sameDay ?? null
   const [dayUse, setDayUse] = useState<MoneyValue>({
-    amountMinor: firstNight?.priceMinor ?? null,
+    amountMinor: sameDay?.suggestedMinor ?? firstNight?.priceMinor ?? null,
     currency
   })
+  const [freeOk, setFreeOk] = useState(false)
+  const [freeError, setFreeError] = useState(false)
+  const showDayUse = plan.kind === 'sameDay' && sameDay !== null
   const checkOut = useBookingMutation('booking.checkOut', {
     success: t('booking.toast.checkedOut', { room: stay.roomNumber }),
     onSuccess: () => {
@@ -119,11 +127,16 @@ export function CheckoutDialog({
         onSubmit={(e) => {
           e.preventDefault()
           if (deferForPendingAmount(e.currentTarget)) return
+          // H-06: a free same-day stay is a decision (ticked), not an empty or zero field left by mistake.
+          if (showDayUse && dayUse.amountMinor === 0 && !freeOk) return setFreeError(true)
           checkOut.mutate({
             stayId: stay.id,
             kbsCheckoutIds: [...ticked],
-            ...(plan.kind === 'sameDay' && dayUse.amountMinor !== null
-              ? { dayUsePriceMinor: dayUse.amountMinor }
+            ...(showDayUse && dayUse.amountMinor !== null
+              ? {
+                  dayUsePriceMinor: dayUse.amountMinor,
+                  ...(dayUse.amountMinor === 0 ? { dayUseFreeConfirmed: true } : {})
+                }
               : {})
           })
         }}
@@ -143,13 +156,49 @@ export function CheckoutDialog({
             </AlertDescription>
           </Alert>
         ) : null}
-        {plan.kind === 'sameDay' ? (
-          <MoneyInput
-            label={t('booking.checkout.dayUsePrice')}
-            value={dayUse}
-            onChange={(v) => setDayUse({ ...v, currency })}
-            currencies={[currency]}
-          />
+        {showDayUse ? (
+          <div className="grid gap-2" data-testid="checkout-dayuse">
+            <MoneyInput
+              label={t('booking.checkout.dayUsePrice')}
+              value={dayUse}
+              onChange={(v) => {
+                setDayUse({ ...v, currency })
+                setFreeError(false)
+                if (v.amountMinor !== 0) setFreeOk(false)
+              }}
+              currencies={[currency]}
+            />
+            {sameDay.startTime && sameDay.endTime ? (
+              <p className="text-muted-foreground text-xs tabular-nums">
+                {t('booking.checkout.dayUseHours', { start: sameDay.startTime, end: sameDay.endTime })}
+              </p>
+            ) : null}
+            {sameDay.suggestedMinor !== null ? (
+              <p className="text-muted-foreground text-xs" data-testid="checkout-dayuse-suggested">
+                {t('booking.checkout.dayUseSuggested', {
+                  amount: f.money(sameDay.suggestedMinor, currency)
+                })}
+              </p>
+            ) : null}
+            {dayUse.amountMinor === 0 ? (
+              <label className="flex min-h-8 items-center gap-2 text-sm max-md:min-h-11">
+                <Checkbox
+                  checked={freeOk}
+                  onCheckedChange={(c) => {
+                    setFreeOk(c === true)
+                    setFreeError(false)
+                  }}
+                  data-testid="checkout-free-confirm"
+                />
+                {t('booking.checkout.freeConfirm')}
+              </label>
+            ) : null}
+            {freeError ? (
+              <p role="alert" className="text-destructive text-sm" data-testid="checkout-free-error">
+                {t('booking.checkout.freeNeeded')}
+              </p>
+            ) : null}
+          </div>
         ) : null}
         {people.length ? (
           <fieldset className="grid gap-2">
@@ -311,6 +360,7 @@ export function CancelDialog({
       onOpenChange={onOpenChange}
       title={t('booking.cancel.title')}
       description={t('booking.cancel.description')}
+      focusFirstOnPhone={false}
       footer={
         <DialogButtons
           form="cancel-form"

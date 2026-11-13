@@ -2,6 +2,7 @@
 // G-68). Service-side validation; the same schemas serve the API in later phases.
 import * as z from 'zod'
 import { diffDays, type LocalDate } from '../date'
+import { isValidHourRange } from '../domain/stays'
 import { amountSchema, idSchema, localDateSchema } from './rooms'
 import { currencyCode } from './settings'
 
@@ -24,10 +25,23 @@ export const stayInputSchema = z
     /** One price copied to every night (G-36: editable night by night afterwards)… */
     nightlyPriceMinor: amountSchema.nonnegative().optional(),
     /** …or explicit prices per night. */
-    prices: z.array(nightPriceSchema).max(400).optional()
+    prices: z.array(nightPriceSchema).max(400).optional(),
+    /** Hours of an hourly stay (K-48): both 'HH:MM', end after start, only on a day-use; none = the whole day. */
+    startTime: z.string().optional(),
+    endTime: z.string().optional()
   })
   .refine((s) => s.checkOut >= s.checkIn, { path: ['checkOut'], message: 'checkOut before checkIn' })
   .refine(stayLengthOk, { path: ['checkOut'], message: 'stay too long' })
+  .refine(
+    (s) =>
+      s.startTime === undefined && s.endTime === undefined
+        ? true
+        : s.startTime !== undefined &&
+          s.endTime !== undefined &&
+          s.checkIn === s.checkOut &&
+          isValidHourRange(s.startTime, s.endTime),
+    { path: ['endTime'], message: 'hours need a day-use and a start before the end' }
+  )
   .refine((s) => s.nightlyPriceMinor !== undefined || (s.prices?.length ?? 0) > 0, {
     path: ['nightlyPriceMinor'],
     message: 'price required'

@@ -207,6 +207,37 @@ describe('çubuk geometrisi', () => {
   })
 })
 
+describe('saatlik çubuklar (K-48)', () => {
+  const hourly = (id: string, start: string, end: string, day = '2026-10-05') =>
+    stay(id, day, day, { startTime: start, endTime: end })
+
+  it('aynı oda ve günde birden çok saatlik satış saat sırasıyla üst üste şeritlere dizilir', () => {
+    const bars = stayBars(
+      [hourly('late', '16:00', '19:00'), hourly('a', '09:00', '12:00'), hourly('b', '12:00', '15:00')],
+      BASE
+    )
+    expect(bars.map((b) => [b.stay.id, b.lane, b.lanes])).toEqual([
+      ['late', 2, 3],
+      ['a', 0, 3],
+      ['b', 1, 3]
+    ])
+  })
+
+  it('tek saatlik satış bütün hücreyi alır; başka günün satışı şerit sayısını değiştirmez', () => {
+    const bars = stayBars([hourly('a', '09:00', '12:00'), hourly('x', '09:00', '12:00', '2026-10-06')], BASE)
+    expect(bars.map((b) => [b.stay.id, b.lane, b.lanes])).toEqual([
+      ['a', 0, 1],
+      ['x', 0, 1]
+    ])
+  })
+
+  it('geceyle paylaşılan hücre yine bölünür; gece çubuğu şeride girmez', () => {
+    const bars = stayBars([stay('night', '2026-10-05', '2026-10-07'), hourly('h', '09:00', '10:00')], BASE)
+    expect(bars.find((b) => b.stay.id === 'night')).toMatchObject({ lane: 0, lanes: 1, split: 'end' })
+    expect(bars.find((b) => b.stay.id === 'h')).toMatchObject({ lane: 0, lanes: 1, split: 'start' })
+  })
+})
+
 describe('renkler (§6.14)', () => {
   it('boş hücre: bugünden önce gri, bugün ve sonrası beyaz; kapalıysa geri düşer', () => {
     expect(emptyCellStatus(true, allOn)).toBe('pastEmpty')

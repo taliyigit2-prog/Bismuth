@@ -4,6 +4,7 @@
 // rare foreign-currency ones are converted row by row with the rate of their writing minute (revenue-base.ts rule).
 import { and, asc, eq, gte, inArray, isNotNull, isNull, lt, ne, sql, type SQL } from 'drizzle-orm'
 import { alias, type AnySQLiteColumn } from 'drizzle-orm/sqlite-core'
+import type { StayKind } from '@shared/contract/procedures/reports'
 import type { LocalDate } from '@shared/date'
 import type { MethodGroup } from '@shared/domain/cash'
 import type { ExpenseForTop } from '@shared/domain/reports'
@@ -421,11 +422,22 @@ export interface NightFact {
   month: string
   weekday: number
   slot: 'night' | 'day'
+  /** Slots counted (nights, or day-use / hourly sales). */
   n: number
+  /** Distinct room-days the slots sit on: several hourly sales of one room and day fill the day once. */
+  days: number
 }
 
+/** The slot rows a stay kind keeps: overnight = nights, hourly = day slots (same-day and hourly stays, K-48). */
+const kindFilter = (kind: StayKind | undefined) =>
+  kind === 'overnight'
+    ? eq(roomNights.slot, 'night')
+    : kind === 'hourly'
+      ? eq(roomNights.slot, 'day')
+      : undefined
+
 /** Sold room-nights of live reservations grouped by room × month × weekday × slot. */
-export function nightFacts(db: Reader, p: Period): NightFact[] {
+export function nightFacts(db: Reader, p: Period, kind?: StayKind): NightFact[] {
   const month = sql<string>`substr(${roomNights.date}, 1, 7)`
   const wd = sql<number>`cast(strftime('%w', ${roomNights.date}) as integer)`
   return db
@@ -434,7 +446,8 @@ export function nightFacts(db: Reader, p: Period): NightFact[] {
       month,
       weekday: wd,
       slot: roomNights.slot,
-      n: sql<number>`count(*)`
+      n: sql<number>`count(*)`,
+      days: sql<number>`count(distinct ${roomNights.date})`
     })
     .from(roomNights)
     .innerJoin(reservationRooms, eq(reservationRooms.id, roomNights.reservationRoomId))
@@ -443,7 +456,8 @@ export function nightFacts(db: Reader, p: Period): NightFact[] {
       and(
         inPeriod(roomNights.date, p),
         inArray(reservations.status, [...LIVE_STATUSES]),
-        ne(reservationRooms.status, 'cancelled')
+        ne(reservationRooms.status, 'cancelled'),
+        kindFilter(kind)
       )
     )
     .groupBy(roomNights.roomId, month, wd, roomNights.slot)
@@ -503,9 +517,15 @@ export function repeatGuests(db: Reader, p: Period): { total: number; repeat: nu
 export function roomRevenueByRoom(
   db: Reader,
   p: Period,
-  base: string
+  base: string,
+  kind?: StayKind
 ): { byRoom: Map<string, number>; missing: number } {
-  const where = and(eq(charges.kind, 'room_night'), isNull(charges.voidedAt), inPeriod(charges.date, p))
+  const where = and(
+    eq(charges.kind, 'room_night'),
+    isNull(charges.voidedAt),
+    inPeriod(charges.date, p),
+    kindFilter(kind)
+  )
   const known = sql<
     number | null
   >`coalesce(${charges.amountBaseMinor}, case when ${charges.currency} = ${base} then ${charges.amountMinor} end)`

@@ -146,6 +146,7 @@ export function createRoomsService(deps: ServiceDeps) {
           sizeM2: data.sizeM2 ?? null,
           basePriceMinor: data.basePriceMinor ?? null,
           weekendPriceMinor: data.weekendPriceMinor ?? null,
+          hourlyPriceMinor: data.hourlyPriceMinor ?? null,
           baseCurrency: data.baseCurrency ?? null,
           sort: data.sort ?? 1000,
           active: data.active ?? true,

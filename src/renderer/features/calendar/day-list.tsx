@@ -107,7 +107,15 @@ export function DayList({ onOpen }: { onOpen: (reservationId: string) => void })
                   <span className="min-w-0 flex-1">
                     <span className="line-clamp-2 text-sm font-medium break-words">{s.guestName}</span>
                     <span className="text-muted-foreground block text-xs whitespace-nowrap">
-                      {f.dayMonth(s.checkIn)} – {f.dayMonth(s.checkOut)}
+                      {s.startTime && s.endTime ? (
+                        <bdi className="tabular-nums" data-testid={`day-hours-${s.id}`}>
+                          {f.dayMonth(s.checkIn)} · {s.startTime}–{s.endTime}
+                        </bdi>
+                      ) : (
+                        <>
+                          {f.dayMonth(s.checkIn)} – {f.dayMonth(s.checkOut)}
+                        </>
+                      )}
                     </span>
                     {key === 'arrivals' && s.standingNote ? (
                       <span

@@ -924,7 +924,9 @@ const GridRow = memo(function GridRow({
             from: f.dayMonth(s.checkIn),
             to: f.dayMonth(s.checkOut)
           })
+          const hours = s.startTime && s.endTime ? `${s.startTime}–${s.endTime}` : null
           const words = [
+            ...(hours ? [hours] : []),
             ...paintNames(legend, [labelPaint, paint.border]),
             ...(s.reservationStatus === 'tentative' ? [t('calendar.resStatus.tentative')] : []),
             ...(s.kbsMissing ? [t('calendar.grid.kbs')] : []),
@@ -953,7 +955,8 @@ const GridRow = memo(function GridRow({
               onPointerUp={actions.pointerUp}
               onPointerCancel={actions.pointerCancel}
               className={cn(
-                'absolute inset-y-1 z-[7] overflow-hidden rounded-md text-start text-xs leading-none outline-none',
+                'absolute z-[7] overflow-hidden rounded-md text-start text-xs leading-none outline-none',
+                bar.lanes > 1 ? 'top-0' : 'inset-y-1',
                 draggable && s.stayStatus !== 'done' && 'cursor-grab touch-none active:cursor-grabbing',
                 ghostStayId === s.id && 'opacity-60',
                 paintFill(paint.nights[0]?.fill ?? null),
@@ -963,7 +966,17 @@ const GridRow = memo(function GridRow({
                 bar.split === 'start' && 'rounded-e-sm',
                 bar.split === 'end' && 'rounded-s-sm'
               )}
-              style={{ left: colLeft(bar.start, 2), width: colWidth(bar.width, 4) }}
+              style={{
+                left: colLeft(bar.start, 2),
+                width: colWidth(bar.width, 4),
+                // Hourly stays of one day stack in lanes (K-48): position and size only.
+                ...(bar.lanes > 1
+                  ? {
+                      top: `calc(100% * ${bar.lane} / ${bar.lanes} + 2px)`,
+                      height: `calc(100% / ${bar.lanes} - 4px)`
+                    }
+                  : {})
+              }}
             >
               {paint.nights.map((n) => {
                 const col = diffDays(base, n.date)
@@ -985,11 +998,20 @@ const GridRow = memo(function GridRow({
                 className={cn(
                   'absolute inset-y-0 end-0 flex min-w-0 items-center gap-1',
                   bar.width < 1 ? 'px-0.5' : 'px-1.5',
+                  // Stacked hourly bars are thin: smaller text, and none from three lanes on (the label has it all).
+                  bar.lanes > 1 && 'text-[10px]',
+                  bar.lanes > 2 && 'hidden',
                   paintText(labelPaint)
                 )}
                 style={{ left: labelLeft(bar.start, -inset) }}
               >
                 {/* Half a cell (a split day) has room for the initials only; the name is in the label. */}
+                {hours && bar.width >= 1 ? (
+                  <bdi className="shrink-0 tabular-nums" data-testid={`stay-hours-${s.id}`}>
+                    {/* One day column holds the start only; the whole range is in the bar's label. */}
+                    {bar.width >= 1.5 ? hours : s.startTime}
+                  </bdi>
+                ) : null}
                 <span className="truncate font-semibold">
                   {bar.width < 1 ? initials(s.guestName) : s.guestName}
                 </span>

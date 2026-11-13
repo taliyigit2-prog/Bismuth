@@ -28,12 +28,15 @@ export interface PickedType {
   id: string
   basePriceMinor: number | null
   weekendPriceMinor: number | null
+  /** Optional price of one hour of an hourly stay (K-48); the desk may leave it empty. */
+  hourlyPriceMinor: number | null
 }
 export interface CustomType {
   tempKey: string
   name: string
   basePriceMinor: number | null
   weekendPriceMinor: number | null
+  hourlyPriceMinor: number | null
 }
 export interface DraftRoom {
   key: string
@@ -205,7 +208,9 @@ export function defaultDraft(options: SetupOptions, settings: SettingsValues, mo
       currencies: [...settings['hotel.currencies']]
     },
     roomTypes: {
-      selected: firstType ? [{ id: firstType.id, basePriceMinor: null, weekendPriceMinor: null }] : [],
+      selected: firstType
+        ? [{ id: firstType.id, basePriceMinor: null, weekendPriceMinor: null, hourlyPriceMinor: null }]
+        : [],
       custom: []
     },
     // One room to start from; the hotel types its own floors and rooms per floor (no hotel's shape built in).
@@ -321,7 +326,7 @@ export const ids = {
   baseCurrency: 'setup-base-currency',
   cashMethod: 'setup-cash-method',
   roomTypes: 'setup-room-type-search',
-  price: (key: string, which: 'base' | 'weekend') => `setup-price-${key}-${which}`,
+  price: (key: string, which: 'base' | 'weekend' | 'hourly') => `setup-price-${key}-${which}`,
   customType: (tempKey: string) => `setup-custom-type-${tempKey}`,
   generate: 'setup-generate',
   room: (key: string, field: 'number' | 'floor' | 'beds' | 'type') => `setup-room-${key}-${field}`,
@@ -394,15 +399,23 @@ function checkHotel(d: WizardDraft, out: FieldErrors): void {
   if (!CLOCK.test(d.hotel.checkoutTime)) out[ids.checkOut] = { key: 'setup.errors.time' }
 }
 
-function checkPrices(key: string, base: number | null, weekend: number | null, out: FieldErrors): void {
+function checkPrices(
+  key: string,
+  base: number | null,
+  weekend: number | null,
+  hourly: number | null,
+  out: FieldErrors
+): void {
   if (base !== null && base < 0) out[ids.price(key, 'base')] = { key: 'setup.errors.price' }
   if (weekend !== null && weekend < 0) out[ids.price(key, 'weekend')] = { key: 'setup.errors.price' }
+  if (hourly !== null && hourly < 0) out[ids.price(key, 'hourly')] = { key: 'setup.errors.price' }
 }
 
 function checkRoomTypes(d: WizardDraft, out: FieldErrors): void {
   if (d.roomTypes.selected.length + d.roomTypes.custom.length === 0)
     out[ids.roomTypes] = { key: 'setup.errors.noTypes' }
-  for (const p of d.roomTypes.selected) checkPrices(p.id, p.basePriceMinor, p.weekendPriceMinor, out)
+  for (const p of d.roomTypes.selected)
+    checkPrices(p.id, p.basePriceMinor, p.weekendPriceMinor, p.hourlyPriceMinor, out)
   const seen = new Set<string>()
   for (const c of d.roomTypes.custom) {
     const problem = required(c.name, 80)
@@ -410,7 +423,7 @@ function checkRoomTypes(d: WizardDraft, out: FieldErrors): void {
     else if (seen.has(sameName(c.name)))
       out[ids.customType(c.tempKey)] = { key: 'setup.errors.duplicateName' }
     seen.add(sameName(c.name))
-    checkPrices(c.tempKey, c.basePriceMinor, c.weekendPriceMinor, out)
+    checkPrices(c.tempKey, c.basePriceMinor, c.weekendPriceMinor, c.hourlyPriceMinor, out)
   }
 }
 
@@ -586,13 +599,15 @@ export function toSetupDraft(d: WizardDraft, options: SetupOptions): SetupDraft 
       selected: d.roomTypes.selected.map((p) => ({
         id: p.id,
         basePriceMinor: p.basePriceMinor,
-        weekendPriceMinor: p.weekendPriceMinor
+        weekendPriceMinor: p.weekendPriceMinor,
+        hourlyPriceMinor: p.hourlyPriceMinor
       })),
       custom: d.roomTypes.custom.map((c) => ({
         tempKey: c.tempKey,
         name: c.name.trim(),
         basePriceMinor: c.basePriceMinor,
-        weekendPriceMinor: c.weekendPriceMinor
+        weekendPriceMinor: c.weekendPriceMinor,
+        hourlyPriceMinor: c.hourlyPriceMinor
       }))
     },
     rooms: d.rooms.map((r) => ({
@@ -687,9 +702,27 @@ const savedSchema = z.object({
   money: part(z.object({ baseCurrency: text, currencies: ids_ })),
   roomTypes: part(
     z.object({
-      selected: z.array(z.object({ id: text, basePriceMinor: minor, weekendPriceMinor: minor })).max(200),
+      selected: z
+        .array(
+          z.object({
+            id: text,
+            basePriceMinor: minor,
+            weekendPriceMinor: minor,
+            // A draft saved before the hourly step has no such field: empty.
+            hourlyPriceMinor: minor.optional().transform((v) => v ?? null)
+          })
+        )
+        .max(200),
       custom: z
-        .array(z.object({ tempKey: text, name: text, basePriceMinor: minor, weekendPriceMinor: minor }))
+        .array(
+          z.object({
+            tempKey: text,
+            name: text,
+            basePriceMinor: minor,
+            weekendPriceMinor: minor,
+            hourlyPriceMinor: minor.optional().transform((v) => v ?? null)
+          })
+        )
         .max(100)
     })
   ),

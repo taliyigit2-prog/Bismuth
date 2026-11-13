@@ -241,6 +241,7 @@ export function createSetupService(deps: ServiceDeps, parts: SetupServiceParts) 
                 active: true,
                 basePriceMinor: choice.basePriceMinor ?? null,
                 weekendPriceMinor: choice.weekendPriceMinor ?? null,
+                hourlyPriceMinor: choice.hourlyPriceMinor ?? null,
                 baseCurrency: draft.money.baseCurrency
               })
             } else if (type.active) rooms.updateRoomType(ctx, type.id, { active: false })
@@ -260,6 +261,7 @@ export function createSetupService(deps: ServiceDeps, parts: SetupServiceParts) 
                 active: true,
                 basePriceMinor: custom.basePriceMinor ?? null,
                 weekendPriceMinor: custom.weekendPriceMinor ?? null,
+                hourlyPriceMinor: custom.hourlyPriceMinor ?? null,
                 baseCurrency: draft.money.baseCurrency
               })
               typeIds.set(custom.tempKey, same.id)
@@ -270,6 +272,7 @@ export function createSetupService(deps: ServiceDeps, parts: SetupServiceParts) 
               group: 'custom',
               basePriceMinor: custom.basePriceMinor ?? null,
               weekendPriceMinor: custom.weekendPriceMinor ?? null,
+              hourlyPriceMinor: custom.hourlyPriceMinor ?? null,
               baseCurrency: draft.money.baseCurrency
             })
             typeIds.set(custom.tempKey, created.id)

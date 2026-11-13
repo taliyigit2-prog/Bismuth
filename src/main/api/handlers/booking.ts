@@ -80,6 +80,22 @@ export const bookingHandlers = (services: Services): HandlersFor<keyof typeof bo
       const created = services.reservations.create(ctx, data, { blacklistConfirmed })
       return view(ctx, created.reservation.id)
     },
+    'booking.createHourlyStay': (ctx, input) => {
+      const { blacklistConfirmed, roomId, date, startTime, endTime, priceMinor, adults, ...rest } = input
+      const created = services.reservations.create(
+        ctx,
+        {
+          ...rest,
+          adults,
+          stays: [
+            { roomId, checkIn: date, checkOut: date, startTime, endTime, nightlyPriceMinor: priceMinor }
+          ]
+        },
+        { blacklistConfirmed }
+      )
+      return view(ctx, created.reservation.id)
+    },
+    'booking.hourlyCheck': (ctx, input) => services.reservations.hourlyCheck(ctx, input),
     'booking.update': (ctx, input) =>
       view(ctx, services.reservations.update(ctx, input.id, input.patch).reservation.id),
     'booking.addRoom': (ctx, input) =>
@@ -103,7 +119,8 @@ export const bookingHandlers = (services: Services): HandlersFor<keyof typeof bo
         ctx,
         services.reservations.checkOut(ctx, input.stayId, {
           kbsCheckoutIds: input.kbsCheckoutIds,
-          dayUsePriceMinor: input.dayUsePriceMinor
+          dayUsePriceMinor: input.dayUsePriceMinor,
+          dayUseFreeConfirmed: input.dayUseFreeConfirmed
         }).reservation.id
       ),
     'booking.cancel': (ctx, input) =>

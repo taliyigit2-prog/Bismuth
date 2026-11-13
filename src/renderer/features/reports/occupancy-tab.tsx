@@ -1,6 +1,7 @@
 // "Doluluk ve KPI" (faz-10 madde 4): occupancy (sold ÷ sellable room-nights; blocks out of the denominator; same-day
-// stays by setting), ADR, RevPAR, average stay, the weekday heat map (Saturday effect), occupancy by month, revenue
+// and hourly stays always count; a stay-type filter), ADR, RevPAR, average stay, the weekday heat map (Saturday effect), occupancy by month, revenue
 // by room type and room, repeat guests and — with the finance and guest permissions — the guests who brought most.
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   BanIcon,
@@ -17,20 +18,16 @@ import {
   UserXIcon,
   UsersIcon
 } from 'lucide-react'
-import type { OccupancyReport, ReportSummary } from '@shared/contract/procedures/reports'
+import type { OccupancyReport, ReportSummary, StayKind } from '@shared/contract/procedures/reports'
 import { basisPoints } from '@shared/domain/reports'
 import type { Period } from '@shared/domain/reports-period'
 import type { ChartConfig } from '@/components/ui/chart'
-import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { KpiCard } from '@/components/kpi-card'
 import { SectionCard } from '@/components/section-card'
 import { useFormat } from '@/hooks/use-format'
-import { useApiQuery, useUpdateSettings } from '@/lib/api/hooks'
-import { useQueryClient } from '@tanstack/react-query'
-import { useCan } from '@/lib/view-as'
+import { useApiQuery } from '@/lib/api/hooks'
 import { ChartCard } from './chart-card'
-import { usePrintMode } from './print-mode'
 import { DataNotes, KpiRow, Money, ReportQuery } from './common'
 import { useDeltas } from './deltas'
 import { useCalendarNames, useMonthName, useReportLabels } from './labels'
@@ -129,46 +126,41 @@ function OutcomeKpis({ report }: { report: OccupancyReport }) {
   )
 }
 
-/** "Aynı gün giriş‑çıkışları dolulukta say" — a hotel setting (G-09), changed here by whoever edits settings. */
-function DayUseSwitch({ report }: { report: OccupancyReport }) {
+/** Hourly and same-day sales of the period (S-105: they always count); the stay-type filter is above the tab. */
+function HourlyCount({ report }: { report: OccupancyReport }) {
   const { t } = useTranslation()
-  const can = useCan()
-  const print = usePrintMode()
-  const update = useUpdateSettings()
-  const client = useQueryClient()
   const total = report.months.reduce((s, m) => s + m.dayUseNights, 0)
-  const editable = can('settings', 'edit') && !print
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 text-sm" data-testid="day-use">
-      <p className="text-muted-foreground">
-        {report.dayUseIncluded
-          ? t('reports.occupancy.dayUseIn', { count: total })
-          : t('reports.occupancy.dayUseOut', { count: total })}
-      </p>
-      {editable ? (
-        <div className="flex items-center gap-2">
-          <Switch
-            id="day-use-switch"
-            className="relative max-md:after:absolute max-md:after:-inset-x-2 max-md:after:-inset-y-[14px]"
-            checked={report.dayUseIncluded}
-            disabled={update.isPending}
-            onCheckedChange={(checked) =>
-              update.mutate(
-                { 'reports.dayUseInOccupancy': checked },
-                {
-                  onSuccess: () =>
-                    void Promise.all(
-                      ['reports.summary', 'reports.occupancy', 'reports.context', 'reports.monthEnd'].map(
-                        (k) => client.invalidateQueries({ queryKey: [k] })
-                      )
-                    )
-                }
-              )
-            }
-          />
-          <Label htmlFor="day-use-switch">{t('reports.occupancy.dayUseSwitch')}</Label>
-        </div>
-      ) : null}
+    <p className="text-muted-foreground text-sm" data-testid="day-use">
+      {t('reports.occupancy.hourlyCount', { count: total })}
+    </p>
+  )
+}
+
+const STAY_KIND_OPTIONS = ['all', 'overnight', 'hourly'] as const
+
+/** "Konaklama türü" (K-48): all stays, nights only, or hourly (same-day) sales only. */
+function StayKindFilter({ value, onChange }: { value: StayKind; onChange: (kind: StayKind) => void }) {
+  const { t } = useTranslation()
+  return (
+    <div className="flex flex-wrap items-center gap-2" data-testid="stay-kind">
+      <span className="text-sm font-medium" id="stay-kind-label">
+        {t('reports.stayKind.label')}
+      </span>
+      <ToggleGroup
+        type="single"
+        variant="outline"
+        size="sm"
+        value={value}
+        aria-labelledby="stay-kind-label"
+        onValueChange={(v) => v && onChange(v as StayKind)}
+      >
+        {STAY_KIND_OPTIONS.map((kind) => (
+          <ToggleGroupItem key={kind} value={kind} data-testid={`stay-kind-${kind}`}>
+            {t(`reports.stayKind.${kind}`)}
+          </ToggleGroupItem>
+        ))}
+      </ToggleGroup>
     </div>
   )
 }
@@ -217,7 +209,7 @@ function OccupancyView({
       <DataNotes missingNights={report.missingNightRates} />
       <OccupancyKpis data={summary} prev={prev} report={report} />
       <OutcomeKpis report={report} />
-      <DayUseSwitch report={report} />
+      <HourlyCount report={report} />
       <div className="grid items-start gap-4 lg:grid-cols-2 print:grid-cols-1">
         <ChartCard
           title={t('reports.occupancy.months')}
@@ -328,15 +320,19 @@ function OccupancyView({
 }
 
 export function OccupancyTab({ period, compare }: { period: Period; compare: Period | null }) {
-  const kpis = useSummaryKpis(period, compare)
-  const report = useApiQuery('reports.occupancy', period)
+  const [stayKind, setStayKind] = useState<StayKind>('all')
+  const kpis = useSummaryKpis(period, compare, stayKind)
+  const report = useApiQuery('reports.occupancy', stayKind === 'all' ? period : { ...period, stayKind })
   return (
-    <ReportQuery query={report}>
-      {(r) => (
-        <ReportQuery query={kpis.current}>
-          {(s) => <OccupancyView report={r} summary={s} prev={kpis.previous} />}
-        </ReportQuery>
-      )}
-    </ReportQuery>
+    <div className="grid gap-4">
+      <StayKindFilter value={stayKind} onChange={setStayKind} />
+      <ReportQuery query={report}>
+        {(r) => (
+          <ReportQuery query={kpis.current}>
+            {(s) => <OccupancyView report={r} summary={s} prev={kpis.previous} />}
+          </ReportQuery>
+        )}
+      </ReportQuery>
+    </div>
   )
 }

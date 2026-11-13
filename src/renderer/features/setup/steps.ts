@@ -7,6 +7,7 @@ export const STEPS = [
   'currencies',
   'roomTypes',
   'rooms',
+  'hourly',
   'money',
   'staff',
   'employees',

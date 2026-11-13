@@ -294,3 +294,38 @@ describe('P5fix: gelmedi, tek oda iptali, oda eklerken "yine de"', () => {
     expect(ok.status, JSON.stringify(ok.body)).toBe(200)
   })
 })
+
+describe('saatlik satış yetkileri (K-48, P17d)', () => {
+  const sale = () => ({
+    guest: { firstName: 'Saatlik', lastName: 'Misafir' },
+    channelId: ids.channel,
+    roomId: ids.room2,
+    date: '2026-10-20',
+    startTime: '09:00',
+    endTime: '12:00',
+    priceMinor: 90_000
+  })
+
+  it('Muhasebe ve Temizlik booking.createHourlyStay yazamaz: 403; Resepsiyon yazar, tutar zorunlu', async () => {
+    for (const role of ['accountant', 'housekeeping'] as const) {
+      const res = await call(role, 'booking.createHourlyStay', sale())
+      expect(res.status, role).toBe(403)
+      expect(res.body.error?.['code']).toBe('PERMISSION_DENIED')
+    }
+    const { priceMinor: _price, ...noPrice } = sale()
+    expect((await call('reception', 'booking.createHourlyStay', noPrice)).status).toBe(400)
+    const ok = await call('reception', 'booking.createHourlyStay', sale())
+    expect(ok.status, JSON.stringify(ok.body)).toBe(200)
+    expect(ok.body['stays']).toMatchObject([{ dayUse: true, startTime: '09:00', endTime: '12:00' }])
+    // The same hours again: the router answers with the hourly refusal.
+    const again = await call('manager', 'booking.createHourlyStay', sale())
+    expect(again.status).toBe(409)
+    expect(again.body.error).toMatchObject({ messageKey: 'errors.roomOccupied' })
+  })
+
+  it('booking.hourlyCheck: Muhasebe görür, Temizlik göremez: 403', async () => {
+    const body = { roomId: ids.room2, date: '2026-10-21', startTime: '10:00', endTime: '11:00' }
+    expect((await call('accountant', 'booking.hourlyCheck', body)).status).toBe(200)
+    expect((await call('housekeeping', 'booking.hourlyCheck', body)).status).toBe(403)
+  })
+})

@@ -4,12 +4,21 @@
 // permission first (reservations-service), and decides which parts the user may see.
 import { and, asc, desc, eq, gte, inArray, isNull, lt, ne, or } from 'drizzle-orm'
 import { STATUS_KEYS, type StatusKey } from '@shared/contract/settings'
-import { addDays, type LocalDate } from '@shared/date'
+import { addDays, localDate, type LocalDate } from '@shared/date'
 import { matchBlacklist, type BlacklistCandidate, type MatchReason } from '@shared/domain/blacklist'
 import { cellStyle, type CellStyle } from '@shared/domain/cell-status'
 import { rateAge } from '@shared/domain/external'
 import { kbsMissing, type KbsIssue, type StayRoomLike } from '@shared/domain/occupants'
-import { findConflicts, occupancyFrom, staySlots } from '@shared/domain/stays'
+import { checkoutPlan } from '@shared/domain/booking'
+import {
+  findConflicts,
+  findHourConflicts,
+  hourlyAmountMinor,
+  occupancyFrom,
+  staySlots,
+  usedHours,
+  type HourRange
+} from '@shared/domain/stays'
 import {
   blacklist,
   charges,
@@ -80,6 +89,15 @@ export interface StayBookingView {
   checkedInAt: string | null
   checkedOutAt: string | null
   dayUse: boolean
+  /** Hours of an hourly stay (K-48); null = none. */
+  startTime: string | null
+  endTime: string | null
+  /**
+   * What leaving today would make of an overnight stay that is still on its check-in day (K-44): the day-use's
+   * hours (null = the whole day) and the suggested price (the room type's hour price × the hours; null = none).
+   * Null when it does not apply or the day slot has no free range (the night then stays as it was).
+   */
+  sameDay: { startTime: string | null; endTime: string | null; suggestedMinor: number | null } | null
   nights: NightBookingView[]
   occupants: OccupantView[]
   /** §6.15 for this stay now (empty when the hotel switched KBS checks off or the user may not see people). */
@@ -215,6 +233,29 @@ const occupantView = (o: typeof stayOccupants.$inferSelect): OccupantView => ({
   kbsCheckoutAt: o.kbsCheckoutAt
 })
 
+/**
+ * The day range a stay leaving on its check-in day gets (K-44, hata C): the hours it really used if no other day
+ * range of the room and day clashes, else the whole day if the day has no other range, else null (no free range).
+ */
+export function sameDayRange(
+  tx: Reader,
+  stay: { roomId: string; checkIn: string; checkedInAt: string | null },
+  now: Date
+): HourRange | null {
+  const others = tx
+    .select({ id: roomNights.id, start: roomNights.startTime, end: roomNights.endTime })
+    .from(roomNights)
+    .where(
+      and(eq(roomNights.roomId, stay.roomId), eq(roomNights.date, stay.checkIn), eq(roomNights.slot, 'day'))
+    )
+    .all()
+    .map((r) => ({ reservationId: r.id, start: r.start, end: r.end }))
+  const used = usedHours(stay.checkedInAt ? new Date(stay.checkedInAt) : null, localDate(stay.checkIn), now)
+  if (used && !findHourConflicts({ start: used.start, end: used.end }, others).length)
+    return { start: used.start, end: used.end }
+  return others.length ? null : { start: null, end: null }
+}
+
 /** The panel's view of one reservation, built on the service's detail (allocation already done there). */
 export function bookingView(tx: Reader, detail: ReservationDetail, opts: ViewOptions): BookingView {
   const id = detail.reservation.id
@@ -222,7 +263,12 @@ export function bookingView(tx: Reader, detail: ReservationDetail, opts: ViewOpt
   const stayIds = detail.stays.map((s) => s.id)
   const roomRows = stayIds.length
     ? tx
-        .select({ id: rooms.id, typeName: roomTypes.name, typeNameI18n: roomTypes.nameI18n })
+        .select({
+          id: rooms.id,
+          typeName: roomTypes.name,
+          typeNameI18n: roomTypes.nameI18n,
+          hourlyMinor: roomTypes.hourlyPriceMinor
+        })
         .from(rooms)
         .innerJoin(roomTypes, eq(rooms.roomTypeId, roomTypes.id))
         .where(
@@ -255,6 +301,28 @@ export function bookingView(tx: Reader, detail: ReservationDetail, opts: ViewOpt
     tx,
     detail.stays.filter((s) => s.status === 'planned' || s.status === 'in_house').map((s) => s.roomId)
   )
+  const sameDayOf = (
+    s: ReservationDetail['stays'][number],
+    hourlyMinor: number | null,
+    currency: string
+  ): StayBookingView['sameDay'] => {
+    if (s.status !== 'in_house' || s.checkIn === s.checkOut) return null
+    if (
+      checkoutPlan({ checkIn: s.checkIn as LocalDate, checkOut: s.checkOut as LocalDate }, opts.today)
+        .kind !== 'sameDay'
+    )
+      return null
+    const range = sameDayRange(tx, s, new Date(opts.nowIso))
+    if (!range) return null
+    return {
+      startTime: range.start,
+      endTime: range.end,
+      suggestedMinor:
+        hourlyMinor !== null && range.start && range.end
+          ? hourlyAmountMinor(hourlyMinor, currency, range.start, range.end)
+          : null
+    }
+  }
   const stays: StayBookingView[] = detail.stays.map((s) => {
     const dayUse = s.checkIn === s.checkOut
     const occupants = occupantRows.filter((o) => o.reservationRoomId === s.id)
@@ -289,6 +357,9 @@ export function bookingView(tx: Reader, detail: ReservationDetail, opts: ViewOpt
       checkedInAt: s.checkedInAt,
       checkedOutAt: s.checkedOutAt,
       dayUse,
+      startTime: s.nights.find((n) => n.slot === 'day')?.startTime ?? null,
+      endTime: s.nights.find((n) => n.slot === 'day')?.endTime ?? null,
+      sameDay: sameDayOf(s, type?.hourlyMinor ?? null, detail.folio.currency),
       nights: s.nights.map((n) => ({
         ...n,
         style: cellStyle(
@@ -378,6 +449,8 @@ export interface FormRoom {
   hkStatus: string
   basePriceMinor: number | null
   weekendPriceMinor: number | null
+  /** The type's price of one hour of an hourly stay (K-48); null = none. */
+  hourlyPriceMinor: number | null
   priceCurrency: string | null
   openIssues: OpenIssueView[]
 }
@@ -424,6 +497,7 @@ export function formOptions(tx: Reader, today: LocalDate): FormOptions {
       hkStatus: room.hkStatus,
       basePriceMinor: type.basePriceMinor,
       weekendPriceMinor: type.weekendPriceMinor,
+      hourlyPriceMinor: type.hourlyPriceMinor,
       priceCurrency: type.baseCurrency,
       openIssues: issues.filter((i) => i.roomId === room.id)
     })),
@@ -451,6 +525,8 @@ export function occupiedSlots(tx: Reader, from: LocalDate, to: LocalDate) {
       roomId: roomNights.roomId,
       date: roomNights.date,
       slot: roomNights.slot,
+      startTime: roomNights.startTime,
+      endTime: roomNights.endTime,
       reservationId: reservationRooms.reservationId,
       stayId: roomNights.reservationRoomId
     })

@@ -147,6 +147,10 @@ export function RoomTypeDialog({
     amountMinor: type?.weekendPriceMinor ?? null,
     currency
   })
+  const [hourly, setHourly] = useState<MoneyValue>({
+    amountMinor: type?.hourlyPriceMinor ?? null,
+    currency
+  })
   const [active, setActive] = useState(type?.active ?? true)
   const [error, setError] = useState(false)
   // The service refuses a name another type already has; the answer sits under the field, not in a toast.
@@ -168,21 +172,30 @@ export function RoomTypeDialog({
     success: t('settings.rooms.typeSaved'),
     handled: nameTaken
   })
-  // One currency per type: the two prices move together.
+  // One currency per type: the prices move together.
   const pickBase = (v: MoneyValue): void => {
     setBase(v)
     setWeekend((w) => ({ ...w, currency: v.currency }))
+    setHourly((h) => ({ ...h, currency: v.currency }))
   }
   const pickWeekend = (v: MoneyValue): void => {
     setWeekend(v)
     setBase((b) => ({ ...b, currency: v.currency }))
+    setHourly((h) => ({ ...h, currency: v.currency }))
+  }
+  const pickHourly = (v: MoneyValue): void => {
+    setHourly(v)
+    setBase((b) => ({ ...b, currency: v.currency }))
+    setWeekend((w) => ({ ...w, currency: v.currency }))
   }
 
   const submit = (e: FormEvent<HTMLFormElement>): void => {
     e.preventDefault()
     if (deferForPendingAmount(e.currentTarget)) return
     const trimmed = name.trim()
-    const priceBad = [base.amountMinor, weekend.amountMinor].some((m) => m !== null && m < 0)
+    const priceBad = [base.amountMinor, weekend.amountMinor, hourly.amountMinor].some(
+      (m) => m !== null && m < 0
+    )
     if (!trimmed || trimmed.length > 80 || priceBad) {
       setError(true)
       document.getElementById(`${formId}-name`)?.focus()
@@ -195,6 +208,7 @@ export function RoomTypeDialog({
           group: 'custom',
           basePriceMinor: base.amountMinor,
           weekendPriceMinor: weekend.amountMinor,
+          hourlyPriceMinor: hourly.amountMinor,
           baseCurrency: base.currency
         },
         done
@@ -205,6 +219,7 @@ export function RoomTypeDialog({
       ...(trimmed !== initialName ? { name: trimmed } : {}),
       ...(base.amountMinor !== type.basePriceMinor ? { basePriceMinor: base.amountMinor } : {}),
       ...(weekend.amountMinor !== type.weekendPriceMinor ? { weekendPriceMinor: weekend.amountMinor } : {}),
+      ...(hourly.amountMinor !== type.hourlyPriceMinor ? { hourlyPriceMinor: hourly.amountMinor } : {}),
       ...(base.currency !== currency ? { baseCurrency: base.currency } : {}),
       ...(active !== type.active ? { active } : {})
     }
@@ -258,6 +273,15 @@ export function RoomTypeDialog({
             onChange={pickWeekend}
             currencies={values['hotel.currencies']}
           />
+          <div className="grid content-start gap-1">
+            <MoneyInput
+              label={t('settings.hourly.price')}
+              value={hourly}
+              onChange={pickHourly}
+              currencies={values['hotel.currencies']}
+            />
+            <p className="text-muted-foreground text-xs">{t('settings.hourly.priceHelp')}</p>
+          </div>
         </div>
         {type ? (
           <SwitchRow

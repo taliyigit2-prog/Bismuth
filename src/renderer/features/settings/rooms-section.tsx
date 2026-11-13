@@ -2,18 +2,21 @@
 // weekend prices, the long seeded list to pick more from, the hotel's own types; then the rooms — number, floor,
 // type, beds, sellable, in use — one by one or floor by floor. Rooms and beds count from a validity date, so past
 // months' occupancy and the ministry figures use the rooms of that day (capacity history).
-import { useMemo, useState } from 'react'
+import { useId, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { BedDoubleIcon, LayersIcon, ListPlusIcon, PencilIcon, PlusIcon } from 'lucide-react'
 import type { RoomTypeView, RoomView, SettingsValues } from '@shared/contract'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { EmptyState, ErrorState, LoadingState } from '@/components/states'
 import { useFormat } from '@/hooks/use-format'
-import { useApiQuery } from '@/lib/api/hooks'
+import { useApiQuery, useUpdateSettings } from '@/lib/api/hooks'
+import { toast } from 'sonner'
 import { useCan } from '@/lib/view-as'
 import { cn } from '@/lib/utils'
 import type { LocalDate } from '@shared/date'
@@ -95,6 +98,7 @@ function TypesCard({
                 <TableHead>{t('settings.rooms.col.name')}</TableHead>
                 <TableHead className="text-end">{t('settings.rooms.col.price')}</TableHead>
                 <TableHead className="text-end max-md:hidden">{t('settings.rooms.col.weekend')}</TableHead>
+                <TableHead className="text-end max-md:hidden">{t('settings.hourly.col')}</TableHead>
                 <TableHead className="text-end max-md:hidden">{t('settings.rooms.col.rooms')}</TableHead>
                 <TableHead className="max-md:hidden">{t('settings.lists.col.active')}</TableHead>
                 <TableHead className="w-10">
@@ -131,6 +135,9 @@ function TypesCard({
                     <TableCell className="text-end tabular-nums max-md:hidden">
                       {price(type.weekendPriceMinor, type)}
                     </TableCell>
+                    <TableCell className="text-end tabular-nums max-md:hidden">
+                      {price(type.hourlyPriceMinor ?? null, type)}
+                    </TableCell>
                     <TableCell className="text-end tabular-nums max-md:hidden">{count}</TableCell>
                     <TableCell className="max-md:hidden">
                       <Switch
@@ -159,6 +166,7 @@ function TypesCard({
             </TableBody>
           </Table>
         )}
+        <TurnoverField minutes={values['dayUse.turnoverMinutes']} canEdit={canEdit} />
       </CardContent>
       {dialog ? (
         <RoomTypeDialog
@@ -170,6 +178,50 @@ function TypesCard({
       ) : null}
       {more ? <MoreTypesDialog types={types} onClose={() => setMore(false)} /> : null}
     </Card>
+  )
+}
+
+/** `dayUse.turnoverMinutes` (K-48, S-103): the cleaning time an hourly sale is warned about; saved when the field is left. */
+function TurnoverField({ minutes, canEdit }: { minutes: number; canEdit: boolean }) {
+  const { t } = useTranslation()
+  const id = useId()
+  const update = useUpdateSettings()
+  const [text, setText] = useState(String(minutes))
+  const [invalid, setInvalid] = useState(false)
+  const save = (): void => {
+    const n = Number(text.trim())
+    if (!/^\d{1,3}$/.test(text.trim()) || n > 240) return setInvalid(true)
+    setInvalid(false)
+    if (n !== minutes)
+      update.mutate(
+        { 'dayUse.turnoverMinutes': n },
+        { onSuccess: () => toast.success(t('settings.hourly.turnoverSaved')) }
+      )
+  }
+  return (
+    <div className="mt-4 grid max-w-sm gap-1.5" data-testid="turnover-field">
+      <Label htmlFor={id}>{t('settings.hourly.turnover')}</Label>
+      <Input
+        id={id}
+        inputMode="numeric"
+        dir="ltr"
+        value={text}
+        disabled={!canEdit}
+        aria-invalid={invalid || undefined}
+        onChange={(e) => {
+          setText(e.target.value)
+          setInvalid(false)
+        }}
+        onBlur={save}
+      />
+      {invalid ? (
+        <p role="alert" className="text-destructive text-sm">
+          {t('settings.hourly.turnoverInvalid')}
+        </p>
+      ) : (
+        <p className="text-muted-foreground text-xs">{t('settings.hourly.turnoverHelp')}</p>
+      )}
+    </div>
   )
 }
 

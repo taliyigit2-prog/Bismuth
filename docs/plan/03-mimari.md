@@ -159,7 +159,9 @@ extra_services      id pk, code unique, name, default_price_minor?, default_curr
 reservations        id pk, code unique, primary_guest_id fk, channel_id fk, channel_ref?, status(tentative|confirmed|checked_in|checked_out|cancelled|no_show|parked),
                     kind(overnight|day_use), parked_reason?, parked_note?, adults?, children? (yalnız kişi listesi yoksa; S-22), notes?, created_by, cancelled_at?, cancel_reason?, sold_by_user_id?
 reservation_rooms   id pk, reservation_id fk*, room_id fk*, check_in*, check_out*, checked_in_at?, checked_out_at?, status
-room_nights         id pk, reservation_room_id fk*, room_id fk, date*, slot(night|day), price_minor, currency   -- UNIQUE(room_id, date, slot)
+room_nights         id pk, reservation_room_id fk*, room_id fk, date*, slot(night|day), start_time?, end_time? ('HH:MM', yalnız saatlik gündüz yuvası; null = tüm gün/gece),
+                    price_minor, currency   -- 0019 (K-48): gece UNIQUE(room_id, date) kısmi (slot=night); gündüz UNIQUE(room_id, date, start_time) kısmi (saatli)
+                    --   + saatsiz gündüz UNIQUE(room_id, date) kısmi; saat çakışması `shared/domain/stays.ts` (hourRangesOverlap) ve serviste engellenir
 reservation_notes   id pk, reservation_id fk, date?, text, created_by
 stay_occupants      id pk, reservation_room_id fk*, guest_id? fk→guests, full_name, descriptor_note? ("kızıl saçlı"; yalnız personel),
                     is_primary(bool), arrived_at?, left_at?, kbs_reported_at?, kbs_reported_by?, kbs_checkout_at?, kbs_checkout_by?,
