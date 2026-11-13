@@ -127,12 +127,17 @@ function OutcomeKpis({ report }: { report: OccupancyReport }) {
 }
 
 /** Hourly and same-day sales of the period (S-105: they always count); the stay-type filter is above the tab. */
-function HourlyCount({ report }: { report: OccupancyReport }) {
+function HourlyCount({ report, summary }: { report: OccupancyReport; summary: ReportSummary }) {
   const { t } = useTranslation()
+  const f = useFormat()
   const total = report.months.reduce((s, m) => s + m.dayUseNights, 0)
+  const revenue = summary.finance?.hourlyRevenueMinor ?? 0
   return (
     <p className="text-muted-foreground text-sm" data-testid="day-use">
       {t('reports.occupancy.hourlyCount', { count: total })}
+      {revenue > 0
+        ? ` · ${t('reports.occupancy.hourlyRevenue', { amount: f.money(revenue, report.baseCurrency) })}`
+        : ''}
     </p>
   )
 }
@@ -209,7 +214,7 @@ function OccupancyView({
       <DataNotes missingNights={report.missingNightRates} />
       <OccupancyKpis data={summary} prev={prev} report={report} />
       <OutcomeKpis report={report} />
-      <HourlyCount report={report} />
+      <HourlyCount report={report} summary={summary} />
       <div className="grid items-start gap-4 lg:grid-cols-2 print:grid-cols-1">
         <ChartCard
           title={t('reports.occupancy.months')}

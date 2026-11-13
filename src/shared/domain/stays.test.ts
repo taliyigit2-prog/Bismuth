@@ -12,7 +12,8 @@ import {
   splitForRoomChange,
   staySlots,
   turnoverWarnings,
-  usedHours
+  usedHours,
+  largestFreeRange
 } from './stays'
 
 describe('konaklama geceleri (§6.1)', () => {
@@ -228,5 +229,30 @@ describe('gerçekten kullanılan saatler (hata C) ve saat ücreti', () => {
   it('saat ücreti × süre dakika oranıyla, kuruşa yuvarlanır', () => {
     expect(hourlyAmountMinor(30_000, 'TRY', '10:00', '12:30')).toBe(75_000)
     expect(hourlyAmountMinor(10_000, 'TRY', '10:00', '10:20')).toBe(3_333)
+  })
+})
+
+describe('largestFreeRange (hata C: kullanılan saatlerin boş kalan en uzun parçası)', () => {
+  const r = (start: string | null, end: string | null) => ({ start, end })
+  const wanted = { start: '12:00', end: '17:00' }
+
+  it('yolda kimse yoksa istenen aralığın tamamı; saatler dışındakiler karışmaz', () => {
+    expect(largestFreeRange(wanted, [])).toEqual(wanted)
+    expect(largestFreeRange(wanted, [r('08:00', '12:00'), r('17:00', '19:00')])).toEqual(wanted)
+  })
+
+  it('ortadaki satış aralığı ikiye böler: uzun olan parça, eşitse öncesi', () => {
+    expect(largestFreeRange(wanted, [r('14:00', '16:00')])).toEqual({ start: '12:00', end: '14:00' })
+    expect(largestFreeRange(wanted, [r('13:00', '14:00')])).toEqual({ start: '14:00', end: '17:00' })
+    expect(largestFreeRange(wanted, [r('14:30', '15:30')])).toEqual({ start: '12:00', end: '14:30' })
+  })
+
+  it('örtüşen ve sırasız aralıklar birleşir; hepsi kapsarsa ya da tüm gün kaydı varsa null', () => {
+    expect(largestFreeRange(wanted, [r('15:00', '16:30'), r('13:00', '15:30')])).toEqual({
+      start: '12:00',
+      end: '13:00'
+    })
+    expect(largestFreeRange(wanted, [r('11:00', '18:00')])).toBeNull()
+    expect(largestFreeRange(wanted, [r(null, null)])).toBeNull()
   })
 })

@@ -238,13 +238,15 @@ export function createReportsService(deps: ReportsDeps) {
       const m = money(ctx, p)
       const rooms = roomRevenueByRoom(db, p, base, kind)
       const roomRevenue = sum([...rooms.byRoom.values()], (v) => v)
-      // ADR divides by the sold room-nights the room charges belong to (day-use charges included only with them).
+      // ADR is the nightly rate only: night charges / sold nights. Same-day and hourly revenue is shown apart
+      // (`hourlyRevenueMinor`, the sale count is `occupancy.dayUseNights`) so cheap hours do not pull ADR down.
       finance = {
         revenueMinor: m.revenue,
         expensesMinor: m.spent,
         profitMinor: m.revenue - m.spent,
         roomRevenueMinor: roomRevenue,
-        adrMinor: adrMinor(roomRevenue, n.total.sold + n.total.dayUse, base),
+        adrMinor: adrMinor(roomRevenue - rooms.hourlyMinor, n.total.sold, base),
+        hourlyRevenueMinor: rooms.hourlyMinor,
         revparMinor: revparMinor(roomRevenue, t.sellableNights, base),
         missingRate: m.missingRate,
         missingNightRates: rooms.missing,

@@ -57,7 +57,15 @@ async function setup(now = '2026-10-01T09:00:00.000Z') {
       guest: { firstName: opts.name ?? 'Örnek', lastName: 'Misafir', phone: '0532 000 00 00' },
       channelId: direct,
       status: opts.status,
-      stays: [{ roomId, checkIn, checkOut, nightlyPriceMinor: 200_000 }]
+      stays: [
+        {
+          roomId,
+          checkIn,
+          checkOut,
+          nightlyPriceMinor: 200_000,
+          ...(checkIn === checkOut ? { startTime: '10:00', endTime: '11:00' } : {})
+        }
+      ]
     })
   return { svc, clock, r501, r502, direct, cash, book }
 }

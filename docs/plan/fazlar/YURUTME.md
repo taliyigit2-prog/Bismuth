@@ -88,7 +88,7 @@ Harcama sütunu: başlatıcının yazdığı `$` (dalga toplamı, gerçek).
 |---|---|---|---|---|---|---|---|
 | 1 | P17a Vazgeçme ve iade akışı (undoCheckIn, iptal/çıkışta ödeme + iade, kapalı rezervasyonda menü, raporda iptal/gelmedi/iade satırları) | 17 | booking, calendar, reports | calendar-specialist | $12–18 | ~$15 | ✅ |
 | 1 | P19c Depo temizliği (prototypes arşiv, faz0 iş akışları, icon, yerel yollar, kanca istisnaları) | 19 | — | feature-builder-lite | $2–4 | ~$3 | ✅ |
-| 2 | P17d Gündüz kullanımı 2.0 + ikinci tur hatası + H-06 (migrasyon **0019**) | 17 | booking, reservations, settings | db-migration-builder → calendar-specialist | $15–22 | | ⬜ |
+| 2 | P17d Gündüz kullanımı 2.0 + ikinci tur hatası + H-06 (migrasyon **0019**) | 17 | booking, reservations, settings | db-migration-builder → calendar-specialist | $15–22 | ~$45 | ✅ |
 | 2 | P18a ui-shot çoklu boyut/ölçek/dil + ölçüm JSON; Electron e2e Codespace'te yeşil | 18 | scripts, tests/e2e | feature-builder-lite | $2–4 | ~$3 | ✅ |
 | 3 | P17b Grup rezervasyonu + toplu giriş (migrasyon **0020**) | 17 | booking, reservations | db-migration-builder → calendar-specialist | $15–22 | | ⬜ |
 | 3 | P18c Pencere: F11, tam ekran/zoom hatırlama, çoklu monitör | 18 | main/windows, main/app | feature-builder | $6–10 | | ⬜ |
@@ -249,3 +249,11 @@ QA2b, akış testleri C/D) bu plana **Son** satırında katılır; ayrı yürüt
 - 2026-11-13: P17afix ✅ — vazgeçme + iptal/iade/park tek transaction (`booking.undoCheckIn` `then`), iadesi olan tahsilatın
   void/azaltılması reddedilir, iade yetkisi sorgudan önce, rapor iade sayısı/tutar tutarlı, audit önceki/sonraki durum,
   istemci iade tavanı para birimine göre (2476 test). **Dalga 1 bitti.** Sadeleştirme (Ponytail) dalga 2 ile birlikte yapılacak.
+- 2026-11-13: **Dalga 2 bitti.** P17d ✅ — migrasyon 0019 (room_nights saat aralığı + kısmi benzersiz indeksler,
+  `room_types.hourly_price_minor`, mevcut kurulumda resepsiyon iade yetkisi none→edit + audit), `booking.createHourlyStay`/
+  `hourlyCheck`, hata C (ikinci tur çıkışında gece serbest), H-06, takvimde saatli çubuklar, saat ücreti (Odalar ve tipler
+  sekmesi; ayrı "Fiyatlar" sekmesi yok), sihirbaz adımı, rapor tür süzgeci + aylık saatlik sayı/gelir. P17dfix: doluluk aynı
+  oda-günü bir kez sayar, ADR yalnız gecelik; aynı gün rezervasyon saat ister (S-103), ölü `reports.dayUseInOccupancy` ve
+  anahtarları kaldırıldı, telefon düğme taşması, sihirbaz "Atla" 44 px. Kontroller: db-reviewer, decision-auditor,
+  turkish-ui-copy, ui-reviewer — Kritik/Yüksek yok. Sahip onay paketine: G-196 metni eski (fiyat modu/doluluk ayarı) →
+  `/requirement-change` sahipte.

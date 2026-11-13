@@ -1532,7 +1532,8 @@
     "undoCheckInNotToday": "Giriş yalnız giriş yapılan gün geri alınır. Çıkış yaptırın ya da otel sahibine başvurun.",
     "undoCheckInMoved": "Bu oda, oda değişikliği günü girişle açıldı; geri alınamaz. Önce çıkış yaptırın.",
     "undoCheckInKbs": "{{names}} KBS'ye bildirilmiş. Onaylayarak geri alabilirsiniz.",
-    "dayUseFreeNeedsConfirm": "Ücret 0 yazıldı. Ücretsiz çıkışı onaylayın ya da bir tutar yazın."
+    "dayUseFreeNeedsConfirm": "Ücret 0 yazıldı. Ücretsiz çıkışı onaylayın ya da bir tutar yazın.",
+    "hoursRequired": "Aynı gün giriş‑çıkış için saat aralığını yazın."
   },
   "common": {
     "close": "Kapat",
@@ -4053,7 +4054,7 @@
       "expenses": "Gider",
       "occupancy": "Doluluk",
       "adr": "Ortalama gecelik fiyat",
-      "adrHint": "oda geliri ÷ satılan gece",
+      "adrHint": "gecelik oda geliri ÷ satılan gece",
       "revpar": "Oda başına gelir",
       "revparHint": "oda geliri ÷ satılabilir gece",
       "margin": "Kâr oranı {{value}}",
@@ -4173,13 +4174,9 @@
       "roomTypes": "Oda tipine göre",
       "rooms": "Odaya göre",
       "topGuests": "En çok gelir getiren misafirler",
-      "dayUseOut_one": "Aynı gün giriş‑çıkış ({{count}}) satılan gecelere katılmıyor, ayrı gösteriliyor.",
-      "dayUseOut_other": "Aynı gün giriş‑çıkışlar ({{count}}) satılan gecelere katılmıyor, ayrı gösteriliyor.",
-      "dayUseIn_one": "Aynı gün giriş‑çıkış ({{count}}) satılan gecelere katılıyor.",
-      "dayUseIn_other": "Aynı gün giriş‑çıkışlar ({{count}}) satılan gecelere katılıyor.",
-      "dayUseSwitch": "Dolulukta say",
       "hourlyCount_one": "Bu dönemde {{count}} saatlik ya da aynı gün satış",
-      "hourlyCount_other": "Bu dönemde {{count}} saatlik ya da aynı gün satış"
+      "hourlyCount_other": "Bu dönemde {{count}} saatlik ya da aynı gün satış",
+      "hourlyRevenue": "Saatlik ve aynı gün geliri: {{amount}}"
     },
     "cash": {
       "methods": "Ödeme yöntemine göre",
@@ -5561,7 +5558,7 @@
       "badDates": "Çıkış tarihi girişten önce olamaz.",
       "needRoom": "En az bir oda seçin.",
       "needChannel": "Satış kanalını seçin.",
-      "dayUse": "Giriş ve çıkış aynı gün: aynı gün giriş‑çıkış olarak kaydedilir.",
+      "dayUse": "Giriş ve çıkış aynı gün: saat aralığını yazın. Odanın o günkü diğer saatleri satılabilir.",
       "channelRef": "Kanaldaki rezervasyon no",
       "status": "Durum",
       "dayUseTotal": "Aynı gün giriş‑çıkış, toplam <m>{{total}}</m>",

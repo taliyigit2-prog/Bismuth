@@ -351,7 +351,15 @@ describe('turizm istatistiği: kişisel veri, ay, düzeltme, bildirim, dışa ak
       const created = res.create(owner, {
         guest: { firstName },
         channelId,
-        stays: [{ roomId: byNumber.get(room)!.id, checkIn, checkOut, nightlyPriceMinor: 1 }]
+        stays: [
+          {
+            roomId: byNumber.get(room)!.id,
+            checkIn,
+            checkOut,
+            nightlyPriceMinor: 1,
+            ...(checkIn === checkOut ? { startTime: '10:00', endTime: '11:00' } : {})
+          }
+        ]
       })
       clock.set(`${checkIn}T12:00:00.000Z`)
       res.checkIn(owner, res.get(owner, created.reservation.id).stays[0]!.id)

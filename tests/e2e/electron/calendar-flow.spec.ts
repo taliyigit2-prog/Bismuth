@@ -128,6 +128,9 @@ test('Excel senaryoları: çok oda, gece gece fiyat, not, kapora, aynı gün iki
   await pickRoom(page, '102')
   await pickDate(page, dialog, 'Çıkış', day0)
   await expect(dialog.getByTestId('new-total')).toContainText('Aynı gün giriş‑çıkış')
+  // The hours are asked (S-103): the room stays free for the rest of that day.
+  await dialog.getByTestId('new-reservation-start').fill('10:00')
+  await dialog.getByTestId('new-reservation-end').fill('13:00')
   await save(page)
   await closePanel(page)
   await newReservation(page, 'Gece Konuk')

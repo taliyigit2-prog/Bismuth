@@ -42,6 +42,7 @@ export const summary = (revenue = 3_730_000, expenses = 400_000): ReportSummary 
     profitMinor: revenue - expenses,
     roomRevenueMinor: revenue,
     adrMinor: 248_667,
+    hourlyRevenueMinor: 0,
     revparMinor: 41_910,
     missingRate: { payments: 0, expenses: 0 },
     missingNightRates: 0,

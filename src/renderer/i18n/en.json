@@ -1532,7 +1532,8 @@
     "undoCheckInNotToday": "A check-in can only be taken back on the day it was made. Check out instead or ask the hotel owner.",
     "undoCheckInMoved": "This room was opened by a room move; it cannot be taken back. Check out first.",
     "undoCheckInKbs": "{{names}} is reported to KBS. Confirm to take it back.",
-    "dayUseFreeNeedsConfirm": "The price is 0. Confirm a free check-out or enter an amount."
+    "dayUseFreeNeedsConfirm": "The price is 0. Confirm a free check-out or enter an amount.",
+    "hoursRequired": "Enter the hours for a same-day stay."
   },
   "common": {
     "close": "Close",
@@ -4053,7 +4054,7 @@
       "expenses": "Expenses",
       "occupancy": "Occupancy",
       "adr": "Average nightly rate",
-      "adrHint": "room revenue ÷ nights sold",
+      "adrHint": "nightly room revenue ÷ nights sold",
       "revpar": "Revenue per room",
       "revparHint": "room revenue ÷ sellable nights",
       "margin": "Margin {{value}}",
@@ -4173,13 +4174,9 @@
       "roomTypes": "By room type",
       "rooms": "By room",
       "topGuests": "Guests who brought the most revenue",
-      "dayUseOut_one": "Day use ({{count}}) is not counted as a sold night; it is shown apart.",
-      "dayUseOut_other": "Day use ({{count}}) is not counted in sold nights; it is shown apart.",
-      "dayUseIn_one": "Day use ({{count}}) counts as a sold night.",
-      "dayUseIn_other": "Day use ({{count}}) counts as sold nights.",
-      "dayUseSwitch": "Count in occupancy",
       "hourlyCount_one": "{{count}} hourly or same-day sale in this period",
-      "hourlyCount_other": "{{count}} hourly or same-day sales in this period"
+      "hourlyCount_other": "{{count}} hourly or same-day sales in this period",
+      "hourlyRevenue": "Hourly and same-day revenue: {{amount}}"
     },
     "cash": {
       "methods": "By payment method",
@@ -5561,7 +5558,7 @@
       "badDates": "Check-out cannot be before check-in.",
       "needRoom": "Choose at least one room.",
       "needChannel": "Choose the sales channel.",
-      "dayUse": "Check-in and check-out on the same day: saved as a day use.",
+      "dayUse": "Check-in and check-out on the same day: enter the hours. The room's other hours that day stay for sale.",
       "channelRef": "Booking no. in the channel",
       "status": "Status",
       "dayUseTotal": "Day use, total <m>{{total}}</m>",

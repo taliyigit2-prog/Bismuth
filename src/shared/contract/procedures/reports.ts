@@ -57,7 +57,7 @@ export const reportsContextSchema = z.object({
   baseCurrency: z.string(),
   /** First day with any payment, expense or night; null on an empty hotel. */
   firstDay: localDateSchema.nullable(),
-  /** Same-day and hourly stays always count (S-105); the old `reports.dayUseInOccupancy` switch is gone. */
+  /** Same-day and hourly stays always count (S-105). */
   dayUseIncluded: z.boolean()
 })
 export type ReportsContext = z.infer<typeof reportsContextSchema>
@@ -87,7 +87,10 @@ export const reportSummarySchema = z.object({
       profitMinor: minorSchema,
       /** Room-night charges of the period's nights (ADR, RevPAR). */
       roomRevenueMinor: minorSchema,
+      /** Nightly rate only: night charges / sold nights (same-day and hourly revenue stays out). */
       adrMinor: minorSchema,
+      /** Room charges of same-day and hourly sales (part of `roomRevenueMinor`); the sale count is `dayUseNights`. */
+      hourlyRevenueMinor: minorSchema,
       revparMinor: minorSchema,
       missingRate: missingRateSchema,
       /** Room-night charges in another currency with no rate known yet: left out of the room revenue. */

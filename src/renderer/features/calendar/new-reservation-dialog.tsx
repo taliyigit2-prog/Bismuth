@@ -10,7 +10,7 @@ import { ChevronDownIcon, ShieldAlertIcon, TriangleAlertIcon } from 'lucide-reac
 import { MAX_STAY_NIGHTS } from '@shared/contract/reservations'
 import { addDays, diffDays, localDateOf, type LocalDate } from '@shared/date'
 import { suggestNightPrice, splitFullName, type PriceReason } from '@shared/domain/booking'
-import { staySlots } from '@shared/domain/stays'
+import { isValidHourRange, staySlots } from '@shared/domain/stays'
 import { money, sum } from '@shared/money'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -24,6 +24,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { DateInput } from '@/components/date-input'
 import { GuestCombobox, type ComboGuest } from '@/components/guest-combobox'
 import { MoneyInput } from '@/components/money-input'
+import { TimeInput } from '@/components/time-input'
 import { ResponsiveDialog } from '@/components/responsive-dialog'
 import { ErrorState } from '@/components/states'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -149,6 +150,9 @@ function NewReservationForm({
   const [query, setQuery] = useState('')
   const [checkIn, setCheckIn] = useState<LocalDate>(seed.date)
   const [checkOut, setCheckOut] = useState<LocalDate>(addDays(seed.date, 1))
+  /** Hours of a same-day sale (S-103): a day-use always names them, so it never locks the whole day. */
+  const [startTime, setStartTime] = useState('')
+  const [endTime, setEndTime] = useState('')
   const [roomIds, setRoomIds] = useState<string[]>(
     seed.roomId && options.rooms.some((r) => r.id === seed.roomId) ? [seed.roomId] : []
   )
@@ -228,7 +232,15 @@ function NewReservationForm({
 
   const validDates = checkOut >= checkIn && diffDays(checkIn, checkOut) <= MAX_STAY_NIGHTS
   const rangeEnd = checkOut > checkIn ? checkOut : addDays(checkIn, 1)
-  const taken = useApiQuery('booking.availability', { from: checkIn, to: checkOut }, { enabled: validDates })
+  const sameDay = checkIn === checkOut
+  const hoursOk = isValidHourRange(startTime, endTime)
+  const taken = useApiQuery(
+    'booking.availability',
+    sameDay && hoursOk
+      ? { from: checkIn, to: checkOut, startTime, endTime }
+      : { from: checkIn, to: checkOut },
+    { enabled: validDates && (!sameDay || hoursOk) }
+  )
   const days = useApiQuery('calendar.days', { from: checkIn, to: rangeEnd }, { enabled: validDates })
   const special = useMemo(
     () => new Set((days.data ?? []).filter((d) => PRICED_KINDS.has(d.kind)).map((d) => d.occurrenceDate)),
@@ -308,6 +320,7 @@ function NewReservationForm({
       return setError(
         checkOut < checkIn ? t('booking.form.badDates') : t('booking.form.tooLong', { max: MAX_STAY_NIGHTS })
       )
+    if (sameDay && !hoursOk) return setError(t('booking.hourly.badRange'))
     if (!rooms.length) return setError(t('booking.form.needRoom'))
     if (!channelId) return setError(t('booking.form.needChannel'))
     if (allPrices.some((p) => p === null)) return setError(t('errors.priceMissing'))
@@ -335,7 +348,8 @@ function NewReservationForm({
         roomId: r.id,
         checkIn,
         checkOut,
-        prices: slots.map((date) => ({ date, priceMinor: priceOf(r, date) ?? 0 }))
+        prices: slots.map((date) => ({ date, priceMinor: priceOf(r, date) ?? 0 })),
+        ...(sameDay ? { startTime, endTime } : {})
       })),
       notes: notes.trim() || null,
       tagIds,
@@ -444,8 +458,33 @@ function NewReservationForm({
         onChange={setCheckOut}
         min={checkIn}
       />
-      {checkIn === checkOut ? (
-        <p className="text-muted-foreground -mt-2 text-xs sm:col-span-2">{t('booking.form.dayUse')}</p>
+      {sameDay ? (
+        <>
+          <p className="text-muted-foreground -mt-2 text-xs sm:col-span-2">{t('booking.form.dayUse')}</p>
+          <div className="grid gap-1.5">
+            <Label htmlFor="new-reservation-start">{t('booking.hourly.start')}</Label>
+            <TimeInput
+              id="new-reservation-start"
+              value={startTime}
+              onChange={setStartTime}
+              data-testid="new-reservation-start"
+            />
+          </div>
+          <div className="grid gap-1.5">
+            <Label htmlFor="new-reservation-end">{t('booking.hourly.end')}</Label>
+            <TimeInput
+              id="new-reservation-end"
+              value={endTime}
+              onChange={setEndTime}
+              data-testid="new-reservation-end"
+            />
+          </div>
+          {startTime && endTime && !hoursOk ? (
+            <p role="alert" className="text-destructive text-sm sm:col-span-2">
+              {t('booking.hourly.badRange')}
+            </p>
+          ) : null}
+        </>
       ) : null}
       {checkIn < localDateOf(new Date()) ? (
         // QA3c1 #17: a past arrival is allowed (late entry) but never silently: the stay is saved as "planned".

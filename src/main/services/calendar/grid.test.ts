@@ -49,7 +49,15 @@ async function setup() {
     res.create(reception, {
       guest,
       channelId: direct,
-      stays: [{ roomId, checkIn, checkOut, nightlyPriceMinor: price }]
+      stays: [
+        {
+          roomId,
+          checkIn,
+          checkOut,
+          nightlyPriceMinor: price,
+          ...(checkIn === checkOut ? { startTime: '10:00', endTime: '11:00' } : {})
+        }
+      ]
     })
   const payFor = (reservationId: string, amountMinor: number) =>
     pay.create(reception, {

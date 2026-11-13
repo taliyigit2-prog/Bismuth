@@ -424,7 +424,7 @@ export interface NightFact {
   slot: 'night' | 'day'
   /** Slots counted (nights, or day-use / hourly sales). */
   n: number
-  /** Distinct room-days the slots sit on: several hourly sales of one room and day fill the day once. */
+  /** Distinct room-days the slots sit on: several hourly sales of one room and day fill the day once; a day slot's room-day under a night of the same day is left out. */
   days: number
 }
 
@@ -436,18 +436,18 @@ const kindFilter = (kind: StayKind | undefined) =>
       ? eq(roomNights.slot, 'day')
       : undefined
 
-/** Sold room-nights of live reservations grouped by room × month × weekday × slot. */
+/**
+ * Sold room-nights of live reservations grouped by room x month x weekday x slot. `days` of a day slot only counts the
+ * room-days no night sits on: a morning hourly sale and the evening night of the same room-day fill that day once
+ * (S-105), so occupancy never passes 100%.
+ */
 export function nightFacts(db: Reader, p: Period, kind?: StayKind): NightFact[] {
-  const month = sql<string>`substr(${roomNights.date}, 1, 7)`
-  const wd = sql<number>`cast(strftime('%w', ${roomNights.date}) as integer)`
-  return db
+  const rows = db
     .select({
       roomId: roomNights.roomId,
-      month,
-      weekday: wd,
+      date: roomNights.date,
       slot: roomNights.slot,
-      n: sql<number>`count(*)`,
-      days: sql<number>`count(distinct ${roomNights.date})`
+      n: sql<number>`count(*)`
     })
     .from(roomNights)
     .innerJoin(reservationRooms, eq(reservationRooms.id, roomNights.reservationRoomId))
@@ -460,8 +460,21 @@ export function nightFacts(db: Reader, p: Period, kind?: StayKind): NightFact[] 
         kindFilter(kind)
       )
     )
-    .groupBy(roomNights.roomId, month, wd, roomNights.slot)
+    .groupBy(roomNights.roomId, roomNights.date, roomNights.slot)
     .all()
+  const nightDays = new Set(rows.filter((r) => r.slot === 'night').map((r) => `${r.roomId}|${r.date}`))
+  const facts = new Map<string, NightFact>()
+  for (const r of rows) {
+    const month = r.date.slice(0, 7)
+    const weekday = new Date(`${r.date}T00:00:00Z`).getUTCDay()
+    const key = `${r.roomId}|${month}|${weekday}|${r.slot}`
+    let f = facts.get(key)
+    if (!f) facts.set(key, (f = { roomId: r.roomId, month, weekday, slot: r.slot, n: 0, days: 0 }))
+    f.n += r.n
+    // One row per room-day and slot here, so a night day counts 1 and a day slot counts 1 unless a night shares it.
+    if (r.slot === 'night' || !nightDays.has(`${r.roomId}|${r.date}`)) f.days += 1
+  }
+  return [...facts.values()]
 }
 
 /** Overnight stays checking in in the period: count and Σ nights (average length of stay). */
@@ -519,7 +532,7 @@ export function roomRevenueByRoom(
   p: Period,
   base: string,
   kind?: StayKind
-): { byRoom: Map<string, number>; missing: number } {
+): { byRoom: Map<string, number>; hourlyMinor: number; missing: number } {
   const where = and(
     eq(charges.kind, 'room_night'),
     isNull(charges.voidedAt),
@@ -530,20 +543,26 @@ export function roomRevenueByRoom(
     number | null
   >`coalesce(${charges.amountBaseMinor}, case when ${charges.currency} = ${base} then ${charges.amountMinor} end)`
   const out = new Map<string, number>()
-  const add = (roomId: string, v: number): void => void out.set(roomId, (out.get(roomId) ?? 0) + v)
+  // Charges of day slots (same-day and hourly sales) are kept apart: ADR is the nightly rate only.
+  let hourlyMinor = 0
+  const add = (roomId: string, v: number, slot: string): void => {
+    out.set(roomId, (out.get(roomId) ?? 0) + v)
+    if (slot === 'day') hourlyMinor += v
+  }
   for (const r of db
-    .select({ roomId: roomNights.roomId, total: sql<number>`sum(${known})` })
+    .select({ roomId: roomNights.roomId, slot: roomNights.slot, total: sql<number>`sum(${known})` })
     .from(charges)
     .innerJoin(roomNights, eq(roomNights.id, charges.roomNightId))
     .where(and(where, sql`${known} is not null`))
-    .groupBy(roomNights.roomId)
+    .groupBy(roomNights.roomId, roomNights.slot)
     .all())
-    add(r.roomId, r.total)
+    add(r.roomId, r.total, r.slot)
   let missing = 0
   const rates = new Map<string, number | null>()
   for (const r of db
     .select({
       roomId: roomNights.roomId,
+      slot: roomNights.slot,
       date: charges.date,
       amountMinor: charges.amountMinor,
       currency: charges.currency,
@@ -563,9 +582,9 @@ export function roomRevenueByRoom(
       rates.set(key, v)
     }
     if (v === null) missing++
-    else add(r.roomId, v)
+    else add(r.roomId, v, r.slot)
   }
-  return { byRoom: out, missing }
+  return { byRoom: out, hourlyMinor, missing }
 }
 
 /** Rooms (active or not: history counts), their capacity history and the live blocks overlapping the period. */

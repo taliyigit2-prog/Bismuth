@@ -69,7 +69,15 @@ async function setup(now = '2026-10-01T09:00:00.000Z') {
       guest: opts.guest ?? { firstName: 'Örnek', lastName: 'Misafir', phone: '0532 000 00 00' },
       channelId: direct,
       status: opts.status,
-      stays: [{ roomId, checkIn, checkOut, nightlyPriceMinor: opts.price ?? 200_000 }]
+      stays: [
+        {
+          roomId,
+          checkIn,
+          checkOut,
+          nightlyPriceMinor: opts.price ?? 200_000,
+          ...(checkIn === checkOut ? { startTime: '10:00', endTime: '11:00' } : {})
+        }
+      ]
     })
   const audits = (entityId: string) =>
     handle.db.select().from(auditLog).where(eq(auditLog.entityId, entityId)).all()

@@ -86,6 +86,36 @@ describe('yeni rezervasyon', () => {
     expect(input?.blacklistConfirmed).toBeUndefined()
   })
 
+  it('giriş ve çıkış aynı gün seçilince saat aralığı istenir; saatsiz kayıt gitmez, saatlerle gider (S-103)', async () => {
+    const { user, transport, onCreated } = await open()
+    await typeGuest(user, 'Elif Kaya')
+    await user.click(await screen.findByText('Yeni misafir: Elif Kaya'))
+    await user.click(screen.getByRole('button', { name: /^Çıkış/ }))
+    await user.click(await screen.findByRole('gridcell', { name: /^2 Ekim 2026/ }))
+    expect(await screen.findByTestId('new-reservation-start')).toBeInTheDocument()
+    await user.click(screen.getByTestId('new-reservation-save'))
+    expect(await screen.findByText('Bitiş saati başlangıçtan sonra olmalı.')).toBeInTheDocument()
+    expect(transport.callsTo('booking.create')).toHaveLength(0)
+    await user.type(screen.getByTestId('new-reservation-start'), '1000')
+    await user.type(screen.getByTestId('new-reservation-end'), '1300')
+    await user.click(screen.getByTestId('new-reservation-save'))
+    await waitFor(() => expect(onCreated).toHaveBeenCalled())
+    const [input] = transport.callsTo('booking.create') as {
+      stays: { checkIn: string; checkOut: string; startTime?: string; endTime?: string }[]
+    }[]
+    expect(input?.stays[0]).toMatchObject({
+      checkIn: '2026-10-02',
+      checkOut: '2026-10-02',
+      startTime: '10:00',
+      endTime: '13:00'
+    })
+    // The room list is asked for rooms free in those hours, not for the whole day.
+    expect(transport.callsTo('booking.availability').at(-1)).toMatchObject({
+      startTime: '10:00',
+      endTime: '13:00'
+    })
+  })
+
   it('gecelik fiyata "abc" ya da "-500" yazılınca alan hata gösterir, öneri fiyatına dönülüp kaydedilmez (QA3c1 #9)', async () => {
     const { user, transport, onCreated } = await open()
     await typeGuest(user, 'Elif Kaya')

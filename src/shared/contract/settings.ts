@@ -130,11 +130,6 @@ export const settingsShape = {
   /** Day closing (G-72): off by default, many hotels switch it on. */
   'businessDay.closingEnabled': z.boolean(),
   /**
-   * No longer read (P17d, S-105): same-day and hourly stays always count in occupancy. The key stays so a stored value
-   * (and a backup that has it) still loads; nothing changes it and no screen shows it.
-   */
-  'reports.dayUseInOccupancy': z.boolean(),
-  /**
    * Minutes the desk wants between two hourly stays in one room for cleaning (K-48, S-103): selling inside the gap is
    * only warned about, never blocked. 0 = no gap.
    */
@@ -260,7 +255,6 @@ export const SETTINGS_DEFAULTS: SettingsValues = {
   'kbs.checksEnabled': true,
   'tasks.everyNStays': 10,
   'businessDay.closingEnabled': false,
-  'reports.dayUseInOccupancy': false,
   'dayUse.turnoverMinutes': 60,
   'attachments.resolvedIssueRetentionDays': 30,
   'staff.advanceFromDrawer': false,

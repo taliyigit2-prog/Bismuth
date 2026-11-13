@@ -446,6 +446,10 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
   ): string {
     const checkIn = localDate(stay.checkIn)
     const checkOut = localDate(stay.checkOut)
+    // S-103: a same-day sale names its hours; a whole-day slot would lock the room's every other hourly sale
+    // that day (rows written before 0019 stay as they are).
+    if (checkIn === checkOut && (stay.startTime === undefined || stay.endTime === undefined))
+      throw invalid('errors.hoursRequired')
     const slots = staySlots(
       checkIn,
       checkOut,
@@ -1020,6 +1024,9 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
         const existing = tx.select().from(roomNights).where(eq(roomNights.reservationRoomId, stayId)).all()
         // An hourly stay that stays a day-use keeps its hours on the new date (K-48).
         const hourly = existing.find((n) => n.slot === 'day' && n.startTime && n.endTime)
+        // A stay cut down to a same-day one keeps hours only if it already had them; a whole-day slot is not new.
+        if (data.checkIn === data.checkOut && !hourly && !existing.some((n) => n.slot === 'day'))
+          throw invalid('errors.hoursRequired')
         const wanted = staySlots(
           localDate(data.checkIn),
           localDate(data.checkOut),
@@ -1644,14 +1651,13 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
           )
           const first = nights.find((n) => n.date === stay.checkIn && n.slot === 'night')
           // K-44: left on the check-in day — the first night becomes that day's day-use and its price may be changed
-          // here. The day slot carries the hours the guest really used (check-in minute to now), so a second round
-          // in the same room and day fits beside it and the night is free to sell again (the K-44 promise, hata C).
-          // Without a free range (a clash with another day range) the night stays as it was.
+          // here. The day slot carries the hours the guest really used (check-in minute to now), or the free part of
+          // them, so a second round in the same room and day fits beside it. The night is released either way (hata
+          // C): when even no day slot fits (a whole-day record of another stay holds the day) it goes with no slot.
           const range: HourRange | null =
             plan.kind === 'sameDay' && first ? sameDayRange(tx, stay, now) : null
-          const daySlotFree = !!range
           let dayUse: { date: string; priceMinor: number } | undefined
-          if (daySlotFree && first && range) {
+          if (first && range) {
             // H-06: a free same-day stay is a decision, not a slip of the keyboard.
             if (opts.dayUsePriceMinor === 0 && !opts.dayUseFreeConfirmed)
               throw invalid('errors.dayUseFreeNeedsConfirm')
@@ -1662,12 +1668,12 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
             if (opts.dayUsePriceMinor !== undefined && opts.dayUsePriceMinor !== first.priceMinor)
               repriceNight(tx, ctx, now, stay.reservationId, first, opts.dayUsePriceMinor)
             dayUse = { date: first.date, priceMinor: opts.dayUsePriceMinor ?? first.priceMinor }
+          } else if (first && plan.kind === 'sameDay') {
+            removeNights(tx, now, [first.id], 'early_departure')
+            unused.push(first)
           }
-          const end = daySlotFree
-            ? stay.checkIn
-            : plan.kind === 'sameDay'
-              ? addDays(localDate(stay.checkIn), 1)
-              : day
+          const end =
+            plan.kind === 'sameDay' ? (first ? stay.checkIn : addDays(localDate(stay.checkIn), 1)) : day
           tx.update(reservationRooms)
             .set({ checkOut: end, updatedAt: iso })
             .where(eq(reservationRooms.id, stayId))
@@ -1954,12 +1960,23 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
     },
 
     /** Rooms another booking or a block keeps from [from, to) (a day-use when equal). */
-    roomsTaken(ctx: Ctx, input: { from: string; to: string; excludeReservationId?: string }) {
+    roomsTaken(
+      ctx: Ctx,
+      input: { from: string; to: string; excludeReservationId?: string; startTime?: string; endTime?: string }
+    ) {
       requirePermission(ctx, 'calendar', 'view')
       const data = parseInput(availabilityInputSchema, input)
       if (diffDays(localDate(data.from), localDate(data.to)) > MAX_STAY_NIGHTS)
         throw invalid('errors.validation')
-      return roomsTaken(db, localDate(data.from), localDate(data.to), data.excludeReservationId)
+      return roomsTaken(
+        db,
+        localDate(data.from),
+        localDate(data.to),
+        data.excludeReservationId,
+        data.startTime !== undefined && data.endTime !== undefined
+          ? { start: data.startTime, end: data.endTime }
+          : undefined
+      )
     },
 
     /**

@@ -385,11 +385,12 @@ function Wizard({
               <ChevronLeftIcon className="rtl:rotate-180" aria-hidden />
               {t('setup.back')}
             </Button>
-            <div className="flex flex-wrap items-center justify-end gap-2">
+            <div className="flex min-w-0 flex-wrap items-center justify-end gap-2 max-md:gap-1">
               {optional ? (
                 <Button
                   type="button"
                   variant="ghost"
+                  className="max-md:h-11 max-md:px-3"
                   onClick={() => move(index + 1)}
                   disabled={busy}
                   data-testid="setup-skip"

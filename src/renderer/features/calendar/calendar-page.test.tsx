@@ -527,6 +527,48 @@ describe('takvim (açılış ekranı, gerçek servis)', () => {
   })
 })
 
+describe('takvim: aynı günde birden çok saatlik çubuk', () => {
+  it('üç saatlik çubuk üst üste dizilir; metin sığmasa da her çubuk saat aralığını ve adı title ile aria-label olarak taşır', async () => {
+    const hotel = demoHotel(DAY)
+    const names = ['Ayşe Demir', 'Burak Kaya', 'Cem Aksoy']
+    const ranges = [
+      ['09:00', '10:00'],
+      ['11:00', '12:00'],
+      ['14:00', '15:30']
+    ] as const
+    await renderCalendar(hotel, {
+      grid: async ({ from, to }) => {
+        const grid = gridFromDemo(hotel, from, to)
+        const base = grid.stays[0]!
+        const hourly = names.map((guestName, i) => ({
+          ...base,
+          id: `hourly-${i}`,
+          reservationId: `hourly-res-${i}`,
+          roomId: 'room-102',
+          checkIn: DAY,
+          checkOut: DAY,
+          dayUse: true,
+          reservationStatus: 'confirmed' as const,
+          stayStatus: 'planned' as const,
+          guestName,
+          startTime: ranges[i]![0],
+          endTime: ranges[i]![1],
+          nights: [{ date: DAY, pay: 'unpaid' as const, priceMinor: 90_000 }]
+        }))
+        return { ...grid, stays: [...grid.stays.filter((s) => s.roomId !== 'room-102'), ...hourly] }
+      }
+    })
+    const chart = await screen.findByTestId('tape-chart')
+    for (const [i, name] of names.entries()) {
+      const bar = await within(chart).findByTestId('stay-hourly-' + i)
+      const hours = `${ranges[i]![0]}–${ranges[i]![1]}`
+      expect(bar.getAttribute('aria-label')).toContain(name)
+      expect(bar.getAttribute('aria-label')).toContain(hours)
+      expect(bar).toHaveAttribute('title', bar.getAttribute('aria-label')!)
+    }
+  })
+})
+
 describe('takvim telefonda (gün listesi)', () => {
   it('telefonda ızgara yerine gün listesi açılır; gelen, giden, kalan ve boş odalar gerçek veriden gelir', async () => {
     phone()

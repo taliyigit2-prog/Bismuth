@@ -12,10 +12,10 @@ import { kbsMissing, type KbsIssue, type StayRoomLike } from '@shared/domain/occ
 import { checkoutPlan } from '@shared/domain/booking'
 import {
   findConflicts,
-  findHourConflicts,
   hourlyAmountMinor,
   occupancyFrom,
   staySlots,
+  largestFreeRange,
   usedHours,
   type HourRange
 } from '@shared/domain/stays'
@@ -234,8 +234,12 @@ const occupantView = (o: typeof stayOccupants.$inferSelect): OccupantView => ({
 })
 
 /**
- * The day range a stay leaving on its check-in day gets (K-44, hata C): the hours it really used if no other day
- * range of the room and day clashes, else the whole day if the day has no other range, else null (no free range).
+ * The day range a stay leaving on its check-in day gets (K-44, hata C), so its night is free to sell again:
+ * 1. the hours it really used, if no other day range of the room and day clashes;
+ * 2. else the longest part of those hours that is free;
+ * 3. else the longest free stretch of the day (the hours are then only a record, the night is still released);
+ * 4. else nothing is left to sell that day: a whole-day record without hours (unless one exists already);
+ * 5. else null (a whole-day record of another stay holds the day): the caller releases the night with no day slot.
  */
 export function sameDayRange(
   tx: Reader,
@@ -243,17 +247,19 @@ export function sameDayRange(
   now: Date
 ): HourRange | null {
   const others = tx
-    .select({ id: roomNights.id, start: roomNights.startTime, end: roomNights.endTime })
+    .select({ start: roomNights.startTime, end: roomNights.endTime })
     .from(roomNights)
     .where(
       and(eq(roomNights.roomId, stay.roomId), eq(roomNights.date, stay.checkIn), eq(roomNights.slot, 'day'))
     )
     .all()
-    .map((r) => ({ reservationId: r.id, start: r.start, end: r.end }))
   const used = usedHours(stay.checkedInAt ? new Date(stay.checkedInAt) : null, localDate(stay.checkIn), now)
-  if (used && !findHourConflicts({ start: used.start, end: used.end }, others).length)
-    return { start: used.start, end: used.end }
-  return others.length ? null : { start: null, end: null }
+  const fit = used ? largestFreeRange(used, others) : null
+  if (fit) return fit
+  if (!others.length) return { start: null, end: null }
+  const gap = largestFreeRange({ start: '00:00', end: '23:59' }, others)
+  if (gap) return gap
+  return others.some((o) => o.start === null || o.end === null) ? null : { start: null, end: null }
 }
 
 /** The panel's view of one reservation, built on the service's detail (allocation already done there). */
@@ -547,9 +553,10 @@ export function roomsTaken(
   tx: Reader,
   from: LocalDate,
   to: LocalDate,
-  excludeReservationId?: string
+  excludeReservationId?: string,
+  hours?: { start: string; end: string }
 ): { occupied: string[]; blocked: string[]; notForSale: string[] } {
-  const slots = staySlots(from, to)
+  const slots = staySlots(from, to, hours)
   const end = from === to ? addDays(from, 1) : to
   const occupiedRows = occupiedSlots(tx, from, end)
   const blockRows = tx

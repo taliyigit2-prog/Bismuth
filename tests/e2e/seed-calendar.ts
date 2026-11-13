@@ -57,7 +57,9 @@ async function main(): Promise<void> {
           roomId: room(roomNumber),
           checkIn: addDays(today, from),
           checkOut: addDays(today, to),
-          nightlyPriceMinor: price
+          nightlyPriceMinor: price,
+          // A same-day stay names its hours (S-103).
+          ...(from === to ? { startTime: '10:00', endTime: '13:00' } : {})
         }
       ]
     })

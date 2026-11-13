@@ -70,6 +70,8 @@ describe('kurulum sihirbazı: düzen', () => {
     expect(await heading('Saatlik satış')).toBeInTheDocument()
     expect(screen.getByText('İsteğe bağlı')).toBeInTheDocument()
     expect(within(screen.getByTestId('setup-hourly-types')).getAllByRole('listitem')).toHaveLength(1)
+    // On the phone "Atla" is a 44 px target like the other footer buttons (the ghost button keeps its own height).
+    expect(screen.getByTestId('setup-skip')).toHaveClass('max-md:h-11')
     await user.click(screen.getByTestId('setup-skip'))
     expect(await heading('Ödeme ve satış')).toBeInTheDocument()
   })

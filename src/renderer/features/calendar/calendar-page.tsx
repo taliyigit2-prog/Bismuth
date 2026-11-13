@@ -84,17 +84,19 @@ export function CalendarPage() {
 
   const actions = canBook ? (
     <>
+      {/* min-w-0 + truncate: a long Russian label shortens inside its button instead of pushing out of the phone. */}
       <Button
         variant="outline"
+        className="min-w-0"
         onClick={() => setHourly({ roomId: null, date: todayOf() })}
         data-testid="hourly-new"
       >
         <ClockIcon aria-hidden />
-        {t('booking.hourly.button')}
+        <span className="truncate">{t('booking.hourly.button')}</span>
       </Button>
-      <Button onClick={() => openNew(null, todayOf())}>
+      <Button className="min-w-0" onClick={() => openNew(null, todayOf())}>
         <PlusIcon aria-hidden />
-        {t('calendar.newReservation')}
+        <span className="truncate">{t('calendar.newReservation')}</span>
       </Button>
     </>
   ) : undefined

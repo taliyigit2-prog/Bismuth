@@ -56,13 +56,23 @@ async function setup(now = '2026-10-01T08:00:00.000Z') {
       channelId: direct,
       stays: [{ roomId, checkIn, checkOut, nightlyPriceMinor: price }]
     })
-  const wholeDay = (roomId: string, date: string) =>
+  /** A whole-day day slot as every row before 0019 has it: the service no longer writes one, so strip the hours. */
+  const wholeDay = (roomId: string, date: string) => {
+    const view = hourly(roomId, date, '08:00', '09:00', 100_000)
+    handle.db
+      .update(roomNights)
+      .set({ startTime: null, endTime: null })
+      .where(eq(roomNights.reservationRoomId, view.stays[0]!.id))
+      .run()
+    return view
+  }
+  const sameDayWithoutHours = (roomId: string, date: string) =>
     svc.reservations.create(reception, {
       guest: guest(),
       channelId: direct,
       stays: [{ roomId, checkIn: date, checkOut: date, nightlyPriceMinor: 100_000 }]
     })
-  return { svc, clock, r501, r502, direct, hourly, night, wholeDay }
+  return { svc, clock, r501, r502, direct, hourly, night, wholeDay, sameDayWithoutHours }
 }
 
 describe('saatlik satış: aynı odada aynı gün sınırsız, yalnız saat çakışması engeller', () => {
@@ -102,12 +112,42 @@ describe('saatlik satış: aynı odada aynı gün sınırsız, yalnız saat çak
     })
   })
 
-  it('tüm gün gündüz kullanımı ile saatli satış aynı günde bir arada olamaz (iki yönde)', async () => {
+  it('aynı gün giriş-çıkış saat aralığı ister: saatsiz yazılmaz, o günün diğer saatlik satışları engellenmez (S-103)', async () => {
+    const { r501, hourly, sameDayWithoutHours } = await setup()
+    expect(() => sameDayWithoutHours(r501.id, '2026-10-05')).toThrow(/hoursRequired/)
+    expect(handle.db.select().from(roomNights).where(eq(roomNights.roomId, r501.id)).all()).toEqual([])
+    hourly(r501.id, '2026-10-05', '09:00', '10:00')
+    expect(hourly(r501.id, '2026-10-05', '14:00', '15:00').reservation.kind).toBe('day_use')
+  })
+
+  it('eski tüm gün kaydı (0019 öncesi) geriye uyumlu: o günün saatli satışını engellemeye devam eder', async () => {
     const { r501, r502, hourly, wholeDay } = await setup()
     wholeDay(r501.id, '2026-10-05')
     expect(() => hourly(r501.id, '2026-10-05', '09:00', '10:00')).toThrow(/roomOccupied/)
-    hourly(r502.id, '2026-10-05', '09:00', '10:00')
-    expect(() => wholeDay(r502.id, '2026-10-05')).toThrow(/roomOccupied/)
+    // Another room and another day are free.
+    expect(hourly(r502.id, '2026-10-05', '09:00', '10:00').reservation.kind).toBe('day_use')
+    expect(hourly(r501.id, '2026-10-06', '09:00', '10:00').reservation.kind).toBe('day_use')
+  })
+
+  it('gecelik konaklama saatsiz aynı güne kısaltılamaz (saat yazılamayan tarih değişikliği)', async () => {
+    const { svc, r501, night } = await setup()
+    const stay = night(r501.id, '2026-10-05', '2026-10-06').stays[0]!
+    expect(() =>
+      svc.reservations.changeDates(reception, stay.id, { checkIn: '2026-10-05', checkOut: '2026-10-05' })
+    ).toThrow(/hoursRequired/)
+  })
+
+  it('availability saat verilince yalnız çakışan odayı dolu sayar', async () => {
+    const { svc, r501, hourly } = await setup()
+    hourly(r501.id, '2026-10-05', '09:00', '12:00')
+    const day = { from: '2026-10-05', to: '2026-10-05' }
+    expect(svc.reservations.roomsTaken(reception, day).occupied).toContain(r501.id)
+    expect(
+      svc.reservations.roomsTaken(reception, { ...day, startTime: '13:00', endTime: '15:00' }).occupied
+    ).not.toContain(r501.id)
+    expect(
+      svc.reservations.roomsTaken(reception, { ...day, startTime: '11:00', endTime: '13:00' }).occupied
+    ).toEqual([r501.id])
   })
 
   it('saatlik satış aynı günün gecesini engellemez (D); süren konaklamanın ortasına yazılmaz (G-37)', async () => {
@@ -277,6 +317,70 @@ describe('hata C: ikinci tur çıkışından sonra oda o gece yeniden satılır'
     ])
   })
 
+  it('kullanılan saatlerin bir kısmı başka saatlik satışla doluysa gündüz kaydı boş kalan en uzun parçaya yazılır; gece boşalır', async () => {
+    const { svc, clock, r501, night, hourly } = await setup('2026-10-01T08:00:00.000Z')
+    // Sold earlier: 14:00-16:00. The guest was in from 12:00 to 17:00, so 12:00-14:00 is the longest free part.
+    hourly(r501.id, '2026-10-01', '14:00', '16:00')
+    const a = night(r501.id, '2026-10-01', '2026-10-03')
+    clock.set('2026-10-01T09:00:00.000Z')
+    svc.reservations.checkIn(reception, a.stays[0]!.id)
+    clock.set('2026-10-01T14:00:00.000Z')
+    const out = svc.reservations.checkOut(reception, a.stays[0]!.id)
+    expect(out.stays[0]!.nights.map((x) => [x.slot, x.startTime, x.endTime])).toEqual([
+      ['day', '12:00', '14:00']
+    ])
+    expect(out.folio.chargesMinor).toBe(200_000)
+    const rows = handle.db.select().from(roomNights).where(eq(roomNights.roomId, r501.id)).all()
+    expect(rows.filter((r) => r.slot === 'night')).toHaveLength(0)
+    expect(night(r501.id, '2026-10-01', '2026-10-02').stays).toHaveLength(1)
+  })
+
+  it('kullanılan saatlerin hepsi doluysa gündüz kaydı günün en uzun boş aralığına yazılır; gün tamamen doluysa saatsiz kayıt olur; gece yine boşalır', async () => {
+    const { svc, clock, r501, night, hourly } = await setup('2026-10-01T08:00:00.000Z')
+    hourly(r501.id, '2026-10-01', '11:00', '18:00')
+    const a = night(r501.id, '2026-10-01', '2026-10-02')
+    clock.set('2026-10-01T09:00:00.000Z')
+    svc.reservations.checkIn(reception, a.stays[0]!.id)
+    clock.set('2026-10-01T14:00:00.000Z')
+    const out = svc.reservations.checkOut(reception, a.stays[0]!.id)
+    // In 12:00-17:00 everything is sold: the record goes to the longest free stretch of the day (00:00-11:00).
+    expect(out.stays[0]!.nights.map((x) => [x.slot, x.startTime, x.endTime])).toEqual([
+      ['day', '00:00', '11:00']
+    ])
+    expect(handle.db.select().from(roomNights).where(eq(roomNights.slot, 'night')).all()).toHaveLength(0)
+
+    // A day with no free minute left: a whole-day record, nothing else could be sold that day anyway.
+    handle.db
+      .update(roomNights)
+      .set({ startTime: '00:00', endTime: '23:59' })
+      .where(eq(roomNights.id, out.stays[0]!.nights[0]!.id))
+      .run()
+    const b = night(r501.id, '2026-10-01', '2026-10-02')
+    clock.set('2026-10-01T14:30:00.000Z')
+    svc.reservations.checkIn(reception, b.stays[0]!.id)
+    clock.set('2026-10-01T15:00:00.000Z')
+    const bOut = svc.reservations.checkOut(reception, b.stays[0]!.id)
+    expect(bOut.stays[0]!.nights.map((x) => [x.slot, x.startTime, x.endTime])).toEqual([['day', null, null]])
+    expect(handle.db.select().from(roomNights).where(eq(roomNights.slot, 'night')).all()).toHaveLength(0)
+  })
+
+  it('günü eski bir tüm gün kaydı tutuyorsa gündüz yuvası yazılamaz: gece yine boşalır, konaklama kapanır (kilitli gece kalmaz)', async () => {
+    const { svc, clock, r501, night, wholeDay } = await setup('2026-10-01T08:00:00.000Z')
+    wholeDay(r501.id, '2026-10-01')
+    const a = night(r501.id, '2026-10-01', '2026-10-02')
+    clock.set('2026-10-01T09:00:00.000Z')
+    svc.reservations.checkIn(reception, a.stays[0]!.id)
+    clock.set('2026-10-01T14:00:00.000Z')
+    const out = svc.reservations.checkOut(reception, a.stays[0]!.id)
+    expect(out.stays[0]).toMatchObject({ status: 'done', checkIn: '2026-10-01', checkOut: '2026-10-01' })
+    expect(out.stays[0]!.nights).toEqual([])
+    expect(handle.db.select().from(roomNights).where(eq(roomNights.slot, 'night')).all()).toHaveLength(0)
+    expect(
+      svc.calendar.grid(reception, { from: '2026-09-30', to: '2026-10-04' }).stays.length
+    ).toBeGreaterThan(0)
+    expect(night(r501.id, '2026-10-01', '2026-10-02').stays).toHaveLength(1)
+  })
+
   it('çıkış penceresi: gündüz yuvasının saatleri ve oda tipinin saat ücretinden önerilen tutar görünümde gelir', async () => {
     const { svc, clock, r501, night } = await setup('2026-10-01T10:00:00.000Z')
     const a = night(r501.id, '2026-10-01', '2026-10-03')
@@ -365,5 +469,61 @@ describe('saatlik misafir KBS listesinde (S-104)', () => {
     clock.set('2026-10-05T09:00:00.000Z')
     svc.reservations.checkOut(reception, stayId)
     expect(svc.occupants.kbsMissing(reception).map((i) => i.kind)).toEqual(['checkout'])
+  })
+})
+
+describe('her room_nights yazma yolu saat denetiminden geçer (checkSlots)', () => {
+  const rows = () => handle.db.select().from(roomNights).all().length
+
+  it('oluşturma, oda ekleme, uzatma, taşıma ve oda değişimi çakışan saatte reddedilir ve hiçbir satır yazmaz; çıkış çakışan saate yazmaz', async () => {
+    const { svc, clock, r501, r502, night, hourly } = await setup('2026-10-01T08:00:00.000Z')
+    // Room 501: an hourly sale on the 7th (09:00-12:00). Room 502: one on the 6th.
+    hourly(r501.id, '2026-10-07', '09:00', '12:00')
+    hourly(r502.id, '2026-10-06', '09:00', '12:00')
+    const refused = (fn: () => unknown) => {
+      const before = rows()
+      expect(fn).toThrow(/roomOccupied/)
+      expect(rows()).toBe(before)
+    }
+
+    // create: a night stay going on through the 7th, and an hourly stay on top of the sale.
+    refused(() => night(r501.id, '2026-10-06', '2026-10-09'))
+    refused(() => hourly(r501.id, '2026-10-07', '11:00', '13:00'))
+    // addRoom: the same hours through a second room of an open reservation.
+    const base = night(r502.id, '2026-10-02', '2026-10-04')
+    refused(() =>
+      svc.reservations.addRoom(reception, base.reservation.id, {
+        roomId: r501.id,
+        checkIn: '2026-10-07',
+        checkOut: '2026-10-07',
+        startTime: '10:00',
+        endTime: '11:00',
+        nightlyPriceMinor: 90_000
+      })
+    )
+    // extend (changeDates): nights made longer go on through the 7th.
+    const extend = night(r501.id, '2026-10-02', '2026-10-04')
+    refused(() =>
+      svc.reservations.changeDates(reception, extend.stays[0]!.id, {
+        checkIn: '2026-10-02',
+        checkOut: '2026-10-09'
+      })
+    )
+    // moveDates: a planned night stay moved over room 501's sale day.
+    const mover = night(r501.id, '2026-10-20', '2026-10-22')
+    refused(() => svc.reservations.moveDates(reception, mover.stays[0]!.id, { checkIn: '2026-10-06' }))
+    // changeRoom: a stay on the 5th and 6th cannot go to room 502, which has a sale on the 6th (a day it goes on through).
+    const through = night(r501.id, '2026-10-05', '2026-10-07')
+    refused(() => svc.reservations.changeRoom(reception, through.stays[0]!.id, { newRoomId: r502.id }))
+
+    // checkOut: the day record never lands on hours somebody else holds (the sale 14:00-16:00 stays untouched).
+    hourly(r501.id, '2026-10-01', '14:00', '16:00')
+    const a = night(r501.id, '2026-10-01', '2026-10-02')
+    clock.set('2026-10-01T09:00:00.000Z')
+    svc.reservations.checkIn(reception, a.stays[0]!.id)
+    clock.set('2026-10-01T14:00:00.000Z')
+    const out = svc.reservations.checkOut(reception, a.stays[0]!.id)
+    const mine = out.stays[0]!.nights[0]!
+    expect([mine.startTime, mine.endTime]).toEqual(['12:00', '14:00'])
   })
 })

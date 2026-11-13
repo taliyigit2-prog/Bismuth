@@ -112,9 +112,26 @@ export const priceSuggestionInputSchema = z
   .refine((s) => s.checkOut >= s.checkIn, { path: ['checkOut'], message: 'checkOut before checkIn' })
 
 export const availabilityInputSchema = z
-  .object({ from: localDateSchema, to: localDateSchema, excludeReservationId: idSchema.optional() })
+  .object({
+    from: localDateSchema,
+    to: localDateSchema,
+    excludeReservationId: idSchema.optional(),
+    /** Hours of a same-day sale (K-48): only rooms clashing with these hours are taken; none = the whole day. */
+    startTime: z.string().optional(),
+    endTime: z.string().optional()
+  })
   .strict()
   .refine((s) => s.to >= s.from, { path: ['to'], message: 'to before from' })
+  .refine(
+    (s) =>
+      s.startTime === undefined && s.endTime === undefined
+        ? true
+        : s.startTime !== undefined &&
+          s.endTime !== undefined &&
+          s.from === s.to &&
+          isValidHourRange(s.startTime, s.endTime),
+    { path: ['endTime'], message: 'hours need a same-day sale and a start before the end' }
+  )
 
 export const addRoomSchema = z
   .object({

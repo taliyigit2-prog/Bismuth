@@ -302,6 +302,36 @@ export function usedHours(
   return { start: clockText(start), end: clockText(end) }
 }
 
+/**
+ * The longest part of `wanted` that no other range of the day touches (hata C: the hours a stay really used may be
+ * partly sold to somebody else). The whole `wanted` when nothing is in the way; null when a whole-day range is there
+ * or the others cover it all. Ties go to the earlier part.
+ */
+export function largestFreeRange(
+  wanted: { start: ClockTime; end: ClockTime },
+  others: readonly HourRange[]
+): { start: ClockTime; end: ClockTime } | null {
+  if (others.some(isWholeDay)) return null
+  const taken = others
+    .map((o) => [clockMinutes(o.start!), clockMinutes(o.end!)] as const)
+    .sort((a, b) => a[0] - b[0])
+  let cursor = clockMinutes(wanted.start)
+  const end = clockMinutes(wanted.end)
+  let best: [number, number] | null = null
+  const consider = (from: number, to: number): void => {
+    if (to > from && (!best || to - from > best[1] - best[0])) best = [from, to]
+  }
+  for (const [from, to] of taken) {
+    if (to <= cursor) continue
+    if (from >= end) break
+    consider(cursor, Math.min(from, end))
+    cursor = Math.max(cursor, to)
+  }
+  consider(cursor, end)
+  const found = best as [number, number] | null
+  return found ? { start: clockText(found[0]), end: clockText(found[1]) } : null
+}
+
 /** Minutes between two valid 'HH:MM' times of one day. */
 export const hourSpanMinutes = (start: ClockTime, end: ClockTime): number =>
   clockMinutes(end) - clockMinutes(start)

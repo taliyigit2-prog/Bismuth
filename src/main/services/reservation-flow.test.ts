@@ -54,7 +54,15 @@ async function setup() {
     res.create(reception, {
       guest: { firstName: 'Örnek', lastName: 'Misafir', phone: '0532 000 00 00' },
       channelId: direct,
-      stays: [{ roomId, checkIn, checkOut, nightlyPriceMinor: price }]
+      stays: [
+        {
+          roomId,
+          checkIn,
+          checkOut,
+          nightlyPriceMinor: price,
+          ...(checkIn === checkOut ? { startTime: '10:00', endTime: '11:00' } : {})
+        }
+      ]
     })
   return { clock, res, pay, occ, fx, roomsSvc, r501, r502, direct, cash, card, book, onCheckout, id }
 }
