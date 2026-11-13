@@ -94,6 +94,90 @@ const packages = names.map((name) => {
   return { name, version: meta.version, license, text }
 })
 
+// Camera module (Faz 20, optional Python sidecar in otel-kamera/): versions come from requirements.txt so the notice
+// cannot drift from what ships; every pinned package must have an entry here (the script stops otherwise).
+const CAMERA_PACKAGES = {
+  fastapi: { license: 'MIT', note: 'HTTP surface of the sidecar (127.0.0.1 only)' },
+  uvicorn: { license: 'BSD-3-Clause', note: 'ASGI server' },
+  'python-multipart': { license: 'Apache-2.0', note: 'form uploads' },
+  pydantic: { license: 'MIT', note: 'request validation' },
+  numpy: { license: 'BSD-3-Clause', note: 'image and vector maths' },
+  'opencv-python-headless': {
+    license: 'Apache-2.0 (bundled FFmpeg: LGPL-2.1, dynamically linked)',
+    note: 'RTSP reading, JPEG'
+  },
+  supervision: { license: 'MIT', note: 'detections and zone helpers' },
+  ultralytics: {
+    license: 'AGPL-3.0',
+    note: 'YOLO11n person detection; code is called, never modified (K-57)'
+  },
+  insightface: {
+    license: 'MIT (code)',
+    note: 'face detection and recognition; model weights are NON-COMMERCIAL (below)'
+  },
+  onnxruntime: { license: 'MIT', note: 'runs the InsightFace models on the CPU' }
+}
+const CAMERA_MODELS = [
+  {
+    file: 'yolo11n.pt',
+    from: 'Ultralytics (github.com/ultralytics/assets)',
+    license: 'AGPL-3.0'
+  },
+  {
+    file: 'buffalo_s (det_500m.onnx, w600k_mbf.onnx)',
+    from: 'InsightFace model zoo (github.com/deepinsight/insightface)',
+    license: 'non-commercial research only'
+  }
+]
+const cameraRequirements = readFileSync(join(root, 'otel-kamera/requirements.txt'), 'utf8')
+  .split(/\r?\n/)
+  .map((line) => /^([A-Za-z0-9_.-]+)==([^\s#]+)/.exec(line))
+  .filter(Boolean)
+  .map((m) => ({ name: m[1], version: m[2] }))
+const cameraMissing = cameraRequirements.filter((r) => !CAMERA_PACKAGES[r.name])
+if (cameraMissing.length > 0)
+  throw new Error(
+    `otel-kamera/requirements.txt has packages without a notice entry: ${cameraMissing.map((r) => r.name).join(', ')}`
+  )
+
+const cameraSection = [
+  '## Camera module (optional; runs only when switched on in Settings)',
+  '',
+  'Bismuth can start a separate Python program ("sidecar", folder `otel-kamera/`) that recognises faces from a hotel camera.',
+  'It listens on 127.0.0.1 only, downloads nothing and sends nothing out; its model files ship inside the installer.',
+  '',
+  '### Licence warning (owner decision K-57, 2026-11-13)',
+  '',
+  '- The InsightFace `buffalo_s` model weights are licensed by their authors for **non-commercial research purposes only**.',
+  '  Using them for hotel door security is not "research"; the licence text does not define commercial use, so a risk',
+  "  remains. The owner knowingly keeps them for the owner's own single hotel and does not sell or pass on this program.",
+  '- Ultralytics YOLO11 is **AGPL-3.0**. It is run as a separate process and its code is never modified. Ultralytics',
+  '  states on its own licence page that internal business use also needs an Enterprise licence; that is a company policy',
+  '  stricter than the licence text.',
+  '- Consequence: **this build must not be sold, sub-licensed or handed to another hotel with these models.** Before any',
+  '  such step, replace them with openly licensed models (YuNet MIT + SFace Apache-2.0; plan in',
+  '  `docs/analiz/06-kamera-entegrasyonu.md` section 6.2) or obtain written permission / an Enterprise licence.',
+  '- Telemetry of the libraries is switched off (`ultralytics settings.sync=False`, offline environment variables).',
+  '',
+  '### Model files',
+  '',
+  '| File | Source | Licence |',
+  '|---|---|---|',
+  ...CAMERA_MODELS.map((m) => `| ${m.file} | ${m.from} | ${m.license} |`),
+  '',
+  '### Python packages (pinned in `otel-kamera/requirements.txt`)',
+  '',
+  '| Package | Version | Licence | Use |',
+  '|---|---|---|---|',
+  ...cameraRequirements.map(
+    (r) =>
+      `| ${r.name} | ${r.version} | ${CAMERA_PACKAGES[r.name].license} | ${CAMERA_PACKAGES[r.name].note} |`
+  ),
+  '',
+  'Full licence texts of these packages are shipped inside the camera add-on next to the Python files (P20f packaging).',
+  ''
+]
+
 const unknown = packages.filter((p) => !p.text)
 const md = [
   '# Third-party notices — Bismuth',
@@ -111,6 +195,7 @@ const md = [
     '```',
     ''
   ]),
+  ...cameraSection,
   '## Source code adapted from other projects',
   '',
   ...COPIED.flatMap((c) => [`### ${c.project} (${c.license})`, '', '```', MIT(c.copyright), '```', ''])

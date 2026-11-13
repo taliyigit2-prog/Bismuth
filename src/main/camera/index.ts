@@ -36,11 +36,17 @@ export interface CameraRuntimeOptions {
   scriptDir: string
   /** userData: the sidecar's local files live in `<dataDir>/camera` (outside backups, copies and the export). */
   dataDir: string
+  /** Bundled model files (`resources/camera/models`). The sidecar never downloads a model (K-57, G-01). */
+  modelsDir?: string
   settings: () => SettingsValues
   /** The camera address from the sealed store. */
   source: () => string | null
   onNotice?: (notice: SidecarNotice) => void
   log?: SidecarOptions['log']
+  /** Entry file inside `scriptDir` (default `web_app.py`). */
+  script?: string
+  /** A packaged build ignores `BISMUTH_CAMERA_SCRIPT`. */
+  packaged?: boolean
   /** `BISMUTH_CAMERA_PYTHON`, or a bundled interpreter; otherwise the folder's venv, then `python3`. */
   python?: string | null
   /** Tests: command, arguments and timing of a fake sidecar. */
@@ -58,15 +64,22 @@ export function resolvePython(scriptDir: string, explicit?: string | null): stri
   return process.platform === 'win32' ? 'python' : 'python3'
 }
 
+/** `web_app.py`; a test build may name another entry (the Node stand-in `tests/fixtures/fake-sidecar.mjs`). */
+const scriptName = (opts: CameraRuntimeOptions): string =>
+  opts.script ?? (!opts.packaged ? process.env['BISMUTH_CAMERA_SCRIPT'] : undefined) ?? 'web_app.py'
+
 export function createCameraRuntime(opts: CameraRuntimeOptions): CameraRuntime {
   const localDir = join(opts.dataDir, 'camera')
   const sidecar: Sidecar = createSidecar({
     command: resolvePython(opts.scriptDir, opts.python ?? process.env['BISMUTH_CAMERA_PYTHON'] ?? null),
-    args: ['web_app.py'],
+    args: [scriptName(opts)],
     cwd: opts.scriptDir,
     buildConfig: (port) => {
       mkdirSync(localDir, { recursive: true })
-      return buildSidecarConfig(opts.settings(), opts.source(), port, { dataDir: localDir })
+      return buildSidecarConfig(opts.settings(), opts.source(), port, {
+        dataDir: localDir,
+        ...(opts.modelsDir ? { modelsDir: opts.modelsDir } : {})
+      })
     },
     ...(opts.onNotice ? { onNotice: opts.onNotice } : {}),
     ...(opts.log ? { log: opts.log } : {}),

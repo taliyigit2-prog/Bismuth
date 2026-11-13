@@ -328,6 +328,7 @@ const SCREEN_READS: Record<NavPath, { name: string; body: unknown } | null> = {
   '/maintenance': { name: 'tasks.templates', body: {} },
   '/supply': { name: 'supply.overview', body: { year: 2026, month: 10 } },
   '/laundry': { name: 'laundry.month', body: { year: 2026, month: 10, contactId: '' } },
+  '/camera': { name: 'camera.status', body: {} },
   '/contacts': { name: 'contacts.list', body: { includeInactive: false } },
   '/staff': { name: 'staff.employees', body: {} },
   '/reports': { name: 'reports.summary', body: { from: '2026-10-01', to: '2026-10-31' } },

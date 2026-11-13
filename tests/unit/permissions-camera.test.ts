@@ -5,6 +5,7 @@ import { defaultPermissions, SYSTEM_ROLE_CODES, type SystemRoleCode } from '@sha
 import { auditLog, notifications } from '../../src/main/db/schema'
 import type { DatabaseHandle } from '../../src/main/db/client'
 import type { CameraRuntime } from '../../src/main/camera'
+import { createAlertStateStore } from '../../src/main/camera/alert-state'
 import { createSecretStore } from '../../src/main/camera/secrets'
 import { createCameraService } from '../../src/main/services/camera-service'
 import { ctxFromPermissions, systemCtx, type Ctx } from '../../src/main/services/context'
@@ -54,6 +55,7 @@ async function setup(fetchFn?: FetchLike) {
   const service = createCameraService({
     ...deps,
     secrets: createSecretStore(null, null),
+    alertState: createAlertStateStore(null),
     ...(fetchFn ? { telegram: { fetch: fetchFn } } : {})
   })
   return { service, settings, deps }
@@ -74,7 +76,8 @@ describe('camera yetkisi (G-23)', () => {
     const rt = fakeRuntime()
     service.attach(rt.runtime)
     const owner = roleCtx('owner')
-    const calls: { name: string; level: 'view' | 'edit'; run: (c: Ctx) => unknown }[] = [
+    // `ok` is what a role that may call it gets: the alarm mark finds no alarm and the pause finds no sidecar here.
+    const calls: { name: string; level: 'view' | 'edit'; run: (c: Ctx) => unknown; ok?: string }[] = [
       { name: 'camera.status', level: 'view', run: (c) => service.status(c) },
       { name: 'camera.restart', level: 'edit', run: (c) => service.restart(c) },
       {
@@ -82,7 +85,22 @@ describe('camera yetkisi (G-23)', () => {
         level: 'edit',
         run: (c) => service.setSecrets(c, { telegramChatIds: '42' })
       },
-      { name: 'camera.testTelegram', level: 'edit', run: (c) => service.testTelegram(c) }
+      { name: 'camera.testTelegram', level: 'edit', run: (c) => service.testTelegram(c) },
+      { name: 'camera.streamUrl', level: 'view', run: (c) => service.streamUrl(c) },
+      { name: 'camera.live', level: 'view', run: (c) => service.live(c) },
+      { name: 'camera.alerts', level: 'view', run: (c) => service.alerts(c) },
+      {
+        name: 'camera.markAlert',
+        level: 'view',
+        run: (c) => service.markAlert(c, { id: '1', state: 'seen' }),
+        ok: 'NOT_FOUND'
+      },
+      {
+        name: 'camera.setAlarmsPaused',
+        level: 'edit',
+        run: (c) => service.setAlarmsPaused(c, { paused: true }),
+        ok: 'CONFLICT'
+      }
     ]
     expect(await code(() => service.status(owner))).toBe('ok')
     for (const role of SYSTEM_ROLE_CODES as readonly SystemRoleCode[]) {
@@ -90,7 +108,7 @@ describe('camera yetkisi (G-23)', () => {
       for (const call of calls) {
         const allowed = call.level === 'view' ? level !== 'none' : level === 'edit'
         expect(await code(() => call.run(roleCtx(role))), `${role} ${call.name}`).toBe(
-          allowed ? 'ok' : 'PERMISSION_DENIED'
+          allowed ? (call.ok ?? 'ok') : 'PERMISSION_DENIED'
         )
       }
     }

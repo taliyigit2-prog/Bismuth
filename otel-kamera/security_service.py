@@ -4,6 +4,11 @@ P20a: döngü gövdesi try/except + sağlık sayacı içindedir, bir istisna iş
 karesi etiketsiz ham karedir (1); kayıtlı yüz her karede yeniden eşleştirilir, kimlik devralınamaz (3); ağır
 bağımlılıklar (ultralytics, insightface) yalnız varsayılan kurulumda içe aktarılır, bu yüzden hizmet sahte
 bileşenlerle (`person_detector`, `face_engine`, `grabber_factory`) test edilir.
+
+P20d: modeller yalnız yerel dosyadan, çevrimdışı yüklenir (`model_loader.py`); izleme ByteTrack benzeri (2); kişi yokken de
+düşük sıklıkta yüz aranır (5); tek eşik + "emin değil" bandı (6); OpenCV ile yazı/kutu ÇİZİLMEZ — kutular ve etiketler
+`get_overlay()` ile (normalleştirilmiş koordinat) verilir, Bismuth penceresi çizer (20); canlı yayın yalnız yeni karede
+ve yalnız izleyici isteyince, küçültülmüş JPEG olarak üretilir (23, 24).
 """
 
 import logging
@@ -25,26 +30,26 @@ from config import config as default_config
 from database import GuestDatabase
 from face_engine import FaceEngine
 from health import LoopHealth
+from model_loader import load_yolo
 from timeutil import now_local
 from tracker import SecurityTracker
 
 log = logging.getLogger("otel-kamera.service")
 
 PersonDetector = Callable[[np.ndarray], sv.Detections]
-Box = Tuple[np.ndarray, int, str, Tuple[int, int, int]]
-FaceBox = Tuple[np.ndarray, str, Tuple[int, int, int]]
+# Kutular piksel koordinatlıdır; `get_overlay` bunları 0..1'e çevirir.
+PersonBox = Dict[str, Any]  # {"id": int, "box": [x1,y1,x2,y2], "name": str|None, "room": str|None}
+FaceBox = Dict[str, Any]  # {"box": [...], "kind": "known"|"unknown"|"uncertain", "name", "room", "score"}
 
-GREEN = (120, 175, 65)
-RED = (95, 75, 225)
 ERROR_BACKOFF_MAX = 5.0
+PLACEHOLDER_SEQ = -1
+KIND_KNOWN, KIND_UNKNOWN, KIND_UNCERTAIN = "known", "unknown", "uncertain"
 
 
-def build_person_detector(model_path: str = "yolo11n.pt") -> PersonDetector:
-    """YOLO11n insan tespiti. `ultralytics` yalnız burada içe aktarılır (model paket içindedir; ilk açılışta indirme
-    yok: P20d). Çıktı supervision `Detections`."""
-    from ultralytics import YOLO
-
-    model = YOLO(model_path)
+def build_person_detector(settings: Config = default_config) -> PersonDetector:
+    """YOLO11n insan tespiti; model yerel dosyadan, çevrimdışı yüklenir (`model_loader.load_yolo`: indirme yok, telemetri
+    kapalı). Çıktı supervision `Detections`."""
+    model = load_yolo(settings)
 
     def detect(frame: np.ndarray) -> sv.Detections:
         results = model(frame, classes=[0], verbose=False)[0]
@@ -62,7 +67,10 @@ class _LoopState:
     last_fps_time: float = field(default_factory=time.time)
     fps_counter: int = 0
     was_connected: bool = True
-    person_boxes: List[Box] = field(default_factory=list)
+    analysis_count: int = 0
+    idle_scans: int = 0
+    last_frame_seq: int = -1
+    person_boxes: List[PersonBox] = field(default_factory=list)
     face_boxes: List[FaceBox] = field(default_factory=list)
 
 
@@ -82,8 +90,8 @@ class SecurityService:
     ):
         self.db = db
         self.settings = settings
-        self.face_engine = face_engine or FaceEngine(settings.INSIGHTFACE_MODEL_NAME, settings=settings)
-        self.person_detector = person_detector or build_person_detector()
+        self.face_engine = face_engine or FaceEngine(settings=settings)
+        self.person_detector = person_detector or build_person_detector(settings)
         self.recorder = recorder or AlertRecorder(settings)
         self.tracker = tracker or SecurityTracker(settings=settings)
         self._grabber_factory = grabber_factory
@@ -106,7 +114,11 @@ class SecurityService:
         self.camera_covered = False
         self.alarms_paused = False
         self.latest_raw_frame: Optional[np.ndarray] = None
-        self.latest_jpeg: Optional[bytes] = None
+        self.frame_seq = 0  # işlenen her yeni kare +1 (canlı yayın yalnız yeni karede kodlanır)
+        self._stream_cache: Optional[Tuple[int, bytes]] = None
+        self._placeholder_jpeg: Optional[bytes] = None
+        self.stream_viewers = 0
+        self._overlay_state: Tuple[List[PersonBox], List[FaceBox], int, int, int] = ([], [], 0, 0, 0)
         self.active_guests: List[Tuple[int, str, str, np.ndarray]] = db.get_active_guests()
         self.last_detection_summary = "İzleme hazır"
         self.fps = 0.0
@@ -229,76 +241,86 @@ class SecurityService:
         info = self.db.get_guest_by_id(gid)
         return True, f"{name} (Oda {room}) tanındı (%{int(score * 100)}); çıkışı onaylayın.", info
 
-    # ------------------------------------------------------------------ çizim
-
-    @classmethod
-    def draw_overlays(
-        cls,
-        raw_frame: np.ndarray,
-        person_boxes: List[Box],
-        face_boxes: List[FaceBox],
-        polygon: Optional[np.ndarray] = None,
-        active_guest_count: int = 0,
-        alarms_paused: bool = False,
-        include_pip: bool = True,
-        camera_covered: bool = False,
-        location: str = "",
-    ) -> np.ndarray:
-        canvas = raw_frame.copy()
-        h, w = canvas.shape[:2]
-        now_str = now_local().strftime("%d.%m.%Y %H:%M:%S")
-        if camera_covered:
-            alarm_status, bar_color = "KAMERA KAPALI / KARANLIK EKRAN", (30, 65, 140)
-        elif alarms_paused:
-            alarm_status, bar_color = "ALARMLAR DURAKLATILDI", (25, 85, 165)
-        else:
-            alarm_status, bar_color = "KBS DENETIM AKTIF", (18, 18, 22)
-        cv2.rectangle(canvas, (0, 0), (w, 34), bar_color, -1)
-        header = f"{location}  |  Kayitli KBS Misafir: {active_guest_count}  |  {alarm_status}  |  {now_str}"
-        cv2.putText(canvas, header, (12, 22), cv2.FONT_HERSHEY_SIMPLEX, 0.50, (235, 235, 240), 1)
-        if camera_covered:
-            cv2.putText(
-                canvas,
-                "KAMERA KAPALI / KARANLIK EKRAN (ALARM URETILMEZ)",
-                (max(20, w // 2 - 250), h // 2),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.65,
-                (170, 175, 185),
-                2,
-            )
-            return canvas
-        if polygon is not None:
-            cv2.polylines(canvas, [polygon], isClosed=True, color=(0, 165, 255), thickness=2)
-        for xyxy, tid, status_text, color in person_boxes:
-            x1, y1, x2, y2 = xyxy.astype(int)
-            cv2.rectangle(canvas, (x1, y1), (x2, y2), color, 2)
-            if status_text:
-                cv2.putText(canvas, f"#{tid} {status_text}", (x1, max(52, y1 - 8)), cv2.FONT_HERSHEY_SIMPLEX, 0.55, color, 2)
-        for bbox, label, color in face_boxes:
-            fx1, fy1, fx2, fy2 = bbox.astype(int)
-            cv2.rectangle(canvas, (fx1, fy1), (fx2, fy2), color, 2)
-            (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.56, 2)
-            ty = max(th + 46, fy1)
-            cv2.rectangle(canvas, (fx1, ty - th - 8), (fx1 + tw + 10, ty), color, -1)
-            cv2.putText(canvas, label, (fx1 + 5, ty - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.56, (255, 255, 255), 2)
-        if include_pip and face_boxes:
-            primary_bbox, _, primary_color = face_boxes[0]
-            zoom_crop = cls.crop_face_portrait(raw_frame, primary_bbox)
-            pip, margin, y1p = 144, 14, 46
-            x1p = w - pip - margin
-            if y1p + pip < h and x1p > 0:
-                canvas[y1p : y1p + pip, x1p : x1p + pip] = cv2.resize(zoom_crop, (pip, pip))
-                cv2.rectangle(canvas, (x1p, y1p), (x1p + pip, y1p + pip), primary_color, 2)
-        return canvas
+    # ------------------------------------------------------------------ yayın ve kutu verisi
 
     @staticmethod
-    def _create_placeholder_jpeg(message: str) -> bytes:
-        img = np.zeros((540, 960, 3), dtype=np.uint8)
-        img[:] = (19, 18, 23)
-        cv2.putText(img, "HOTEL SENTINEL", (330, 230), cv2.FONT_HERSHEY_SIMPLEX, 1.1, (240, 240, 245), 2)
-        cv2.putText(img, message, (210, 285), cv2.FONT_HERSHEY_SIMPLEX, 0.60, (138, 140, 146), 1)
-        _, buf = cv2.imencode(".jpg", img)
-        return buf.tobytes()
+    def _blank_jpeg() -> bytes:
+        """Kamera yokken gösterilen düz koyu kare; YAZI YOK (durum metni Bismuth penceresindedir, kod bulgusu 20)."""
+        img = np.full((270, 480, 3), (23, 22, 26), dtype=np.uint8)
+        ok, buf = cv2.imencode(".jpg", img)
+        return buf.tobytes() if ok else b""
+
+    def _encode_stream(self, frame: np.ndarray) -> bytes:
+        width = self.settings.STREAM_MAX_WIDTH
+        h, w = frame.shape[:2]
+        if w > width:
+            frame = cv2.resize(frame, (width, max(1, int(h * width / w))), interpolation=cv2.INTER_AREA)
+        ok, buf = cv2.imencode(".jpg", frame, [int(cv2.IMWRITE_JPEG_QUALITY), self.settings.STREAM_JPEG_QUALITY])
+        return buf.tobytes() if ok else b""
+
+    def stream_frame(self, last_seq: int) -> Tuple[int, Optional[bytes]]:
+        """MJPEG için bir sonraki kare. `last_seq`'ten yeni kare yoksa (last_seq, None) döner: aynı kare tekrar
+        gönderilmez (kod bulgusu 23). Kare izleyici isteyince kodlanır ve izleyiciler arasında önbellekten paylaşılır;
+        çizim yoktur (kod bulgusu 24). Kare yoksa düz koyu kare bir kez döner."""
+        with self._lock:
+            seq, frame, cached = self.frame_seq, self.latest_raw_frame, self._stream_cache
+        if frame is None or not self.camera_connected:
+            if last_seq == PLACEHOLDER_SEQ:
+                return last_seq, None
+            if self._placeholder_jpeg is None:
+                self._placeholder_jpeg = self._blank_jpeg()
+            return PLACEHOLDER_SEQ, self._placeholder_jpeg
+        if seq == last_seq:
+            return last_seq, None
+        if cached is not None and cached[0] == seq:
+            return seq, cached[1]
+        jpeg = self._encode_stream(frame)
+        with self._lock:
+            self._stream_cache = (seq, jpeg)
+        return seq, jpeg
+
+    def viewer_joined(self) -> None:
+        with self._lock:
+            self.stream_viewers += 1
+
+    def viewer_left(self) -> None:
+        with self._lock:
+            self.stream_viewers = max(0, self.stream_viewers - 1)
+
+    def get_overlay(self) -> Dict[str, Any]:
+        """Kutu ve etiket verisi (kod bulgusu 20). Koordinatlar 0..1 (kare genişliği/yüksekliğine oranlı): yayın
+        küçültülse de pencere aynı kutuyu çizer. Etiket METNİ yoktur; ad/oda/skor ham veridir, yazıyı pencere dizer."""
+        with self._lock:
+            persons, faces, width, height, seq = self._overlay_state
+            guests = len({(n.strip().lower(), r.strip().lower()) for _, n, r, _ in self.active_guests})
+
+        def norm(box: List[float]) -> List[float]:
+            if width <= 0 or height <= 0:
+                return [0.0, 0.0, 0.0, 0.0]
+            x1, y1, x2, y2 = box
+            return [round(max(0.0, min(1.0, v)), 4) for v in (x1 / width, y1 / height, x2 / width, y2 / height)]
+
+        polygon = self.tracker.polygon
+        zone = None
+        if polygon is not None and width > 0 and height > 0:
+            zone = [[round(float(x) / width, 4), round(float(y) / height, 4)] for x, y in polygon.reshape(-1, 2)]
+        return {
+            "seq": seq,
+            "at": now_local().isoformat(timespec="seconds"),
+            "frame": {"width": width, "height": height},
+            "camera_connected": self.camera_connected,
+            "camera_covered": self.camera_covered,
+            "alarms_paused": self.alarms_paused,
+            "guests_count": guests,
+            "zone": zone,
+            "persons": [{**p, "box": norm(p["box"])} for p in persons],
+            "faces": [{**f, "box": norm(f["box"])} for f in faces],
+        }
+
+    def _publish_overlay(self, st: _LoopState, frame: np.ndarray) -> None:
+        h, w = frame.shape[:2]
+        with self._lock:
+            self._overlay_state = (list(st.person_boxes), list(st.face_boxes), w, h, self.frame_seq)
 
     # ------------------------------------------------------------------ yaşam döngüsü
 
@@ -307,7 +329,6 @@ class SecurityService:
             return
         self._running = True
         self._prevent_windows_sleep()
-        self.latest_jpeg = self._create_placeholder_jpeg("Kamera baglantisi kuruluyor...")
         self._grabber = self._grabber_factory(self.settings.CAMERA_SOURCE, stall_seconds=self.settings.STALL_SECONDS)
         self._thread = threading.Thread(target=self._run_loop, name="analysis-loop", daemon=True)
         self._thread.start()
@@ -344,9 +365,16 @@ class SecurityService:
                 st.was_connected = False
             self.camera_connected = False
             self.last_detection_summary = "Kamera Bağlantısı Bekleniyor..."
-            self.latest_jpeg = self._create_placeholder_jpeg("Kamera sinyali bekleniyor...")
+            st.person_boxes, st.face_boxes = [], []
             self._sleep(1.0)
             return
+        # Gerçek okuyucu yeni kare numarası verir: aynı kare ikinci kez işlenmez (kod bulgusu 24).
+        seq = getattr(self._grabber, "frame_seq", None)
+        if seq is not None and seq == st.last_frame_seq:
+            self._sleep(0.005)
+            return
+        if seq is not None:
+            st.last_frame_seq = seq
         if not st.was_connected:
             log.info("Kamera bağlantısı yeniden kuruldu")
             st.was_connected = True
@@ -361,6 +389,7 @@ class SecurityService:
             st.last_fps_time = now
         with self._lock:
             self.latest_raw_frame = frame
+            self.frame_seq += 1
         self.tracker.configure_frame(frame.shape[1], frame.shape[0])
 
         if now - st.last_db_sync > 10.0:  # salt okuma
@@ -383,63 +412,76 @@ class SecurityService:
             self.camera_covered = True
             self.last_detection_summary = "Kamera Kapalı / Karanlık"
             st.person_boxes, st.face_boxes = [], []
-            dark = self.draw_overlays(
-                frame, [], [], self.tracker.polygon, self._unique_guest_count(), self.alarms_paused,
-                include_pip=False, camera_covered=True, location=self.settings.CAMERA_LOCATION,
-            )  # fmt: skip
-            ok, encoded = cv2.imencode(".jpg", dark, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
-            if ok:
-                self.latest_jpeg = encoded.tobytes()
+            self._publish_overlay(st, frame)
             self._sleep(0.04)
             return
         self.camera_covered = False
 
         if st.frame_count % self.settings.PROCESS_EVERY_N_FRAMES == 0:
             self._analyze(frame, st)
-
-        annotated = self.draw_overlays(
-            frame, st.person_boxes, st.face_boxes, self.tracker.polygon, self._unique_guest_count(),
-            self.alarms_paused, include_pip=True, camera_covered=False, location=self.settings.CAMERA_LOCATION,
-        )  # fmt: skip
-        ok, encoded = cv2.imencode(".jpg", annotated, [int(cv2.IMWRITE_JPEG_QUALITY), 82])
-        if ok:
-            self.latest_jpeg = encoded.tobytes()
+        self._publish_overlay(st, frame)
         self._sleep(0.015)
 
     def _analyze(self, frame: np.ndarray, st: _LoopState) -> None:
-        new_person_boxes: List[Box] = []
+        new_person_boxes: List[PersonBox] = []
         new_face_boxes: List[FaceBox] = []
         pending: List[Tuple[int, np.ndarray, np.ndarray]] = []
         with self._lock:
             current_guests = list(self.active_guests)
         analysis_frame = self.enhance_low_light_frame(frame)
+        threshold = self.settings.FACE_SIMILARITY_THRESHOLD
+        margin = self.settings.FACE_UNCERTAIN_MARGIN
+        st.analysis_count += 1
 
         with self._engine_lock:
             detections = self.person_detector(analysis_frame)
             detections = self.tracker.update_tracks(detections)
             valid = self.tracker.filter_by_zone(detections)
-            faces = self.face_engine.detect_faces(analysis_frame) if len(valid) > 0 else []
+            # Kişi kutusu varsa her turda yüz aranır. Kişi kutusu YOKSA (YOLO kaçırdı, yakın çekim, gece) yüz yine de
+            # her IDLE_FACE_SCAN_EVERY. turda aranır ve yalnız geçiş bölgesindeki yüzler alınır (kod bulgusu 5).
+            scan_idle = False
+            if len(valid) == 0 and self.settings.IDLE_FACE_SCAN_EVERY > 0:
+                st.idle_scans += 1
+                scan_idle = st.idle_scans % self.settings.IDLE_FACE_SCAN_EVERY == 0
+            faces = self.face_engine.detect_faces(analysis_frame) if (len(valid) > 0 or scan_idle) else []
+        if len(valid) == 0:
+            faces = [f for f in faces if self.tracker.face_in_zone(f.bbox)]
 
-        for face in faces:
-            bbox = face.bbox.astype(int)
-            embedding = face.embedding
-            tid = self.tracker.assign_face_to_tracker_id(bbox, valid)
+        tids = self.tracker.assign_faces(
+            [f.bbox.astype(int) for f in faces], valid, [float(f.det_score) for f in faces]
+        )
+        for face, tid in zip(faces, tids):
             if tid < 0:
                 continue
+            bbox = face.bbox.astype(int)
+            embedding = face.embedding
             # Kayıtlı bile olsa yüz HER karede yeniden eşleştirilir (kod bulgusu 3).
-            match = self.face_engine.match_face(embedding, current_guests)
-            if match is not None:
-                _, name, room, score = match
-                self.tracker.register_verified(tid, match)
-                new_face_boxes.append((bbox, f"KAYITLI: {name} (Oda {room}) %{int(score * 100)}", GREEN))
+            best = self.face_engine.best_match(embedding, current_guests)
+            if best is not None and best[3] >= threshold:
+                _, name, room, score = best
+                self.tracker.register_verified(tid, best)
+                new_face_boxes.append(
+                    {"box": bbox.tolist(), "kind": KIND_KNOWN, "name": name, "room": room, "score": round(float(score), 3)}
+                )
                 self.last_detection_summary = f"Kayıtlı: {name} (Oda {room})"
                 continue
             trusted = self.tracker.resolve_unmatched(tid)
             if trusted is not None:
                 _, name, room, _ = trusted
-                new_face_boxes.append((bbox, f"KAYITLI: {name} (Oda {room})", GREEN))
+                new_face_boxes.append(
+                    {"box": bbox.tolist(), "kind": KIND_KNOWN, "name": name, "room": room, "score": None}
+                )
                 continue
-            new_face_boxes.append((bbox, "TANIMSIZ / KBS KAYITSIZ!", RED))
+            if best is not None and margin > 0 and best[3] >= threshold - margin:
+                # "Emin değil" bandı (kod bulgusu 6): misafire benziyor ama eşiğin altında. Kayıtlı sayılmaz, alarm
+                # sayacına da girmez; yalnız belirsiz olarak gösterilir. camera.uncertainMargin = 0 bandı kapatır.
+                _, name, room, score = best
+                new_face_boxes.append(
+                    {"box": bbox.tolist(), "kind": KIND_UNCERTAIN, "name": name, "room": room, "score": round(float(score), 3)}
+                )
+                self.last_detection_summary = f"Belirsiz yüz (#{tid})"
+                continue
+            new_face_boxes.append({"box": bbox.tolist(), "kind": KIND_UNKNOWN, "name": None, "room": None, "score": None})
             self.last_detection_summary = f"Tanımsız Kişi (#{tid})"
             if not self.alarms_paused and self.tracker.record_unknown_and_check_alarm(tid, embedding=embedding):
                 pending.append((tid, bbox, embedding))
@@ -448,10 +490,14 @@ class SecurityService:
             for xyxy, tid_val in zip(valid.xyxy, valid.tracker_id):
                 tid_int = int(tid_val)
                 ver = self.tracker.get_verified(tid_int)
-                if ver is not None:
-                    new_person_boxes.append((xyxy, tid_int, f"{ver[1]} ({ver[2]})", GREEN))
-                else:
-                    new_person_boxes.append((xyxy, tid_int, "", (140, 140, 145)))
+                new_person_boxes.append(
+                    {
+                        "id": tid_int,
+                        "box": [float(v) for v in xyxy],
+                        "name": ver[1] if ver is not None else None,
+                        "room": ver[2] if ver is not None else None,
+                    }
+                )
 
         for tid, bbox, embedding in pending:
             try:
@@ -483,5 +529,6 @@ class SecurityService:
             "retention_days": self.settings.ALERT_RETENTION_DAYS,
             "reconnect_count": self.reconnect_count,
             "grabber_stall_restarts": getattr(self._grabber, "stall_restarts", 0),
+            "stream_viewers": self.stream_viewers,
             "health": self.health.snapshot(),
         }

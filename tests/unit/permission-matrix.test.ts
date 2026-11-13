@@ -573,6 +573,21 @@ beforeAll(async () => {
     },
     { name: 'kamera durumu', permission: 'camera', level: 'view', run: (c) => svc.camera.status(c) },
     { name: 'kamera yeniden başlat', permission: 'camera', level: 'edit', run: (c) => svc.camera.restart(c) },
+    { name: 'kamera canlı adres', permission: 'camera', level: 'view', run: (c) => svc.camera.streamUrl(c) },
+    { name: 'kamera canlı şerit', permission: 'camera', level: 'view', run: (c) => svc.camera.live(c) },
+    { name: 'kamera alarmları', permission: 'camera', level: 'view', run: (c) => svc.camera.alerts(c) },
+    {
+      name: 'kamera alarmı işaretle',
+      permission: 'camera',
+      level: 'view',
+      run: (c) => svc.camera.markAlert(c, { id: '1', state: 'seen' })
+    },
+    {
+      name: 'kamera alarmları duraklat',
+      permission: 'camera',
+      level: 'edit',
+      run: (c) => svc.camera.setAlarmsPaused(c, { paused: true })
+    },
     {
       name: 'otel ayarı',
       permission: 'settings',

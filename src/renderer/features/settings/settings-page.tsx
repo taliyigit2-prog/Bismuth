@@ -13,6 +13,7 @@ import {
   BookOpenIcon,
   Building2Icon,
   CalendarDaysIcon,
+  CctvIcon,
   ClockIcon,
   CoinsIcon,
   DatabaseBackupIcon,
@@ -38,6 +39,7 @@ import { useCan } from '@/lib/view-as'
 import { cn } from '@/lib/utils'
 import { AppearanceSection } from './appearance-section'
 import { CalendarSection } from './calendar-section'
+import { CameraSection } from './camera-section'
 import { GeneralSection, IdleLockCard } from './general-section'
 import { HotelSection } from './hotel-section'
 import { ListsSection } from './lists-section'
@@ -74,6 +76,7 @@ const ICONS: Record<SettingsSection, LucideIcon> = {
   calendar: CalendarDaysIcon,
   tags: TagIcon,
   currency: CoinsIcon,
+  camera: CctvIcon,
   remote: GlobeIcon,
   backup: DatabaseBackupIcon,
   users: ShieldCheckIcon,
@@ -158,6 +161,8 @@ export function SettingsPage() {
         return <StatusTagsSection values={values} onSave={save} />
       case 'currency':
         return <CurrencyNote />
+      case 'camera':
+        return <CameraSection values={values} onSave={save} />
       case 'remote':
         return <RemoteSection />
       case 'backup':

@@ -1,4 +1,4 @@
-// Handlers of procedures/camera.ts (Faz 20 P20a): contract procedure → service call.
+// Handlers of procedures/camera.ts (Faz 20 P20a/P20b): contract procedure → service call.
 import type { cameraProcedures } from '@shared/contract/procedures/camera'
 import type { Services } from '../../services'
 import type { HandlersFor } from '../app'
@@ -13,5 +13,13 @@ export const cameraHandlers = (services: Services): HandlersFor<keyof typeof cam
     await services.camera.setSecrets(ctx, input)
     return { ok: true as const }
   },
-  'camera.testTelegram': (ctx) => services.camera.testTelegram(ctx)
+  'camera.testTelegram': (ctx) => services.camera.testTelegram(ctx),
+  'camera.streamUrl': (ctx) => services.camera.streamUrl(ctx),
+  'camera.live': (ctx) => services.camera.live(ctx),
+  'camera.alerts': (ctx) => services.camera.alerts(ctx),
+  'camera.markAlert': async (ctx, input) => {
+    await services.camera.markAlert(ctx, input)
+    return { ok: true as const }
+  },
+  'camera.setAlarmsPaused': (ctx, input) => services.camera.setAlarmsPaused(ctx, input)
 })

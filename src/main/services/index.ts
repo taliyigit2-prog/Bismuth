@@ -12,6 +12,7 @@ import { createCalendarService } from './calendar-service'
 import { createContactsService } from './contacts-service'
 import { createCurrencyService } from './currency-service'
 import { createCameraService } from './camera-service'
+import { createAlertStateStore } from '../camera/alert-state'
 import { createSecretStore } from '../camera/secrets'
 import { createExpensesService } from './expenses-service'
 import { createExternalService } from './external-service'
@@ -161,6 +162,9 @@ export function createServices(handle: DatabaseHandle, runtime: RuntimeInfo, sto
           ? join(runtime.dataDir, 'camera-secrets.json')
           : null,
       systemSealer(storage.network?.secrets ?? null)
+    ),
+    alertState: createAlertStateStore(
+      runtime.dataDir ? join(runtime.dataDir, 'camera-alert-state.json') : null
     ),
     telegram: {
       fetch: storage.network?.fetch,

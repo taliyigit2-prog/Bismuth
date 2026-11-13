@@ -17,7 +17,7 @@ class FakeService:
     def __init__(self) -> None:
         self.health = LoopHealth()
         self._running = True
-        self.latest_jpeg = b"\xff\xd8\xff"
+        self.stream_viewers = 0
         self.camera_connected = True
         self.alarms_paused = False
         self.reloads = 0
@@ -32,6 +32,18 @@ class FakeService:
 
     def reload_guests(self) -> None:
         self.reloads += 1
+
+    def viewer_joined(self) -> None:
+        self.stream_viewers += 1
+
+    def viewer_left(self) -> None:
+        self.stream_viewers -= 1
+
+    def stream_frame(self, last_seq: int):
+        return (1, b"\xff\xd8\xff") if last_seq != 1 else (1, None)
+
+    def get_overlay(self) -> dict:
+        return {"seq": 1, "persons": [], "faces": []}
 
     def get_status(self) -> dict:
         return {"camera_connected": self.camera_connected, "health": self.health.snapshot()}

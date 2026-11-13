@@ -103,7 +103,9 @@ kontrol maddesi bu dağıtım hedeflerini kapsar.
 npm bağımlılığı eklenmedi: Telegram istemcisi (`src/main/network/telegram/`) ve köprü (`src/main/camera/`) Node'un
 yerleşik `fetch`, `child_process`, `crypto` ve `net` modüllerini kullanır. Python tarafı `otel-kamera/requirements.txt`'te
 **`==` ile sabittir** (Python 3.12); geliştirme araçları `requirements-dev.txt`'tedir ve pakete girmez. Kamera eki ayrı
-kurulur ve yalnız `camera.enabled` açıksa çalışır (P20f paketleme). Lisans bildirimi: P20d (`THIRD_PARTY_NOTICES.md`).
+kurulur ve yalnız `camera.enabled` açıksa çalışır (P20f paketleme). Lisans bildirimi: `THIRD_PARTY_NOTICES.md` "Camera module"
+bölümü (P20d; `npm run notices` `requirements.txt`'ten üretir). Model dosyaları paket değil, `resources/camera/models/` içinde
+lisans notlarıyla (README); depoya girmez. P20d yeni bağımlılık eklemedi (ByteTrack benzeri izleyici numpy ile yazıldı).
 
 | Paket | Sürüm | Lisans | Ne için | Not |
 |---|---|---|---|---|

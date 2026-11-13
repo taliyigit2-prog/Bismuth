@@ -96,3 +96,24 @@ def test_stream_accepts_signed_query_but_other_paths_do_not(client):
 def test_no_cors_headers_are_ever_sent(client):
     res = client.get("/api/health", headers={"X-Bismuth-Token": TOKEN, "Origin": f"http://127.0.0.1:{PORT}"})
     assert "access-control-allow-origin" not in {k.lower() for k in res.headers}
+
+
+def test_p20d_ayarları_json_ile_gelir_ve_sınırları_doğrulanır(tmp_path):
+    """Kod bulgusu 6: eşikler ve model klasörü Bismuth ayarından gelir (G-09), koda sabit yazılmaz."""
+    cfg = load_config(
+        {
+            CONFIG_ENV: json.dumps(
+                {
+                    "MODELS_DIR": str(tmp_path),
+                    "FACE_UNCERTAIN_MARGIN": 0.1,
+                    "IDLE_FACE_SCAN_EVERY": 5,
+                    "STREAM_MAX_WIDTH": 640,
+                }
+            )
+        }
+    )
+    assert cfg.MODELS_DIR == str(tmp_path) and cfg.FACE_UNCERTAIN_MARGIN == 0.1
+    assert cfg.IDLE_FACE_SCAN_EVERY == 5 and cfg.STREAM_MAX_WIDTH == 640
+    for bad in ({"FACE_UNCERTAIN_MARGIN": 0.9}, {"IDLE_FACE_SCAN_EVERY": -1}, {"STREAM_MAX_WIDTH": 50}):
+        with pytest.raises(ConfigError):
+            load_config({CONFIG_ENV: json.dumps(bad)})

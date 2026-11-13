@@ -50,7 +50,8 @@
     "audit": "Denetim kaydı",
     "companies": "Firmalar",
     "calendarNotes": "Takvim notları",
-    "guide": "Kılavuz"
+    "guide": "Kılavuz",
+    "camera": "Kamera"
   },
   "topbar": {
     "search": "Ara ya da git…",
@@ -543,7 +544,8 @@
       "backup": "Yedek",
       "users": "Kullanıcılar ve roller",
       "about": "Hakkında",
-      "guide": "Kılavuz"
+      "guide": "Kılavuz",
+      "camera": "Kamera"
     },
     "tags": {
       "autoTitle": "Otomatik durumlar",
@@ -1359,7 +1361,75 @@
     },
     "zoom": "Yakınlaştırma",
     "zoomValue": "%{{percent}}",
-    "zoomHelp": "Ctrl ve + ya da - tuşlarıyla da değiştirebilirsiniz (Mac'te ⌘). Yalnız sizin için geçerlidir."
+    "zoomHelp": "Ctrl ve + ya da - tuşlarıyla da değiştirebilirsiniz (Mac'te ⌘). Yalnız sizin için geçerlidir.",
+    "camera": {
+      "systemTitle": "Kamera sistemi",
+      "systemHelp": "Kamera görüntüsünü izleyip kayıtsız kişileri bulan program. Değişiklik kaydedilince kamera sistemi kendiliğinden yeniden başlar.",
+      "enabled": "Kamera sistemini aç",
+      "enabledHelp": "Kapalıyken kamera sistemi hiç çalışmaz.",
+      "location": "Kamera yeri",
+      "locationHelp": "Canlı görüntünün üstünde yazar. Örnek: Merdiven, kat girişi.",
+      "source": "Kamera adresi",
+      "sourceHelp": "Kameranın rtsp:// ile başlayan adresi ya da web kamerası numarası (0). Kullanıcı adı ve şifre adresin başında yer alır; kaydedildikten sonra bir daha gösterilmez.",
+      "sourcePlaceholder": "rtsp://192.168.1.64:554/…",
+      "secretSet": "Kayıtlı",
+      "secretMissing": "Girilmedi",
+      "secretRemove": "Kaldır",
+      "secretsHostOnly": "Kamera adresi ve Telegram bilgileri yalnızca otelin ana bilgisayarında değiştirilir.",
+      "telegramTitle": "Telegram bildirimi",
+      "telegramHelp": "Alarm her zaman programın bildirimlerine düşer. İsterseniz aynı alarm Telegram'a da gönderilir.",
+      "telegramEnabled": "Alarmı Telegram'a da gönder",
+      "telegramEnabledHelp": "Yalnızca internet bağlıyken çalışır; gönderilemezse sessizce atlanır.",
+      "networkOff": "Çevrimiçi veri kapalı olduğu için Telegram'a hiçbir şey gönderilmez. Döviz ekranından açılır.",
+      "telegramPhoto": "Alarm fotoğrafını da gönder",
+      "telegramPhotoHelp": "Kayıtsız kişinin fotoğrafı yurt dışındaki Telegram sunucularına gider. Kapatırsanız yalnızca metin gönderilir.",
+      "telegramToken": "Bot belirteci",
+      "telegramTokenHelp": "Telegram'da BotFather'dan alınan kod. Kaydedildikten sonra bir daha gösterilmez.",
+      "telegramTokenPlaceholder": "123456:ABC…",
+      "telegramChats": "Sohbet numaraları",
+      "telegramChatsHelp": "Alarmın gideceği kişi ya da grup numaraları; birden fazlaysa virgülle ayırın.",
+      "telegramChatsPlaceholder": "-1001234567890, 42",
+      "telegramTestButton": "Telegram'ı dene",
+      "telegramTest": {
+        "ok": "Deneme mesajı gönderildi",
+        "off": "Telegram kapalı. Önce alarmı Telegram'a gönderme seçeneğini ve çevrimiçi veriyi açın.",
+        "noCredentials": "Bot belirteci ve sohbet numarası girilmemiş.",
+        "invalidCredentials": "Telegram bilgileri kabul edilmedi. Belirteci ve numaraları kontrol edin.",
+        "network": "Telegram'a ulaşılamadı. İnternet bağlantısını kontrol edin.",
+        "timeout": "Telegram yanıt vermedi. Biraz sonra yeniden deneyin.",
+        "none": "Mesaj gönderilemedi. Sohbet numaralarını kontrol edin.",
+        "failed": "Deneme yapılamadı"
+      },
+      "alarmTitle": "Alarm ve saklama",
+      "alarmHelp": "Aynı kişi için alarmın ne sıklıkla tekrarlanacağı ve görüntülerin ne kadar saklanacağı.",
+      "numberInvalid": "{{min}} ile {{max}} arasında bir sayı girin.",
+      "field": {
+        "cooldown": "Alarm arası bekleme (saniye)",
+        "cooldownHelp": "Aynı kişi için iki alarm arasında en az bu kadar saniye geçer.",
+        "alertRetention": "Alarm görüntüsü saklama (gün)",
+        "alertRetentionHelp": "Alarm görüntüleri kaç gün sonra silinir.",
+        "faceRetention": "Yüz verisi saklama (gün)",
+        "faceRetentionHelp": "Misafir çıkış yaptıktan sonra yüz verisinin kaç gün saklanacağı. 0 = çıkışta silinir.",
+        "similarity": "Tanıma eşiği",
+        "similarityHelp": "Yüzün kayıtlı bir misafire ne kadar benzemesi gerektiği. Yükseltirseniz yanlış tanıma azalır ama tanıma zorlaşır.",
+        "confirmSimilarity": "Onay eşiği",
+        "confirmSimilarityHelp": "Kamera bir kişinin kim olduğunu sorguladığında kullanılan daha sıkı oran.",
+        "minFaceScore": "En düşük yüz puanı",
+        "minFaceScoreHelp": "Bundan net olmayan yüzler yok sayılır.",
+        "minFacePx": "En küçük yüz boyu (piksel)",
+        "minFacePxHelp": "Bundan küçük yüzler yok sayılır.",
+        "confirmationFrames": "Doğrulama için görüntü sayısı",
+        "confirmationFramesHelp": "Alarm için kişinin üst üste kaç görüntüde görülmesi gerektiği.",
+        "processEveryN": "Her kaç görüntüde bir inceleme",
+        "processEveryNHelp": "Yükseltirseniz bilgisayar rahatlar ama tepki yavaşlar.",
+        "verifiedTtl": "Tanınan kişi için bekleme (saniye)",
+        "verifiedTtlHelp": "Tanınan bir kişi bu süre boyunca yeniden sorgulanmaz."
+      },
+      "advancedTitle": "Tanıma ayarları",
+      "advancedHelp": "Ne yaptığınızı bilmiyorsanız değiştirmeyin; varsayılanlar çoğu otel için uygundur.",
+      "zone": "İzleme bölgesi",
+      "zoneHelp": "Boş bırakırsanız tüm görüntü izlenir. Biçim: x1,y1;x2,y2;… (0 ile 1 arası oran ya da piksel)."
+    }
   },
   "status": {
     "paid": "Ödendi",
@@ -5561,7 +5631,8 @@
       "guest_tag": "Misafir etiketi",
       "room_capacity_change": "Oda kapasitesi",
       "reservation_groups": "Grup rezervasyonu",
-      "camera": "Kamera sistemi"
+      "camera": "Kamera sistemi",
+      "camera_alert": "Kamera alarmı"
     },
     "fieldName": {
       "name": "Ad",
@@ -7050,5 +7121,89 @@
     "minWhole": "{{min}} ya da daha büyük bir tam sayı yazın.",
     "limitReached": "En çok {{max}} karakter yazabilirsiniz.",
     "phone": "Telefonu rakamlarla yazın (örn. +90 532 123 45 67)."
+  },
+  "camera": {
+    "title": "Kamera",
+    "description": "Kamera sisteminin durumu, canlı görüntü ve alarmlar.",
+    "restart": "Yeniden başlat",
+    "restarted": "Kamera sistemi yeniden başlatıldı",
+    "restartFailed": "Kamera sistemi yeniden başlatılamadı",
+    "pauseFailed": "Alarm durumu değiştirilemedi",
+    "openSettings": "Kamera ayarları",
+    "status": {
+      "title": "Kamera sistemi",
+      "crashes_one": "Program açıldığından beri {{count}} kez durdu.",
+      "crashes_other": "Program açıldığından beri {{count}} kez durdu."
+    },
+    "state": {
+      "running": "Çalışıyor",
+      "slow": "Yavaş çalışıyor",
+      "starting": "Başlıyor",
+      "restarting": "Yeniden başlıyor",
+      "gaveUp": "Hata: durdu",
+      "stopped": "Durdu",
+      "noSource": "Kamera adresi yok",
+      "disabled": "Kapalı",
+      "unavailable": "Bu bilgisayarda yok"
+    },
+    "stateHelp": {
+      "running": "Kamera görüntüsü izleniyor. Kayıtsız biri girerse alarm verilir.",
+      "slow": "Kamera sistemi geç yanıt veriyor. Birkaç dakika içinde düzelmezse Yeniden başlat'a basın.",
+      "starting": "Kamera sistemi açılıyor; bu bir dakika kadar sürebilir.",
+      "restarting": "Kamera sistemi durdu ve kendiliğinden yeniden başlatılıyor.",
+      "gaveUp": "Kamera sistemi tekrar tekrar durdu ve artık yeniden başlatılmıyor. Yeniden başlat'a basın; olmazsa otel sahibine haber verin.",
+      "stopped": "Kamera sistemi şu an çalışmıyor. Yeniden başlat'a basın.",
+      "noSource": "Kamera adresi girilmedi. Ayarlar'da Kamera bölümünden girin; yetkiniz yoksa otel sahibine başvurun.",
+      "disabled": "Kamera sistemi kapalı. Açmak için Ayarlar'da Kamera bölümüne gidin; yetkiniz yoksa otel sahibine başvurun.",
+      "unavailable": "Kamera sistemi bu bilgisayarda çalışmıyor. Otelin ana bilgisayarını kullanın."
+    },
+    "pause": {
+      "label": "Alarmları duraklat",
+      "help": "Açıkken kayıtsız kişi için alarm verilmez; görüntü izlenmeye devam eder."
+    },
+    "live": {
+      "title": "Canlı görüntü",
+      "help": "Yalnızca bu bilgisayarda görünür ve kaydedilmez.",
+      "defaultLocation": "Kamera",
+      "guests_one": "{{count}} kayıtlı misafir",
+      "guests_other": "{{count}} kayıtlı misafir",
+      "alarmsPaused": "Alarmlar duraklatıldı",
+      "disconnected": "Kamera bağlı değil",
+      "covered": "Kamera kapalı ya da karanlık",
+      "alt": "Kameranın canlı görüntüsü",
+      "failed": "Görüntü alınamadı.",
+      "retry": "Yeniden dene",
+      "noPicture": "Görüntü adresi alınamadı. Kamera sistemi çalışıyorsa birkaç saniye sonra kendiliğinden gelir."
+    },
+    "alerts": {
+      "title": "Alarmlar",
+      "help": "Kayıtsız biri kameraya girince burada görünür. Baktığınızı ve hallettiğinizi işaretleyin.",
+      "unknownPerson": "Kayıtsız kişi girdi",
+      "today": "Bugün",
+      "yesterday": "Dün",
+      "noTime": "Saati bilinmeyenler",
+      "state": {
+        "new": "Yeni",
+        "seen": "Görüldü",
+        "handled": "Halledildi"
+      },
+      "markSeen": "Gördüm",
+      "markHandled": "Hallettim",
+      "reopen": "Yeniden aç",
+      "markFailed": "Alarm işaretlenemedi",
+      "emptyTitle": "Alarm yok",
+      "emptyBody": "Kayıtsız biri kameraya girdiğinde burada görünür.",
+      "unavailableTitle": "Alarm listesi alınamıyor",
+      "unavailableBody": "Kamera sistemi çalışmıyor. Durum kartına bakın.",
+      "filterEmptyTitle": "Bu durumda alarm yok",
+      "filterEmptyBody": "Başka bir seçenek deneyin.",
+      "filter": {
+        "label": "Alarm durumu",
+        "all": "Hepsi · {{count}}",
+        "new": "Yeni · {{count}}",
+        "seen": "Görüldü · {{count}}",
+        "handled": "Halledildi · {{count}}"
+      }
+    }
   }
 }

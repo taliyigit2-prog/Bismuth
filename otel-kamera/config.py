@@ -41,7 +41,12 @@ class Config:
     CAMERA_LOCATION: str = "Merdiven / Kat Girisi"
 
     # Yüz tanıma ve doğrulama
+    # TEK "aynı kişi" eşiği (kod bulgusu 6): misafir eşleşmesi, alarm tekrar-tanıma ve alarm çoğaltma tekilleştirmesi bunu
+    # kullanır; ayrı sabit yoktur. Sahada FAR/FRR ölçümüyle ayarlanır (camera.similarityThreshold).
     FACE_SIMILARITY_THRESHOLD: float = 0.36
+    # "Emin değil" bandı: eşiğin bu kadar altına kadar (eşik - marj ≤ skor < eşik) yüz kayıtsız sayılmaz ve alarm
+    # sayacına girmez; yalnız "belirsiz" etiketlenir. 0 = bant yok (camera.uncertainMargin).
+    FACE_UNCERTAIN_MARGIN: float = 0.06
     CHECKOUT_MIN_SIMILARITY: float = 0.45  # kameradan tanıma/çıkış önerisi için daha sıkı eşik (kod bulgusu 18)
     MIN_FACE_DET_SCORE: float = 0.62
     MIN_FACE_SIZE_PX: int = 55
@@ -51,6 +56,8 @@ class Config:
 
     # Performans ve alarm
     PROCESS_EVERY_N_FRAMES: int = 3
+    # Kişi kutusu yokken (YOLO kaçırdı / yakın çekim) yüz araması her N. analizde yapılır (kod bulgusu 5); 0 = kapalı.
+    IDLE_FACE_SCAN_EVERY: int = 3
     ALARM_COOLDOWN_SECONDS: int = 60
     STALL_SECONDS: float = 15.0  # bu kadar kare gelmezse okuyucu yeniden başlatılır (kod bulgusu 10)
 
@@ -60,7 +67,6 @@ class Config:
     GUEST_PHOTOS_DIR: str = "guest_photos"
     ALERT_RETENTION_DAYS: int = 30
     MAX_ALERT_COUNT: int = 500
-    DEDUP_SIMILARITY_THRESHOLD: float = 0.46
     DEDUP_WINDOW_HOURS: int = 12
     ORPHAN_MIN_AGE_SECONDS: int = 300  # bundan yeni dosya "sahipsiz" sayılmaz (kod bulgusu 8)
 
@@ -69,6 +75,20 @@ class Config:
     WEB_PORT: int = 8000
 
     INSIGHTFACE_MODEL_NAME: str = "buffalo_s"
+    # Model klasörü (Bismuth verir: resources/camera/models); boşsa `model_loader.default_models_dir()`. İndirme yoktur (K-57).
+    MODELS_DIR: str = ""
+
+    # Canlı yayın (kod bulguları 23, 24): yalnız izleyici varken, yalnız yeni karede, küçültülmüş JPEG. Çizim yoktur;
+    # kutular ve etiketler `/api/overlay` ile gelir, Bismuth penceresi çizer (OpenCV yazı çizimi kaldırıldı, kod bulgusu 20).
+    STREAM_MAX_WIDTH: int = 960
+    STREAM_JPEG_QUALITY: int = 75
+    STREAM_MAX_FPS: int = 15
+
+    # ByteTrack benzeri izleme (kod bulgusu 2)
+    TRACK_HIGH_SCORE: float = 0.5
+    TRACK_LOW_SCORE: float = 0.1
+    TRACK_MATCH_IOU: float = 0.3
+    TRACK_BUFFER_SECONDS: float = 4.0
 
     # Geçiş bölgesi: "x1,y1;x2,y2;..." piksel ya da 0..1 oranlı (çözünürlükten bağımsız, kod bulgusu 26)
     ZONE_POLYGON: str = ""
@@ -92,13 +112,25 @@ def _validate(cfg: Config) -> None:
         "FACE_SIMILARITY_THRESHOLD",
         "CHECKOUT_MIN_SIMILARITY",
         "MIN_FACE_DET_SCORE",
-        "DEDUP_SIMILARITY_THRESHOLD",
+        "TRACK_HIGH_SCORE",
+        "TRACK_LOW_SCORE",
+        "TRACK_MATCH_IOU",
     ):
         if not 0.0 <= getattr(cfg, name) <= 1.0:
             raise ConfigError(f"{name} 0..1 olmalı")
     for name in ("CONFIRMATION_FRAMES", "PROCESS_EVERY_N_FRAMES", "ALARM_COOLDOWN_SECONDS", "MIN_FACE_SIZE_PX"):
         if getattr(cfg, name) < 1:
             raise ConfigError(f"{name} en az 1 olmalı")
+    if not 0.0 <= cfg.FACE_UNCERTAIN_MARGIN <= 0.5:
+        raise ConfigError("FACE_UNCERTAIN_MARGIN 0..0.5 olmalı")
+    if cfg.IDLE_FACE_SCAN_EVERY < 0:
+        raise ConfigError("IDLE_FACE_SCAN_EVERY 0 ya da daha büyük olmalı")
+    if not 160 <= cfg.STREAM_MAX_WIDTH <= 3840:
+        raise ConfigError("STREAM_MAX_WIDTH 160..3840 olmalı")
+    if not 30 <= cfg.STREAM_JPEG_QUALITY <= 95 or not 1 <= cfg.STREAM_MAX_FPS <= 60:
+        raise ConfigError("STREAM_JPEG_QUALITY 30..95, STREAM_MAX_FPS 1..60 olmalı")
+    if cfg.TRACK_BUFFER_SECONDS <= 0:
+        raise ConfigError("TRACK_BUFFER_SECONDS pozitif olmalı")
 
 
 def load_config(env: Optional[Mapping[str, str]] = None) -> Config:

@@ -114,3 +114,56 @@ def test_servis_hazır_değilken_uç_noktalar_503_verir(settings):
 
 def test_metin_temizliği_kontrol_karakterlerini_siler_kesme_işaretini_korur():
     assert sanitize_text("  D'Arcy\x00<x>\n") == "D'Arcyx"
+
+
+def test_kutu_verisi_uç_noktası_belirteç_ister_ve_hizmetin_verisini_döner(env):
+    client, *_ = env
+    assert client.get("/api/overlay").status_code == 401
+    body = client.get("/api/overlay", headers=H).json()
+    assert body["seq"] == 1 and body["persons"] == [] and body["faces"] == []
+
+
+def _failing_builder():
+    raise RuntimeError("model yok")
+
+
+def test_kutu_verisi_hizmet_hazır_değilken_boş_ama_aynı_biçimde_döner(settings):
+    db = GuestDatabase(settings.DB_PATH, settings)
+    app = create_app(settings, TOKEN, db, _failing_builder)
+    with TestClient(app, base_url=f"http://127.0.0.1:{PORT}") as client:
+        assert wait_until(lambda: client.get("/api/health", headers=H).json()["state"] == "failed")
+        body = client.get("/api/overlay", headers=H).json()
+        assert body["faces"] == [] and body["persons"] == [] and body["camera_connected"] is False
+
+
+class OneShotService(FakeService):
+    """Tek kare gönderip durur: sonsuz akış TestClient'ı bekletmesin."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.max_viewers = 0
+        self.asked: list = []
+
+    def viewer_joined(self) -> None:
+        super().viewer_joined()
+        self.max_viewers = max(self.max_viewers, self.stream_viewers)
+
+    def stream_frame(self, last_seq: int):
+        self.asked.append(last_seq)
+        if len(self.asked) > 1:
+            self._running = False
+            return last_seq, None
+        return 7, b"\xff\xd8\xff"
+
+
+def test_canlı_yayın_son_kare_numarasını_sorar_yalnız_yeni_kareyi_yazar_ve_izleyiciyi_sayar(settings):
+    db = GuestDatabase(settings.DB_PATH, settings)
+    service = OneShotService()
+    app = create_app(settings, TOKEN, db, lambda: service)
+    with TestClient(app, base_url=f"http://127.0.0.1:{PORT}") as client:
+        assert wait_until(lambda: client.get("/api/health", headers=H).json()["state"] == "running")
+        res = client.get("/api/stream", headers=H)
+    assert res.headers["content-type"].startswith("multipart/x-mixed-replace")
+    assert res.content.count(b"image/jpeg") == 1  # ikinci turda yeni kare yok → tekrar yazılmadı
+    assert service.asked[:2] == [-2, 7]  # ilk istek "hiçbir kare görmedim", sonra son görülen numara
+    assert service.max_viewers == 1 and service.stream_viewers == 0

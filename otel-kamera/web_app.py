@@ -4,6 +4,10 @@ P20a: uygulama bir fabrikadan kurulur (içe aktarma sırasında DB açılmaz; ko
 (iş parçacığı havuzu; kod bulgusu 14); Telegram uç noktası ve `api.telegram.org` yok (K-50); panel (`/`, `/static`) yok
 (P20b: Bismuth içindeki Kamera sekmesi); çıkış tarihi `strptime` ile doğrulanır (422; kod bulgusu 17); kayıt atomik
 (kod bulgusu 19); modeller arka planda yüklenir, `/api/health` açılışta da cevap verir.
+
+P20d: `/api/stream` düz (çizimsiz) MJPEG'dir, yalnız yeni karede ve izleyici varken kodlanır, küçültülür (kod bulguları
+23, 24); kutu/etiket verisi `/api/overlay` ile gelir ve Bismuth penceresi çizer (kod bulgusu 20); modeller yalnız yerel
+dosyadan yüklenir, indirme yoktur (`model_loader.py`).
 """
 
 import asyncio
@@ -20,6 +24,7 @@ import cv2
 import numpy as np
 import uvicorn
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -27,6 +32,7 @@ from pydantic import BaseModel, Field
 from bridge_security import BridgeGuard, redact
 from config import Config, load_config, load_token
 from database import GuestDatabase, face_sibling
+from model_loader import apply_offline_env
 from parent_watch import WATCH_ENV, hard_exit, start_parent_watch
 from timeutil import checkout_deadline
 
@@ -176,19 +182,56 @@ def create_app(
             return {"camera_connected": False, "active_guests_count": 0, "state": holder.state}
         return holder.service.get_status()  # type: ignore[attr-defined]
 
+    @app.get("/api/overlay")
+    def get_overlay():
+        """Kutular ve etiket verisi (0..1 koordinat). Hizmet hazır değilse boş ama aynı biçimde döner."""
+        if holder.service is None:
+            return {
+                "seq": 0,
+                "frame": {"width": 0, "height": 0},
+                "camera_connected": False,
+                "camera_covered": False,
+                "alarms_paused": False,
+                "guests_count": 0,
+                "zone": None,
+                "persons": [],
+                "faces": [],
+                "state": holder.state,
+            }
+        return holder.service.get_overlay()  # type: ignore[attr-defined]
+
     @app.get("/api/stream")
     async def video_stream(request: Request):
+        interval = 1.0 / settings.STREAM_MAX_FPS
+
         async def frames():
-            while True:
-                if await request.is_disconnected():
-                    break
-                svc = holder.service
-                if svc is None or not svc._running:  # type: ignore[attr-defined]
-                    break
-                jpeg = svc.latest_jpeg  # type: ignore[attr-defined]
-                if jpeg:
-                    yield b"--frame\r\nContent-Type: image/jpeg\r\n\r\n" + jpeg + b"\r\n"
-                await asyncio.sleep(0.05)
+            svc = holder.service
+            if svc is not None:
+                svc.viewer_joined()  # type: ignore[attr-defined]
+            last_seq = -2
+            try:
+                while True:
+                    if await request.is_disconnected():
+                        break
+                    current = holder.service
+                    if current is None:
+                        if holder.state != "starting":
+                            break
+                        await asyncio.sleep(0.5)
+                        continue
+                    if svc is None:
+                        svc = current
+                        svc.viewer_joined()  # type: ignore[attr-defined]
+                    if not current._running:  # type: ignore[attr-defined]
+                        break
+                    seq, jpeg = await run_in_threadpool(current.stream_frame, last_seq)  # type: ignore[attr-defined]
+                    last_seq = seq
+                    if jpeg:
+                        yield b"--frame\r\nContent-Type: image/jpeg\r\n\r\n" + jpeg + b"\r\n"
+                    await asyncio.sleep(interval)
+            finally:
+                if svc is not None:
+                    svc.viewer_left()  # type: ignore[attr-defined]
 
         return StreamingResponse(frames(), media_type="multipart/x-mixed-replace; boundary=frame")
 
@@ -323,6 +366,8 @@ def main() -> None:  # pragma: no cover - süreç girişi
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
     settings = load_config()
     token = load_token()
+    # Çevrimdışı zorunlu ve ultralytics/insightface içe aktarılmadan ÖNCE (K-57): indirme, telemetri, DNS yoklaması yok.
+    apply_offline_env(os.path.join(os.path.dirname(os.path.abspath(settings.DB_PATH)), "ultralytics"))
     if os.environ.get(WATCH_ENV) == "1":
         start_parent_watch(hard_exit)
     from face_engine import FaceEngine

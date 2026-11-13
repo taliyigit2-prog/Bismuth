@@ -56,6 +56,11 @@ otel-kamera/*.db
 otel-kamera/guest_photos/
 otel-kamera/alerts/
 otel-kamera/*.pt
+# Kamera model agirliklari (K-57, yasak 14): resources/camera/models icine yalniz README.md ve SHA256SUMS girer
+resources/camera/models/*
+!resources/camera/models/README.md
+!resources/camera/models/SHA256SUMS
+otel-kamera/models/
 
 # agent runner logs and session state
 tools/ajan/kayit/

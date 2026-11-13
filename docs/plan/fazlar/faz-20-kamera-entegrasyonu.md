@@ -64,6 +64,10 @@ Cevaplandı (2026-11-13): S-107 personel dışlama (varsayılan); S-108 canlı y
       sahte yerel sunucu testi (`src/main/network/telegram/telegram.test.ts`, `tests/unit/permissions-camera.test.ts`).
 - [ ] Ultralytics telemetrisi kapalı (`settings.sync=False` testi); ağ kapalıyken yan süreç açılır ve tanır; model dosyaları
       paket içinde; `THIRD_PARTY_NOTICES` K-57 lisans notunu içerir.
+      _P20d kısmı hazır (kutu P20f'de kapanır; model dosyalarını paketleme getirir):_ `settings.sync=False` + çevrimdışı ortam
+      (`otel-kamera/tests/test_models_offline.py::test_yolo_yerel_yoldan_yüklenir_ve_telemetri_önce_kapatılır`), ağ yamalı
+      ortamda açılış-tanıma-alarm (`…test_ağ_kapalıyken_hizmet_gerçek_yükleyicilerle_açılır…`), dosya yoksa açık hata (indirme yok),
+      `THIRD_PARTY_NOTICES` K-57 (`tests/unit/camera-notices.test.ts`).
 - [ ] Kamera sihirbazı: sahte ONVIF/SADP yanıtıyla keşif listesi; RTSP kalıbı önerisi; görüntü testi başarısız/başarılı
       durumları; donanım profili otomatik (e2e).
 - [ ] i5-8 GB sınıfında ≥ 4 analiz/sn (gerçek makine: sahip onay paketi); CPU/RSS ölçümü raporda.
@@ -121,3 +125,71 @@ analiz) ≈ 10,8 ms/kare, tepe RSS 149 MB. Modeller (YOLO11n + buffalo_s) bu öl
 **Kalanlar:** gerçek modellerle (ultralytics, insightface) uçtan uca doğrulama P20d/P20f ve sahip onay paketi (Codespace'te `torch` kurulmadı);
 Kamera sekmesi, CSP `img-src` istisnası (P20b); `guest_faces`/`camera_events`, alarm → `notifications` + Telegram bağlantısı (P20c);
 `Ayarlar → Kamera` ekranı olmadığı için `camera.*` ayarları şimdilik yalnız servis/yordam ile yazılır.
+
+### P20b — Kamera sekmesi (2026-11-13)
+
+**Yapılanlar**
+- `features/camera/`: Kamera ekranı (durum kartı: çalışıyor / başlıyor / hata / kapalı + yeniden başlat ve alarmları duraklat, yetkiye göre),
+  canlı yayın (MJPEG `<img>`, yalnız ana bilgisayarın kendi penceresi; üst şerit ve yüz kutuları/Kiril etiketler renderer'da SVG ile),
+  alarm listesi ("Notification Panel" kalıbı: güne göre gruplu, süzgeçli, yeni → görüldü → halledildi; CSS geçişi, framer-motion yok),
+  boş/yükleniyor/hata/yetkisiz durumları; telefonda ve HTTP istemcisinde yalnız durum + alarm listesi (S-108).
+- Menü girişi `/camera` (yetki `camera` view, telefonda "Daha fazla"), rota, kılavuz eşlemesi; `Ayarlar → Kamera`
+  (`camera.*` ayarları, kamera adresi ve Telegram sırları yalnız yazılır, "Telegram'ı dene", tanıma eşikleri "Tanıma ayarları" altında).
+- Yeni yordamlar `camera.streamUrl`, `camera.live`, `camera.alerts`, `camera.markAlert`, `camera.setAlarmsPaused` (servis: yetki + audit;
+  canlı adres/şerit ve duraklatma yalnız IPC = otelin kendi penceresi). Alarm işaretleri `camera-alert-state.json` (userData; alarm anahtarı +
+  durum, kişisel veri yok, yedek dışı) — P20c `camera_events` tablosuna taşır.
+- CSP: `index.html` `img-src … http://127.0.0.1:*`; asıl kapı `security/policy.ts` istek süzgeci: yalnız çalışan yan sürecin **tam portundaki**
+  `/api/stream?…` yüklenir (`isCameraStream`; başka yol, başka port, `localhost` engelli — birim ve e2e testli). Sunucu modunun CSP başlığı değişmedi.
+- 3 dil: `camera.*`, `settings.camera.*`, `nav.camera`, `settings.tab.camera`, `audit.entity.camera_alert` (129 anahtar).
+
+**Karşılanan:** K-49 (yalnız 127.0.0.1), K-51/K-53 (alarm metni, resim yolu ve adres dışarı çıkmaz; sır geri dönmez), G-23, G-09, G-08; S-108.
+
+**Varsayılanlar (otonom varsayılan)**
+- Alarm işaretlemek `camera` **view** yeterli (resepsiyon günlük işi); yeniden başlat, duraklat, sır ve Telegram denemesi **edit** + yalnız IPC.
+- Menüde Kamera girişi yetkiye göre görünür (ayarla gizlenmez); kapalıyken ekran "Kapalı" + nereden açılacağını söyler. "Sekme görünürlüğü" ayarı ayrı paket.
+- Yüz kutuları için yan sürecin `GET /api/overlay` ({frame:{width,height}, boxes:[{x,y,w,h,label,kind}]}) vermesi beklenir; yoksa (404) kutu listesi boş.
+  Şerit yazısı mevcut `/api/status`'tan gelir. **P20d'ye not:** OpenCV etiket çizimi kaldırılırken bu uç nokta eklenmeli.
+- `Ayarlar → Kamera` Resepsiyon'a salt görüntüleme olarak açılır (menüdeki `camera` view hakkı).
+- Alarm metni ("Tanımsız Kişi (Takip #n)") ve resim yolları arayüze verilmez; başlık yerelleştirilmiş sabit metindir.
+
+**Testler:** vitest — `camera-screen-service.test.ts` (canlı adres, şerit, kutu, alarm işareti, duraklat), `camera-page.test.tsx`, `camera-section.test.tsx`,
+`camera-state.test.ts`, `app-url.test.ts` (istek süzgeci), `permissions-camera`/`permission-matrix`/`permissions-summary` genişletildi.
+E2E (sahte yan süreç `tests/fixtures/fake-sidecar.mjs`): `tests/e2e/electron/camera.spec.ts` (durum, canlı görüntü, süzgeç, işaretler, yeniden başlat),
+`tests/e2e/mobile/camera.spec.ts` (telefon: canlı yok, servis 403).
+
+**Kalanlar:** `ui-reviewer` + `turkish-ui-copy` (kabul kutusu açık); alarmların Bismuth tablosuna ve bildirim merkezine taşınması (P20c);
+kılavuza Kamera bölümü; aydınlatma metni (P20e).
+
+### P20d — Model sabitleme ve çevrimdışı (2026-11-13)
+
+**Yapılanlar**
+- `otel-kamera/model_loader.py`: modeller YALNIZ yerel dosyadan (`MODELS_DIR`, Bismuth `resources/camera/models` yolunu verir);
+  dosya yoksa `ModelMissingError` (indirme yok). `ultralytics` içe aktarılmadan önce `YOLO_OFFLINE=1` (içe aktarmadaki DNS
+  yoklaması da kapanır; ultralytics 8.4.212 kaynağından doğrulandı), `YOLO_AUTOINSTALL=false`, `HF_HUB_OFFLINE=1`; ardından
+  `settings.update({"sync": False})`. InsightFace `root/models/buffalo_s/` yerelden, yalnız `detection`+`recognition` modülleriyle
+  (yaş/cinsiyet/nirengi yüklenmez). İsteğe bağlı `SHA256SUMS` doğrulaması.
+- `resources/camera/models/README.md` (dosya, kaynak, lisans, yerleşim; sha256 bilerek boş: dosyalar indirilmediği için hesaplanamaz,
+  P20f paketlerken `SHA256SUMS` üretir) + `.gitignore` (yalnız README ve SHA256SUMS izlenir; `camera-data-guard` ile uyumlu).
+- `THIRD_PARTY_NOTICES.md` "Camera module" bölümü (K-57 uyarısı, model dosyaları, `requirements.txt`'ten üretilen paket tablosu);
+  `scripts/notices.mjs` bölümü üretir ve notu olmayan yeni Python paketinde durur.
+- Kod bulguları: 2 (`bytetrack_lite.py`, IoU iki aşamalı), 5 (kişi yokken bölge süzmeli yüz arama), 6 (tek eşik + "emin değil" bandı),
+  20 (OpenCV yazı/kutu çizimi kaldırıldı; `GET /api/overlay`), 23 + 24 (yayın yalnız yeni karede, izleyici isteyince, küçültülmüş;
+  aynı kare iki kez analiz edilmez). Tablo ve test adları `otel-kamera/AI_GELISTIRICI_NOTLARI.md` §6.
+- Ayarlar: `camera.uncertainMargin` (0,06), `camera.idleFaceScanEvery` (3), `camera.streamMaxWidth` (960) eklendi
+  (`src/shared/contract/settings.ts`, `src/main/camera/config.ts`); `MODELS_DIR` ana süreçten verilir (`src/main/index.ts`).
+  **Ayarlar ekranında alan yok** (P20b/ayar ekranı paketinin işi; ayar varsayılanlarla çalışır).
+- Alternatif model geçiş planı (YuNet + SFace) yalnız belge: `docs/analiz/06-kamera-entegrasyonu.md` §6.2.1.
+
+**Karşılanan:** K-57, G-01, G-07, G-09, yasak 14.
+
+**Varsayılanlar (otonom varsayılan)**
+- Eşik varsayılanı 0,36 KORUNDU (saha FAR/FRR ölçümü yok; kod bulgusu 6'nın "0,4–0,5" önerisi tahmindir). Alarm tekilleştirmesi artık
+  0,46 yerine aynı tek eşiği kullanır (aynı kişi = sistemin kendi tanımı); sahip onay paketinde sahada doğrulanmalı.
+- "Emin değil" bandı varsayılan 0,06: eşiğin altındaki bu aralıktaki yüz alarm üretmez (yalnız "belirsiz" görünür). Güvenlik/yanlış
+  alarm dengesi sahibin kararıdır; `camera.uncertainMargin = 0` bandı kapatır.
+- `supervision` 0.31.7'de `ByteTrack` yok (ayrı pakete taşınmış); ek bağımlılık eklenmeden numpy ile iki aşamalı IoU izleyici yazıldı.
+- Etiket/kutu verisi ad ve oda içerir ve yalnız loopback + belirteçli `/api/overlay`'den Bismuth'a gider; Telegram'a hiçbir yolla gitmez.
+
+**Sahip onay paketine:** gerçek model dosyalarıyla (`yolo11n.pt`, `buffalo_s`) ölçüm ve sha256 (P20f); sahada eşik/marj kalibrasyonu;
+InsightFace izin e-postası (`06` §6.4); gerçek kamerada ≥ 4 analiz/sn ve kişi-yokken-yüz taraması CPU maliyeti. Gerçek `ultralytics` ve
+`insightface` Codespace'te kurulmadı (torch ~1 GB); testler aynı çağrı biçimini taklit eden sahte modüllerle çalışır.

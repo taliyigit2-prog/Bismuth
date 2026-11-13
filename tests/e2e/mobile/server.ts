@@ -13,7 +13,8 @@ import { createServices } from '../../../src/main/services'
 import { createApiApp, type ApiEnv } from '../../../src/main/api/app'
 import { createHandlers } from '../../../src/main/api/handlers'
 import { startServer } from './plain-server'
-import { systemCtx } from '../../../src/main/services/context'
+import { createCameraRuntime } from '../../../src/main/camera'
+import { localOwnerCtx, systemCtx } from '../../../src/main/services/context'
 import { ctxForUser } from '../../../src/main/services/users-service'
 import { createDesktopSessions } from '../../../src/main/session/desktop-sessions'
 import { setReplicaHostRuntime } from '../../../src/main/server/remote-service'
@@ -92,6 +93,25 @@ async function main(): Promise<void> {
       env()
     )
     if (tour.status !== 200) throw new Error(`settings failed: ${tour.status} ${await tour.text()}`)
+  }
+
+  // The Kamera screen's phone spec (Faz 20 P20b): the Node stand-in for the Python sidecar runs behind the services, as the
+  // hotel computer's main process would run it; the phone only ever reads the alarm list from it.
+  if (process.env['E2E_CAMERA'] === '1') {
+    const camera = createCameraRuntime({
+      scriptDir: root,
+      dataDir: mkdtempSync(join(tmpdir(), 'bismuth-e2e-camera-')),
+      settings: () => services.settings.get(localOwnerCtx()),
+      source: () => 'rtsp://camera.invalid/stream',
+      python: process.execPath,
+      script: resolve(root, 'tests/fixtures/fake-sidecar.mjs')
+    })
+    services.camera.attach(camera)
+    await services.settings.set(localOwnerCtx(), { 'camera.enabled': true, 'camera.location': 'Merdiven' })
+    await camera.apply()
+    process.on('exit', () => void camera.stop())
+    for (const signal of ['SIGINT', 'SIGTERM'] as const)
+      process.on(signal, () => void camera.stop().finally(() => process.exit(0)))
   }
 
   const server = await startServer({

@@ -60,6 +60,7 @@ class ResilientCameraGrabber:
 
         self._lock = threading.Lock()
         self._frame: Optional[np.ndarray] = None
+        self._frame_seq = 0  # her yeni kare +1: analiz döngüsü aynı kareyi iki kez işlemez (kod bulgusu 24)
         self._last_frame_ts = 0.0
         self._connected = False
         self._running = True
@@ -133,6 +134,7 @@ class ResilientCameraGrabber:
             now = self._clock()
             with self._lock:
                 self._frame = frame
+                self._frame_seq += 1
                 self._last_frame_ts = now
                 self._connected = True
             self._sleep(0.005)
@@ -166,6 +168,11 @@ class ResilientCameraGrabber:
                 self._start_reader()
 
     # ------------------------------------------------------------------ dış
+
+    @property
+    def frame_seq(self) -> int:
+        with self._lock:
+            return self._frame_seq
 
     def get_latest_frame(self) -> Tuple[bool, Optional[np.ndarray]]:
         with self._lock:

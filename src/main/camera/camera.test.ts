@@ -277,6 +277,23 @@ describe('ayar ve sır', () => {
     )
   })
 
+  it('model klasörü ve P20d eşikleri ayardan yan sürece gider; klasör verilmezse yan süreç kendi varsayılanını kullanır', () => {
+    const source = 'rtsp:' + '//u:p@10.0.0.2:554/x'
+    const cfg = buildSidecarConfig(SETTINGS_DEFAULTS, source, 47512, {
+      dataDir: '/tmp/cam',
+      modelsDir: '/app/models'
+    })
+    expect(cfg).toMatchObject({
+      MODELS_DIR: '/app/models',
+      FACE_UNCERTAIN_MARGIN: 0.06,
+      IDLE_FACE_SCAN_EVERY: 3,
+      STREAM_MAX_WIDTH: 960
+    })
+    expect(buildSidecarConfig(SETTINGS_DEFAULTS, source, 47512, { dataDir: '/tmp/cam' })).not.toHaveProperty(
+      'MODELS_DIR'
+    )
+  })
+
   it('sırlar diske mühürlenerek yazılır ve düz metin kalmaz', () => {
     const file = join(tempDataDir(), 'camera-secrets.json')
     const sealer = {

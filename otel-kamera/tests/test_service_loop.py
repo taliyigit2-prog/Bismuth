@@ -53,8 +53,8 @@ def test_alarm_karesi_etiketsiz_ham_karedir_kayıtlı_misafirin_adı_çizilmez(c
     assert len(rec.calls) == 1
     sent_frame = rec.calls[0][0]
     assert np.array_equal(sent_frame, service._grabber.frame)
-    labels = [label for _, label, _ in state.face_boxes]
-    assert any(label.startswith("KAYITLI: Ayşe") for label in labels)  # canlı yayında kalır, alarm karesine girmez
+    known = [f for f in state.face_boxes if f["kind"] == "known"]
+    assert known and known[0]["name"] == "Ayşe Örnek"  # kutu verisinde kalır, alarm karesine girmez
 
 
 def _two_people():
@@ -121,14 +121,14 @@ def test_kayıtlı_iz_yabancıya_geçmez_ardışık_eşleşmemede_kayıtsız_olu
 
     state = _LoopState()
     service._tick(state)
-    assert state.face_boxes[0][1].startswith("KAYITLI")
+    assert state.face_boxes[0]["kind"] == "known"
     app.faces = [fake_face(stranger)]  # aynı iz, başka yüz
     labels = []
     for _ in range(4):
         service._tick(state)
-        labels.append(state.face_boxes[0][1])
-    assert [lab.startswith("KAYITLI") for lab in labels] == [True, True, False, False]
-    assert labels[-1].startswith("TANIMSIZ")
+        labels.append(state.face_boxes[0]["kind"])
+    assert [kind == "known" for kind in labels] == [True, True, False, False]
+    assert labels[-1] == "unknown"
     assert rec.calls == []  # henüz CONFIRMATION_FRAMES kez kayıtsız görülmedi
 
 

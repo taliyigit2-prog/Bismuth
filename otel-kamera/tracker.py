@@ -3,7 +3,8 @@
 P20a düzeltmeleri: doğrulanmış kimliğin ömrü var ve yalnız gerçek eşleşmeyle tazelenir; yabancı yüz tekrar tekrar
 eşleşmezse kimlik düşer (3, tailgating); kayıtsız sayaç zaman pencereli ve sözlükler periyodik temizlenir (4);
 tüm paylaşılan durum tek kilit altında (15); poligon 0..1 oranlı verilebilir ve ayrıştırma hatası görünür (26).
-ByteTrack/IoU değişimi ve eşik birleştirme P20d'dedir.
+P20d: kişi ve yüz izleme `bytetrack_lite` (IoU, iki aşamalı; kod bulgusu 2); kişi kutusu yokken yüz de izlenir (5);
+alarm tekrar-tanıma tek ayarlı eşiği kullanır (6); bölge dışı yüzler `face_in_zone` ile elenir.
 """
 
 import logging
@@ -11,9 +12,11 @@ import threading
 import time
 from typing import Callable, Dict, List, Optional, Tuple
 
+import cv2
 import numpy as np
 import supervision as sv
 
+from bytetrack_lite import ByteTrackLite
 from config import Config
 from config import config as default_config
 
@@ -21,6 +24,7 @@ log = logging.getLogger("otel-kamera.tracker")
 
 MatchInfo = Tuple[int, str, str, float]
 PRUNE_EVERY_SECONDS = 30.0
+FACE_ID_BASE = 1000  # kişi kutusuna bağlanamayan yüzlerin iz kimlikleri bu değerden başlar
 
 
 def parse_polygon(text: str) -> Tuple[Optional[np.ndarray], bool]:
@@ -63,10 +67,16 @@ class SecurityTracker:
             self._raw_polygon, self._normalized = parse_polygon(settings.ZONE_POLYGON)
         self._build_zone(None)
 
-        self._next_id = 1
-        self._prev_centroids: Dict[int, Tuple[float, float, float]] = {}
-        self._next_face_id = 1000
-        self._prev_face_centroids: Dict[int, Tuple[float, float, float]] = {}
+        track_args = dict(
+            high_score=settings.TRACK_HIGH_SCORE,
+            low_score=settings.TRACK_LOW_SCORE,
+            buffer_seconds=settings.TRACK_BUFFER_SECONDS,
+            clock=clock,
+        )
+        self._persons = ByteTrackLite(match_iou=settings.TRACK_MATCH_IOU, first_id=1, **track_args)
+        # Kişi kutusu olmayan yüzler (1000+): yüz kutuları küçük ve oynak olduğundan eşik daha gevşek
+        face_args = {**track_args, "high_score": 0.0}  # yüzler `MIN_FACE_DET_SCORE` ile zaten süzülmüştür
+        self._faces = ByteTrackLite(match_iou=min(settings.TRACK_MATCH_IOU, 0.2), first_id=FACE_ID_BASE, **face_args)
 
         self.alert_history: Dict[int, float] = {}
         self.recent_alert_embeddings: List[Tuple[np.ndarray, float]] = []
@@ -105,30 +115,16 @@ class SecurityTracker:
     # ------------------------------------------------------------------ izleme
 
     def update_tracks(self, detections: sv.Detections) -> sv.Detections:
-        if len(detections) == 0:
-            return detections
+        """Kişi kutularına kalıcı iz kimliği verir (ByteTrack benzeri). Zaten kimliği olan tespit olduğu gibi döner.
+        Düşük güvenli ve eşleşmeyen tespitler iz açmaz, listeden çıkar."""
         if detections.tracker_id is not None:
             return detections
+        confidence = detections.confidence if detections.confidence is not None else np.ones(len(detections))
         with self._lock:
-            now = self._clock()
-            self._prev_centroids = {tid: (cx, cy, ts) for tid, (cx, cy, ts) in self._prev_centroids.items() if now - ts < 6.0}
-            assigned_ids: List[int] = []
-            for xyxy in detections.xyxy:
-                cx = float((xyxy[0] + xyxy[2]) / 2.0)
-                cy = float((xyxy[1] + xyxy[3]) / 2.0)
-                best_id = None
-                best_dist = 380.0**2
-                for tid, (px, py, _) in self._prev_centroids.items():
-                    dist = (cx - px) ** 2 + (cy - py) ** 2
-                    if dist < best_dist and tid not in assigned_ids:
-                        best_dist = dist
-                        best_id = tid
-                if best_id is None:
-                    best_id = self._next_id
-                    self._next_id += 1
-                self._prev_centroids[best_id] = (cx, cy, now)
-                assigned_ids.append(best_id)
-            detections.tracker_id = np.array(assigned_ids, dtype=int)
+            ids = self._persons.update(detections.xyxy, confidence)
+        keep = ids >= 0
+        detections = detections[keep]
+        detections.tracker_id = ids[keep].astype(int)
         return detections
 
     def filter_by_zone(self, detections: sv.Detections) -> sv.Detections:
@@ -137,13 +133,23 @@ class SecurityTracker:
         is_inside = self.zone.trigger(detections=detections)
         return detections[is_inside]
 
-    def assign_face_to_tracker_id(self, face_bbox: np.ndarray, person_detections: sv.Detections) -> int:
+    def face_in_zone(self, face_bbox: np.ndarray) -> bool:
+        """Yüzün merkezi geçiş bölgesinde mi? Bölge yoksa her yüz bölgededir."""
+        with self._lock:
+            polygon = self.polygon
+        if polygon is None:
+            return True
+        cx = float((face_bbox[0] + face_bbox[2]) / 2.0)
+        cy = float((face_bbox[1] + face_bbox[3]) / 2.0)
+        return cv2.pointPolygonTest(polygon.reshape(-1, 1, 2).astype(np.float32), (cx, cy), False) >= 0
+
+    @staticmethod
+    def _person_for_face(face_bbox: np.ndarray, person_detections: sv.Detections) -> Optional[int]:
         fx1, fy1, fx2, fy2 = face_bbox
         fcx = float((fx1 + fx2) / 2.0)
         fcy = float((fy1 + fy2) / 2.0)
         fw = float(fx2 - fx1)
         fh = float(fy2 - fy1)
-
         best_tid = None
         min_dist = float("inf")
         if len(person_detections) > 0 and person_detections.tracker_id is not None:
@@ -162,26 +168,35 @@ class SecurityTracker:
                     if dist < min_dist:
                         min_dist = dist
                         best_tid = int(tid)
-        if best_tid is not None:
-            return best_tid
-        if fw < 95 and fh < 95 and len(person_detections) > 0:
-            return -1
+        return best_tid
 
+    def assign_faces(
+        self,
+        face_bboxes: List[np.ndarray],
+        person_detections: sv.Detections,
+        face_scores: Optional[List[float]] = None,
+    ) -> List[int]:
+        """Her yüze iz kimliği verir: önce yüzü içeren kişi kutusunun kimliği; kişi kutusu yoksa (YOLO kaçırdı / yakın
+        çekim, kod bulgusu 5) yüz kutusunun kendi izi (1000+). Kişi kutuları varken kutulara düşmeyen KÜÇÜK yüzler
+        (arka plan) -1 alır ve yok sayılır. Yüz izleyici her çağrıda bir kez ilerler (çağrı başına tek analiz turu)."""
+        tids: List[int] = [-1] * len(face_bboxes)
+        pending: List[int] = []
+        for i, bbox in enumerate(face_bboxes):
+            owner = self._person_for_face(bbox, person_detections)
+            if owner is not None:
+                tids[i] = owner
+                continue
+            small = float(bbox[2] - bbox[0]) < 95 and float(bbox[3] - bbox[1]) < 95
+            if small and len(person_detections) > 0:
+                continue
+            pending.append(i)
+        boxes = np.array([face_bboxes[i] for i in pending], dtype=np.float64).reshape(-1, 4)
+        scores = np.array([1.0 if face_scores is None else face_scores[i] for i in pending], dtype=np.float64)
         with self._lock:
-            now = self._clock()
-            self._prev_face_centroids = {fid: (cx, cy, ts) for fid, (cx, cy, ts) in self._prev_face_centroids.items() if now - ts < 6.0}
-            best_fid = None
-            best_fdist = 280.0**2
-            for fid, (px, py, _) in self._prev_face_centroids.items():
-                d = (fcx - px) ** 2 + (fcy - py) ** 2
-                if d < best_fdist:
-                    best_fdist = d
-                    best_fid = fid
-            if best_fid is None:
-                best_fid = self._next_face_id
-                self._next_face_id += 1
-            self._prev_face_centroids[best_fid] = (fcx, fcy, now)
-            return best_fid
+            ids = self._faces.update(boxes, scores)
+        for slot, face_id in zip(pending, ids):
+            tids[slot] = int(face_id)
+        return tids
 
     # ------------------------------------------------------------------ kimlik doğrulama
 
@@ -255,7 +270,7 @@ class SecurityTracker:
                 return False
             if embedding is not None:
                 for prev_emb, prev_ts in self.recent_alert_embeddings:
-                    if self._cosine_sim(embedding, prev_emb) >= 0.40:
+                    if self._cosine_sim(embedding, prev_emb) >= self.settings.FACE_SIMILARITY_THRESHOLD:
                         self.alert_history[tracker_id] = prev_ts
                         return False
             self.alert_history[tracker_id] = now

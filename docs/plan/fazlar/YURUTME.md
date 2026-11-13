@@ -99,8 +99,8 @@ Harcama sütunu: başlatıcının yazdığı `$` (dalga toplamı, gerçek).
 | 6 | P19a Sürüm iş akışı tekleştirme (tetikleme sahipte) | 19 | .github, electron-builder | packager | $5–8 | ~$4 | ✅ |
 | 6 | P19b Kurulum belgeleri + kılavuz + sihirbaz tek kâğıt adımı + belge çelişkileri (Ç-01/02/04/05); P19d ajan bakımı | 19 | docs, guide, setup, .claude | feature-builder-lite (+ feature-builder sihirbaz) | $4–8 | ~$12 | ✅ |
 | 7 | P20a Kamera yan süreç iskeleti + Python hijyeni + Telegram'ın Bismuth'a taşınması (K-50; kod bulguları `ekler/kamera-kod-bulgulari.md` §0) | 20 | main/camera, main/network/telegram, otel-kamera | camera-integrator | $12–20 | ~$25 | ✅ |
-| 8 | P20b Kamera sekmesi (canlı yayın yalnız ana bilgisayar; telefon alarm listesi) | 20 | features/camera | camera-integrator | $8–12 | | ⬜ |
-| 8 | P20d Model sabitleme ve çevrimdışı (K-57: mevcut modeller kalır, telemetri kapalı, lisans notu) | 20 | otel-kamera, resources/camera | camera-integrator | $4–6 | | ⬜ |
+| 8 | P20b Kamera sekmesi (canlı yayın yalnız ana bilgisayar; telefon alarm listesi) | 20 | features/camera | camera-integrator | $8–12 | ~$22 | ✅ |
+| 8 | P20d Model sabitleme ve çevrimdışı (K-57: mevcut modeller kalır, telemetri kapalı, lisans notu) | 20 | otel-kamera, resources/camera | camera-integrator | $4–6 | ~$15 | ✅ |
 | 9 | P20c Veri entegrasyonu (migrasyon 0021, şifreleme, alarm → bildirim; rıza alanı yok K-58) | 20 | camera, today | db-migration-builder → camera-integrator | $15–22 | | ⬜ |
 | 10 | P20e KVKK paketi (aydınlatma şablonu, saklama/imha, personel dışlama) | 20 | camera settings | camera-integrator | $8–12 | | ⬜ |
 | 10 | P20g Kamera kurulum sihirbazı (K-59: donanım otomatik, Hikvision keşif + RTSP kalıbı + test) | 20 | features/setup, main/camera/discovery, otel-kamera/discovery | camera-integrator | $10–15 | | ⬜ |
@@ -314,3 +314,17 @@ QA2b, akış testleri C/D) bu plana **Son** satırında katılır; ayrı yürüt
   P20c'ye: Python tarafındaki yüz vektörü/kırpma düz SQLite/JPEG (K-51 gereği DB'ye şifreli taşınacak), silme audit'i, log'da ad/oda
   yok testi; P20b/P20f'ye: eski `static/index.html` + `Baslat_*`/`Otel_*` betikleri; Düşük: Telegram sohbet sayısı üst sınırı,
   sidecar'a izinli env listesi, `pickFreePort` yarışı. 2737 test yeşil. **Dalga 7 bitti.**
+- 2026-11-13: Dalga 7 sadeleştirme dalga 8 ile birlikte yapılacak. Dalga 8 başladı (P20b + P20d, camera-integrator ×2; taban 82775c2).
+- 2026-11-13: P20b ✅ — Kamera ekranı `/camera` (durum kartı, canlı MJPEG yalnız ana bilgisayar penceresinde, renderer'da SVG yüz kutuları
+  ve Kiril/Türkçe etiketler, alarm listesi yeni → görüldü → halledildi), Ayarlar → Kamera (sırlar yalnız yazılır, Telegram'ı dene),
+  yordamlar `camera.streamUrl/live/alerts/markAlert/setAlarmsPaused`, CSP `img-src 127.0.0.1:*` + `policy.ts` tam port süzgeci,
+  129 anahtar, e2e masaüstü + telefon. P20d ✅ — modeller yalnız yerelden (`model_loader.py`, YOLO_OFFLINE/HF_HUB_OFFLINE + sync kapalı,
+  ağ yamalı test), `resources/camera/models/README.md` (dosyalar depoda yok), THIRD_PARTY_NOTICES kamera bölümü (K-57 lisans uyarısı),
+  `bytetrack_lite.py`, tek eşik + "emin değil" bandı (`camera.uncertainMargin` 0,06 otonom varsayılan), OpenCV çizimi kalktı →
+  `/api/overlay`, yayın yalnız izleyici varken küçültülmüş; 95 pytest. Birleştirmede kutu sözleşmesi eşitlendi (yan süreç 0..1 köşe →
+  servis piksel kutusu; "emin değil" yüzde ad gösterilmez). P20bfix: `camera.markAlert` işleyicisi `await` (security Yüksek) + test.
+  Kontroller: ui-reviewer (Kritik/Yüksek yok), privacy-auditor (Kritik/Yüksek yok), turkish-ui-copy (7 metin düzeltmesi).
+  P20c'ye: Python'un `/alerts` + `/guest_photos` diske yazması (K-53), zorunlu `SHA256SUMS` (P20f), `camera.alerts` telefonda açık
+  (yalnız id/zaman; S-108 gereği bilinçli). P21e'ye: telefonda durum kartında boş sarmalayıcı, filtre sekmeleri 2×2 kenarlık, "Gördüm/
+  Hallettim" düğme dili, `numberInvalid` ondalık biçimi, ru `crashedBody` çoğul anahtarları, P20d'nin 3 yeni ayarı için ayar alanı,
+  canlı etiket yazı boyutu. 2805 test yeşil. **Dalga 8 bitti.**

@@ -54,6 +54,8 @@ const devOrigin = devUrl ? new URL(devUrl).origin : null
 const startedAt = Date.now()
 
 let mainWindow: BrowserWindow | null = null
+/** The camera sidecar's runtime once built (Faz 20): the request filter reads its address for the live picture. */
+let cameraRuntime: ReturnType<typeof createCameraRuntime> | null = null
 let database: DatabaseHandle | null = null
 const blockedRequests: string[] = []
 /** Last call from a window: the step-by-step backup rests while someone is working (K-32). */
@@ -105,6 +107,7 @@ async function start(): Promise<void> {
 
   applySecurityPolicy({
     devOrigin,
+    cameraOrigin: () => cameraRuntime?.bridge()?.baseUrl ?? null,
     onBlockedRequest: (url) => {
       blockedRequests.push(url)
       log.warn('blocked renderer request', url)
@@ -366,10 +369,14 @@ async function start(): Promise<void> {
   // `camera.enabled` is on; Bismuth closing (even by a crash) ends it. Smoke runs and client devices never start it.
   if (!smoke && initial['app.mode'] !== 'client') {
     const camera = createCameraRuntime({
+      packaged: app.isPackaged,
       scriptDir: app.isPackaged
         ? join(process.resourcesPath, 'camera')
         : join(app.getAppPath(), 'otel-kamera'),
       dataDir: paths.root,
+      modelsDir: app.isPackaged
+        ? join(process.resourcesPath, 'camera', 'models')
+        : join(app.getAppPath(), 'resources', 'camera', 'models'),
       settings: () => services.settings.get(localOwnerCtx()),
       source: () => services.camera.sidecarSource(),
       log: { info: (...a) => log.info(...a), warn: (...a) => log.warn(...a) },
@@ -390,6 +397,7 @@ async function start(): Promise<void> {
       }
     })
     services.camera.attach(camera)
+    cameraRuntime = camera
     const apply = (restart: boolean): void =>
       void camera.apply({ restart }).catch((error: unknown) => log.warn('camera sidecar', error))
     services.settings.onChange((_values, changed) => {

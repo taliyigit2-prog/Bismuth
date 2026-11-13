@@ -8,6 +8,8 @@ import { SidecarConfigError } from './sidecar'
 export interface SidecarDirs {
   /** Where the sidecar keeps its local files until P20c moves the data into Bismuth's database (userData/camera). */
   dataDir: string
+  /** Where the bundled model files are (`resources/camera/models`); the sidecar loads only from here, never downloads. */
+  modelsDir?: string
 }
 
 export function buildSidecarConfig(
@@ -22,6 +24,10 @@ export function buildSidecarConfig(
     ...(settings['camera.location'] ? { CAMERA_LOCATION: settings['camera.location'] } : {}),
     FACE_SIMILARITY_THRESHOLD: settings['camera.similarityThreshold'],
     CHECKOUT_MIN_SIMILARITY: settings['camera.confirmSimilarity'],
+    FACE_UNCERTAIN_MARGIN: settings['camera.uncertainMargin'],
+    IDLE_FACE_SCAN_EVERY: settings['camera.idleFaceScanEvery'],
+    STREAM_MAX_WIDTH: settings['camera.streamMaxWidth'],
+    ...(dirs.modelsDir ? { MODELS_DIR: dirs.modelsDir } : {}),
     MIN_FACE_DET_SCORE: settings['camera.minFaceScore'],
     MIN_FACE_SIZE_PX: settings['camera.minFacePx'],
     CONFIRMATION_FRAMES: settings['camera.confirmationFrames'],

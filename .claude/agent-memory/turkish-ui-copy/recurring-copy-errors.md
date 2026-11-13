@@ -80,3 +80,18 @@ Bismuth arayüz metinlerinde tekrar eden hatalar:
 **Why:** Dalga 6 kılavuz+bileşen incelemesi; düğme adları kılavuz ve arayüz arasında kayarsa okuyucu kutuyu bulamıyor.
 **How to apply:** Kılavuzda bir düğme ya da kutu adı geçtiğinde ilgili anahtarla (`t` değeri) karşılaştır; ru/en kılavuzları aynı adı taşısın.
 Ajan notu: bu oturumda `.tmp/` altına rapor dosyası yazma isteği araç tarafından reddedildi; bulgular yanıt metninde döndü.
+
+## Dalga 8 (P20b kamera ekranı, Ayarlar > Kamera, alarm listesi) incelemesinden
+
+- Düz (plural'sız) sayılı anahtar: `camera.crashedBody` ("{{count}} раз") ru'da 2 için "2 раз" üretir. Düzeltme ru değerinde
+  sayıyı isme bağlamadan yapıldı ("всего остановок: {{count}}"). Kalıcı çözüm `_one/_few/_many/_other` (anahtar değişikliği,
+  yeni anahtar yasağı nedeniyle bekliyor).
+- Düğme ilk tekil şahıs: `camera.alerts.markSeen` "Gördüm", `markHandled` "Hallettim" (tr); ru "Просмотрено"/"Решено"
+  (durum sözcüğü, emir kipi değil). Emir kipi önerisi: "Görüldü olarak işaretle" / "Halledildi olarak işaretle" /
+  "Отметить как просмотренную" / "Отметить как решённую". Test bağımlılığı: camera-page.test.tsx:90 bu metinleri bekliyor.
+- Teknik sözcük: "kare" (video karesi) ayar etiketlerinde (`settings.camera.field.*`); tr'de "görüntü" ile değiştirildi.
+  Diğer dillerde kare karşılığı ayrı kontrol edilmeli.
+- Sayı biçimi: `numberInvalid` ({{min}}/{{max}}) ondalıkları "0.1" olarak gösteriyor; tr'de "0,1" olmalı → kod tarafında
+  format.ts (`settings/camera-section.tsx:117`).
+- Kabul edilen: "kayıtsız kişi" (unregistered), "tanıma eşiği", "canlı görüntü", "Yeniden başlat" (düğme) + "Ayarlar'da
+  Kamera bölümü"; "Telegram'a gönder" ifadeleri; ru "Система камер" (koleksiyon, kabul).

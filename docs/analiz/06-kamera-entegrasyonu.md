@@ -178,6 +178,28 @@ kayıt için kalır; sorumluluk sahibin avukat görüşündedir. Telegram fotoğ
 YOLOX hiç eklenmez (CPU ve lisans yükü düşer). Mevcut eşikler (0,36) ArcFace için gevşek; yeni modelde sahada
 FAR/FRR ölçümü yapılıp tek ayarlı eşik + "emin değil" bandı kullanılmalı.
 
+#### 6.2.1 Alternatif model geçiş planı (YuNet + SFace) — yalnız belge, uygulanmadı (P20d, K-57)
+
+**Ne zaman uygulanır:** programı başka bir otele vermek/satmak gündeme gelirse, InsightFace'ten yazılı izin çıkmazsa ya da
+Ultralytics Enterprise lisansı alınmayacaksa. Kendi otelinde kullanım sürdükçe K-57 gereği mevcut modeller kalır.
+
+**Kod yapısı buna hazırdır (P20d):** model yükleme tek yerde (`otel-kamera/model_loader.py`), izleme model bağımsız
+(`bytetrack_lite.py`), kişi kutusu yokken yüz arama yolu var (`IDLE_FACE_SCAN_EVERY`), eşikler ayarda, çizim yok. Değişecek
+yerler:
+
+| Adım | Değişiklik | Dokunulan dosya | Not |
+|---|---|---|---|
+| 1 | Yeni model dosyaları `resources/camera/models/` içine: `face_detection_yunet_2023mar.onnx` (MIT), `face_recognition_sface_2021dec.onnx` (Apache-2.0; eğitim verisi lisansı belirsiz) — opencv_zoo | `resources/camera/models/README.md` | dosya adları ve sürüm paketleme sırasında doğrulanır; sha256 `SHA256SUMS`'a |
+| 2 | `load_insightface` yerine `load_face_models`: OpenCV `cv2.FaceDetectorYN` ve `cv2.FaceRecognizerSF` (`opencv-python-headless` içinde, ek paket yok) | `model_loader.py`, `face_engine.py` | `FaceEngine.app.get()` yüzeyi (bbox, det_score, embedding) korunur → servis ve izleyici değişmez |
+| 3 | Kişi tespiti: iki yol — (a) YOLOX-Nano/Tiny (Apache-2.0) + onnxruntime, (b) kişi tespiti hiç yok, yalnız yüz izleme (`IDLE_FACE_SCAN_EVERY=1` gibi; izleyici yüz izini zaten tutar) | `security_service.build_person_detector` | (b) CPU ve lisans yükünü en çok azaltan yoldur; kişi kutusuyla bölge süzmesi yerine yüz merkezi bölgesi (`face_in_zone`) kullanılır |
+| 4 | `ultralytics`, `insightface`, `torch*` bağımlılıkları `requirements.txt`'ten çıkar; `onnxruntime` kalır | `requirements.txt`, `THIRD_PARTY_NOTICES` (`scripts/notices.mjs`), `docs/plan/bagimliliklar.md` | paket ~1–1,5 GB → ~300 MB tahmini (ölçülmedi); AGPL ve "ticari olmayan" uyarıları kalkar |
+| 5 | Yüz vektörü boyutu değişir (SFace 128 boyut, ArcFace 512): kayıtlı `guest_faces` vektörleri geçersiz olur; `guest_faces.model` sütunu farklı modeli ayırt eder → geçişte aktif misafirler yeniden "Kameradan yüz al" ile kaydedilir | `src/main/camera` (P20c servisi) | karışık boyut karşılaştırması zaten reddedilir (`shape` denetimi); eski vektörler çıkışta/saklama süresinde silinir |
+| 6 | Eşikler yeniden ayarlanır: SFace için OpenCV belgesindeki kosinüs eşiği 0,363 başlangıçtır (doğrulanmalı); yine sahada FAR/FRR ölçümü | `camera.similarityThreshold`, `camera.uncertainMargin` | "emin değil" bandı korunur |
+| 7 | Test: sahte yükleyici + ağ kapalı testi (`tests/test_models_offline.py` kalıbı), eşik ayarı testleri aynen | `otel-kamera/tests/` | kabul: ağ yamalı ortamda açılır, indirme yok |
+
+Maliyet tahmini: 1–1,5 geliştirme günü (ölçüm sahada ayrıca). Doğruluk SCRFD + ArcFace-MBF'ye göre düşebilir; sahibin gerçek
+kamerasıyla karşılaştırma yapılmadan "eşdeğer" denmez.
+
 ### 6.3 Sahibin kararı: mevcut modeller korunur (S-110, K-57) — lisans değerlendirmesi (2026-11-13, resmî kaynaklar)
 
 Sahip: "Mevcut sistemin ticariye uygun olduğunu biliyorum… Kendi otelimde kişisel olarak kullanacağım, şimdilik satmayı

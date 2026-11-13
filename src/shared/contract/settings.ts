@@ -224,6 +224,12 @@ export const settingsShape = {
   'camera.confirmSimilarity': z.number().min(0.1).max(0.95),
   'camera.minFaceScore': z.number().min(0.1).max(0.99),
   'camera.minFacePx': z.number().int().min(20).max(400),
+  /** "Not sure" band below the threshold: a face this close to a guest is neither registered nor alarmed (0 = off). */
+  'camera.uncertainMargin': z.number().min(0).max(0.5),
+  /** With no person box in the picture, look for faces on every Nth analysis (0 = only when a person is seen). */
+  'camera.idleFaceScanEvery': z.number().int().min(0).max(30),
+  /** Live picture width in pixels (smaller = lighter on the computer; the boxes follow the picture). */
+  'camera.streamMaxWidth': z.number().int().min(320).max(1920),
   /** Consecutive unregistered sightings before an alarm. */
   'camera.confirmationFrames': z.number().int().min(1).max(20),
   /** Analyse every Nth frame. */
@@ -326,6 +332,9 @@ export const SETTINGS_DEFAULTS: SettingsValues = {
   'camera.location': '',
   'camera.similarityThreshold': 0.36,
   'camera.confirmSimilarity': 0.45,
+  'camera.uncertainMargin': 0.06,
+  'camera.idleFaceScanEvery': 3,
+  'camera.streamMaxWidth': 960,
   'camera.minFaceScore': 0.62,
   'camera.minFacePx': 55,
   'camera.confirmationFrames': 3,

@@ -14,6 +14,7 @@ export const SETTINGS_SECTIONS = [
   'calendar',
   'tags',
   'currency',
+  'camera',
   'remote',
   'backup',
   'users',
@@ -54,6 +55,7 @@ const SECTION_NEEDS: Record<SettingsSection, readonly PermissionKey[]> = {
   calendar: ['settings'],
   tags: ['settings.colors'],
   currency: ['currency'],
+  camera: ['camera'],
   remote: ['remote.settings', 'devices'],
   // Backups, and the export/import doors (`reports.export`: the manager exports without seeing backups).
   backup: ['settings.backup', 'reports.export'],
@@ -75,7 +77,8 @@ export const SECTION_EDIT: Partial<Record<SettingsSection, PermissionKey>> = {
   tasks: 'tasks',
   staff: 'staff.policy',
   calendar: 'settings',
-  tags: 'settings.colors'
+  tags: 'settings.colors',
+  camera: 'camera'
 }
 
 export type Can = (key: PermissionKey, level?: Exclude<PermissionLevel, 'none'>) => boolean

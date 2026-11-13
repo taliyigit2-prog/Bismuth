@@ -22,3 +22,12 @@ export function isAppUrl(url: string, devOrigin: string | null, rendererDir: str
   if (devOrigin && (url === devOrigin || url.startsWith(`${devOrigin}/`))) return true
   return false
 }
+
+/** The one camera address the renderer may load: the sidecar's live picture (its origin is the exact port in use). */
+export function isCameraStream(url: string, origin: string | null): boolean {
+  return (
+    origin !== null &&
+    /^http:\/\/127\.0\.0\.1:\d{4,5}$/.test(origin) &&
+    url.startsWith(`${origin}/api/stream?`)
+  )
+}

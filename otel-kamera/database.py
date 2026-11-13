@@ -278,7 +278,7 @@ class GuestDatabase:
                     (cutoff,),
                 ).fetchall():
                     old = np.frombuffer(blob, dtype=np.float32)
-                    if old.shape == embedding.shape and (self._cosine_sim(embedding, old) >= self.settings.DEDUP_SIMILARITY_THRESHOLD):
+                    if old.shape == embedding.shape and (self._cosine_sim(embedding, old) >= self.settings.FACE_SIMILARITY_THRESHOLD):
                         dup_ids.append(old_id)
                         if old_img and old_img != image_path:
                             files_to_remove.append(old_img)
@@ -344,7 +344,7 @@ class GuestDatabase:
                 is_dup = any(
                     emb.shape == k.shape
                     and abs(at - k_at) <= window
-                    and self._cosine_sim(emb, k) >= self.settings.DEDUP_SIMILARITY_THRESHOLD
+                    and self._cosine_sim(emb, k) >= self.settings.FACE_SIMILARITY_THRESHOLD
                     for k, k_at in kept
                 )
                 if is_dup:

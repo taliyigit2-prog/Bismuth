@@ -9,6 +9,7 @@ import {
   CalendarClockIcon,
   CalendarDaysIcon,
   CalendarHeartIcon,
+  CctvIcon,
   ChartColumnIcon,
   ClipboardCheckIcon,
   CoinsIcon,
@@ -52,6 +53,7 @@ export type NavPath =
   | '/maintenance'
   | '/supply'
   | '/laundry'
+  | '/camera'
   | '/contacts'
   | '/staff'
   | '/reports'
@@ -67,6 +69,7 @@ export type NavLabelKey =
   | 'nav.audit'
   | 'nav.blacklist'
   | 'nav.calendar'
+  | 'nav.camera'
   | 'nav.companies'
   | 'nav.calendarNotes'
   | 'nav.contacts'
@@ -246,6 +249,14 @@ export const NAV_ITEMS: readonly NavItem[] = [
     icon: ShirtIcon,
     group: 'operations',
     permission: 'laundry',
+    mobile: 'more'
+  },
+  {
+    to: '/camera',
+    labelKey: 'nav.camera',
+    icon: CctvIcon,
+    group: 'operations',
+    permission: 'camera',
     mobile: 'more'
   },
   {

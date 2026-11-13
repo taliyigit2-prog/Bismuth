@@ -6,25 +6,17 @@ import numpy as np
 
 from config import Config
 from config import config as default_config
+from model_loader import load_insightface
 
 log = logging.getLogger("otel-kamera.face")
 
 
 class FaceEngine:
-    def __init__(self, model_name: Optional[str] = None, settings: Config = default_config, app=None):
-        """`app`: hazır bir InsightFace uygulaması (testlerde sahtesi). Yoksa model yüklenir; insightface yalnız
-        burada içe aktarılır, böylece ağır bağımlılık olmadan birim testler çalışır."""
+    def __init__(self, settings: Config = default_config, app=None):
+        """`app`: hazır bir InsightFace uygulaması (testlerde sahtesi). Yoksa model YEREL klasörden yüklenir (indirme
+        yok, dosya eksikse `ModelMissingError`; K-57). insightface yalnız `models.load_insightface` içinde içe aktarılır."""
         self.settings = settings
-        if app is not None:
-            self.app = app
-            return
-        from insightface.app import FaceAnalysis
-
-        model = model_name or settings.INSIGHTFACE_MODEL_NAME
-        log.info("InsightFace '%s' CPU sağlayıcısıyla yükleniyor...", model)
-        self.app = FaceAnalysis(name=model, providers=["CPUExecutionProvider"])
-        self.app.prepare(ctx_id=0, det_size=(640, 640))
-        log.info("Model hazır.")
+        self.app = app if app is not None else load_insightface(settings)
 
     def detect_faces(
         self,
@@ -111,6 +103,19 @@ class FaceEngine:
             return 0.0
         return dot / (norm1 * norm2)
 
+    def best_match(
+        self,
+        face_embedding: np.ndarray,
+        active_guests: List[Tuple[int, str, str, np.ndarray]],
+    ) -> Optional[Tuple[int, str, str, float]]:
+        """Eşiğe bakmadan en benzer misafiri döner (misafir yoksa None). "Emin değil" bandı için de kullanılır."""
+        best: Optional[Tuple[int, str, str, float]] = None
+        for gid, name, room, guest_emb in active_guests:
+            score = self.cosine_similarity(face_embedding, guest_emb)
+            if best is None or score > best[3]:
+                best = (gid, name, room, score)
+        return best
+
     def match_face(
         self,
         face_embedding: np.ndarray,
@@ -123,15 +128,7 @@ class FaceEngine:
         Eşleşmezse: None döner (Kayıtsız / Yabancı kişi).
         """
         min_thresh = threshold if threshold is not None else self.settings.FACE_SIMILARITY_THRESHOLD
-        best_match = None
-        best_score = -1.0
-
-        for gid, name, room, guest_emb in active_guests:
-            score = self.cosine_similarity(face_embedding, guest_emb)
-            if score > best_score:
-                best_score = score
-                best_match = (gid, name, room, score)
-
-        if best_match and best_score >= min_thresh:
-            return best_match
+        best = self.best_match(face_embedding, active_guests)
+        if best is not None and best[3] >= min_thresh:
+            return best
         return None

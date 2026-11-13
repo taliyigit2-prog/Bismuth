@@ -46,6 +46,7 @@ describe('Ayarlar', () => {
       'Takvim',
       'Durum etiketleri',
       'Döviz',
+      'Kamera',
       'Uzaktan erişim',
       'Yedek',
       'Kullanıcılar ve roller',
@@ -223,7 +224,7 @@ describe('Ayarlar yetkileri', () => {
         within(list)
           .getAllByRole('link')
           .map((link) => link.textContent)
-      ).toEqual(['Genel', 'Görev önerileri', 'Döviz', 'Kılavuz', 'Hakkında'])
+      ).toEqual(['Genel', 'Görev önerileri', 'Döviz', 'Kamera', 'Kılavuz', 'Hakkında'])
     } finally {
       setViewAs('owner')
     }

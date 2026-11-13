@@ -50,7 +50,8 @@
     "audit": "Audit log",
     "companies": "Companies",
     "calendarNotes": "Calendar notes",
-    "guide": "Guide"
+    "guide": "Guide",
+    "camera": "Camera"
   },
   "topbar": {
     "search": "Search or go to…",
@@ -543,7 +544,8 @@
       "backup": "Backup",
       "users": "Users and roles",
       "about": "About",
-      "guide": "Guide"
+      "guide": "Guide",
+      "camera": "Camera"
     },
     "tags": {
       "autoTitle": "Automatic statuses",
@@ -1359,7 +1361,75 @@
     },
     "zoom": "Zoom",
     "zoomValue": "{{percent}}%",
-    "zoomHelp": "You can also change it with Ctrl and + or - (⌘ on a Mac). It applies to you only."
+    "zoomHelp": "You can also change it with Ctrl and + or - (⌘ on a Mac). It applies to you only.",
+    "camera": {
+      "systemTitle": "Camera system",
+      "systemHelp": "The program that watches the camera picture and spots unregistered people. When a change is saved the camera system restarts by itself.",
+      "enabled": "Switch the camera system on",
+      "enabledHelp": "While off, the camera system does not run at all.",
+      "location": "Camera location",
+      "locationHelp": "Shown above the live picture. Example: Staircase, floor entrance.",
+      "source": "Camera address",
+      "sourceHelp": "The camera's address starting with rtsp:// or a webcam number (0). The user name and password go at the start of the address; once saved it is never shown again.",
+      "sourcePlaceholder": "rtsp://192.168.1.64:554/…",
+      "secretSet": "Saved",
+      "secretMissing": "Not entered",
+      "secretRemove": "Remove",
+      "secretsHostOnly": "The camera address and the Telegram details can only be changed on the hotel's main computer.",
+      "telegramTitle": "Telegram notification",
+      "telegramHelp": "An alarm always reaches the program's notifications. If you like, it is also sent to Telegram.",
+      "telegramEnabled": "Also send alarms to Telegram",
+      "telegramEnabledHelp": "Works only while the internet is connected; if it cannot be sent it is quietly skipped.",
+      "networkOff": "Online data is off, so nothing is sent to Telegram. It is switched on from the Currency screen.",
+      "telegramPhoto": "Also send the alarm photo",
+      "telegramPhotoHelp": "The unregistered person's photo goes to Telegram's servers abroad. If you turn this off, only text is sent.",
+      "telegramToken": "Bot token",
+      "telegramTokenHelp": "The code you get from BotFather in Telegram. Once saved it is never shown again.",
+      "telegramTokenPlaceholder": "123456:ABC…",
+      "telegramChats": "Chat numbers",
+      "telegramChatsHelp": "The numbers of the people or groups that get the alarm; separate several with commas.",
+      "telegramChatsPlaceholder": "-1001234567890, 42",
+      "telegramTestButton": "Test Telegram",
+      "telegramTest": {
+        "ok": "Test message sent",
+        "off": "Telegram is off. Switch on sending alarms to Telegram and online data first.",
+        "noCredentials": "The bot token and chat number have not been entered.",
+        "invalidCredentials": "Telegram did not accept the details. Check the token and the numbers.",
+        "network": "Telegram could not be reached. Check the internet connection.",
+        "timeout": "Telegram did not answer. Try again in a moment.",
+        "none": "The message could not be sent. Check the chat numbers.",
+        "failed": "The test could not be run"
+      },
+      "alarmTitle": "Alarms and retention",
+      "alarmHelp": "How often an alarm repeats for the same person and how long the images are kept.",
+      "numberInvalid": "Enter a number between {{min}} and {{max}}.",
+      "field": {
+        "cooldown": "Wait between alarms (seconds)",
+        "cooldownHelp": "At least this many seconds pass between two alarms for the same person.",
+        "alertRetention": "Keep alarm images for (days)",
+        "alertRetentionHelp": "After how many days the alarm pictures are deleted.",
+        "faceRetention": "Keep face data for (days)",
+        "faceRetentionHelp": "How many days face data is kept after the guest checks out. 0 = deleted at check-out.",
+        "similarity": "Recognition threshold",
+        "similarityHelp": "How alike a face must be to a registered guest. Raising it means fewer wrong matches but harder recognition.",
+        "confirmSimilarity": "Confirmation threshold",
+        "confirmSimilarityHelp": "The stricter value used when asking the camera \"who is this\".",
+        "minFaceScore": "Lowest face score",
+        "minFaceScoreHelp": "Faces less clear than this are ignored.",
+        "minFacePx": "Smallest face size (pixels)",
+        "minFacePxHelp": "Faces smaller than this are ignored.",
+        "confirmationFrames": "Frames to confirm",
+        "confirmationFramesHelp": "In how many frames in a row a person must be seen before an alarm.",
+        "processEveryN": "Check every how many frames",
+        "processEveryNHelp": "Raising it eases the computer but slows the reaction.",
+        "verifiedTtl": "Recognised person time (seconds)",
+        "verifiedTtlHelp": "A recognised person is not checked again for this long."
+      },
+      "advancedTitle": "Recognition settings",
+      "advancedHelp": "Leave these alone unless you know what you are doing; the defaults suit most hotels.",
+      "zone": "Watched area",
+      "zoneHelp": "Leave empty to watch the whole picture. Format: x1,y1;x2,y2;… (a fraction from 0 to 1, or pixels)."
+    }
   },
   "status": {
     "paid": "Paid",
@@ -5561,7 +5631,8 @@
       "guest_tag": "Guest tag",
       "room_capacity_change": "Room capacity",
       "reservation_groups": "Group reservation",
-      "camera": "Camera system"
+      "camera": "Camera system",
+      "camera_alert": "Camera alarm"
     },
     "fieldName": {
       "name": "Name",
@@ -7050,5 +7121,89 @@
     "minWhole": "Type a whole number of {{min}} or more.",
     "limitReached": "You can write at most {{max}} characters.",
     "phone": "Write the phone number in digits (e.g. +90 532 123 45 67)."
+  },
+  "camera": {
+    "title": "Camera",
+    "description": "The camera system's state, the live picture and alarms.",
+    "restart": "Restart",
+    "restarted": "Camera system restarted",
+    "restartFailed": "Could not restart the camera system",
+    "pauseFailed": "Could not change the alarm state",
+    "openSettings": "Camera settings",
+    "status": {
+      "title": "Camera system",
+      "crashes_one": "Stopped {{count}} time since the program started.",
+      "crashes_other": "Stopped {{count}} times since the program started."
+    },
+    "state": {
+      "running": "Running",
+      "slow": "Running slowly",
+      "starting": "Starting",
+      "restarting": "Restarting",
+      "gaveUp": "Error: stopped",
+      "stopped": "Stopped",
+      "noSource": "No camera address",
+      "disabled": "Off",
+      "unavailable": "Not on this computer"
+    },
+    "stateHelp": {
+      "running": "The camera picture is being watched. An alarm is raised when someone unregistered walks in.",
+      "slow": "The camera system is slow to answer. If it does not recover in a few minutes, press Restart.",
+      "starting": "The camera system is starting; this can take about a minute.",
+      "restarting": "The camera system stopped and is restarting by itself.",
+      "gaveUp": "The camera system kept stopping and is no longer restarted. Press Restart; if that does not help, tell the hotel owner.",
+      "stopped": "The camera system is not running. Press Restart.",
+      "noSource": "No camera address has been entered. Enter it in Settings under Camera; if you cannot, ask the hotel owner.",
+      "disabled": "The camera system is off. To switch it on, go to Settings under Camera; if you cannot, ask the hotel owner.",
+      "unavailable": "The camera system does not run on this computer. Use the hotel's main computer."
+    },
+    "pause": {
+      "label": "Pause alarms",
+      "help": "While on, no alarm is raised for unregistered people; the picture is still watched."
+    },
+    "live": {
+      "title": "Live picture",
+      "help": "Shown only on this computer and never recorded.",
+      "defaultLocation": "Camera",
+      "guests_one": "{{count}} registered guest",
+      "guests_other": "{{count}} registered guests",
+      "alarmsPaused": "Alarms paused",
+      "disconnected": "Camera not connected",
+      "covered": "Camera covered or dark",
+      "alt": "Live picture from the camera",
+      "failed": "The picture could not be loaded.",
+      "retry": "Try again",
+      "noPicture": "The picture address could not be fetched. If the camera system is running it will come back in a few seconds."
+    },
+    "alerts": {
+      "title": "Alarms",
+      "help": "Shown here when someone unregistered walks in. Mark when you have looked and when it is dealt with.",
+      "unknownPerson": "An unregistered person walked in",
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "noTime": "Time unknown",
+      "state": {
+        "new": "New",
+        "seen": "Seen",
+        "handled": "Handled"
+      },
+      "markSeen": "Mark as seen",
+      "markHandled": "Mark as handled",
+      "reopen": "Reopen",
+      "markFailed": "Could not mark the alarm",
+      "emptyTitle": "No alarms",
+      "emptyBody": "An alarm shows up here when someone unregistered walks in.",
+      "unavailableTitle": "The alarm list is not available",
+      "unavailableBody": "The camera system is not running. See the state card.",
+      "filterEmptyTitle": "No alarms in this state",
+      "filterEmptyBody": "Try another option.",
+      "filter": {
+        "label": "Alarm state",
+        "all": "All · {{count}}",
+        "new": "New · {{count}}",
+        "seen": "Seen · {{count}}",
+        "handled": "Handled · {{count}}"
+      }
+    }
   }
 }
