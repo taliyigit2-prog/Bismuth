@@ -2535,13 +2535,28 @@
     },
     "recovery": {
       "ready": "Your hotel is ready.",
-      "title": "Your recovery codes",
-      "body": "If you forget your password, you set a new one with one of these codes. Each code works once.",
-      "once": "These codes are not shown again. Write them down or copy them somewhere safe.",
+      "title": "Write it on paper",
+      "body": "The two items below are not shown again. Write them all on paper or print them, and keep the sheet in a safe place.",
+      "once": "This information is not shown again. Write it on paper, print it, or copy it somewhere safe.",
       "list": "Recovery codes",
       "copy": "Copy the codes",
-      "written": "I have saved the codes",
-      "continue": "Open the program"
+      "written": "I have written it down",
+      "continue": "Open the program",
+      "codesTitle": "Recovery codes",
+      "codesHelp": "If you forget your password, you set a new one with one of these codes. Each code works once.",
+      "keyTitle": "Bismuth key",
+      "keyHelp": "Backups sent to Drive are encrypted with this key. You need it to open a backup on a new computer; if it is lost, the encrypted backups cannot be opened.",
+      "keyLoading": "Preparing the key…",
+      "keyFailed": "The key could not be shown now. Once the program is open, get it from Settings → Backup with “Show the key” and write it on paper.",
+      "keyCopy": "Copy the key",
+      "keyQr": "QR code of the Bismuth key",
+      "print": "Print",
+      "sheet": {
+        "title": "Bismuth setup details",
+        "keep": "Keep this sheet in a safe or another secure place; do not photograph or share it.",
+        "codes": "Recovery codes are for the password; each code works once.",
+        "key": "The Bismuth key is for backups; if it is lost, the encrypted backups in Drive cannot be opened."
+      }
     },
     "errors": {
       "required": "Fill in this field.",
@@ -6156,7 +6171,10 @@
     "driveFolderFailed": "Folder not saved",
     "foldersDesktopOnly": "Folder locations are shown only on the main computer.",
     "restoreDesktopOnly": "Restores are managed on the main computer.",
-    "timeInvalid": "Enter the time like 04:00."
+    "timeInvalid": "Enter the time like 04:00.",
+    "driveFolderFind": "Find the Drive folder",
+    "driveFound": "Drive folder found and saved",
+    "driveNotFound": "No Google Drive folder was found on this computer. Make sure the Drive app is installed and running, or use “Choose folder”."
   },
   "dataTransfer": {
     "title": "Export and import",

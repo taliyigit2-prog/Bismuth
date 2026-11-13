@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { setupDraftSchema } from '@shared/contract'
-import { ApiError, RECOVERY_CODES, renderSetup, setupTransport } from './test-kit'
+import { ApiError, BISMUTH_KEY, RECOVERY_CODES, renderSetup, setupTransport } from './test-kit'
 
 type User = ReturnType<typeof userEvent.setup>
 const next = (user: User) => user.click(screen.getByTestId('setup-next'))
@@ -763,10 +763,12 @@ describe('kurulum sihirbazı: devam, bitirme, kurtarma kodları', () => {
     expect(sent.rooms.map((r) => r.number)).not.toContain('504')
 
     expect(screen.getAllByTestId('recovery-code').map((c) => c.textContent)).toEqual(RECOVERY_CODES)
-    expect(screen.getByTestId('recovery-once')).toHaveTextContent('Bu kodlar bir daha gösterilmez.')
+    expect(screen.getByTestId('recovery-once')).toHaveTextContent('Bu bilgiler bir daha gösterilmez.')
+    expect(await screen.findByTestId('recovery-key')).toHaveTextContent(BISMUTH_KEY)
+    expect(screen.getByTestId('recovery-print')).toBeEnabled()
     expect(screen.getByTestId('recovery-codes')).not.toHaveClass('mx-auto')
     expect(screen.getByTestId('recovery-continue')).toBeDisabled()
-    expect(screen.getByText('Kodları sakladım')).toBeInTheDocument()
+    expect(screen.getByText('Kâğıda yazdım')).toBeInTheDocument()
     await user.click(screen.getByTestId('recovery-written'))
     await user.click(screen.getByTestId('recovery-continue'))
     expect(await screen.findByTestId('home')).toBeInTheDocument()

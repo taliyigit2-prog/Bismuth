@@ -74,6 +74,15 @@ const pGitFail = project("git-fail", {
 });
 const pStop = project("stop", { scripts: allScripts, git: true, files: { "src/app.ts": "export const a = 1;\n" } });
 const pStopDocs = project("stop-docs", { scripts: allScripts, git: true, files: { "docs/notes.md": "# not code\n" } });
+// Docs-only change: package.json is committed first (it is tracked now that stop-gate watches it).
+const pStopDrizzle = project("stop-drizzle", { scripts: allScripts, git: true, files: { "drizzle/0001_x.sql": "select 1;\n" } });
+const pStopPkg = project("stop-pkg", { scripts: allScripts, git: true, files: { "docs/notes.md": "# not code\n" } });
+for (const dir of [pStopDocs, pStopPkg]) {
+  const g = (...args) => execFileSync("git", ["-c", "user.name=t", "-c", "user.email=t@t", ...args], { cwd: dir, env: baseEnv, stdio: "ignore" });
+  g("add", "package.json");
+  g("commit", "-q", "-m", "init");
+}
+write(join(pStopPkg, "package.json"), JSON.stringify({ name: "stop-pkg", private: true, scripts: { ...allScripts, extra: ok } }, null, 2));
 const pNpmrc = project("npmrc", { scripts: allScripts, files: { ".npmrc": "save-exact=true\n" } });
 const pFmt = project("fmt", {
   scripts: allScripts,
@@ -119,11 +128,19 @@ const cases = [
   { hook: "db-migration-guard.mjs", input: { cwd: root, tool_name: "Edit", tool_input: { file_path: "docs/plan/README.md" } }, expect: 0, note: "non-migration passes" },
   { hook: "protect-files.mjs", input: { cwd: root, tool_name: "Edit", tool_input: { file_path: "docs/plan/01-gereksinimler.md" } }, expect: 2, note: "requirements blocked" },
   { hook: "protect-files.mjs", input: { cwd: root, tool_name: "Edit", tool_input: { file_path: "package-lock.json" } }, expect: 2, note: "lockfile blocked" },
+  { hook: "protect-files.mjs", env: { HOTEL_CRM_ALLOW_PROTECTED: "1" }, input: { cwd: root, tool_name: "Edit", tool_input: { file_path: "docs/plan/01-gereksinimler.md" } }, expect: 2, note: "no escape variable" },
   { hook: "protect-files.mjs", input: { cwd: root, tool_name: "Edit", tool_input: { file_path: "docs/plan/03-mimari.md" } }, expect: 0, note: "other doc passes" },
   { hook: "deps-guard.mjs", input: { cwd: root, tool_name: "Bash", tool_input: { command: `${pm} electron-updater` } }, expect: 2, note: "blocked package" },
+  { hook: "deps-guard.mjs", input: { cwd: root, tool_name: "Bash", tool_input: { command: ["npm", "--no-audit", "install", "electron-updater"].join(" ") } }, expect: 2, note: "flag before install blocked" },
+  { hook: "deps-guard.mjs", input: { cwd: root, tool_name: "Bash", tool_input: { command: `${pm} --save-exact 'x@npm:electron-updater'` } }, expect: 2, note: "quoted npm alias blocked" },
+  { hook: "deps-guard.mjs", input: { cwd: root, tool_name: "Bash", tool_input: { command: `${pm} --save-exact update-electron-app` } }, expect: 2, note: "update-electron-app blocked" },
   { hook: "deps-guard.mjs", env: { CLAUDE_PROJECT_DIR: pEmpty }, input: { cwd: pEmpty, tool_name: "Bash", tool_input: { command: `${pm} zod` } }, expect: 2, note: "no save-exact blocked" },
   { hook: "deps-guard.mjs", env: { CLAUDE_PROJECT_DIR: pNpmrc }, input: { cwd: pNpmrc, tool_name: "Bash", tool_input: { command: `${pm} zod` } }, expect: 0, note: ".npmrc save-exact passes" },
   { hook: "deps-guard.mjs", input: { cwd: root, tool_name: "Bash", tool_input: { command: `${pm} --save-exact zod` } }, expect: 0, note: "save-exact passes" },
+  { hook: "deps-guard.mjs", input: { cwd: root, tool_name: "Bash", tool_input: { command: "yarn add electron-updater" } }, expect: 2, note: "yarn add: blocked package" },
+  { hook: "deps-guard.mjs", input: { cwd: root, tool_name: "Bash", tool_input: { command: "yarn global add @sentry/node" } }, expect: 2, note: "yarn global add: blocked package" },
+  { hook: "deps-guard.mjs", env: { CLAUDE_PROJECT_DIR: pEmpty }, input: { cwd: pEmpty, tool_name: "Bash", tool_input: { command: "yarn add zod" } }, expect: 2, note: "yarn add without exact blocked" },
+  { hook: "deps-guard.mjs", input: { cwd: root, tool_name: "Bash", tool_input: { command: "yarn add --exact zod" } }, expect: 0, note: "yarn add --exact passes" },
   { hook: "deps-guard.mjs", input: { cwd: root, tool_name: "Bash", tool_input: { command: pm } }, expect: 0, note: "bare install passes" },
   { hook: "deps-guard.mjs", input: { cwd: "/nonexistent", tool_name: "Bash", tool_input: { command: `sed -i "s/a/b/" x.json && ${pm} --no-audit 2>&1 | tail -3` } }, expect: 0, note: "sed -i is not npm i" },
   { hook: "deps-guard.mjs", input: { cwd: "/nonexistent", tool_name: "Bash", tool_input: { command: `cd app && ${pm} --save-exact -D @sentry/electron` } }, expect: 2, note: "blocked scoped package" },
@@ -214,6 +231,8 @@ const cases = [
   { hook: "stop-gate.mjs", env: { CLAUDE_PROJECT_DIR: pStop }, input: { cwd: pStop, hook_event_name: "Stop", stop_hook_active: true }, expect: 0, stdout: /^$/, note: "stop_hook_active: no loop" },
   { hook: "stop-gate.mjs", env: { CLAUDE_PROJECT_DIR: pStopDocs }, input: { cwd: pStopDocs, hook_event_name: "Stop", stop_hook_active: false }, expect: 0, stdout: /^$/, note: "only docs changed: no block" },
   { hook: "stop-gate.mjs", env: { CLAUDE_PROJECT_DIR: pStop }, input: { cwd: pStop, hook_event_name: "Stop", stop_hook_active: false }, expect: 0, stdout: /"decision":"block".*src\/app\.ts.*npm run check/, note: "untracked src file, no marker: block" },
+  { hook: "stop-gate.mjs", env: { CLAUDE_PROJECT_DIR: pStopDrizzle }, input: { cwd: pStopDrizzle, hook_event_name: "Stop", stop_hook_active: false }, expect: 0, stdout: /"decision":"block".*drizzle\/0001_x\.sql/, note: "drizzle/ change: block" },
+  { hook: "stop-gate.mjs", env: { CLAUDE_PROJECT_DIR: pStopPkg }, input: { cwd: pStopPkg, hook_event_name: "Stop", stop_hook_active: false }, expect: 0, stdout: /"decision":"block".*package\.json/, note: "package.json change: block" },
   {
     hook: "stop-gate.mjs", env: { CLAUDE_PROJECT_DIR: pStop }, input: { cwd: pStop, hook_event_name: "Stop", stop_hook_active: false }, expect: 0, stdout: /^$/, note: "marker newer than changes: pass",
     before: () => {

@@ -63,6 +63,8 @@ export interface ServiceStorage {
       | 'openPath'
       | 'relaunch'
       | 'pickFolder'
+      | 'driveProbe'
+      | 'prepareDriveDir'
     >
   >
   /** Export (Faz 14): the program window's "Save as" dialog (main process). */

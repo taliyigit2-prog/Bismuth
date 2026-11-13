@@ -29,6 +29,11 @@ export const backupHandlers = (services: Services): HandlersFor<keyof typeof bac
         : services.settings.set(ctx, { 'backup.driveFolder': chosen })
     return { folder: values['backup.driveFolder'] }
   },
+  'backup.findDriveFolder': (ctx) => {
+    const found = services.backup.findDriveFolder(ctx)
+    if (found !== null) services.settings.set(ctx, { 'backup.driveFolder': found })
+    return { folder: found }
+  },
   'backup.recoveryText': (ctx) => services.backup.recoveryText(ctx),
   'backup.setRecoveryText': (ctx, input) => {
     services.backup.setRecoveryText(ctx, input.text, input.replace ?? false)

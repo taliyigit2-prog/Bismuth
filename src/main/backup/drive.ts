@@ -3,7 +3,7 @@
 // set in Settings → Yedek, or found by itself: Drive for desktop shows "My Drive" / "Drive'ım" on a drive letter
 // (Windows, usually G:) or under ~/Library/CloudStorage/GoogleDrive-<account>/ (macOS). Copies go to
 // <My Drive>/Bismuth/yedekler. Nothing found → null: the copy is skipped quietly and the Today badge says so.
-import { existsSync, readdirSync, statSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync, statSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { isAbsolute, join } from 'node:path'
 
@@ -74,3 +74,19 @@ export function resolveDriveBackupDir(setting: string, probe: DriveProbe = realP
 }
 
 export const driveFolderExists = (dir: string | null): boolean => dir !== null && existsSync(dir)
+
+/**
+ * "Drive klasörünü bul" (Settings → Yedek): finds Drive for desktop's "My Drive" folder on this computer (local
+ * folders only, no network) and makes sure <My Drive>/Bismuth/yedekler exists. Returns that folder, or null.
+ */
+export function prepareDriveBackupDir(probe: DriveProbe = realProbe()): string | null {
+  const myDrive = findMyDrive(probe)
+  if (!myDrive) return null
+  const dir = join(myDrive, ...DRIVE_SUBFOLDER)
+  try {
+    mkdirSync(dir, { recursive: true })
+  } catch {
+    return null
+  }
+  return dir
+}

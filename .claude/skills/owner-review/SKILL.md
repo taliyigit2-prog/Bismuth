@@ -6,7 +6,7 @@ argument-hint: "[faz-no]"
 
 ## 1. Ekran listesi
 
-`$S/review.json` yaz (S = scratchpad): `title` ("Bismuth Faz N onayı"), `eyebrow` ("Faz N · kısa kapsam"),
+`$S/review.json` yaz (S = `.tmp/owner-review`, depoda kalıcı ve gitignore'da; `mkdir -p $S`): `title` ("Bismuth Faz N onayı"), `eyebrow` ("Faz N · kısa kapsam"),
 `date` (YYYY-MM-DD), `lede` (sade Türkçe: ne gerçek ne örnek veri, görüntülerin nasıl çekildiği, bilinen tuhaflıklar),
 `groups: [{group, items: [{key, title, desc, req}]}]`. `key` = ui-shot dosya adı (`setup?step=4` → `setup-step-4`,
 `settings?tab=users` → `settings-tab-users`). `desc` sahibin dilinde, ekranın ne yaptığını iki cümlede söyler.

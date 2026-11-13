@@ -26,8 +26,6 @@ const rules = [
   },
 ];
 
-if (process.env.HOTEL_CRM_ALLOW_PROTECTED === "1") process.exit(0); // used by /requirement-change
-
 for (const rule of rules) {
   if (rule.re.test(fp)) {
     process.stderr.write(`Engellendi: ${fp}\n${rule.why}\n`);

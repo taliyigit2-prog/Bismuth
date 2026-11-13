@@ -21,7 +21,7 @@ worktree + cherry-pick birleştirme düzeni çalışmış (Faz 5–16 bu düzenl
 | 8 | Eksik roller: migrasyon yazan uzman, takvim/rezervasyon uzmanı, kamera/Python uzmanı, paketleyici; ekran/tam ekran denetçisi, KVKK denetçisi | ajan listesi | 6 yeni ajan |
 | 9 | `ui-screen` üç json'u elle düzenletiyordu (feature-builder ve CLAUDE.md ile çelişki) | SKILL.md madde 5 | `i18n-spec` + `npm run i18n:add` |
 | 10 | `ajan.mjs` `--devam` ile harcamayı sıfırlıyordu | `let spent = 0` | `son-oturum.json`'da kümülatif `spent` |
-| 11 | `protect-files.mjs` `HOTEL_CRM_ALLOW_PROTECTED` kaçış değişkeni (eski proje adı) | kanca | Kaldırılmadı (test bağımlılığı); P19d'de temizlenecek, belgelendi |
+| 11 | `protect-files.mjs` `HOTEL_CRM_ALLOW_PROTECTED` kaçış değişkeni (eski proje adı) | kanca | Kaldırıldı (P19d), kanca testi eklendi |
 | 12 | `stop-gate` yalnız `src/`/`tests/` izliyor (drizzle, scripts, package.json değil) | kanca | P19d |
 | 13 | `bug-hunter`/`flow-tester` Write aracı metinle sınırlı (`.tmp/`) | ajan dosyaları | Kabul edilen risk; Opus görev metninde yolu verir |
 

@@ -30,9 +30,9 @@ Program ilk kez açıldığında **kurulum sihirbazı** gelir. Otel sahibi bunu 
 ![Kurulum sihirbazı](setup)
 
 > [!warning]
-> Kurulum bitince ekranda **kurtarma kodları** bir kez görünür. Bunları kâğıda yazın ya da kopyalayıp güvenli bir yerde saklayın. Şifrenizi unutursanız yeni şifreyi bu kodlardan biriyle belirlersiniz. **Kodları sakladım** kutusunu işaretlemeden programa geçilmez.
+> Kurulum bitince ekranda **kurtarma kodları** ile **Bismuth anahtarı** bir kez görünür. Bunları kâğıda yazın ya da kopyalayıp güvenli bir yerde saklayın. Şifrenizi unutursanız yeni şifreyi bu kodlardan biriyle belirlersiniz. **Kâğıda yazdım** kutusunu işaretlemeden programa geçilmez.
 
-Kurulumda verdiğiniz bilgilerin hemen hepsini sonra **Ayarlar**'dan değiştirebilirsiniz. Yalnız ana para birimi, rezervasyon ya da ödeme yazıldıktan sonra değiştirilemez.
+Programı bilgisayara kurmak için [Kurulum ve yeni sürüm](guide:installation) bölümüne bakın. Kurulumda verdiğiniz bilgilerin hemen hepsini sonra **Ayarlar**'dan değiştirebilirsiniz. Yalnız ana para birimi, rezervasyon ya da ödeme yazıldıktan sonra değiştirilemez.
 
 ## Oturum açmak {#sign-in}
 

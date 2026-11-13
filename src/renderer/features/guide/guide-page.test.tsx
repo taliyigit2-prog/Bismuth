@@ -21,7 +21,7 @@ describe('Kılavuz ekranı', () => {
     await renderApp({ hash: '#/guide' })
     expect(await screen.findByRole('heading', { level: 1, name: 'Kılavuz' })).toBeInTheDocument()
     const home = await screen.findByTestId('guide-home')
-    expect(within(home).getAllByRole('link')).toHaveLength(20)
+    expect(within(home).getAllByRole('link')).toHaveLength(21)
     expect(within(home).getByText('Rezervasyon nasıl yazılır')).toBeInTheDocument()
     expect(screen.getByTestId('guide-audience')).toHaveTextContent('Sahip ve müdür')
   })

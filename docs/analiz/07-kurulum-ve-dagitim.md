@@ -53,6 +53,37 @@ koşulu ölü (ci tag'de tetiklenmez).
 6. Tag öncesi şart: `release.yml` ilk adımda `npm run check` + e2e (Linux) koşsun; kırmızıysa paket üretmesin.
 7. **Hiçbir iş akışı ajanlar tarafından tetiklenmez** (`gh workflow run` kanca ile engellenir; §6). Sürüm tetiklemesi sahip kararı.
 
+### P19a uygulama notu (2026-11-13)
+
+`release.yml` yeniden yazıldı (`workflow_dispatch` + tag `v*`): `version` (tag = package.json) → `verify` (`ci.yml`
+`workflow_call`: check + e2e + Linux duman) → `windows` (Linux + wine, NSIS; x64 her zaman, arm64 yalnız tag'de) ve
+`macos` (tek iş, iki DMG, duman) paralel → `publish` (yalnız tag; SHA256SUMS + GitHub Release). Elle tetiklemede
+paketler 14 gün yapıt olarak kalır, yayın yapılmaz. `ci.yml`'den package işi ve ölü tag koşulu kaldırıldı; Playwright
+tarayıcı önbelleği eklendi. Hiçbir iş akışı tetiklenmedi; ilk çalıştırmayı sahip yapar (dispatch ile deneme önerilir).
+
+**`npm run package:win` Codespace'te denendi (4 çekirdek, wine 10.0 + wine32 zaten kurulu):** 3 dk 38 s, çıkış 0.
+`Bismuth-Setup-x64.exe` 95,96 MB (sha256 `8154ec26...1b50`), `Bismuth-Setup-arm64.exe` 90,24 MB (sha256 `f4cf15dc...ff`).
+`release-names.mjs` bunları `Bismuth-Setup.exe` / `Bismuth-Setup-arm64.exe` yaptı. Gerçek Windows'ta kurulum
+denenmedi <!-- doğrula -->. Windows paketi için duman testi (wine altında) eklenmedi; yalnız Linux paketi denenir.
+
+`extraResources` boyutları (`win-unpacked/resources`): `drizzle` 4,0 MB · `THIRD_PARTY_NOTICES.md` 72 KB ·
+`app.asar` 44 MB · `app.asar.unpacked` (better-sqlite3) 3,9 MB.
+
+**Tahmini Actions dakikası** (Linux ×1, Windows ×2, macOS ×10 çarpanıyla; tahmin, ölçülmedi <!-- doğrula -->):
+
+| İş | Süre | Çarpan | Eşdeğer |
+|---|---|---|---|
+| verify (Linux) | ≈ 20 dk | ×1 | 20 |
+| windows (Linux + wine + NSIS) | ≈ 10 dk (tag'de arm64 ile ≈ 12) | ×1 | 10–12 |
+| macos (tek iş, 2 DMG + duman) | ≈ 10–12 dk | ×10 | 100–120 |
+| version + publish | ≈ 2 dk | ×1 | 2 |
+| **Dispatch (yayınsız)** | | | **≈ 130–150** |
+| **Tag** | | | **≈ 135–155** |
+
+Önceki durum: release ≈ 180 + ci elle ≈ 130–200. Windows'u Linux'ta üretmek Windows runner'ının ×2 çarpanını da
+kaldırır. wine adımı runner'da çalışmazsa yedek: `windows` işini `runs-on: windows-latest` yapıp wine adımını silmek
+(yalnız tag'de çalıştırmak ≈ +40 dk eşdeğeri).
+
 ## 3. Depo düzeni: taşıma ve silme kararları
 
 | Öğe | Öneri | Risk | Uygulandı mı |

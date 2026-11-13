@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// PreToolUse on Bash (npm install / npm i / pnpm add / yarn add): block packages that contradict G-07
+// PreToolUse on Bash (npm install / npm i / pnpm add / yarn add / yarn global add): block packages that contradict G-07
 // (no telemetry, no auto-update, no cloud SDKs) and require exact versions. Only the package-manager
 // segment of a compound shell command is inspected (so `sed -i` elsewhere is not mistaken for `npm i`).
 import { readFileSync, existsSync } from "node:fs";
@@ -17,7 +17,7 @@ const cmd = String(input.tool_input?.command ?? "");
 const segments = cmd
   .split(/&&|\|\||;|\||\n/)
   .map((s) => s.trim())
-  .map((s) => s.match(/^(?:\S+=\S+\s+)*(npm|pnpm|yarn)\s+(install|i|add)\b(.*)$/))
+  .map((s) => s.match(/^(?:\S+=\S+\s+)*(npm|pnpm|yarn)\s+(?:(?:global|-g|--global|--\S+)\s+)*(install|i|add)\b(.*)$/))
   .filter(Boolean);
 if (segments.length === 0) process.exit(0);
 
@@ -36,6 +36,9 @@ const blocked = [
   /^newrelic/,
   /^dd-trace/,
   /^@datadog\//,
+  /^update-electron-app/,
+  /^electron-devtools-installer/,
+  /^analytics-/,
 ];
 
 const root = process.env.CLAUDE_PROJECT_DIR || input.cwd || process.cwd();
@@ -50,7 +53,10 @@ for (const [, , , rest] of segments) {
   const flags = tokens.filter((t) => t.startsWith("-"));
   const pkgs = tokens.filter((t) => !t.startsWith("-") && !/^\d?>/.test(t) && !/^[<>]/.test(t));
   for (const p of pkgs) {
-    if (blocked.some((re) => re.test(p))) {
+    // Strip quotes and resolve npm aliases (foo@npm:real-name) before matching.
+    const bare = p.replace(/^['"]|['"]$/g, "");
+    const names = [bare, bare.split("@npm:")[1]].filter(Boolean);
+    if (names.some((n) => blocked.some((re) => re.test(n)))) {
       process.stderr.write(`Engellendi: "${p}" telemetri/otomatik güncelleme/bulut SDK'sı (CLAUDE.md > Yasaklar 4, G-07).\n`);
       process.exit(2);
     }

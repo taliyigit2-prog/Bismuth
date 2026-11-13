@@ -30,9 +30,9 @@ The first time the program opens, the **setup wizard** appears. The hotel owner 
 ![Setup wizard](setup)
 
 > [!warning]
-> When setup is finished, the **recovery codes** are shown once. Write them on paper or copy them and keep them somewhere safe. If you forget your password, you set a new one with one of these codes. You cannot go on until you tick **I have saved the codes**.
+> When setup is finished, the **recovery codes** and the **Bismuth key** are shown once. Write them on paper or copy them and keep them somewhere safe. If you forget your password, you set a new one with one of these codes. You cannot go on until you tick **I have written it down**.
 
-Almost everything you enter in the wizard can be changed later in **Settings**. Only the base currency cannot be changed once a reservation or payment has been recorded.
+To install the program on a computer, see [Installation and new versions](guide:installation). Almost everything you enter in the wizard can be changed later in **Settings**. Only the base currency cannot be changed once a reservation or payment has been recorded.
 
 ## Signing in {#sign-in}
 

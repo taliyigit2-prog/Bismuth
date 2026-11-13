@@ -37,7 +37,7 @@ import type {
 import { keepDaysSchema, type BackupKind } from '@shared/contract/users'
 import { localDateOf } from '@shared/date'
 import { ArchiveError, encryptFile, readArchive, sha256Of, writeArchive } from '../backup/archive'
-import { resolveDriveBackupDir } from '../backup/drive'
+import { prepareDriveBackupDir, resolveDriveBackupDir, type DriveProbe } from '../backup/drive'
 import { PRE_MIGRATION_PREFIX, preMigrationFiles, prunePreMigration } from '../backup/pre-migration'
 import { isDue, nextSlotAt } from '../backup/scheduler'
 import { steppedBackup, type SteppedBackupOptions } from '../backup/stepped-backup'
@@ -101,6 +101,10 @@ export interface BackupDeps extends ServiceDeps {
   relaunch?: () => void
   /** The system's folder dialog of the program window (main process only): the Drive folder (K-45 (3)). */
   pickFolder?: () => Promise<string | null>
+  /** Where "Drive klasörünü bul" looks (tests); default: this computer's folders. */
+  driveProbe?: DriveProbe
+  /** Makes the folder "Drive klasörünü bul" found (tests); default: mkdir. */
+  prepareDriveDir?: () => string | null
 }
 
 export interface RestoreMarker {
@@ -1107,6 +1111,17 @@ export function createBackupService(deps: BackupDeps) {
       if (!isAbsolute(chosen) || /^[\\/]{2}/.test(chosen))
         throw new AppError('VALIDATION', 'errors.backupDriveFolder')
       return chosen
+    },
+
+    /**
+     * "Drive klasörünü bul": looks for Drive for desktop's folder on this computer (local folders only, no
+     * network) and returns <My Drive>/Bismuth/yedekler, made if missing; null when Drive is not found. As with
+     * "Klasör seç", only the hotel's own window; the caller writes the setting (audited there).
+     */
+    findDriveFolder(ctx: Ctx): string | null {
+      requirePermission(ctx, 'settings.backup', 'edit')
+      desktopOnly(ctx)
+      return deps.prepareDriveDir ? deps.prepareDriveDir() : prepareDriveBackupDir(deps.driveProbe)
     },
 
     /** Removes automatic copies older than `keepDays` (setting `backup.keepDays`, S-42: 30). */

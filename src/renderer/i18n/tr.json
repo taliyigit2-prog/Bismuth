@@ -2535,13 +2535,28 @@
     },
     "recovery": {
       "ready": "Oteliniz hazır.",
-      "title": "Kurtarma kodlarınız",
-      "body": "Şifrenizi unutursanız bu kodlardan biriyle yeni şifre belirlersiniz. Her kod bir kez kullanılır.",
-      "once": "Bu kodlar bir daha gösterilmez. Kâğıda yazın ya da kopyalayıp güvenli bir yerde saklayın.",
+      "title": "Kâğıda yazın",
+      "body": "Aşağıdaki iki bilgi bir daha gösterilmez. Hepsini kâğıda yazın ya da yazdırın ve kasada saklayın.",
+      "once": "Bu bilgiler bir daha gösterilmez. Kâğıda yazın, yazdırın ya da kopyalayıp güvenli bir yerde saklayın.",
       "list": "Kurtarma kodları",
       "copy": "Kodları kopyala",
-      "written": "Kodları sakladım",
-      "continue": "Programa geç"
+      "written": "Kâğıda yazdım",
+      "continue": "Programa geç",
+      "codesTitle": "Kurtarma kodları",
+      "codesHelp": "Şifrenizi unutursanız bu kodlardan biriyle yeni şifre belirlersiniz. Her kod bir kez kullanılır.",
+      "keyTitle": "Bismuth anahtarı",
+      "keyHelp": "Drive'a giden yedekler bu anahtarla şifrelenir. Bilgisayar bozulursa yedeği yeni bilgisayarda açmak için gerekir; kaybolursa şifreli yedekler açılamaz.",
+      "keyLoading": "Anahtar hazırlanıyor…",
+      "keyFailed": "Anahtar şimdi gösterilemedi. Program açıldıktan sonra Ayarlar → Yedek bölümünden “Anahtarı göster” ile alıp kâğıda yazın.",
+      "keyCopy": "Anahtarı kopyala",
+      "keyQr": "Bismuth anahtarının QR kodu",
+      "print": "Yazdır",
+      "sheet": {
+        "title": "Bismuth kurulum bilgileri",
+        "keep": "Bu kâğıdı kasada ya da güvenli bir yerde saklayın; fotoğrafını çekip paylaşmayın.",
+        "codes": "Kurtarma kodları şifre içindir; her kod bir kez kullanılır.",
+        "key": "Bismuth anahtarı yedekler içindir; kaybolursa Drive'daki şifreli yedekler açılamaz."
+      }
     },
     "errors": {
       "required": "Bu alanı doldurun.",
@@ -6156,7 +6171,10 @@
     "driveFolderFailed": "Klasör kaydedilmedi",
     "foldersDesktopOnly": "Klasörlerin yeri yalnız ana bilgisayarda gösterilir.",
     "restoreDesktopOnly": "Geri yükleme ana bilgisayarda yönetilir.",
-    "timeInvalid": "Saati 04:00 gibi yazın."
+    "timeInvalid": "Saati 04:00 gibi yazın.",
+    "driveFolderFind": "Drive klasörünü bul",
+    "driveFound": "Drive klasörü bulundu ve kaydedildi",
+    "driveNotFound": "Bu bilgisayarda Google Drive klasörü bulunamadı. Drive uygulamasının kurulu ve açık olduğundan emin olun ya da “Klasör seç”i kullanın."
   },
   "dataTransfer": {
     "title": "Dışa ve içe aktarma",

@@ -1,9 +1,10 @@
 name: ci
-# Started by hand only ("Run workflow"): typecheck, lint, unit tests, hook tests, build, e2e on Linux,
-# plus Windows and macOS installers. Pushes and pull requests do not start it, to save the account's
-# limited Actions minutes (checks run in the development environment instead; macOS minutes count ten times).
+# Linux verification only: typecheck, lint, unit tests, hook tests, notices, build, e2e, packaged-app smoke test.
+# Started by hand ("Run workflow") or called by release.yml, which owns all packaging. Pushes and pull requests do
+# not start it, to save the account's limited Actions minutes (checks run in the development environment instead).
 on:
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
@@ -34,6 +35,11 @@ jobs:
           npm run notices
           git diff --exit-code -- THIRD_PARTY_NOTICES.md src/renderer/features/about/third-party.json
       - run: npm run build
+      - name: Playwright browser cache
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
       - name: Playwright browser (phone view)
         run: npx playwright install --with-deps chromium
       - name: E2E — Electron app and phone view
@@ -51,60 +57,3 @@ jobs:
             playwright-report
             test-results
           retention-days: 7
-
-  package:
-    needs: verify
-    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [windows-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 30
-    defaults:
-      run:
-        shell: bash
-    env:
-      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci --no-audit --no-fund
-      - run: npm run build
-      - name: Package
-        run: |
-          if [ "$RUNNER_OS" = "Windows" ]; then
-            npx electron-builder --win nsis --x64 --publish never
-          else
-            npx electron-builder --mac dmg --arm64 --x64 --publish never
-          fi
-          node scripts/release-names.mjs release
-          ls -la release
-      - name: Smoke test (packaged app)
-        run: |
-          if [ "$RUNNER_OS" = "Windows" ]; then APP="release/win-unpacked/Bismuth.exe"; else APP="release/mac-arm64/Bismuth.app/Contents/MacOS/Bismuth"; fi
-          export BISMUTH_USER_DATA="$RUNNER_TEMP/bismuth-smoke"
-          set +e
-          "$APP" --smoke --smoke-out="$PWD/smoke.json" > smoke.log 2>&1
-          set -e
-          if [ ! -f smoke.json ]; then echo "no smoke result"; tail -60 smoke.log; exit 1; fi
-          node -e "const r=require('./smoke.json'); console.log(JSON.stringify(r,null,1)); if(!r.ok||r.db.integrity!=='ok'||r.blockedRequests.length) process.exit(1)"
-          {
-            echo "### ${{ matrix.os }}"
-            echo '```'
-            ls -l release/*.exe release/*.dmg 2>/dev/null || true
-            node -e "const r=require('./smoke.json'); console.log(JSON.stringify({startupMs:r.startupMs, versions:r.versions, platform:r.platform, db:r.db}, null, 1))"
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@v6
-        with:
-          name: Bismuth-${{ runner.os == 'Windows' && 'Windows' || 'Mac' }}
-          path: |
-            release/*.exe
-            release/*.dmg
-            release/SHA256SUMS.txt
-          retention-days: 14
-          compression-level: 0

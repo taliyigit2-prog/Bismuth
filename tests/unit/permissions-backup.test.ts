@@ -80,6 +80,7 @@ describe('yedek yetkileri (settings.backup)', () => {
       /PERMISSION_DENIED/
     )
     await expect(backup.pickDriveFolder(manager)).rejects.toMatchObject(denied)
+    expect(() => backup.findDriveFolder(manager)).toThrow(/PERMISSION_DENIED/)
   })
 
   it('yalnız görüntüleyen rol listeyi görür ama yedek alamaz', async () => {
@@ -137,6 +138,7 @@ describe('yedek yetkileri (settings.backup)', () => {
     await expect(backup.pickDriveFolder(remoteOwner)).rejects.toMatchObject({
       messageKey: 'errors.backupDesktopOnly'
     })
+    expect(() => backup.findDriveFolder(remoteOwner)).toThrow(/errors.backupDesktopOnly/)
   })
 })
 

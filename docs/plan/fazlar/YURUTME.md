@@ -96,8 +96,8 @@ Harcama sütunu: başlatıcının yazdığı `$` (dalga toplamı, gerçek).
 | 4 | P17e Yüksek/Orta hata düzeltmeleri (02 raporu; H-05, H-07, H-08, H-09, H-19, H-21, H-24, H-25, H-44) | 17 | bulguya göre | feature-builder / calendar-specialist | $10–14 | ~$14 | ✅ |
 | 5 | P18b Düzen düzeltmeleri (05 raporu) | 18 | features/*, layouts | feature-builder | $8–12 | ~$12 | ✅ |
 | 5 | P18d Çalışmayan öğeler (akış testi) | 18 | bulguya göre | feature-builder | $6–10 | ~$8 | ✅ |
-| 6 | P19a Sürüm iş akışı tekleştirme (tetikleme sahipte) | 19 | .github, electron-builder | packager | $5–8 | | ⬜ |
-| 6 | P19b Kurulum belgeleri + kılavuz + sihirbaz tek kâğıt adımı + belge çelişkileri (Ç-01/02/04/05); P19d ajan bakımı | 19 | docs, guide, setup, .claude | feature-builder-lite (+ feature-builder sihirbaz) | $4–8 | | ⬜ |
+| 6 | P19a Sürüm iş akışı tekleştirme (tetikleme sahipte) | 19 | .github, electron-builder | packager | $5–8 | ~$4 | ✅ |
+| 6 | P19b Kurulum belgeleri + kılavuz + sihirbaz tek kâğıt adımı + belge çelişkileri (Ç-01/02/04/05); P19d ajan bakımı | 19 | docs, guide, setup, .claude | feature-builder-lite (+ feature-builder sihirbaz) | $4–8 | ~$12 | ✅ |
 | 7 | P20a Kamera yan süreç iskeleti + Python hijyeni + Telegram'ın Bismuth'a taşınması (K-50; kod bulguları `ekler/kamera-kod-bulgulari.md` §0) | 20 | main/camera, main/network/telegram, otel-kamera | camera-integrator | $12–20 | | ⬜ |
 | 8 | P20b Kamera sekmesi (canlı yayın yalnız ana bilgisayar; telefon alarm listesi) | 20 | features/camera | camera-integrator | $8–12 | | ⬜ |
 | 8 | P20d Model sabitleme ve çevrimdışı (K-57: mevcut modeller kalır, telemetri kapalı, lisans notu) | 20 | otel-kamera, resources/camera | camera-integrator | $4–6 | | ⬜ |
@@ -288,3 +288,17 @@ QA2b, akış testleri C/D) bu plana **Son** satırında katılır; ayrı yürüt
   altında kısa, açık Ayarlar → Görünüm zoom seçimi güncellenir; `ui-shot` ölçümü düzeltildi (::after alanı, etiket içi
   denetim). Ölçüm (853/1280/1366/1920 + telefon, tr/ru): taşma 0, kesilme 2→0, telefonda küçük hedef 64→0. Masaüstü cila
   #1, #2 (Orta: takvimde üç kaydırma çubuğu, panel genişliği), #3, #5, #6 → P21e. **Dalga 5 bitti.**
+- 2026-11-13: Dalga 6 başladı (P19a packager; P19b + P19d feature-builder; taban aa4a01d). Önceki oturumda P19a worktree'si
+  yarım kalmıştı (ci.yml/release.yml taslağı); aynı worktree'de devam ettirildi.
+- 2026-11-13: Ajan worktree'leri `main`'den (b62361f) açılıyor; görev metnine "önce `git reset --hard <taban>`" adımı eklendi
+  (ilk iki deneme bu yüzden boş döndü). P19a ✅ — `release.yml` tek paketleme yeri (dispatch + etiket; verify → windows (wine) +
+  macos → publish), `ci.yml` yalnız Linux doğrulaması (`workflow_call`), etiket adı `env` ile; `package:win` Codespace'te 3 dk 38 sn.
+  P19b ✅ — kurulum belgeleri, kılavuz "Kurulum" bölümü (3 dil), sihirbazda tek "Kâğıda yazın" adımı + yazdır, Ayarlar → Yedek
+  "Drive klasörünü bul" (`backup.findDriveFolder`). P19d ✅ — kanca bakımı; ek: `deps-guard` bayrak/tırnak/`@npm:` takma ad
+  atlatmaları ve `update-electron-app`/`electron-devtools-installer` engeli (97 kanca senaryosu). Kontroller: security-reviewer
+  (Kritik/Yüksek yok; Orta #1 ve Düşük #2 düzeltildi), turkish-ui-copy (5 düzeltme). 2703 test yeşil.
+  Otonom varsayılanlar: `kurulum.md`'de SHA256 denetimi sondaki "isteğe bağlı, teknik" bölümünde kalır (otonom varsayılan);
+  "Drive klasörünü bul" bulduğu Drive içinde `Bismuth/yedekler` klasörünü oluşturup ayara yazar (otonom varsayılan).
+  P21e'ye not: `drive.ts` Windows'ta eşlenmiş ağ sürücüsünü de tarayabilir, senkron `statSync` çevrimdışı sürücüde bekletebilir
+  (Orta-Düşük); `stop-gate`/`protect-files` kapsam genişletme (Düşük); ru "Два блока" ifadesi ve tırnak tutarlılığı (Düşük).
+  **Dalga 6 bitti.**

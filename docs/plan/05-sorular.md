@@ -15,7 +15,7 @@
 | S-03 | Bilgisayarlar? | — | ✅ Mac M2 / macOS 26; otel PC muhtemelen Win10; "hepsi için hazır" |
 | S-04 | İmza ücreti? | — | ✅ Ücretsiz yol |
 | S-05 | Program adı? | — | ✅ Bismuth |
-| S-06 | Diller? | — | ✅ TR, EN, RU, AR |
+| S-06 | Diller? | — | ✅ TR, EN, RU, AR (not: Arapça K-20 ve S-69 ile ertelendi; bugün TR, EN, RU) |
 | S-07 | Kuruş görünümü / tema? | — | ✅ Tam sayı varsayılan; açık/koyu/sistem |
 | S-08 | 2026 Excel verisi taşınsın mı? | Sıfırdan; içe aktarma aracı isteğe bağlı faz | ✅ Taşınsın |
 | S-09 | Yetki tablosu? | — | ✅ Sahip kendisi select ile tanımlar |

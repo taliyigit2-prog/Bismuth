@@ -1,26 +1,85 @@
 name: release
-# Tag vX.Y.Z → Windows (x64, arm64) and macOS (arm64, x64) installers, smoke-tested, attached to a GitHub
-# Release with SHA-256 sums. No update feed is produced or published (G-07): owners download by hand.
+# The only workflow that builds installers (G-07: no update feed; owners download by hand).
+#   Run workflow (workflow_dispatch) → verify + Windows x64 + macOS, kept as artifacts for 14 days; nothing is published.
+#   Tag vX.Y.Z (the owner pushes it)  → the same, plus Windows arm64, then a GitHub Release with SHA-256 sums.
+# Jobs: verify (Linux, ci.yml: check + e2e) → windows (Linux + wine, NSIS) and macos (one job, both DMGs) → publish.
 # Fixed file names (scripts/release-names.mjs): Bismuth-Setup.exe, Bismuth-Setup-arm64.exe, Bismuth.dmg (Apple chip),
 # Bismuth-Intel.dmg, SHA256SUMS.txt. Release notes: docs/surum-notlari/<tag>.md (Turkish, for the owner).
 on:
+  workflow_dispatch:
   push:
     tags: ['v*']
 
 permissions:
   contents: read
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
-  package:
-    strategy:
-      fail-fast: true
-      matrix:
-        os: [windows-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
+  version:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          sparse-checkout: package.json
+          sparse-checkout-cone-mode: false
+      - name: Tag matches package.json version
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          if [ "$TAG" != "v$VERSION" ]; then
+            echo "tag $TAG does not match package.json version $VERSION (About would show the wrong version)"
+            exit 1
+          fi
+
+  verify:
+    needs: version
+    uses: ./.github/workflows/ci.yml
+
+  windows:
+    needs: verify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      WINEDEBUG: '-all'
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      # NSIS on Linux needs 64-bit and 32-bit wine (icon/version embedding and the uninstaller); about 2 minutes.
+      - name: Wine
+        run: |
+          sudo dpkg --add-architecture i386
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends wine64 wine32:i386
+      - run: npm ci --no-audit --no-fund
+      - run: npm run build
+      - name: Package (x64 always, arm64 only for a tag)
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then ARCH="--x64 --arm64"; else ARCH="--x64"; fi
+          npx electron-builder --win nsis $ARCH --publish never
+          node scripts/release-names.mjs release
+          ls -la release
+      - uses: actions/upload-artifact@v6
+        with:
+          name: installers-Windows
+          path: |
+            release/*.exe
+          retention-days: 14
+          compression-level: 0
+
+  macos:
+    needs: verify
+    runs-on: macos-latest
     timeout-minutes: 40
-    defaults:
-      run:
-        shell: bash
     env:
       CSC_IDENTITY_AUTO_DISCOVERY: 'false'
     steps:
@@ -29,39 +88,32 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - name: Tag matches package.json version
-        run: |
-          VERSION="$(node -p "require('./package.json').version")"
-          if [ "${{ github.ref_name }}" != "v$VERSION" ]; then
-            echo "tag ${{ github.ref_name }} does not match package.json version $VERSION (About would show the wrong version)"
-            exit 1
-          fi
       - run: npm ci --no-audit --no-fund
-      - run: npm run typecheck && npm run lint && npm test
       - run: npm run build
-      - name: Package
+      - name: Package (Apple chip and Intel DMG in one job)
         run: |
-          if [ "$RUNNER_OS" = "Windows" ]; then npx electron-builder --win --publish never; else npx electron-builder --mac --publish never; fi
+          npx electron-builder --mac dmg --arm64 --x64 --publish never
           node scripts/release-names.mjs release
           ls -la release
-      - name: Smoke test
+      - name: Smoke test (packaged app)
         run: |
-          if [ "$RUNNER_OS" = "Windows" ]; then APP="release/win-unpacked/Bismuth.exe"; else APP="release/mac-arm64/Bismuth.app/Contents/MacOS/Bismuth"; fi
           export BISMUTH_USER_DATA="$RUNNER_TEMP/bismuth-smoke"
-          "$APP" --smoke --smoke-out="$PWD/smoke.json" > smoke.log 2>&1 || true
+          release/mac-arm64/Bismuth.app/Contents/MacOS/Bismuth --smoke --smoke-out="$PWD/smoke.json" > smoke.log 2>&1 || true
           if [ ! -f smoke.json ]; then echo "no smoke result"; tail -60 smoke.log; exit 1; fi
           node -e "const r=require('./smoke.json'); console.log(JSON.stringify(r,null,1)); if(!r.ok||r.db.integrity!=='ok'||r.blockedRequests.length) process.exit(1)"
       - uses: actions/upload-artifact@v6
         with:
-          name: installers-${{ runner.os }}
+          name: installers-macOS
           path: |
-            release/*.exe
             release/*.dmg
+          retention-days: 14
           compression-level: 0
 
   publish:
-    needs: package
+    needs: [windows, macos]
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     permissions:
       contents: write
     steps:
@@ -81,15 +133,17 @@ jobs:
           for f in Bismuth-Setup.exe Bismuth-Setup-arm64.exe Bismuth.dmg Bismuth-Intel.dmg; do
             [ -f "$f" ] || { echo "missing $f"; exit 1; }
           done
-      - name: Create release
+      - name: Create the GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
         run: |
-          NOTES="docs/surum-notlari/${{ github.ref_name }}.md"
+          NOTES="docs/surum-notlari/$TAG.md"
           if [ ! -f "$NOTES" ]; then
             NOTES="$RUNNER_TEMP/notes.md"
             printf '%s\n' "Windows: Bismuth-Setup.exe (ARM işlemci: Bismuth-Setup-arm64.exe) · Mac (Apple çipli): Bismuth.dmg · Mac (Intel): Bismuth-Intel.dmg · Doğrulama: SHA256SUMS.txt · Kurulum: docs/kurulum.md" > "$NOTES"
           fi
-          gh release create "${{ github.ref_name }}" dist/* --repo "${{ github.repository }}" \
-            --title "Bismuth ${{ github.ref_name }}" \
+          gh release create "$TAG" dist/* --repo "$REPO" \
+            --title "Bismuth $TAG" \
             --notes-file "$NOTES"

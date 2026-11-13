@@ -19,7 +19,7 @@ Hemen yedek almak için **Şimdi yedek al**'a basın. Örneğin büyük bir değ
 
 Bismuth bir bulut hesabına bağlanmaz; yalnız bilgisayardaki Google Drive klasörüne dosya yazar, eşitlemeyi Google Drive uygulaması yapar. Bunun için ana bilgisayara **Google Drive masaüstü** uygulaması kurulu ve otelin hesabıyla açık olmalıdır.
 
-Varsayılan klasör "Drive'ım/Bismuth/yedekler"dir; başka bir klasör isterseniz **Yedek ayarları** altında **Google Drive klasörü** alanına yazın.
+Varsayılan klasör "Drive'ım/Bismuth/yedekler"dir; Klasörü görmek ya da değiştirmek için **Yedek ayarları** altında **Drive klasörünü bul**'a basın: Bismuth bu bilgisayardaki bilinen Drive klasörlerine (Windows'ta **G:** sürücüsü, Mac'te Finder'daki Google Drive) bakıp bulduğunu kaydeder; ağa bağlanmaz. Bulamazsa ya da başka bir klasör isterseniz **Klasör seç** ile seçin.
 
 ## Bismuth anahtarı {#backup-key}
 
@@ -63,7 +63,7 @@ Rezervasyonları, defteri, personeli ya da başka bir tabloyu Excel'de açmak i�
 4. İsterseniz **Başlangıç** ve **Bitiş** tarihi seçin.
 5. **Dışa aktar**'a basın ve dosyayı kaydedeceğiniz yeri seçin.
 
-Listede programdaki bütün kayıtlar var: rezervasyonlar ve defterin yanında odalar ve oda tipleri, satışa kapalı odalar, kasa teslimleri, vardiya devirleri ve pano notları, özel günler, kur geçmişi, çamaşırhane fiyatları ve ay hesapları, içe aktarmalar da. Her rol yalnız ekranda görebildiği tabloları görür.
+Listede programdaki bütün kayıtlar var: rezervasyonlar ve defterin yanında odalar ve oda tipleri, satılmaz odalar, kasa teslimleri, vardiya devirleri ve pano notları, özel günler, kur geçmişi, çamaşırhane fiyatları ve ay hesapları, içe aktarmalar da. Her rol yalnız ekranda görebildiği tabloları görür.
 
 Kimlik numaraları yalnız kimlik yetkisi olan rolde dosyaya yazılır. Tanıtıcı notlar ve kişisel notlar (**Kendime not**) hiçbir dosyaya yazılmaz. Sahip bölümünü ya da maaşları göremeyen rolde kasa teslimi tutarları bu satırlar olmadan hesaplanır.
 

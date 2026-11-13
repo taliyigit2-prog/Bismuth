@@ -52,6 +52,7 @@ const TEXT = {
   tr: {
     steps: ['Dil ve tema', 'Çalışma şekli', 'Otel', 'Para birimleri', 'Oda tipleri', 'Odalar'],
     rest: ['Ödeme ve satış', 'Personel ve vardiyalar', 'Çalışanlar', 'Takvim', 'Sahip hesabı', 'Özet'],
+    hourly: 'Saatlik satış',
     price: '2.800',
     totals: '19 oda · 38 yatak',
     calendar: 'Takvim',
@@ -73,7 +74,8 @@ const TEXT = {
       'Учётная запись владельца',
       'Сводка'
     ],
-    price: '2 800',
+    hourly: 'Почасовые продажи',
+    price: '2.800',
     totals: '19 номеров · 38 кроватей',
     calendar: 'Календарь',
     percent: 'Процент',
@@ -124,6 +126,9 @@ for (const lang of ['tr', 'ru'] as const) {
     await page.getByTestId('setup-generate').click()
     await page.getByTestId('setup-remove-room-504').click()
     await expect(page.getByTestId('setup-room-totals')).toHaveText(text.totals)
+    await next(page)
+    // Saatlik satış (hourly stays): nothing to change here.
+    await expect(heading(page, text.hourly)).toBeVisible()
     await next(page)
     // 7. Ödeme ve satış: the channels sit under one heading per kind; only the Excel channels and e-mail start ticked.
     await expect(heading(page, text.rest[0])).toBeVisible()
@@ -187,6 +192,10 @@ for (const lang of ['tr', 'ru'] as const) {
     // Recovery codes once, then into the program.
     await expect(page.getByTestId('recovery-codes')).toBeVisible()
     expect(await page.getByTestId('recovery-code').count()).toBeGreaterThan(0)
+    // One paper step (K-41): the Bismuth key (or, where this computer cannot keep one, the note) beside the codes,
+    // and the print button.
+    await expect(page.getByTestId('recovery-key').or(page.getByTestId('recovery-key-failed'))).toBeVisible()
+    await expect(page.getByTestId('recovery-print')).toBeEnabled()
     await expect(page.getByTestId('recovery-continue')).toBeDisabled()
     await page.getByTestId('recovery-written').click()
     await page.getByTestId('recovery-continue').click()

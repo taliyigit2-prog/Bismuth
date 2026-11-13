@@ -14,6 +14,7 @@ import {
   DatabaseBackupIcon,
   DownloadIcon,
   FolderOpenIcon,
+  FolderSearchIcon,
   HardDriveIcon,
   KeyRoundIcon,
   RotateCcwIcon,
@@ -682,6 +683,13 @@ function SettingsCard({ values, onSave, canEdit }: Props & { canEdit: boolean })
     invalidates: [...INVALIDATES, 'settings.get'],
     onError: onError(t('backup.driveFolderFailed'))
   })
+  // "Drive klasörünü bul": the hotel computer scans its own known Drive folders (no network) and keeps the one found.
+  const find = useApiMutation('backup.findDriveFolder', {
+    invalidates: [...INVALIDATES, 'settings.get'],
+    onSuccess: (r) =>
+      r.folder ? toast.success(t('backup.driveFound')) : toast.info(t('backup.driveNotFound')),
+    onError: onError(t('backup.driveFolderFailed'))
+  })
   const [draft, setDraft] = useState({
     time: values['backup.autoTime'],
     keep: String(values['backup.keepDays']),
@@ -784,6 +792,17 @@ function SettingsCard({ values, onSave, canEdit }: Props & { canEdit: boolean })
                   >
                     <FolderOpenIcon aria-hidden />
                     {t('backup.driveFolderPick')}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={find.isPending}
+                    onClick={() => find.mutate({})}
+                    data-testid="backup-drive-find"
+                  >
+                    <FolderSearchIcon aria-hidden />
+                    {t('backup.driveFolderFind')}
                   </Button>
                   {values['backup.driveFolder'] ? (
                     <Button

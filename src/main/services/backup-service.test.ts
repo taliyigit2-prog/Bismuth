@@ -304,6 +304,22 @@ describe('geri yükleme ve uzaktan erişim (P13sec)', () => {
     await expect(pick('goreli/klasor')).rejects.toMatchObject({ code: 'VALIDATION' })
   })
 
+  it('"Drive klasörünü bul" bulunan klasörü döner, yoksa null; yalnız programın kendi penceresinden', async () => {
+    const e = await env()
+    const make = (found: string | null) =>
+      createBackupService({
+        ...depsOf(handle!, e.clock),
+        sqlite: handle!.sqlite,
+        backupsDir: e.backupsDir,
+        attachmentsDir: e.attachmentsDir,
+        restoreMarkerPath: e.markerPath,
+        prepareDriveDir: () => found
+      })
+    expect(make(e.driveDir).findDriveFolder(owner)).toBe(e.driveDir)
+    expect(make(null).findDriveFolder(owner)).toBeNull()
+    expect(() => make(e.driveDir).findDriveFolder(fromPhone)).toThrow(/errors.backupDesktopOnly/)
+  })
+
   it("Drive'da aynı adlı yedek varsa (başka bilgisayarın) üzerine yazılmaz, yeni adla yazılır", async () => {
     const e = await env({ drive: true })
     // Another computer of the hotel left a copy with this minute's name.

@@ -65,3 +65,18 @@ Bismuth arayüz metinlerinde tekrar eden hatalar:
 
 **Why:** P17b ve P18c incelemesi.
 **How to apply:** Grup ve pencere metinlerinde "gelmedi" yalnız no-show için; menü terimleri ayar ve kısayol ile aynı kelimeyi kullansın.
+
+## Dalga 6 (kurtarma kodları, Drive klasörü, yedek kılavuzu) incelemesinden
+
+- Kılavuz kutu etiketi kayması: kılavuz eski etiketi yazmış ("Kodları sakladım" / "I have saved the codes" / "Коды сохранены"),
+  arayüz `setup.recovery.written` ile "Kâğıda yazdım" / "I have written it down" / "Записано на бумаге" diyor. Kılavuz düğme ya da
+  kutu adı değiştiğinde üç dilde birlikte güncellenmeli. `docs/kullanim-kilavuzu.md:68` ve `docs/kurulum-rehberi-basit.md:37` aynı eski etiketi taşıyor (kapsam dışı, sahip kararı).
+- Sözlük kayması kılavuzda: "satışa kapalı odalar" yerine "satılmaz odalar" (Satılmaz, G-38).
+- ru "загрузки" (indirme anlamı) içe aktarma için kullanılmış; içe aktarma = "Импорт данных" / "записи импорта".
+- Kılavuz içinde "Kılavuz" ve "Rehber" ayrı terimler: "Rehber" telefon rehberi ekranı, doğru; "Kılavuz" yardım bölümü.
+- ru "блок" (kart/bölüm) iki bilgi için kullanılıyor (`setup.recovery.body`, 21-installation); "пункт" daha net. Sahip kararı.
+- Tırnak tutarsızlığı: tr'de bazı anahtarlar düz `"` / `'`, bazıları `“”` / `’`. Yeni anahtarlarda `“”` ve `’` tercih edilir.
+
+**Why:** Dalga 6 kılavuz+bileşen incelemesi; düğme adları kılavuz ve arayüz arasında kayarsa okuyucu kutuyu bulamıyor.
+**How to apply:** Kılavuzda bir düğme ya da kutu adı geçtiğinde ilgili anahtarla (`t` değeri) karşılaştır; ru/en kılavuzları aynı adı taşısın.
+Ajan notu: bu oturumda `.tmp/` altına rapor dosyası yazma isteği araç tarafından reddedildi; bulgular yanıt metninde döndü.

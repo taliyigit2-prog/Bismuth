@@ -31,7 +31,8 @@ export const GUIDE_SECTIONS = [
   { id: 'backup', audiences: ['owner'] },
   { id: 'remote', audiences: ['owner'] },
   { id: 'settings', audiences: ['owner'] },
-  { id: 'faq', audiences: ALL }
+  { id: 'faq', audiences: ALL },
+  { id: 'installation', audiences: ['owner'] }
 ] as const satisfies readonly { id: string; audiences: readonly GuideAudience[] }[]
 
 export type GuideSectionId = (typeof GUIDE_SECTIONS)[number]['id']

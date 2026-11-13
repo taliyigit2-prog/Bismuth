@@ -6,7 +6,7 @@ açılışta ne göreceğinizi ve bir sorun olursa ne yapacağınızı adım ad�
 > **Bu kılavuz hakkında.** Ekran görüntüsü yerine her adımda ekranda ne göreceğiniz yazıyla anlatıldı. Windows ve macOS'un
 > uyarı pencereleri sürümden sürüme biraz değişir; yazılı adlar birebir aynı çıkmayabilir, ama sıra aynıdır.
 > <!-- sahip onay paketine: gerçek makinede (otel bilgisayarı Windows 10, sahibin Mac'i macOS 26) bu kılavuzdaki adımların
-> tek tek doğrulanması ve ekran görüntülerinin eklenmesi (Faz 16 madde 4 ve 5) -->
+> tek tek doğrulanması ve ekran görüntülerinin eklenmesi (S-80; Faz 16 madde 4 ve 5) -->
 
 ## Önce bilmeniz gerekenler
 
@@ -17,6 +17,8 @@ açılışta ne göreceğinizi ve bir sorun olursa ne yapacağınızı adım ad�
   Bismuth ücretsiz yolu seçtiği için imzasızdır. Bu yüzden Windows ve Mac ilk açılışta bir uyarı gösterir. Uyarı programın
   zararlı olduğu anlamına gelmez; aşağıda hangi düğmeye basacağınız yazıyor. Uyarı **yalnızca bir kez** çıkar.
 - Kurulum için yönetici şifresi gerekmez (Windows'ta yalnızca kendi kullanıcınıza kurulur).
+
+> **Kurulumu yapan kullanıcıyla açın.** Windows'ta Bismuth yalnızca kurduğunuz kullanıcıya kurulur ve kayıtlar o kullanıcının klasöründe durur. Otelin ortak bilgisayarında hangi Windows kullanıcısıyla kurduysanız her gün **o kullanıcıyla** açın; başka bir kullanıcı açarsa boş bir program görür. Tüm kullanıcılar için kurulum şimdilik yoktur (S-113).
 
 ## Hangi dosyayı indireceğim?
 
@@ -34,20 +36,6 @@ Dosya adları her sürümde aynıdır; sürüm numarası (örneğin `v1.0.0`) sa
 Emin değilseniz Windows için `Bismuth-Setup.exe`'yi, Mac için yukarıdaki tabloya göre seçin. Yanlış dosya açılmaz ama zarar
 vermez; doğrusunu indirip yeniden deneyin.
 
-Aynı sayfada `SHA256SUMS.txt` adlı küçük bir dosya da vardır; bir sonraki bölümde ne işe yaradığı anlatılıyor.
-
-### İsteğe bağlı: dosyanın bozulmadan indiğini denetlemek
-
-Bu adım zorunlu değil. İndirme yarım kaldıysa ya da dosya yolda değiştiyse fark etmenizi sağlar.
-
-1. `SHA256SUMS.txt` dosyasını açın. İçinde her kurulum dosyasının adı ve yanında uzun bir harf-rakam dizisi yazar.
-2. Bilgisayarınızda indirdiğiniz dosya için aynı diziyi hesaplatın:
-   - **Windows:** Başlat'a "PowerShell" yazıp açın, şunu yazın (dosya adını kendinize göre değiştirin):
-     `Get-FileHash $HOME\Downloads\Bismuth-Setup.exe`
-   - **Mac:** Launchpad → Diğer → **Terminal**'i açın, şunu yazın:
-     `shasum -a 256 ~/Downloads/Bismuth.dmg`
-3. Çıkan dizi `SHA256SUMS.txt`'dekiyle **aynıysa** dosya sağlamdır. Farklıysa dosyayı silip yeniden indirin.
-
 ## Windows 10 / 11 kurulumu
 
 1. İndirdiğiniz `Bismuth-Setup.exe` dosyasına çift tıklayın. (Tarayıcı indirirken "Bu dosya yaygın olarak
@@ -59,26 +47,13 @@ Bu adım zorunlu değil. İndirme yarım kaldıysa ya da dosya yolda değiştiys
    - Altta çıkan **Yine de çalıştır** düğmesine basın.
 3. Kurulum penceresi açılır. Dil sistem dilinize göre seçilir (Türkçe, İngilizce ya da Rusça).
 4. Bir sayfada kurulumun **kimin için** yapılacağı sorulabilir. **Yalnızca benim için** seçeneğini işaretleyin; böylece yönetici
-   şifresi istenmez. <!-- doğrula: gerçek makinede sayfanın adı ve seçeneklerin metni -->
+   şifresi istenmez. <!-- doğrula (S-80): gerçek makinede sayfanın adı ve seçeneklerin metni -->
 5. Kurulacak klasörü sorarsa olduğu gibi bırakın (**İleri**). Gerekirse başka bir klasör seçebilirsiniz.
 6. **Kur**'a basın. Birkaç saniye sürer. Bitince **Bitir**'e basın.
 7. Masaüstünüzde **Bismuth** kısayolu ve Başlat menüsünde **Bismuth** oluşur. Programı bunlardan açarsınız.
 
 Program kullanıcınızın klasörüne kurulur (`C:\Users\<adınız>\AppData\Local\Programs\Bismuth`). Kayıtlarınız ayrı bir
 yerde durur; bkz. "Verileriniz nerede?".
-
-**Önemli:** Bismuth'u otelin ortak bilgisayarında hangi Windows kullanıcısıyla kurduysanız, her gün **o kullanıcıyla**
-açın. Başka bir Windows kullanıcısı açarsa kendi (boş) verisini görür; otel kayıtları kurulumu yapan kullanıcının
-klasöründedir.
-
-### Windows'ta ilk açılışta başka bir uyarı çıkarsa
-
-- **Güvenlik duvarı** ("Windows Güvenlik Duvarı bu uygulamanın bazı özelliklerini engelledi") yalnızca bu bilgisayarı **otelin ana
-  bilgisayarı** yapıp diğer cihazları bağlamak isterseniz çıkabilir. Kurulum, Bismuth için yalnız **özel ağlarda** (ev, iş)
-  geçerli bir izin eklemeyi dener; Windows buna izin vermediyse soru ana bilgisayar ilk kez başlarken bir kez çıkar. Bu
-  bilgisayar tek başına çalışacaksa **İptal**'e basın; hiçbir şey bozulmaz. Ana bilgisayar olacaksa **Özel ağlar**'ı
-  işaretleyip **Erişime izin ver**'e basın.
-  <!-- doğrula: gerçek makinede güvenlik duvarı sorusunun metni ve kuralın kurulumda eklenip eklenmediği; sahip onay paketine -->
 
 ## Mac kurulumu (macOS 15 ve sonrası, macOS 26 dahil)
 
@@ -101,7 +76,7 @@ Bu adımlar hem Apple çipli hem Intel Mac içindir; yalnızca indirdiğiniz dos
 
 Satır görünmüyorsa: 4. adımdaki uyarıyı gördükten sonra **Gizlilik ve Güvenlik** sayfasını açtığınızdan emin olun; satır
 uyarıyı gördükten kısa süre sonra belirir ve bir saat kadar kalır. Yoksa Bismuth'u yeniden açmayı deneyin.
-<!-- doğrula: macOS 26'da "Yine de aç" satırının ve düğme adının gerçek metni; sahip onay paketine: Mac M2'de deneme -->
+<!-- doğrula (S-80): macOS 26'da "Yine de aç" satırının ve düğme adının gerçek metni; Mac'te deneme -->
 
 ### Mac'te anahtar zinciri sorusu
 
@@ -109,7 +84,7 @@ Bismuth, "Bismuth anahtarı"nı (aşağıda anlatılıyor) Mac'in **Anahtar Zinc
 sürümü kurduktan sonra Mac "**Bismuth**, anahtar zincirinizdeki gizli bilgileri kullanmak istiyor" diye sorabilir.
 Mac şifrenizi yazıp **Her Zaman İzin Ver**'e basın. **Reddet**'e basarsanız Bismuth anahtarı okuyamaz ve Google Drive'a
 şifreli yedek yazamaz; bu olursa Bismuth'u kapatıp açın ve soruya yeniden cevap verin.
-<!-- doğrula: imzasız (ad-hoc) pakette bu sorunun hangi durumlarda çıktığı; sahip onay paketine -->
+<!-- doğrula (S-80): imzasız (ad-hoc) pakette bu sorunun hangi durumlarda çıktığı -->
 
 ## İlk açılış ve kurulum sihirbazı
 
@@ -137,53 +112,25 @@ Adımlar sırasıyla şunlardır. **Zorunlu** olanlar atlanamaz; diğerlerini **
 
 Bu adımların görünüşü için sahip onay paketindeki ekran görüntülerine bakın.
 
-### Kurtarma kodları (şifre için)
+### Kâğıda yazın (kurtarma kodları ve Bismuth anahtarı)
 
-**Kurulumu bitir**'e basınca **Oteliniz hazır.** yazan bir ekran ve **Kurtarma kodlarınız** listesi çıkar. Şifrenizi
-unutursanız bu kodlardan biriyle yeni şifre belirlersiniz; her kod bir kez kullanılır.
+**Kurulumu bitir**'e basınca **Oteliniz hazır.** yazan ve **Kâğıda yazın** başlıklı tek bir ekran çıkar. İki bilgi birlikte, bir kez gösterilir:
 
-- Bu kodlar **bir daha gösterilmez.** Kâğıda yazın ya da **Kodları kopyala** ile kopyalayıp güvenli bir yerde saklayın.
-- Kaydettikten sonra **Kodları sakladım** işaretleyip **Programa geç**'e basın.
+- **Kurtarma kodları:** şifrenizi unutursanız bu kodlardan biriyle yeni şifre belirlersiniz; her kod bir kez kullanılır.
+- **Bismuth anahtarı:** Drive'a giden şifreli yedekleri yeni bir bilgisayarda açmak içindir; 11 gruplu bir metindir (her grupta 5 harf ya da rakam). Kaybolursa Drive'daki yedekleri kimse açamaz.
 
-Bu kodlar aşağıda anlatılan **Bismuth anahtarı** ile karıştırılmasın: kurtarma kodları şifre içindir, Bismuth anahtarı
-yedekler içindir. İkisi de ayrı ayrı saklanır.
+**Yazdır**'a basarsanız ikisi (anahtarın QR koduyla) tek bir A4 sayfaya basılır; elle de yazabilir ya da **Kopyala** ile kopyalayabilirsiniz. Sonra **Kâğıda yazdım**'ı işaretleyip **Programa geç**'e basın. Kâğıdı kasada ya da bilgisayardan ayrı güvenli bir yerde saklayın; fotoğrafını çekip telefonda tutmayın. Anahtar o an gösterilemezse ekran bunu yazar; anahtarı sonra **Ayarlar → Yedek → Anahtarı göster** ile alabilirsiniz (yalnız sahip hesabı, yalnız ana bilgisayarın kendi penceresinde; gösterilmesi denetim kaydına yazılır).
 
-## Bismuth anahtarını kâğıda yazın
-
-Bismuth her gün yedek alır ve bir kopyasını otelin Google Drive klasörüne **şifreli** olarak yazar. O şifrenin anahtarına
-**Bismuth anahtarı** denir. Bilgisayar bozulursa ya da çalınırsa yedeği yeni bilgisayarda açmak için bu anahtar gerekir.
-**Anahtar yalnız sizde olmalıdır; kaybolursa Drive'daki yedekleri kimse açamaz.**
-
-1. Sahip hesabıyla oturum açın. **Ayarlar → Yedek** bölümüne gidin (soldaki menüde **Ayarlar**, içinde **Yedek** sekmesi).
-2. **Bismuth anahtarı** kutusunda **Anahtarı göster**'e basın. (Bu kutu yalnız sahip hesabında görünür.)
-3. Açılan pencerede **11 gruplu** bir metin çıkar; her grupta 5 harf ya da rakam vardır (örneğin `7KQ2M-…`). Hepsini
-   **kâğıda**, olduğu gibi yazın. Karışabilecek harfler (O ile 0, I ile 1) anahtarda hiç kullanılmaz. Yanlış harf yazarsanız
-   Bismuth anahtarı girerken fark eder.
-4. Kâğıdı bilgisayardan ayrı, güvenli bir yerde (kasa, ev) saklayın. Fotoğrafını çekip telefonda tutmayın.
-
-Anahtarın gösterilmesi denetim kaydına yazılır. Anahtar bilgisayarın kendi anahtar deposunda (Windows'ta kullanıcı
-hesabınıza bağlı; Mac'te Anahtar Zinciri) saklanır, dosyada açık yazı olarak durmaz. Bu yüzden Windows kullanıcı hesabı
-silinir ya da bilgisayar sıfırlanırsa anahtar da gider: kâğıttaki kopya bunun içindir.
-
-<!-- doğrula: P13b — K-41: anahtarın yanında aynı anahtarın QR kodu ve yazdırma düğmesi gelecek; Bismuth anahtarı kurulum
-sihirbazının sonunda da gösterilecekse bu bölüm buna göre güncellenir. Bugünkü sürümde yalnız yazı biçimi var. -->
+Anahtar bilgisayarın kendi anahtar deposunda (Windows'ta kullanıcı hesabınıza bağlı; Mac'te Anahtar Zinciri) saklanır. Bu yüzden Windows kullanıcı hesabı silinir ya da bilgisayar sıfırlanırsa anahtar da gider: kâğıttaki kopya bunun içindir.
 
 ## Google Drive masaüstü uygulaması ve yedek klasörü
 
-Yedeklerin bir kopyası otelin Google Drive'ına gider. Bismuth Google'a bağlanmaz; yalnızca bilgisayardaki Drive klasörüne
-dosya yazar, internete **Google Drive masaüstü uygulaması** gönderir. Bu yüzden o uygulamanın kurulu ve açık olması gerekir.
+Yedeklerin şifreli bir kopyası otelin Google Drive'ına gider. Bismuth Google'a bağlanmaz; yalnızca bilgisayardaki Drive klasörüne dosya yazar, internete **Google Drive masaüstü uygulaması** gönderir. Bu yüzden o uygulamanın kurulu ve açık olması gerekir.
 
-1. Otelin Google hesabıyla (Gmail) **Google Drive for desktop** uygulamasını bilgisayara kurun (Google'ın sayfasından
-   indirilir) ve otel hesabıyla oturum açın.
-2. Uygulama bilgisayarda **Drive'ım** adlı bir klasör (Windows'ta çoğunlukla `G:` sürücüsü, Mac'te Finder'ın kenar çubuğunda
-   **Google Drive**) oluşturur.
-3. Başka bir şey yapmanız gerekmez. Bismuth bu klasörü kendisi bulur ve yedekleri `Drive'ım\Bismuth\yedekler` içine yazar
-   (klasörü kendisi oluşturur).
-4. Kontrol: **Ayarlar → Yedek** ekranında **Google Drive kopyası** satırında **Çalışıyor** yazmalı. **Drive klasörü yok**
-   yazıyorsa Drive uygulaması kurulu değildir, kapalıdır ya da klasör başka bir yerdedir; **Yedek ayarları → Google Drive
-   klasörü** alanına klasörün tam yolunu yazın (klasör önceden var olmalıdır).
-5. Bilgisayar zayıfsa Drive uygulamasının ayarlarında dosyaları **akış** modunda tutmak ve yükleme hızını sınırlamak
-   bilgisayarı rahatlatır.
+1. Otelin Google hesabıyla **Google Drive for desktop** uygulamasını kurun (Google'ın sayfasından indirilir) ve otel hesabıyla oturum açın.
+2. **Ayarlar → Yedek** ekranında **Yedek ayarları** altında **Drive klasörünü bul**'a basın. Bismuth bu bilgisayardaki bilinen Drive klasörlerine bakar (yalnız bu bilgisayarın klasörleri; internete bağlanmaz), **Bismuth\yedekler** klasörünü hazırlar ve kaydeder. Yedekleri o klasöre yazar.
+3. Klasör bulunamazsa program söyler: Drive uygulamasının kurulu ve açık olduğunu kontrol edin ya da **Klasör seç** ile Drive içindeki klasörü kendiniz seçin.
+4. Kontrol: **Ayarlar → Yedek** ekranında **Google Drive kopyası** satırında **Çalışıyor** yazmalı.
 
 Yedeğin nasıl alındığı, geri yüklendiği ve yeni bilgisayara taşındığı: [`yedek-ve-tasima.md`](yedek-ve-tasima.md).
 
@@ -227,8 +174,7 @@ Kaldırmak **kayıtlarınızı silmez**. Veri klasörü yerinde kalır; Bismuth'
 
 - **Windows:** Başlat → Ayarlar → Uygulamalar → **Yüklü uygulamalar** → **Bismuth** → **Kaldır**.
   Eski bilgisayarlarda: Denetim Masası → Program Ekle veya Kaldır. Kaldırıcının ilk sayfası da kayıtlarınızın
-  silinmeyeceğini ve hangi klasörde kaldığını yazar; **İleri** ile devam edin. Kurulumun eklediği güvenlik duvarı izni de
-  kaldırılır.
+  silinmeyeceğini ve hangi klasörde kaldığını yazar; **İleri** ile devam edin. Güvenlik duvarı izni için bkz. [`uzaktan-erisim.md`](uzaktan-erisim.md).
 - **Mac:** Finder'da **Uygulamalar** klasörüne gidin, **Bismuth**'u Çöp Kutusu'na sürükleyin.
 
 Kayıtlarınızı **de** silmek istiyorsanız (örneğin bilgisayarı satıyorsanız): önce **Şimdi yedek al** ile yedek alıp güvenli
@@ -252,10 +198,7 @@ açın, altta **Güvenlik: Engellemeyi kaldır** kutusunu işaretleyip **Tamam**
 Bilgisayar bir şirket ya da okul ilkesiyle yönetiliyorsa yönetici bu uygulamayı engellemiş olabilir.
 
 **Mac "Bismuth hasarlı, açılamıyor" ya da "Yine de aç" satırı hiç çıkmıyor.**
-Önce uygulamayı **Uygulamalar** klasöründen açmayı (indirilenler klasöründeki dosyadan değil) ve yukarıdaki 4–7. adımları
-yeniden denediğinizden emin olun. Olmadıysa son çare: Terminal'i açıp şunu yazın ve Enter'a basın:
-`xattr -dr com.apple.quarantine /Applications/Bismuth.app` — sonra Bismuth'u yeniden açın. (Bu komut Mac'in "internetten
-indirildi" işaretini kaldırır.) <!-- doğrula: macOS 26 -->
+Önce uygulamayı **Uygulamalar** klasöründen açmayı (indirilenler klasöründeki dosyadan değil) ve yukarıdaki 4–7. adımları yeniden denediğinizden emin olun. Olmadıysa programı sizin için kuran kişiye ya da geliştiriciye haber verin; terminal komutu yazmanız gerekmez. <!-- doğrula (S-80): macOS 26 -->
 
 **Mac "Bu uygulama bu Mac'te çalışmıyor" ya da hemen kapanıyor.**
 Yanlış dosyayı indirmiş olabilirsiniz (Apple çipli Mac'e `Bismuth-Intel.dmg`, Intel Mac'e `Bismuth.dmg`). Yukarıdaki
@@ -279,3 +222,12 @@ Soldaki menüde **Hakkında** (ya da **Ayarlar → Hakkında**) sürüm numaras�
 satırlarını (hangi paketin kurulu olduğunu tam olarak söyler), veri klasörünün yolunu ve **Veritabanı denetimi: Sağlam**
 satırını gösterir. Bir sorun bildirirken sürümü ve derleme kimliğini söylemeniz işi kolaylaştırır. Aynı ekrandaki **Lisans
 metinlerini göster** düğmesi, Bismuth'un kullandığı açık kaynak yazılımların lisanslarını açar.
+
+## İsteğe bağlı, teknik: indirilen dosyanın bozulmadığını denetlemek
+
+Bu bölüm zorunlu değildir; yalnız indirme yarım kaldıysa ya da dosya yolda değiştiyse fark etmek isteyenler içindir ve bilgisayarda komut yazmayı gerektirir. Sürümler sayfasında `SHA256SUMS.txt` adlı küçük bir dosya vardır; her kurulum dosyasının adı ve yanında uzun bir harf-rakam dizisi yazar.
+
+- **Windows:** Başlat'a "PowerShell" yazıp açın ve `Get-FileHash $HOME\Downloads\Bismuth-Setup.exe` yazın (dosya adını kendinize göre değiştirin).
+- **Mac:** Launchpad → Diğer → **Terminal**'i açın ve `shasum -a 256 ~/Downloads/Bismuth.dmg` yazın.
+
+Çıkan dizi `SHA256SUMS.txt`'dekiyle **aynıysa** dosya sağlamdır. Farklıysa dosyayı silip yeniden indirin.

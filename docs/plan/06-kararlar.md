@@ -205,7 +205,7 @@ birimi" (P7fix, `manualFolioRateMicro`); iki alan da aynı biçimde sorar.
 ilk gecenin ücreti gündüz kullanımı ücreti olarak kalır (kullanıcı çıkış penceresinde değiştirebilir), sonraki
 geceler ve masrafları iptal edilir, oda bu gece yeniden satılabilir. Çıkış penceresi "N gece boşalacak" der.
 (2) Önerilen fiyattaki "hafta sonu gecesi" takvimin vurgu günleri ayarından ayrılır: yeni ayar `pricing.weekendNights`,
-varsayılan **Cuma ve Cumartesi geceleri**. Takvim vurgusu (S-24) değişmez.
+varsayılan **Cuma ve Cumartesi geceleri**. Takvim vurgusu (S-24) değişmez. Bu ayrım bilinçlidir (S-119, sahip cevabı 8. tur): fiyat için hafta sonu Cuma + Cumartesi geceleridir, takvim vurgusu Cumartesi + Pazar'dır (G-40); ikisi ayrı ayardır, kod değişmez.
 
 **K-45 · Uzaktan erişimin güvenlik varsayılanları (2026-10-05, varsayılan; Faz 13 güvenlik incelemesi).**
 (1) Sunucu modu varsayılan olarak yalnız **bu bilgisayarı ve özel ağı (NetBird/Tailscale)** dinler; otelin yerel ağını

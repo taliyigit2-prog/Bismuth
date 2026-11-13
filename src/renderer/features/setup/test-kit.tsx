@@ -242,6 +242,8 @@ export interface SetupFake extends Transport {
   finished: SetupDraft[]
 }
 
+export const BISMUTH_KEY = '7KQ2M-ABCDE-FGHJK-LMNPQ-RSTUV-WXYZ2-34567-89ABC-DEFGH-JKLMN-PQRST'
+
 /** The wizard's procedures; `finishError` makes `setup.finish` refuse like the service would. */
 export function setupTransport(
   opts: {
@@ -249,6 +251,8 @@ export function setupTransport(
     mode?: AppMode
     done?: boolean
     finishError?: ApiError
+    /** `backup.recoveryText` refuses (no key store on this computer). */
+    keyError?: ApiError
     settings?: Partial<SettingsValues>
   } = {}
 ): SetupFake {
@@ -282,6 +286,10 @@ export function setupTransport(
         finished.push(structuredClone(input) as SetupDraft)
         if (opts.finishError) throw opts.finishError
         return { recoveryCodes: RECOVERY_CODES } as never
+      }
+      if (name === 'backup.recoveryText') {
+        if (opts.keyError) throw opts.keyError
+        return { text: BISMUTH_KEY, createdAt: '2026-11-13T09:00:00.000Z' } as never
       }
       return base.call(name as never, input as never) as never
     }
