@@ -1,6 +1,8 @@
 // "Genel" → Görünüm (G-17, faz-15 madde 5–6): theme, density, text size and whether amounts show decimals.
 // Everyone's own choice (K-37); the hotel's colours are a link away (Tema önizleme, `settings.colors`).
+import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useQueryClient } from '@tanstack/react-query'
 import type { SettingsPatch, SettingsValues } from '@shared/contract'
 import { money } from '@shared/money'
 import { formatMoney, isAppLocale } from '@shared/format'
@@ -37,6 +39,22 @@ export function AppearanceSection({ values, onSave }: Props) {
   const can = useCan()
   // Page zoom belongs to the computer's own window; a phone's browser has its own.
   const isMobile = useIsMobile()
+  // Ctrl +/-/0 and the View menu change the zoom in the main process; the page only sees its window resize. Read the
+  // saved value again then, so the selection here follows the key.
+  const queryClient = useQueryClient()
+  useEffect(() => {
+    if (isMobile) return
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const onResize = () => {
+      clearTimeout(timer)
+      timer = setTimeout(() => void queryClient.invalidateQueries({ queryKey: ['settings.get'] }), 300)
+    }
+    window.addEventListener('resize', onResize)
+    return () => {
+      clearTimeout(timer)
+      window.removeEventListener('resize', onResize)
+    }
+  }, [isMobile, queryClient])
   const locale = isAppLocale(i18n.language) ? i18n.language : 'tr'
   // The hotel's own currency: the sample looks like the amounts the person will see.
   const sample = money(250_000, values['hotel.baseCurrency'])

@@ -169,8 +169,23 @@ function measurePage(kind) {
       clipped.push(`${label(el)} ${el.scrollWidth} > ${el.clientWidth}`)
     }
     if (kind === 'mobile' && el.matches(interactive)) {
-      // A native input is measured by its label when it has one (radio rows, checkboxes).
-      const box = el.tagName === 'INPUT' && el.labels?.length ? el.labels[0].getBoundingClientRect() : r
+      // A native checkbox/radio is measured by its label; a control wrapped in a label or with an absolutely
+      // positioned ::after hit area (the project's max-md pattern) counts by that larger box.
+      let box = r
+      if (el.tagName === 'INPUT' && el.labels?.length && /checkbox|radio/.test(el.type)) {
+        box = el.labels[0].getBoundingClientRect()
+      }
+      const lab = el.closest('label')
+      if (lab && lab !== el) {
+        const lr = lab.getBoundingClientRect()
+        if (lr.width * lr.height > box.width * box.height) box = lr
+      }
+      const after = getComputedStyle(el, '::after')
+      if (after.position === 'absolute' && after.content !== 'none') {
+        const w = parseFloat(after.width)
+        const h = parseFloat(after.height)
+        if (w > box.width && h > box.height) box = { width: w, height: h }
+      }
       if (box.width < 44 || box.height < 44) {
         smallTargets.push(`${label(el)} ${Math.round(box.width)}x${Math.round(box.height)}`)
       }

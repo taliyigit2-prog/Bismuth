@@ -281,4 +281,17 @@ describe('Ayarlar yetkileri', () => {
       setViewAs('owner')
     }
   })
+
+  it('yakınlaştırma tuşla değişince açık Görünüm seçimi yeni değeri gösterir', async () => {
+    const transport = adminTransport()
+    await renderWithProviders(<SettingsPage />, { transport })
+    const radio = await screen.findByTestId('zoom-100')
+    expect(radio).toBeChecked()
+    // The main process saves the key's step; the page only notices its window resizing.
+    await transport.call('settings.set', { 'ui.zoom': 125 })
+    act(() => {
+      window.dispatchEvent(new Event('resize'))
+    })
+    await waitFor(() => expect(screen.getByTestId('zoom-125')).toBeChecked(), { timeout: 2000 })
+  })
 })

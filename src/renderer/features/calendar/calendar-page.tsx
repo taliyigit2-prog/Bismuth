@@ -106,11 +106,11 @@ export function CalendarPage() {
         data-testid="hourly-new"
       >
         <ClockIcon aria-hidden />
-        <span className="truncate">{t('booking.hourly.button')}</span>
+        <span className="max-md:whitespace-normal md:truncate">{t('booking.hourly.button')}</span>
       </Button>
       <Button className="min-w-0" onClick={() => openNew(null, todayOf())}>
         <PlusIcon aria-hidden />
-        <span className="truncate">{t('calendar.newReservation')}</span>
+        <span className="max-md:whitespace-normal md:truncate">{t('calendar.newReservation')}</span>
       </Button>
     </>
   ) : undefined

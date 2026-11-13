@@ -94,7 +94,7 @@ Harcama sütunu: başlatıcının yazdığı `$` (dalga toplamı, gerçek).
 | 3 | P18c Pencere: F11, tam ekran/zoom hatırlama, çoklu monitör | 18 | main/windows, main/app | feature-builder | $6–10 | ~$10 | ✅ |
 | 4 | P17c Hızlı takvim: sağ tık, hızlı çubuk, çoklu seçim (+ toplu ödeme), bugün şeridi, son iptaller listesi, park nedeni etiketi | 17 | calendar | feature-builder | $8–12 | ~$30 | ✅ |
 | 4 | P17e Yüksek/Orta hata düzeltmeleri (02 raporu; H-05, H-07, H-08, H-09, H-19, H-21, H-24, H-25, H-44) | 17 | bulguya göre | feature-builder / calendar-specialist | $10–14 | ~$14 | ✅ |
-| 5 | P18b Düzen düzeltmeleri (05 raporu) | 18 | features/*, layouts | feature-builder | $8–12 | | 🔄 |
+| 5 | P18b Düzen düzeltmeleri (05 raporu) | 18 | features/*, layouts | feature-builder | $8–12 | ~$12 | ✅ |
 | 5 | P18d Çalışmayan öğeler (akış testi) | 18 | bulguya göre | feature-builder | $6–10 | ~$8 | ✅ |
 | 6 | P19a Sürüm iş akışı tekleştirme (tetikleme sahipte) | 19 | .github, electron-builder | packager | $5–8 | | ⬜ |
 | 6 | P19b Kurulum belgeleri + kılavuz + sihirbaz tek kâğıt adımı + belge çelişkileri (Ç-01/02/04/05); P19d ajan bakımı | 19 | docs, guide, setup, .claude | feature-builder-lite (+ feature-builder sihirbaz) | $4–8 | | ⬜ |
@@ -284,3 +284,7 @@ QA2b, akış testleri C/D) bu plana **Son** satırında katılır; ayrı yürüt
 - 2026-11-13: P17fix ✅ — hızlı çubuk ad sınırı sözleşmeden (80) ve 0 fiyat onayı, `payGroup` `per_room` grupta servis
   tarafında ret, bilinmeyen ülke kodlu telefon E.164 olarak korunur, "Son iptaller" gelmedi zamanı audit'ten, toplu ödemede
   kapalı gün gerekçesi, mantıksal CSS, Rusça çoğullar ve gömülü sayılar `{{max}}` (2690 test). Faz 17 kabul maddeleri tamam.
+- 2026-11-13: P18b ✅ — telefonda radyo/anahtar 44 px görünmez alan, takvim düğme etiketleri sarar, üst çubuk tarihi 1024 px
+  altında kısa, açık Ayarlar → Görünüm zoom seçimi güncellenir; `ui-shot` ölçümü düzeltildi (::after alanı, etiket içi
+  denetim). Ölçüm (853/1280/1366/1920 + telefon, tr/ru): taşma 0, kesilme 2→0, telefonda küçük hedef 64→0. Masaüstü cila
+  #1, #2 (Orta: takvimde üç kaydırma çubuğu, panel genişliği), #3, #5, #6 → P21e. **Dalga 5 bitti.**
