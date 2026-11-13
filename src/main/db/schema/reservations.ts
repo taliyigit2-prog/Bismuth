@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm'
 import { index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
 import { bool, day, i18nJson, id, minor, timestamps } from './columns'
 import { guests } from './guests'
@@ -141,8 +142,11 @@ export const reservationRooms = sqliteTable(
 )
 
 /**
- * One row per occupied slot. UNIQUE(room_id, date, slot) makes a double booking impossible (§4.8-1). Rows are
- * derived schedule: cancelling a stay removes them (the charges are voided and the audit log keeps the past).
+ * One row per occupied slot (§4.8-1). A night is unique per room and date; a day slot is unique per room, date
+ * and start time (K-48: several hourly stays in one room on one day), or once per day when it has no times (a
+ * whole-day use, the pre-0019 shape). Hour overlaps are the domain's job (`stays.ts` `hourRangesOverlap`); the
+ * indexes only stop the identical row. Rows are derived schedule: cancelling a stay removes them (the charges
+ * are voided and the audit log keeps the past).
  */
 export const roomNights = sqliteTable(
   'room_nights',
@@ -156,12 +160,25 @@ export const roomNights = sqliteTable(
       .references(() => rooms.id),
     date: day('date').notNull(),
     slot: text('slot', { enum: ['night', 'day'] }).notNull(),
+    /** 'HH:MM' start of an hourly day slot (K-48); null = the whole day / the night (all rows before 0019). */
+    startTime: text('start_time'),
+    /** 'HH:MM' end of an hourly day slot; null together with `startTime`. */
+    endTime: text('end_time'),
     priceMinor: minor('price_minor').notNull(),
     currency: text('currency').notNull(),
     ...timestamps
   },
   (t) => [
-    uniqueIndex('room_nights_room_date_slot_unique').on(t.roomId, t.date, t.slot),
+    uniqueIndex('room_nights_night_unique')
+      .on(t.roomId, t.date)
+      .where(sql`${t.slot} = 'night'`),
+    uniqueIndex('room_nights_day_start_unique')
+      .on(t.roomId, t.date, t.startTime)
+      .where(sql`${t.slot} = 'day' and ${t.startTime} is not null`),
+    uniqueIndex('room_nights_day_whole_unique')
+      .on(t.roomId, t.date)
+      .where(sql`${t.slot} = 'day' and ${t.startTime} is null`),
+    index('room_nights_room_date_idx').on(t.roomId, t.date, t.slot, t.startTime),
     index('room_nights_stay_idx').on(t.reservationRoomId),
     index('room_nights_date_idx').on(t.date)
   ]

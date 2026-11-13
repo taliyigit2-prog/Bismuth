@@ -146,3 +146,84 @@ export function splitForRoomChange<T extends { date: LocalDate }>(
   for (const n of nights) (diffDays(fromDate, n.date) >= 0 ? move : stay).push(n)
   return { stay, move }
 }
+
+// ---- Hourly stays (K-48, migration 0019) -----------------------------------------------------------------------
+// A day slot may carry a time range 'HH:MM'–'HH:MM' on its date; several in one room and day are fine as long as the
+// ranges do not overlap. A range is half-open [start, end): a stay ending at 12:00 and another starting at 12:00 do
+// not clash. No times (null) = the whole day (every row before 0019): it clashes with any other day range.
+
+/** 'HH:MM' wall-clock time, 00:00–23:59. */
+export type ClockTime = string
+
+export interface HourRange {
+  start: ClockTime | null
+  end: ClockTime | null
+}
+
+const CLOCK = /^([01]\d|2[0-3]):([0-5]\d)$/
+
+export const isClockTime = (value: string): value is ClockTime => CLOCK.test(value)
+
+/** Minutes since midnight; throws on anything but 'HH:MM'. */
+export function clockMinutes(time: ClockTime): number {
+  const m = CLOCK.exec(time)
+  if (!m) throw new RangeError(`not a clock time: ${time}`)
+  return Number(m[1]) * 60 + Number(m[2])
+}
+
+/** A usable hourly range: both times valid and the end after the start (an hourly stay stays inside its day). */
+export function isValidHourRange(start: string, end: string): boolean {
+  return isClockTime(start) && isClockTime(end) && clockMinutes(start) < clockMinutes(end)
+}
+
+const isWholeDay = (r: HourRange): boolean => r.start === null || r.end === null
+
+/** Whether two ranges on the same room and day share any minute. Touching ends do not; null = whole day. */
+export function hourRangesOverlap(a: HourRange, b: HourRange): boolean {
+  if (isWholeDay(a) || isWholeDay(b)) return true
+  return clockMinutes(a.start!) < clockMinutes(b.end!) && clockMinutes(b.start!) < clockMinutes(a.end!)
+}
+
+export interface DayRangeLike extends HourRange {
+  reservationId: string
+}
+
+/** The other day ranges of the room and day that `range` clashes with (blocks the sale: `roomOccupied` with hours). */
+export function findHourConflicts<T extends DayRangeLike>(
+  range: HourRange,
+  others: readonly T[],
+  ignoreReservationId?: string
+): T[] {
+  return others.filter((o) => o.reservationId !== ignoreReservationId && hourRangesOverlap(range, o))
+}
+
+export interface TurnoverWarning<T extends DayRangeLike> {
+  other: T
+  /** Free minutes between the two ranges (0 = back to back); always below the turnover time. */
+  gapMinutes: number
+}
+
+/**
+ * Cleaning-gap warnings (S-103: a warning, never a block): the neighbouring day ranges that end less than
+ * `turnoverMinutes` before `range` starts, or start less than that after it ends. Overlapping ranges are conflicts,
+ * not warnings; whole-day ranges and a turnover of 0 never warn.
+ */
+export function turnoverWarnings<T extends DayRangeLike>(
+  range: HourRange,
+  others: readonly T[],
+  turnoverMinutes: number,
+  ignoreReservationId?: string
+): TurnoverWarning<T>[] {
+  if (turnoverMinutes <= 0 || isWholeDay(range)) return []
+  const start = clockMinutes(range.start!)
+  const end = clockMinutes(range.end!)
+  const out: TurnoverWarning<T>[] = []
+  for (const other of others) {
+    if (other.reservationId === ignoreReservationId || isWholeDay(other)) continue
+    const otherStart = clockMinutes(other.start!)
+    const otherEnd = clockMinutes(other.end!)
+    const gap = otherStart >= end ? otherStart - end : start >= otherEnd ? start - otherEnd : null
+    if (gap !== null && gap < turnoverMinutes) out.push({ other, gapMinutes: gap })
+  }
+  return out
+}

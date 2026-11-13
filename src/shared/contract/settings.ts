@@ -131,6 +131,11 @@ export const settingsShape = {
   'businessDay.closingEnabled': z.boolean(),
   /** Same-day (day-use) stays count as sold nights in occupancy reports (§6.10); off = shown apart. */
   'reports.dayUseInOccupancy': z.boolean(),
+  /**
+   * Minutes the desk wants between two hourly stays in one room for cleaning (K-48, S-103): selling inside the gap is
+   * only warned about, never blocked. 0 = no gap.
+   */
+  'dayUse.turnoverMinutes': z.number().int().min(0).max(240),
   /** Photos of resolved issues are deleted after N days; the text stays (K-25). */
   'attachments.resolvedIssueRetentionDays': z.number().int().min(1).max(3650),
   /** Staff may take an advance from the reception drawer (G-69, S-38). */
@@ -253,6 +258,7 @@ export const SETTINGS_DEFAULTS: SettingsValues = {
   'tasks.everyNStays': 10,
   'businessDay.closingEnabled': false,
   'reports.dayUseInOccupancy': false,
+  'dayUse.turnoverMinutes': 60,
   'attachments.resolvedIssueRetentionDays': 30,
   'staff.advanceFromDrawer': false,
   'staff.expenseSection': 'general',

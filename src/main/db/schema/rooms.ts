@@ -23,6 +23,8 @@ export const roomTypes = sqliteTable(
     basePriceMinor: minor('base_price_minor'),
     /** Suggested price on highlighted days (weekend / special days); null = same as base. */
     weekendPriceMinor: minor('weekend_price_minor'),
+    /** Suggested price of one hour of an hourly stay (K-48, S-102); null = none, the desk types it at the sale. */
+    hourlyPriceMinor: minor('hourly_price_minor'),
     baseCurrency: text('base_currency'),
     sort: integer('sort').notNull().default(0),
     active: bool('active').notNull().default(true),

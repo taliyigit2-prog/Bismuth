@@ -134,6 +134,13 @@
       "when": 1791211569616,
       "tag": "0018_capacity_cancel",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "6",
+      "when": 1794541590715,
+      "tag": "0019_hourly_stays",
+      "breakpoints": true
     }
   ]
 }

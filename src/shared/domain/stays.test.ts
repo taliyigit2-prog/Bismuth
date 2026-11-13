@@ -1,6 +1,17 @@
 import { describe, expect, it } from 'vitest'
 import { localDate as d } from '../date'
-import { blockDates, findConflicts, isDayUse, splitForRoomChange, staySlots } from './stays'
+import {
+  blockDates,
+  clockMinutes,
+  findConflicts,
+  findHourConflicts,
+  hourRangesOverlap,
+  isDayUse,
+  isValidHourRange,
+  splitForRoomChange,
+  staySlots,
+  turnoverWarnings
+} from './stays'
 
 describe('konaklama geceleri (§6.1)', () => {
   it('çıkış günü gece değildir; aynı gün giriş-çıkış tek "gündüz" dilimidir', () => {
@@ -80,5 +91,69 @@ describe('oda çakışması', () => {
     const { stay, move } = splitForRoomChange(nights, d('2026-10-02'))
     expect(stay.map((n) => n.date)).toEqual(['2026-10-01'])
     expect(move.map((n) => n.date)).toEqual(['2026-10-02', '2026-10-03'])
+  })
+})
+
+describe('saatlik konaklama: saat aralığı çakışması (K-48)', () => {
+  const r = (start: string | null, end: string | null, reservationId = 'X') => ({ start, end, reservationId })
+
+  it('1. ayrık aralıklar aynı odada aynı gün birlikte durur', () => {
+    expect(hourRangesOverlap(r('09:00', '12:00'), r('13:00', '16:00'))).toBe(false)
+    expect(hourRangesOverlap(r('13:00', '16:00'), r('09:00', '12:00'))).toBe(false)
+  })
+
+  it('2. kısmen örtüşen aralıklar çakışır (iki yönde de)', () => {
+    expect(hourRangesOverlap(r('09:00', '12:00'), r('11:00', '14:00'))).toBe(true)
+    expect(hourRangesOverlap(r('11:00', '14:00'), r('09:00', '12:00'))).toBe(true)
+  })
+
+  it('3. biri ötekini içine alırsa çakışır', () => {
+    expect(hourRangesOverlap(r('09:00', '18:00'), r('12:00', '13:00'))).toBe(true)
+    expect(hourRangesOverlap(r('12:00', '13:00'), r('09:00', '18:00'))).toBe(true)
+  })
+
+  it('4. biri biterken öteki başlıyorsa çakışmaz ([başlangıç, bitiş) yarı açık)', () => {
+    expect(hourRangesOverlap(r('09:00', '12:00'), r('12:00', '15:00'))).toBe(false)
+    expect(hourRangesOverlap(r('12:00', '15:00'), r('09:00', '12:00'))).toBe(false)
+  })
+
+  it('5. aynı aralık çakışır', () => {
+    expect(hourRangesOverlap(r('09:00', '12:00'), r('09:00', '12:00'))).toBe(true)
+  })
+
+  it('6. saatsiz (null) eski kayıt tüm günü tutar: her saat aralığıyla çakışır', () => {
+    expect(hourRangesOverlap(r(null, null), r('22:00', '23:30'))).toBe(true)
+    expect(hourRangesOverlap(r('00:00', '00:30'), r(null, null))).toBe(true)
+    expect(hourRangesOverlap(r(null, null), r(null, null))).toBe(true)
+  })
+
+  it('7. geçersiz aralık reddedilir: bitiş başlangıçtan sonra olmalı, saat HH:MM olmalı', () => {
+    expect(isValidHourRange('09:00', '12:00')).toBe(true)
+    expect(isValidHourRange('12:00', '12:00')).toBe(false)
+    expect(isValidHourRange('15:00', '09:00')).toBe(false)
+    expect(isValidHourRange('9:00', '12:00')).toBe(false)
+    expect(isValidHourRange('09:00', '24:00')).toBe(false)
+    expect(() => clockMinutes('25:00')).toThrow(RangeError)
+  })
+
+  it('8. çakışma engeller; temizlik arası dolmadan satış yalnız uyarır (örtüşme uyarı değildir)', () => {
+    const others = [r('09:00', '12:00', 'A'), r('15:00', '17:00', 'B'), r('20:00', '22:00', 'C')]
+    // 12:30–14:30 fits between A and B, both gaps (30 min) under the 60-minute turnover.
+    const range = r('12:30', '14:30', 'N')
+    expect(findHourConflicts(range, others)).toEqual([])
+    expect(turnoverWarnings(range, others, 60).map((w) => [w.other.reservationId, w.gapMinutes])).toEqual([
+      ['A', 30],
+      ['B', 30]
+    ])
+    // Back to back warns (gap 0); an exactly sufficient gap, a zero turnover and a whole-day range do not.
+    expect(turnoverWarnings(r('12:00', '13:00'), others, 60).map((w) => w.gapMinutes)).toEqual([0])
+    expect(turnoverWarnings(r('13:00', '14:00'), others, 60)).toEqual([])
+    expect(turnoverWarnings(range, others, 0)).toEqual([])
+    expect(turnoverWarnings(r(null, null), others, 60)).toEqual([])
+    // An overlap is a conflict, not a turnover warning; an edited reservation ignores its own ranges.
+    const clash = r('11:00', '13:00', 'N')
+    expect(findHourConflicts(clash, others).map((o) => o.reservationId)).toEqual(['A'])
+    expect(turnoverWarnings(clash, others, 60).map((w) => w.other.reservationId)).toEqual([])
+    expect(findHourConflicts(clash, others, 'A')).toEqual([])
   })
 })
