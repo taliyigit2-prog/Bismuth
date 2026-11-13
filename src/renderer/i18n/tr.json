@@ -5706,7 +5706,8 @@
       "kbsBody": "{{names}} KBS'ye bildirildi. Bildirim kayıtta kalır; çıkışı KBS tarafında ayrıca yapmanız gerekir.",
       "kbsConfirm": "Anladım, girişi yine de geri al",
       "refundAfter": "Çıkış kaydedilince tahsilatı iade etmeniz için iade penceresi açılır.",
-      "refundNeedsManager": "İade için otel sahibine ya da müdüre başvurun."
+      "refundNeedsManager": "İade için otel sahibine ya da müdüre başvurun.",
+      "choose": "Nasıl devam edilsin"
     },
     "refund": {
       "collected": "Bu rezervasyonda {{amount}} tahsilat var",

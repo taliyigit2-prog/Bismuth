@@ -10,7 +10,7 @@ takvimden ve paradan doğru biçimde çıkması, grup/toplu giriş ve sade takvi
 
 ## Gereksinimler
 G-193 (vazgeçme ve iade, ZORUNLU), G-194 (grup ve toplu giriş, ZORUNLU), G-195 (hızlı takvim, ÖNEMLİ), G-196 (gündüz
-kullanımı 2.0, ZORUNLU); G-37, G-39, G-42, G-43, G-46, G-60. Kararlar: K-44, K-48 (taslak), K-55 (taslak).
+kullanımı 2.0, ZORUNLU); G-37, G-39, G-42, G-43, G-46, G-60. Kararlar: K-44, K-48 (kesin), K-55 (kesin).
 
 ## Ön koşul
 Faz 5–16 kodu (`main` ile aynı taban), `npm run check` yeşil, migrasyon sırası **0019 (P17d, dalga 2)** ve **0020 (P17b, dalga 3)**.

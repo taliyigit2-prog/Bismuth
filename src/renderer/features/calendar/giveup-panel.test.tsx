@@ -136,7 +136,7 @@ describe('üç nokta menüsü: durum × menü (K-55)', () => {
 })
 
 describe('Vazgeçme ve iade', () => {
-  it('üç seçenek sunulur; girişi geri al + iptal: önce geri alır, sonra iadeli iptal eder', async () => {
+  it('üç seçenek sunulur; girişi geri al + iptal: tek istekle geri alır ve iadeli iptal eder', async () => {
     const transport = bookingTransport()
     const id = await seeded(transport, 100_000)
     put(transport, id, 'checked_in', 'in_house')
@@ -147,19 +147,40 @@ describe('Vazgeçme ve iade', () => {
     expect(await screen.findByTestId('giveup-sameDay')).toBeInTheDocument()
     expect(screen.getByTestId('giveup-undo')).toBeInTheDocument()
     expect(screen.getByTestId('giveup-early')).toBeInTheDocument()
+    expect(screen.getByRole('radiogroup', { name: 'Nasıl devam edilsin' })).toBeInTheDocument()
     await user.click(within(screen.getByTestId('giveup-undo')).getByRole('radio'))
     await user.type(screen.getByLabelText('İptal nedeni'), 'odayı beğenmedi')
     expect(screen.getByTestId('money-collected')).toHaveTextContent('₺1.000')
     await user.click(screen.getByTestId('giveup-confirm'))
-    await waitFor(() => expect(transport.callsTo('booking.cancel')).toHaveLength(1))
-    expect(transport.callsTo('booking.undoCheckIn')).toEqual([{ stayId, reason: 'odayı beğenmedi' }])
-    expect(transport.callsTo('booking.cancel')[0]).toMatchObject({
-      id,
+    await waitFor(() => expect(transport.callsTo('booking.undoCheckIn')).toHaveLength(1))
+    expect(transport.callsTo('booking.undoCheckIn')[0]).toMatchObject({
+      stayId,
       reason: 'odayı beğenmedi',
-      refund: { mode: 'refund', amountMinor: 100_000, currency: 'TRY' }
+      then: { do: 'cancel', refund: { mode: 'refund', amountMinor: 100_000, currency: 'TRY' } }
     })
-    expect(transport.booking.views[id]!.reservation.status).toBe('cancelled')
+    // Not two requests: the cancellation is part of the take-back.
+    expect(transport.callsTo('booking.cancel')).toEqual([])
+    expect(transport.callsTo('booking.park')).toEqual([])
+    await waitFor(() => expect(transport.booking.views[id]!.reservation.status).toBe('cancelled'))
     expect(transport.booking.views[id]!.folio.creditedMinor).toBe(0)
+  })
+
+  it('iade yetkisi kapalıysa "iade bekliyor" seçimi geri almayla birlikte tek istekte gider', async () => {
+    const noRefund = { ...FAKE_ACCOUNTS[0]!, permissionOverrides: { 'payments.refund': 'none' as const } }
+    const transport = bookingTransport({ fake: { signedIn: noRefund.id, accounts: [noRefund] } })
+    const id = await seeded(transport, 100_000)
+    put(transport, id, 'checked_in', 'in_house')
+    const user = await open(transport, id)
+    await user.click(await screen.findByTestId('panel-more'))
+    await user.click(await screen.findByTestId('panel-giveup'))
+    await user.click(within(await screen.findByTestId('giveup-undo')).getByRole('radio'))
+    await user.type(screen.getByLabelText('İptal nedeni'), 'iade için müdür')
+    await user.click(screen.getByTestId('giveup-confirm'))
+    await waitFor(() => expect(transport.callsTo('booking.undoCheckIn')).toHaveLength(1))
+    expect(transport.callsTo('booking.undoCheckIn')[0]).toMatchObject({
+      then: { do: 'park', park: { reason: 'refund_pending', note: 'iade için müdür' } }
+    })
+    expect(transport.callsTo('booking.park')).toEqual([])
   })
 
   it('Resepsiyon (girişi geri alma yetkisi yok): o seçenek kapalı, aynı gün çıkış açık; çıkıştan sonra iade penceresi açılır', async () => {

@@ -331,7 +331,7 @@ export function CancelDialog({
           setTried(true)
           const bad = reason.trim().length < 3
           setError(bad)
-          if (bad || (collected > 0 && moneyChoiceProblem(money, collected))) return
+          if (bad || (collected > 0 && moneyChoiceProblem(money, collected, currency))) return
           if (parking)
             return park.mutate({ id: reservationId, park: { reason: 'refund_pending', note: reason.trim() } })
           const refund = collected > 0 ? cancelRefundOf(money, options.data?.methods ?? []) : undefined

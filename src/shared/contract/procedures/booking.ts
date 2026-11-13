@@ -26,6 +26,7 @@ import {
 } from '../booking'
 import {
   cancelRefundSchema,
+  undoThenSchema,
   changeDatesSchema,
   changeRoomSchema,
   moveDatesSchema,
@@ -114,10 +115,18 @@ export const bookingProcedures = {
   ),
   /**
    * Take a check-in back (K-55): only on the check-in day; the stay is planned again. A person already reported to
-   * KBS needs `kbsConfirmed` (the report itself stays; the KBS check-out is made there).
+   * KBS needs `kbsConfirmed` (the report itself stays; the KBS check-out is made there). `then` gives up in the same
+   * transaction: cancel (with the money settled), park, or only this room; if it fails the take-back is not written.
    */
   'booking.undoCheckIn': proc(
-    z.object({ stayId: idSchema, reason, kbsConfirmed: z.boolean().optional() }).strict(),
+    z
+      .object({
+        stayId: idSchema,
+        reason,
+        kbsConfirmed: z.boolean().optional(),
+        then: undoThenSchema.optional()
+      })
+      .strict(),
     bookingViewSchema
   ),
   /** One room of the reservation that is still to come (G-35, G-42). */

@@ -390,6 +390,25 @@ export function bookingTransport(
         view.reservation.status = view.stays.some((s) => s.status === 'in_house' || s.status === 'done')
           ? 'checked_in'
           : 'confirmed'
+        // The give-up that goes with the take-back is one request (one transaction in the service).
+        const then = i['then'] as
+          | { do: 'cancel'; refund?: unknown }
+          | { do: 'park'; park: { reason: string; note?: string | null } }
+          | { do: 'cancelStay' }
+          | undefined
+        if (then?.do === 'cancel')
+          return handle('booking.cancel', {
+            id: view.reservation.id,
+            reason: i['reason'],
+            refund: then.refund
+          })
+        if (then?.do === 'cancelStay')
+          return handle('booking.cancelStay', { stayId: i['stayId'], reason: i['reason'] })
+        if (then?.do === 'park') {
+          view.reservation.status = 'parked'
+          view.reservation.parkedReason = then.park.reason as typeof view.reservation.parkedReason
+          for (const s of view.stays) if (s.status === 'planned') s.status = 'cancelled'
+        }
         return structuredClone(view)
       }
       case 'booking.cancelStay': {

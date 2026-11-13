@@ -5,6 +5,7 @@ import { and, asc, eq, gte, inArray, isNull, lt, ne } from 'drizzle-orm'
 import {
   cancelReasonSchema,
   cancelRefundSchema,
+  undoThenSchema,
   changeDatesSchema,
   changeRoomSchema,
   dateRangeSchema,
@@ -16,6 +17,7 @@ import {
   type stayInputSchema,
   unparkSchema,
   type CancelRefundInput,
+  type UndoThenInput,
   type PaymentCreateInput,
   type ChangeDatesInput,
   type ChangeRoomInput,
@@ -727,6 +729,13 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
       .run()
   }
 
+  type SettleFn = (
+    tx: Tx,
+    audit: AuditFn,
+    now: Date,
+    before: ReservationDetail
+  ) => Record<string, unknown> | void
+
   function endReservation(
     ctx: Ctx,
     id: string,
@@ -734,52 +743,119 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
     extra: Partial<typeof reservations.$inferInsert>,
     reason: string,
     /** Runs in the same transaction after the status change (cancel: the refund; a failure undoes everything). */
-    settle?: (tx: Tx, audit: AuditFn, now: Date, before: ReservationDetail) => Record<string, unknown> | void
+    settle?: SettleFn
   ): ReservationDetail {
     requirePermission(ctx, 'calendar', 'edit')
-    return inTransaction(deps, ctx, (tx, audit, now) => {
-      const before = detail(tx, id)
-      const was = before.reservation.status
-      if (
-        was === 'checked_out' ||
-        was === 'cancelled' ||
-        was === 'no_show' ||
-        (was === 'parked' && status === 'parked')
-      )
-        throw invalid('errors.reservationClosed', { status: was })
-      if (before.stays.some((s) => s.status === 'in_house')) throw invalid('errors.guestInHouse')
-      const stayed = before.stays.some((s) => s.status === 'done')
-      // A room already stayed in cannot be parked or be a no-show; its nights and charges stay (cancel: the rest).
-      if (stayed && status !== 'cancelled') throw invalid('errors.reservationStarted')
-      // QA3c1 #3: nobody can fail to arrive before the arrival day (cancelling is the way out of a future booking).
-      if (status === 'no_show') {
-        const planned = before.stays.filter((s) => s.status === 'planned').map((s) => localDate(s.checkIn))
-        const first = planned.sort((a, b) => diffDays(a, b))[0]
-        if (first && diffDays(today(now), first) > 0)
-          throw invalid('errors.noShowTooEarly', { checkIn: first })
-      }
-      for (const s of before.stays) if (s.status === 'planned') releaseStay(tx, now, s, status)
-      tx.update(reservations)
-        .set({
-          status: stayed ? 'checked_out' : status,
-          ...extra,
-          ...(status === 'parked' ? { parkedFromStatus: was } : {}),
-          updatedAt: now.toISOString()
-        })
-        .where(eq(reservations.id, id))
-        .run()
-      const money = settle?.(tx, audit, now, before)
-      const after = detail(tx, id)
-      audit({
-        entity: 'reservation',
-        entityId: id,
-        action: status === 'parked' ? 'park' : status === 'no_show' ? 'no_show' : 'cancel',
-        before,
-        after: money ? { ...after.reservation, ...money } : after.reservation,
-        reason
+    return inTransaction(deps, ctx, (tx, audit, now) =>
+      endReservationIn(tx, audit, now, id, status, extra, reason, settle)
+    )
+  }
+
+  /** The body of `endReservation` inside a transaction the caller owns (`undoCheckIn` ends the reservation in the same one). */
+  function endReservationIn(
+    tx: Tx,
+    audit: AuditFn,
+    now: Date,
+    id: string,
+    status: 'cancelled' | 'no_show' | 'parked',
+    extra: Partial<typeof reservations.$inferInsert>,
+    reason: string,
+    settle?: SettleFn
+  ): ReservationDetail {
+    const before = detail(tx, id)
+    const was = before.reservation.status
+    if (
+      was === 'checked_out' ||
+      was === 'cancelled' ||
+      was === 'no_show' ||
+      (was === 'parked' && status === 'parked')
+    )
+      throw invalid('errors.reservationClosed', { status: was })
+    if (before.stays.some((s) => s.status === 'in_house')) throw invalid('errors.guestInHouse')
+    const stayed = before.stays.some((s) => s.status === 'done')
+    // A room already stayed in cannot be parked or be a no-show; its nights and charges stay (cancel: the rest).
+    if (stayed && status !== 'cancelled') throw invalid('errors.reservationStarted')
+    // QA3c1 #3: nobody can fail to arrive before the arrival day (cancelling is the way out of a future booking).
+    if (status === 'no_show') {
+      const planned = before.stays.filter((s) => s.status === 'planned').map((s) => localDate(s.checkIn))
+      const first = planned.sort((a, b) => diffDays(a, b))[0]
+      if (first && diffDays(today(now), first) > 0) throw invalid('errors.noShowTooEarly', { checkIn: first })
+    }
+    for (const s of before.stays) if (s.status === 'planned') releaseStay(tx, now, s, status)
+    tx.update(reservations)
+      .set({
+        status: stayed ? 'checked_out' : status,
+        ...extra,
+        ...(status === 'parked' ? { parkedFromStatus: was } : {}),
+        updatedAt: now.toISOString()
       })
-      return after
+      .where(eq(reservations.id, id))
+      .run()
+    const money = settle?.(tx, audit, now, before)
+    const after = detail(tx, id)
+    audit({
+      entity: 'reservation',
+      entityId: id,
+      action: status === 'parked' ? 'park' : status === 'no_show' ? 'no_show' : 'cancel',
+      before,
+      after: money ? { ...after.reservation, ...money } : after.reservation,
+      reason
     })
+    return after
+  }
+
+  /** G-23: a refund needs `payments.refund`; asked before anything is read or written. */
+  function requireRefundRight(ctx: Ctx, money: z.output<typeof cancelRefundSchema> | undefined): void {
+    if (money?.mode === 'refund') requirePermission(ctx, 'payments.refund', 'edit')
+  }
+
+  /** The money step of a cancellation (K-55): a refund row on the folio or "the payments stay" with a note. */
+  function settleOf(
+    ctx: Ctx,
+    id: string,
+    money: z.output<typeof cancelRefundSchema> | undefined
+  ): SettleFn | undefined {
+    if (!money) return undefined
+    return (tx, audit, now, before) => {
+      if (money.mode === 'keep') return { paymentsKept: money.note }
+      if (!deps.hooks?.recordRefund) throw invalid('errors.internal')
+      deps.hooks.recordRefund(ctx, tx, audit, now, {
+        reservationId: id,
+        date: today(now),
+        kind: 'refund',
+        methodId: money.methodId,
+        amountMinor: money.amountMinor,
+        currency: money.currency ?? before.folio.currency,
+        note: money.note ?? null,
+        ...(money.dayClosedReason ? { dayClosedReason: money.dayClosedReason } : {})
+      })
+      return { refundedMinor: money.amountMinor }
+    }
+  }
+
+  /** One room still to come is given up (the body of `cancelStay`, inside a transaction the caller owns). */
+  function cancelStayIn(tx: Tx, audit: AuditFn, now: Date, stayId: string, why: string): ReservationDetail {
+    const stay = stayOf(tx, stayId)
+    if (stay.status !== 'planned') throw invalid('errors.invalidStayState', { status: stay.status })
+    const r = reservationOf(tx, stay.reservationId)
+    if (!['tentative', 'confirmed', 'checked_in'].includes(r.status))
+      throw invalid('errors.reservationClosed', { status: r.status })
+    releaseStay(tx, now, stay, 'stay_cancelled')
+    settleStatus(tx, stay.reservationId, now, 'cancelled', {
+      cancelledAt: now.toISOString(),
+      cancelReason: why
+    })
+    refreshKind(tx, stay.reservationId, now)
+    const after = detail(tx, stay.reservationId)
+    audit({
+      entity: 'reservation_room',
+      entityId: stayId,
+      action: 'cancel',
+      before: stay,
+      after: { ...after.stays.find((x) => x.id === stayId), reservationStatus: after.reservation.status },
+      reason: why
+    })
+    return after
   }
 
   return {
@@ -1167,29 +1243,14 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
      */
     cancel(ctx: Ctx, id: string, reason: string, refund?: CancelRefundInput): ReservationDetail {
       const money = refund ? parseInput(cancelRefundSchema, refund) : undefined
+      requireRefundRight(ctx, money)
       return endReservation(
         ctx,
         id,
         'cancelled',
         { cancelledAt: deps.clock().toISOString(), cancelReason: reason },
         reason,
-        money
-          ? (tx, audit, now, before) => {
-              if (money.mode === 'keep') return { paymentsKept: money.note }
-              if (!deps.hooks?.recordRefund) throw invalid('errors.internal')
-              deps.hooks.recordRefund(ctx, tx, audit, now, {
-                reservationId: id,
-                date: today(now),
-                kind: 'refund',
-                methodId: money.methodId,
-                amountMinor: money.amountMinor,
-                currency: money.currency ?? before.folio.currency,
-                note: money.note ?? null,
-                ...(money.dayClosedReason ? { dayClosedReason: money.dayClosedReason } : {})
-              })
-              return { refundedMinor: money.amountMinor }
-            }
-          : undefined
+        settleOf(ctx, id, money)
       )
     },
 
@@ -1205,29 +1266,7 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
     cancelStay(ctx: Ctx, stayId: string, reason: string): ReservationDetail {
       requirePermission(ctx, 'calendar', 'edit')
       const why = parseInput(cancelReasonSchema, reason)
-      return inTransaction(deps, ctx, (tx, audit, now) => {
-        const stay = stayOf(tx, stayId)
-        if (stay.status !== 'planned') throw invalid('errors.invalidStayState', { status: stay.status })
-        const r = reservationOf(tx, stay.reservationId)
-        if (!['tentative', 'confirmed', 'checked_in'].includes(r.status))
-          throw invalid('errors.reservationClosed', { status: r.status })
-        releaseStay(tx, now, stay, 'stay_cancelled')
-        settleStatus(tx, stay.reservationId, now, 'cancelled', {
-          cancelledAt: now.toISOString(),
-          cancelReason: why
-        })
-        refreshKind(tx, stay.reservationId, now)
-        const after = detail(tx, stay.reservationId)
-        audit({
-          entity: 'reservation_room',
-          entityId: stayId,
-          action: 'cancel',
-          before: stay,
-          after: { ...after.stays.find((x) => x.id === stayId), reservationStatus: after.reservation.status },
-          reason: why
-        })
-        return after
-      })
+      return inTransaction(deps, ctx, (tx, audit, now) => cancelStayIn(tx, audit, now, stayId, why))
     },
 
     /** Below the grid (G-39): nights released, payments kept (refund pending, postponed…). */
@@ -1383,16 +1422,21 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
      * planned again (the nights and charges were never touched), the people lose their arrival time, the
      * reservation goes back to "confirmed" unless another room is in the house or was stayed in. A person already
      * reported to KBS needs `kbsConfirmed`: the report stays on record, the KBS check-out is made on the KBS side.
-     * Nothing is deleted; the audit row is `check_in_undo`.
+     * Nothing is deleted; the audit row is `check_in_undo` (and the reservation's own status change).
+     * `then` gives the stay or the reservation up in the same transaction (cancel with the money settled, park as
+     * "refund pending", or only this room): when the second step fails nothing of the first is written either.
      */
     undoCheckIn(
       ctx: Ctx,
       stayId: string,
-      opts: { reason: string; kbsConfirmed?: boolean | undefined }
+      opts: { reason: string; kbsConfirmed?: boolean | undefined; then?: UndoThenInput | undefined }
     ): ReservationDetail {
       requirePermission(ctx, 'calendar', 'edit')
       requirePermission(ctx, 'booking.undoCheckIn', 'edit')
       const why = parseInput(cancelReasonSchema, opts.reason)
+      const next = opts.then ? parseInput(undoThenSchema, opts.then) : undefined
+      // G-23: the right to refund is asked before anything is read or written.
+      if (next?.do === 'cancel') requireRefundRight(ctx, next.refund)
       return inTransaction(deps, ctx, (tx, audit, now) => {
         const stay = stayOf(tx, stayId)
         if (stay.status !== 'in_house') throw invalid('errors.invalidStayState', { status: stay.status })
@@ -1446,10 +1490,20 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
           .where(and(eq(reservationRooms.reservationId, stay.reservationId), ne(reservationRooms.id, stayId)))
           .all()
         const started = others.some((x) => x.status === 'in_house' || x.status === 'done')
+        const reservationBefore = reservationOf(tx, stay.reservationId).status
+        const reservationAfter = started ? 'checked_in' : 'confirmed'
         tx.update(reservations)
-          .set({ status: started ? 'checked_in' : 'confirmed', updatedAt: iso })
+          .set({ status: reservationAfter, updatedAt: iso })
           .where(eq(reservations.id, stay.reservationId))
           .run()
+        audit({
+          entity: 'reservation',
+          entityId: stay.reservationId,
+          action: 'update',
+          before: { status: reservationBefore },
+          after: { status: reservationAfter },
+          reason: why
+        })
         audit({
           entity: 'reservation_room',
           entityId: stayId,
@@ -1461,7 +1515,30 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
           },
           reason: why
         })
-        return detail(tx, stay.reservationId)
+        // The give-up goes on in the same transaction (a failure undoes the take-back too).
+        if (!next) return detail(tx, stay.reservationId)
+        const id = stay.reservationId
+        if (next.do === 'cancelStay') return cancelStayIn(tx, audit, now, stayId, why)
+        if (next.do === 'park')
+          return endReservationIn(
+            tx,
+            audit,
+            now,
+            id,
+            'parked',
+            { parkedReason: next.park.reason, parkedNote: next.park.note ?? null },
+            next.park.reason
+          )
+        return endReservationIn(
+          tx,
+          audit,
+          now,
+          id,
+          'cancelled',
+          { cancelledAt: now.toISOString(), cancelReason: why },
+          why,
+          settleOf(ctx, id, next.refund)
+        )
       })
     },
 

@@ -665,13 +665,21 @@ export function outcomeFacts(db: Reader, p: Period, localDayOf: (iso: string) =>
       .filter((r) => inRange(r.ts))
       .map((r) => r.id)
   ).size
+  // The count and the sum come from the same rows: a refund without a known rate has no base amount and is in neither.
   const refunds = db
     .select({
       rows: sql<number>`count(*)`,
-      base: sql<number>`coalesce(sum(coalesce(${payments.amountBaseMinor}, 0)), 0)`
+      base: sql<number>`coalesce(sum(${payments.amountBaseMinor}), 0)`
     })
     .from(payments)
-    .where(and(isNull(payments.voidedAt), eq(payments.kind, 'refund'), inPeriod(payments.date, p)))
+    .where(
+      and(
+        isNull(payments.voidedAt),
+        eq(payments.kind, 'refund'),
+        isNotNull(payments.amountBaseMinor),
+        inPeriod(payments.date, p)
+      )
+    )
     .get()
   return { cancelled, noShow, refundRows: refunds?.rows ?? 0, refundBaseMinor: refunds?.base ?? 0 }
 }

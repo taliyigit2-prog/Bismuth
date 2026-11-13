@@ -26,11 +26,19 @@ export function initialMoneyChoice(
   }
 }
 
-/** Why the choice cannot be sent yet (a translation key) — null when it can. */
-export function moneyChoiceProblem(choice: MoneyChoice, collectedMinor: number): string | null {
+/**
+ * Why the choice cannot be sent yet (a translation key) — null when it can. `collectedCurrency` is the currency
+ * of `collectedMinor`: the cap is only compared in the same currency (the service checks the rest, G-131).
+ */
+export function moneyChoiceProblem(
+  choice: MoneyChoice,
+  collectedMinor: number,
+  collectedCurrency?: string
+): string | null {
   if (choice.mode === 'refund') {
     if (!isAmount(choice.amount) || choice.amount.amountMinor <= 0) return 'booking.refund.needAmount'
-    if (choice.amount.amountMinor > collectedMinor) return 'booking.refund.tooMuch'
+    const sameCurrency = !collectedCurrency || choice.amount.currency === collectedCurrency
+    if (sameCurrency && choice.amount.amountMinor > collectedMinor) return 'booking.refund.tooMuch'
   }
   if (choice.mode === 'keep' && choice.note.trim().length < 3) return 'booking.refund.needNote'
   return null

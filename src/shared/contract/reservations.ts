@@ -134,6 +134,17 @@ export const parkSchema = z.object({
   note: z.string().max(500).nullish()
 })
 
+/**
+ * What follows a taken-back check-in in the same transaction (K-55, G-193): cancel the reservation with the money
+ * settled, park it (e.g. "refund pending"), or give up only this room of a reservation with more rooms.
+ */
+export const undoThenSchema = z.discriminatedUnion('do', [
+  z.object({ do: z.literal('cancel'), refund: cancelRefundSchema.optional() }),
+  z.object({ do: z.literal('park'), park: parkSchema }),
+  z.object({ do: z.literal('cancelStay') })
+])
+export type UndoThenInput = z.input<typeof undoThenSchema>
+
 export const paymentCreateSchema = z
   .object({
     reservationId: idSchema.optional(),

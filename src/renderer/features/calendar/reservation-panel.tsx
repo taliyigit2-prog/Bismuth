@@ -423,7 +423,6 @@ function Panel({ view, scope }: { view: BookingView; scope: RefObject<HTMLDivEle
         <GiveUpDialog
           key={stayToGiveUp.id}
           stay={stayToGiveUp}
-          reservationId={r.id}
           rooms={live.length}
           collectedMinor={collected}
           currency={view.folio.currency}

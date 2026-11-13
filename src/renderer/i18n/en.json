@@ -5706,7 +5706,8 @@
       "kbsBody": "{{names}} was reported to KBS. The report stays on record; make the check-out on the KBS side yourself.",
       "kbsConfirm": "Understood, take the check-in back anyway",
       "refundAfter": "After the check-out the refund window opens for the payments.",
-      "refundNeedsManager": "Ask the hotel owner or the manager for the refund."
+      "refundNeedsManager": "Ask the hotel owner or the manager for the refund.",
+      "choose": "How to continue"
     },
     "refund": {
       "collected": "This reservation has {{amount}} collected",

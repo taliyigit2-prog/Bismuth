@@ -171,6 +171,12 @@ export function createPaymentsService(deps: ServiceDeps) {
     refundFolioMinor: number,
     exceptId?: string
   ) {
+    const net = folioNet(tx, folioId, exceptId)
+    if (refundFolioMinor > net) throw invalid('errors.refundExceedsPaid', { paidMinor: Math.max(0, net) })
+  }
+
+  /** Net collected on a folio (payments and deposits minus refunds, voided rows left out); `exceptId` is left out. */
+  function folioNet(tx: Pick<Tx, 'select'>, folioId: string, exceptId?: string): number {
     let net = 0
     for (const p of tx
       .select({ id: payments.id, kind: payments.kind, amount: payments.amountFolioMinor })
@@ -178,7 +184,21 @@ export function createPaymentsService(deps: ServiceDeps) {
       .where(and(eq(payments.folioId, folioId), isNull(payments.voidedAt)))
       .all())
       if (p.id !== exceptId) net += p.kind === 'refund' ? -p.amount : p.amount
-    if (refundFolioMinor > net) throw invalid('errors.refundExceedsPaid', { paidMinor: Math.max(0, net) })
+    return net
+  }
+
+  /**
+   * A collection that refunds were made against cannot be voided or lowered below them: the folio net would go
+   * negative (a refund row is only checked when it is written). `newFolioMinor` = 0 for a void.
+   */
+  function assertCollectionKeepsRefunds(
+    tx: Pick<Tx, 'select'>,
+    folioId: string,
+    paymentId: string,
+    newFolioMinor: number
+  ) {
+    const net = folioNet(tx, folioId, paymentId) + newFolioMinor
+    if (net < 0) throw invalid('errors.refundExceedsPaid', { paidMinor: Math.max(0, net) })
   }
 
   function createIn(
@@ -246,6 +266,8 @@ export function createPaymentsService(deps: ServiceDeps) {
             : {}
         if (before.kind === 'refund' && conv.amountFolioMinor !== undefined)
           assertRefundCovered(tx, folio.id, conv.amountFolioMinor, before.id)
+        if (before.kind !== 'refund' && conv.amountFolioMinor !== undefined)
+          assertCollectionKeepsRefunds(tx, folio.id, before.id, conv.amountFolioMinor)
         const { dayClosedReason: _r, manualRateMicro: _m, manualFolioRateMicro: _f, ...fields } = data
         tx.update(payments)
           .set({ ...fields, ...next, ...conv, updatedAt: now.toISOString() })
@@ -272,6 +294,7 @@ export function createPaymentsService(deps: ServiceDeps) {
         if (before.voidedAt) throw invalid('errors.paymentVoided')
         if (before.collectedAt) throw conflict('errors.paymentCollected')
         if (before.kind === 'refund') requirePermission(ctx, 'payments.refund', 'edit')
+        else assertCollectionKeepsRefunds(tx, before.folioId, before.id, 0)
         guardDay(tx, ctx, before.date, reason.trim())
         tx.update(payments)
           .set({ voidedAt: now.toISOString(), voidReason: reason.trim(), updatedAt: now.toISOString() })

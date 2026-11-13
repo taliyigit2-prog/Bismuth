@@ -346,3 +346,193 @@ describe('iptalde para: iade gir, tahsilat kalsın, iade bekliyor', () => {
     expect(handle.db.select().from(payments).where(eq(payments.id, refund.id)).get()?.handoverId).toBeTruthy()
   })
 })
+
+// Reception allowed to take a check-in back but not to refund.
+const receptionUndoNoRefund = ctxFromPermissions('user-reception-4', 'test-device', 'ipc', {
+  ...defaultPermissions('reception'),
+  'booking.undoCheckIn': 'edit',
+  'payments.refund': 'none'
+})
+
+describe('girişi geri al + iptal/iade/park tek adımda (P17afix)', () => {
+  it('geri alma, iptal ve iade tek işlemde yazılır', async () => {
+    const { svc, r501, cash, book, pay, refunds, audits } = await setup()
+    const a = book(r501.id)
+    const stayId = a.stays[0]!.id
+    pay(a.reservation.id, 150_000, 'deposit')
+    svc.reservations.checkIn(reception, stayId)
+    const done = svc.reservations.undoCheckIn(manager, stayId, {
+      reason: 'odayı beğenmedi',
+      then: { do: 'cancel', refund: { mode: 'refund', methodId: cash, amountMinor: 150_000 } }
+    })
+    expect(done.reservation.status).toBe('cancelled')
+    expect(refunds(a.reservation.id)).toHaveLength(1)
+    expect(audits(stayId).some((x) => x.action === 'check_in_undo')).toBe(true)
+    expect(audits(a.reservation.id).find((x) => x.action === 'cancel')?.afterJson).toContain('refundedMinor')
+  })
+
+  it('iade tavanı aşılırsa hiçbir şey yazılmaz: konaklama odada kalır, geri alma denetim satırı yok', async () => {
+    const { svc, r501, cash, book, pay, refunds, audits } = await setup()
+    const a = book(r501.id)
+    const stayId = a.stays[0]!.id
+    pay(a.reservation.id, 100_000, 'deposit')
+    svc.reservations.checkIn(reception, stayId)
+    expect(() =>
+      svc.reservations.undoCheckIn(manager, stayId, {
+        reason: 'vazgeçti',
+        then: { do: 'cancel', refund: { mode: 'refund', methodId: cash, amountMinor: 100_001 } }
+      })
+    ).toThrow(/refundExceedsPaid/)
+    const view = svc.reservations.view(manager, a.reservation.id)
+    expect(view.reservation.status).toBe('checked_in')
+    expect(view.stays[0]).toMatchObject({ status: 'in_house' })
+    expect(stayOccupantsOf(stayId)[0]?.arrivedAt).toBeTruthy()
+    expect(refunds(a.reservation.id)).toHaveLength(0)
+    expect(audits(stayId).some((x) => x.action === 'check_in_undo')).toBe(false)
+  })
+
+  it('iade yetkisi yoksa (geri alma yetkisi olsa da) hiçbir şey yazılmaz', async () => {
+    const { svc, r501, cash, book, pay } = await setup()
+    const a = book(r501.id)
+    const stayId = a.stays[0]!.id
+    pay(a.reservation.id, 100_000, 'deposit')
+    svc.reservations.checkIn(reception, stayId)
+    expect(() =>
+      svc.reservations.undoCheckIn(receptionUndoNoRefund, stayId, {
+        reason: 'vazgeçti',
+        then: { do: 'cancel', refund: { mode: 'refund', methodId: cash, amountMinor: 100_000 } }
+      })
+    ).toThrow(/PERMISSION_DENIED/)
+    expect(svc.reservations.view(manager, a.reservation.id).stays[0]).toMatchObject({ status: 'in_house' })
+    // Without a refund the same user gives up with the payments kept.
+    expect(
+      svc.reservations.undoCheckIn(receptionUndoNoRefund, stayId, {
+        reason: 'vazgeçti',
+        then: { do: 'cancel', refund: { mode: 'keep', note: 'iptal bedeli' } }
+      }).reservation.status
+    ).toBe('cancelled')
+  })
+
+  it('yetkisiz rol (geri alma yetkisi yok) "sonra" adımıyla da geri alamaz', async () => {
+    const { svc, r501, book } = await setup()
+    const a = book(r501.id)
+    svc.reservations.checkIn(reception, a.stays[0]!.id)
+    expect(() =>
+      svc.reservations.undoCheckIn(reception, a.stays[0]!.id, { reason: 'vazgeçti', then: { do: 'cancel' } })
+    ).toThrow(/PERMISSION_DENIED/)
+  })
+
+  it('geri alma + "iade bekliyor" parkı: gece boşalır, ödeme kalır, tek işlemde', async () => {
+    const { svc, r501, book, pay } = await setup()
+    const a = book(r501.id)
+    pay(a.reservation.id, 100_000, 'deposit')
+    svc.reservations.checkIn(reception, a.stays[0]!.id)
+    const parked = svc.reservations.undoCheckIn(manager, a.stays[0]!.id, {
+      reason: 'vazgeçti',
+      then: { do: 'park', park: { reason: 'refund_pending', note: 'vazgeçti' } }
+    })
+    expect(parked.reservation).toMatchObject({ status: 'parked', parkedReason: 'refund_pending' })
+    expect(parked.folio.creditedMinor).toBe(100_000)
+  })
+
+  it('çok odalı rezervasyonda yalnız bu oda bırakılır; diğer oda odada kalır ve rezervasyon "giriş yaptı" kalır', async () => {
+    const { svc, r501, r502, book } = await setup()
+    const a = book(r501.id)
+    svc.reservations.addRoom(reception, a.reservation.id, {
+      roomId: r502.id,
+      checkIn: '2026-10-01',
+      checkOut: '2026-10-03',
+      nightlyPriceMinor: 200_000
+    })
+    const view = svc.reservations.view(reception, a.reservation.id)
+    for (const s of view.stays) svc.reservations.checkIn(reception, s.id)
+    const after = svc.reservations.undoCheckIn(manager, view.stays[0]!.id, {
+      reason: 'vazgeçti',
+      then: { do: 'cancelStay' }
+    })
+    expect(after.reservation.status).toBe('checked_in')
+    expect(after.stays.find((s) => s.id === view.stays[0]!.id)?.status).toBe('cancelled')
+    expect(after.stays.find((s) => s.id === view.stays[1]!.id)?.status).toBe('in_house')
+  })
+
+  it('geçersiz "sonra" adımı (gerekçesiz "tahsilat kalsın") reddedilir ve geri alma da yazılmaz', async () => {
+    const { svc, r501, book } = await setup()
+    const a = book(r501.id)
+    svc.reservations.checkIn(reception, a.stays[0]!.id)
+    expect(() =>
+      svc.reservations.undoCheckIn(manager, a.stays[0]!.id, {
+        reason: 'vazgeçti',
+        then: { do: 'cancel', refund: { mode: 'keep', note: '' } }
+      })
+    ).toThrow()
+    expect(svc.reservations.view(manager, a.reservation.id).stays[0]).toMatchObject({ status: 'in_house' })
+  })
+
+  it('geri alma, rezervasyonun durum değişikliğini önceki/sonraki değerle denetime yazar', async () => {
+    const { svc, r501, book, audits } = await setup()
+    const a = book(r501.id)
+    svc.reservations.checkIn(reception, a.stays[0]!.id)
+    svc.reservations.undoCheckIn(manager, a.stays[0]!.id, { reason: 'vazgeçti' })
+    const row = audits(a.reservation.id).find((x) => x.action === 'update' && x.reason === 'vazgeçti')
+    expect(row?.beforeJson).toContain('checked_in')
+    expect(row?.afterJson).toContain('confirmed')
+  })
+
+  it('iade yetkisi iptalde sorgudan önce denetlenir: olmayan rezervasyonda da önce yetkisiz hatası gelir', async () => {
+    const { svc, cash } = await setup()
+    expect(() =>
+      svc.reservations.cancel(receptionNoRefund, 'yok-boyle-bir-id', 'vazgeçti', {
+        mode: 'refund',
+        methodId: cash,
+        amountMinor: 1_000
+      })
+    ).toThrow(/PERMISSION_DENIED/)
+  })
+})
+
+describe('iadesi olan tahsilat iade tavanının altına indirilemez (P17afix)', () => {
+  it('iadesi girilmiş tahsilat iptal (void) edilemez; önce iade iptal edilirse edilir', async () => {
+    const { svc, r501, book, pay, refunds } = await setup()
+    const a = book(r501.id)
+    const deposit = pay(a.reservation.id, 100_000, 'deposit')
+    pay(a.reservation.id, 60_000, 'refund')
+    expect(() => svc.payments.void(manager, deposit.id, 'yanlış girildi')).toThrow(/refundExceedsPaid/)
+    svc.payments.void(manager, refunds(a.reservation.id)[0]!.id, 'iade geri alındı')
+    expect(svc.payments.void(manager, deposit.id, 'yanlış girildi').voidedAt).toBeTruthy()
+  })
+
+  it('iadesi olan tahsilatın tutarı iadenin altına düşürülemez, üstüne çıkarılabilir', async () => {
+    const { svc, r501, book, pay } = await setup()
+    const a = book(r501.id)
+    const deposit = pay(a.reservation.id, 100_000, 'deposit')
+    pay(a.reservation.id, 60_000, 'refund')
+    expect(() => svc.payments.update(manager, deposit.id, { amountMinor: 50_000 })).toThrow(
+      /refundExceedsPaid/
+    )
+    expect(svc.payments.update(manager, deposit.id, { amountMinor: 70_000 }).amountMinor).toBe(70_000)
+    expect(svc.payments.update(manager, deposit.id, { amountMinor: 200_000 }).amountMinor).toBe(200_000)
+  })
+
+  it('iadesi olmayan tahsilat serbestçe iptal edilir', async () => {
+    const { svc, r501, book, pay } = await setup()
+    const a = book(r501.id)
+    const deposit = pay(a.reservation.id, 100_000, 'deposit')
+    expect(svc.payments.void(manager, deposit.id, 'yanlış girildi').voidedAt).toBeTruthy()
+  })
+})
+
+describe('rapor: iade sayısı ve tutarı aynı satırlardan (P17afix)', () => {
+  it('kuru bilinmeyen iade ne sayıda ne toplamda yer alır; ikisi tutarlı kalır', async () => {
+    const { svc, r501, r502, book, pay } = await setup()
+    const a = book(r501.id)
+    pay(a.reservation.id, 150_000, 'deposit')
+    const known = pay(a.reservation.id, 50_000, 'refund')
+    const b = book(r502.id)
+    pay(b.reservation.id, 100_000, 'deposit')
+    const unrated = pay(b.reservation.id, 30_000, 'refund')
+    handle.db.update(payments).set({ amountBaseMinor: null }).where(eq(payments.id, unrated.id)).run()
+    const o = svc.reports.occupancy(owner, { from: '2026-10-01', to: '2026-11-01' }).outcomes
+    expect(o.refundRows).toBe(1)
+    expect(o.refundMinor).toBe(known.amountBaseMinor)
+  })
+})

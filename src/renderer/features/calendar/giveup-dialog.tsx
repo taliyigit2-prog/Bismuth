@@ -7,6 +7,7 @@ import { useId, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AlertTriangleIcon } from 'lucide-react'
 import { localDateOf } from '@shared/date'
+import type { UndoThenInput } from '@shared/contract/reservations'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -81,7 +82,7 @@ export function MoneyChoiceFields({
   if (collectedMinor <= 0) return null
   const methods = options.data?.methods ?? []
   const method = value.methodId || methods[0]?.id || ''
-  const problem = tried ? moneyChoiceProblem(value, collectedMinor) : null
+  const problem = tried ? moneyChoiceProblem(value, collectedMinor, currency) : null
   return (
     <fieldset className="grid gap-2" data-testid="money-choice">
       <legend className="mb-1 text-sm font-medium" data-testid="money-collected">
@@ -167,7 +168,6 @@ type Way = 'sameDay' | 'undo' | 'early'
 /** The menu entry "Vazgeçme ve iade" of a reservation whose guest is in the house. */
 export function GiveUpDialog({
   stay,
-  reservationId,
   rooms,
   collectedMinor,
   currency,
@@ -177,7 +177,6 @@ export function GiveUpDialog({
 }: {
   /** The room the guest is in. */
   stay: BookingStay
-  reservationId: string
   /** Rooms of the reservation that are not cancelled: more than one means only this room is given up. */
   rooms: number
   /** Net collected on the folio; null when the user may not see payments. */
@@ -222,20 +221,17 @@ export function GiveUpDialog({
   const [kbsNames, setKbsNames] = useState<string | null>(null)
   const [kbsOk, setKbsOk] = useState(false)
   const done = (): void => onOpenChange(false)
-  const park = useBookingMutation('booking.park', {
-    success: t('booking.toast.parked'),
-    onSuccess: done
-  })
-  const cancel = useBookingMutation('booking.cancel', {
-    success: t('booking.toast.cancelled'),
-    onSuccess: done
-  })
-  const cancelStay = useBookingMutation('booking.cancelStay', {
-    success: t('booking.toast.stayCancelled', { room: stay.roomNumber }),
-    onSuccess: done
-  })
+  // One request: the service takes the check-in back and gives up in the same transaction (K-55, G-193); the
+  // outcome is the last step, so that is what the toast says.
+  const parkIt = rooms === 1 && collected > 0 && money.mode === 'park'
   const undo = useBookingMutation('booking.undoCheckIn', {
-    success: t('booking.toast.checkInUndone', { room: stay.roomNumber }),
+    success:
+      rooms > 1
+        ? t('booking.toast.stayCancelled', { room: stay.roomNumber })
+        : parkIt
+          ? t('booking.toast.parked')
+          : t('booking.toast.cancelled'),
+    onSuccess: done,
     onError: (error) => {
       if (error.messageKey !== 'errors.undoCheckInKbs') return false
       const names = (error.details as { names?: unknown } | undefined)?.names
@@ -243,28 +239,24 @@ export function GiveUpDialog({
       return true
     }
   })
-  const busy = undo.isPending || cancel.isPending || cancelStay.isPending || park.isPending
+  const busy = undo.isPending
   const submit = (e: FormEvent<HTMLFormElement>): void => {
     e.preventDefault()
     if (way !== 'undo') return onCheckout(stay.id, way === 'sameDay' || collected > 0)
     if (deferForPendingAmount(e.currentTarget)) return
     setTried(true)
     if (reason.trim().length < 3) return
-    if (rooms === 1 && collected > 0 && moneyChoiceProblem(money, collected)) return
+    if (rooms === 1 && collected > 0 && moneyChoiceProblem(money, collected, currency)) return
     if (kbsNames !== null && !kbsOk) return
     const text = reason.trim()
-    undo.mutate(
-      { stayId: stay.id, reason: text, ...(kbsOk ? { kbsConfirmed: true } : {}) },
-      {
-        onSuccess: () => {
-          if (rooms > 1) return cancelStay.mutate({ stayId: stay.id, reason: text })
-          if (collected > 0 && money.mode === 'park')
-            return park.mutate({ id: reservationId, park: { reason: 'refund_pending', note: text } })
-          const refund = collected > 0 ? cancelRefundOf(money, options.data?.methods ?? []) : undefined
-          cancel.mutate({ id: reservationId, reason: text, ...(refund ? { refund } : {}) })
-        }
-      }
-    )
+    const refund = collected > 0 && !parkIt ? cancelRefundOf(money, options.data?.methods ?? []) : undefined
+    const then: UndoThenInput =
+      rooms > 1
+        ? { do: 'cancelStay' }
+        : parkIt
+          ? { do: 'park', park: { reason: 'refund_pending', note: text } }
+          : { do: 'cancel', ...(refund ? { refund } : {}) }
+    undo.mutate({ stayId: stay.id, reason: text, ...(kbsOk ? { kbsConfirmed: true } : {}), then })
   }
   const ways: { value: Way; label: string; hint: string }[] = [
     { value: 'sameDay', label: t('booking.giveup.sameDay'), hint: t('booking.giveup.sameDayHint') },
@@ -298,7 +290,7 @@ export function GiveUpDialog({
         <RadioGroup
           value={way}
           onValueChange={(v) => setWay(v as Way)}
-          aria-label={t('booking.giveup.title', { room: stay.roomNumber })}
+          aria-label={t('booking.giveup.choose')}
           className="grid gap-1"
         >
           {ways.map((w) => (

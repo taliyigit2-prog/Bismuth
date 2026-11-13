@@ -113,7 +113,8 @@ export const bookingHandlers = (services: Services): HandlersFor<keyof typeof bo
         ctx,
         services.reservations.undoCheckIn(ctx, input.stayId, {
           reason: input.reason,
-          kbsConfirmed: input.kbsConfirmed
+          kbsConfirmed: input.kbsConfirmed,
+          then: input.then
         }).reservation.id
       ),
     'booking.cancelStay': (ctx, input) =>

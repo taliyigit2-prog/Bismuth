@@ -246,3 +246,6 @@ QA2b, akış testleri C/D) bu plana **Son** satırında katılır; ayrı yürüt
   taşma 0, kesilme 0, telefonda 44 px altı 54 hedef → P18b), Electron e2e Codespace'te tam yeşil (85 geçti, 7 atlandı, 13,5 dk).
   Dalga 1 kontrolleri: decision-auditor (Kritik/Yüksek yok), db-reviewer (Yüksek: S-100 mevcut kurulumda etkisiz → P17d 0019
   kabulüne eklendi), turkish-ui-copy (4 metin düzeltildi). Orta bulgular P17afix'te.
+- 2026-11-13: P17afix ✅ — vazgeçme + iptal/iade/park tek transaction (`booking.undoCheckIn` `then`), iadesi olan tahsilatın
+  void/azaltılması reddedilir, iade yetkisi sorgudan önce, rapor iade sayısı/tutar tutarlı, audit önceki/sonraki durum,
+  istemci iade tavanı para birimine göre (2476 test). **Dalga 1 bitti.** Sadeleştirme (Ponytail) dalga 2 ile birlikte yapılacak.
