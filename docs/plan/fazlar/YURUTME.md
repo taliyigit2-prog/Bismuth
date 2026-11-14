@@ -114,7 +114,7 @@ Harcama sütunu: başlatıcının yazdığı `$` (dalga toplamı, gerçek).
 | 14 | P22b Kabuk soyutlaması `lib/shell` (Electron + tarayıcı) | 22 | renderer/lib/shell, preload | feature-builder | $20–40 | ~$12 | ✅ |
 | 15 | P22c Tauri 2 prototipi + aynı ölçümle karşılaştırma + sahip karar sayfası (**durma noktası**) | 22 | shell-tauri/ (ürün dışı) | rust-shell-builder | $60–120 | ~$25 | ✅ |
 | 16 | P22d Tauri ürünleştirme (yalnız sahip "devam" derse); P22e Rust servis pilotu (yalnız darboğazda) | 22 | shell-tauri, .github, docs | rust-shell-builder + packager | $80–160 (+$100–200) | | ⏭ açılmadı (K-62: ölçüm olumsuz; sahip "devam" demedi) |
-| Son | Tam kontrol sürüsü (bug-hunter + flow-tester modül başına, decision, security, db, ui, screen, privacy, copy, tracer) → **modül başına Ponytail `full` sadeleştirme turu (K-61; testler aynı)** → düzeltme turu → `/owner-review` | — | — | hepsi | $50–75 | | 🔄 |
+| Son | Tam kontrol sürüsü (bug-hunter + flow-tester modül başına, decision, security, db, ui, screen, privacy, copy, tracer) → **modül başına Ponytail `full` sadeleştirme turu (K-61; testler aynı)** → düzeltme turu → `/owner-review` | — | — | hepsi | $50–75 | | ✅ |
 
 Dalga sırası kuralları: bir paket bağımlı olduğu paketten **sonraki** dalgada (P17c → P17b, P18b → P17c, P20b/P20d → P20a,
 P20c → P20b, P21b/P21c → P21a); aynı dalgadaki iki paket aynı dizine dokunmaz. Migrasyon numarası dalga sırasıyla verilir
@@ -448,3 +448,6 @@ QA2b, akış testleri C/D) bu plana **Son** satırında katılır; ayrı yürüt
   136 test yedeğine dokunulmadı, temizlik sahibe soruldu); eskimiş spec'ler güncellendi; gece raporu yazdırma taşması; geç çıkış boş
   tutar, giriş ekranı ve oda tipi alan hataları; yetkisiz rolde gereksiz 403 sorguları; sınır aşan arama girdileri. B5 yanlış pozitif
   (anahtarların 46 px dokunma alanı zaten var). Sıradaki: kontrol ajanları tek tek.
+- 2026-11-14 Son — Ponytail sadeleştirme (2028d72, −14 satır, testler aynı). Sahip onay sayfası yayında
+  (`docs/plan/taslak-onay/2026-11-14-son.md`). **Son dalgası ✅.** Kalan sahip işleri: ekran onayı, gerçek Windows/Mac kurulum
+  (S-80), gerçek kamera + avukat görüşü, Drive'daki eski e2e test yedeklerinin temizliği, v1.0 etiketi.

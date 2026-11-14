@@ -153,3 +153,8 @@ Cevaplar `06-kararlar.md` 7. tura yazılır. Cevap gelmezse varsayılan uygulan�
 | S-119 | Hafta sonu tanımı: fiyat için **Cuma + Cumartesi** (K-44), takvim vurgusu **Cumartesi + Pazar** (G-40). Bu ayrım bilinçli mi, yoksa ikisi de aynı günler mi olsun? (02 raporu Ç-01) | Bilinçli; K-44 detayına tek cümle not düşülür, kod değişmez (P19b) | ✅ (06-kararlar 8. tur: bilinçli) |
 | S-123 | InsightFace'e model kullanımı için **izin e-postası** (`06-kamera-entegrasyonu.md` §6.4) gönderilsin mi? | Varsayılan: gönderilmez; mevcut modellerle devam, risk sahipte (K-57) | ✅ (06-kararlar 8. tur: varsayılan) |
 
+| S-124 | Toplu çıkışta KBS bilgisi eksik odalar ne olsun? | Eksik odalar uyarıda listelenir, çıkış engellenmez | ✅ (06-kararlar 9. tur: öneri) |
+| S-125 | Elle girilen kur son bilinen kurdan çok saparsa? | ≥ %20 sapmada uyarı, kayıt engellenmez; eşik ayar | ✅ (06-kararlar 9. tur: öneri) |
+| S-126 | Avans net maaşı aşarsa? | Uyarı, engel yok | ✅ (06-kararlar 9. tur: öneri) |
+| S-127 | Kapanmış çamaşır ayı yeniden açılabilir mi? | Yönetici/sahip gerekçeyle açar, audit'e yazılır | ✅ (06-kararlar 9. tur: öneri) |
+| S-128 | Pasif oda tipine oda eklenebilir mi? | Hayır, anlaşılır hata | ✅ (06-kararlar 9. tur: öneri) |
