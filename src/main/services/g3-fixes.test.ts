@@ -6,6 +6,7 @@ import { depsOf, roleCtx, testClock } from '../../../tests/factories/ctx'
 import { seededDatabase } from '../../../tests/factories/db'
 import type { DatabaseHandle } from '../db/client'
 import {
+  auditLog,
   cameraEvents,
   contacts,
   guests,
@@ -365,5 +366,43 @@ describe('duplicate names and closed laundry month', () => {
     expect(() => slip('2026-10-12')).toThrow()
     expect(() => svc.laundry.voidDelivery(reception, first.id, 'yanlis')).toThrow()
     expect(slip('2026-11-02').id).toBeTruthy()
+  })
+
+  it('kapanmış çamaşır ayı yönetici/sahip tarafından gerekçeyle yeniden açılır; fiş girilir, fatura yenilenir; audit yazılır (S-127)', async () => {
+    const { svc } = await setup()
+    const lc = svc.contacts.create(owner, { name: 'Camasirci', category: 'laundry' } as never)
+    const t0 = handle.db.select().from(laundryItemTypes).all()[0]!.id
+    svc.laundry.setPrice(owner, {
+      contactId: lc.id,
+      itemTypeId: t0,
+      validFrom: '2026-01-01',
+      unitPriceMinor: 1000
+    } as never)
+    const slip = (date: string) =>
+      svc.laundry.recordDelivery(reception, {
+        contactId: lc.id,
+        date,
+        direction: 'in',
+        items: [{ itemTypeId: t0, qty: 10, stainedQty: 0 }]
+      } as never)
+    slip('2026-10-10')
+    const month = { contactId: lc.id, year: 2026, month: 10 }
+    expect(() => svc.laundry.reopenMonth(owner, { ...month, reason: 'fatura düzeltildi' })).toThrow(
+      /laundryMonthNotSettled/
+    )
+    svc.laundry.settle(owner, { ...month, invoicedTotalMinor: 10000, paid: false } as never)
+    expect(() => slip('2026-10-12')).toThrow(/laundryMonthSettled/)
+    expect(() => svc.laundry.reopenMonth(reception, { ...month, reason: 'fiş unutuldu' })).toThrow(
+      /PERMISSION_DENIED/
+    )
+    expect(() => svc.laundry.reopenMonth(owner, { ...month, reason: '' })).toThrow(/VALIDATION/)
+    const reopened = svc.laundry.reopenMonth(owner, { ...month, reason: 'fiş unutuldu' })
+    expect(reopened.settled).toBeNull()
+    expect(slip('2026-10-12').id).toBeTruthy()
+    const again = svc.laundry.settle(owner, { ...month, invoicedTotalMinor: 20000, paid: false } as never)
+    expect(again.settled?.invoicedTotalMinor).toBe(20000)
+    const audits = handle.db.select().from(auditLog).where(eq(auditLog.action, 'reopen')).all()
+    expect(audits).toHaveLength(1)
+    expect(audits[0]).toMatchObject({ entity: 'laundry_settlement', reason: 'fiş unutuldu' })
   })
 })

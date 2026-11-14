@@ -50,6 +50,8 @@ export interface BookingState {
   taken: { occupied: string[]; blocked: string[]; notForSale?: string[] }
   /** What `booking.hourlyCheck` answers besides the suggested price (a clash, a cleaning-gap warning). */
   hourly?: Partial<ProcedureOutput<'booking.hourlyCheck'>>
+  /** Room numbers `booking.kbsGaps` reports as lacking KBS information (S-124). */
+  kbsGapRooms?: string[]
   payments: Record<string, { kind: 'payment' | 'deposit' | 'refund'; amountMinor: number }[]>
   /** Groups booked in this session (P17b): id → name, leader and folio mode; the rooms are the views with that group. */
   groups?: Record<
@@ -510,6 +512,13 @@ export function bookingTransport(
               view.reservation.status = entering ? 'checked_in' : 'checked_out'
             }
         return groupView(String(i['groupId']))
+      }
+      case 'booking.kbsGaps': {
+        const ids = i['stayIds'] as string[]
+        return Object.values(state.views)
+          .flatMap((v) => v.stays)
+          .filter((s) => ids.includes(s.id) && (state.kbsGapRooms ?? []).includes(s.roomNumber))
+          .map((s) => ({ stayId: s.id, roomNumber: s.roomNumber }))
       }
       case 'booking.addGroupNote': {
         const group = state.groups?.[String(i['groupId'])]

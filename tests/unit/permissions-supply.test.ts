@@ -133,6 +133,11 @@ describe('tedarik ve çamaşırhane yetkileri', () => {
         needs: [need('laundry', 'edit')]
       },
       {
+        name: 'laundry.reopenMonth',
+        body: () => ({ contactId: ids.laundry.id, year: 2026, month: 9, reason: 'fatura yanlış' }),
+        needs: [need('laundry', 'edit'), need('business_day.close', 'edit')]
+      },
+      {
         name: 'laundry.trend',
         body: () => ({ contactId: ids.laundry.id, until: '2026-10-04' }),
         needs: [need('laundry', 'view')]

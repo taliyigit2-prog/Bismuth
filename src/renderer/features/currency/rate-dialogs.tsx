@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import type { FxOverview } from '@shared/contract/external'
+import { rateDeviates } from '@shared/money'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -35,6 +36,10 @@ export function HotelRateDialog({
   const rate = overview.rates.find((r) => r.currency === currency)
   const micro = parseRateMicro(text, f.locale)
   const quote = settings.data?.['fx.quoteHotelRate'] ?? true
+  // A typed rate far from the last known one only gets a warning; saving stays possible (S-125, G-01).
+  const warnPercent = settings.data?.['fx.manualRateWarnPercent'] ?? 20
+  const lastKnown = rate?.marketMicro ?? rate?.hotelMicro ?? null
+  const farOff = micro !== null && rateDeviates(micro, lastKnown, warnPercent)
   const failed = useErrorToast()
   const save = useApiMutation('fx.setHotelRate', { invalidates: ['fx.overview'], onError: failed })
   const close = (): void => {
@@ -136,6 +141,14 @@ export function HotelRateDialog({
                 : t('currency.hotelRate.noMarket')}
           </p>
         </div>
+        {farOff && lastKnown ? (
+          <p role="alert" className="text-warning text-xs" data-testid="hotel-rate-deviation">
+            {t('currency.hotelRate.deviates', {
+              percent: warnPercent,
+              rate: f.number(rateNumber(lastKnown), 4)
+            })}
+          </p>
+        ) : null}
         <p className="text-muted-foreground text-xs">{t('currency.hotelRate.note')}</p>
       </form>
       {/* Outside the form: the switch saves at once, and Enter in the rate field still submits the form. */}

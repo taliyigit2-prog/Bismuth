@@ -72,6 +72,23 @@ describe('grup paneli', () => {
     expect(within(panel).getByTestId('group-check-in')).toBeDisabled()
   })
 
+  it('toplu çıkışta KBS bilgisi eksik odalar adlarıyla uyarılır; çıkış engellenmez (S-124)', async () => {
+    const transport = bookingTransport()
+    const id = await seededGroup(transport)
+    transport.booking.kbsGapRooms = ['102']
+    const user = userEvent.setup()
+    const panel = await openPanel(transport, id)
+    await user.click(await within(panel).findByTestId('group-check-in'))
+    await waitFor(() => expect(within(panel).getByTestId('group-check-out')).toHaveTextContent('(3)'))
+    await user.click(within(panel).getByTestId('group-check-out'))
+    const ask = await screen.findByTestId('kbs-gaps-confirm')
+    expect(ask).toHaveTextContent('102')
+    expect(ask).not.toHaveTextContent('101')
+    expect(transport.callsTo('booking.checkOutMany')).toHaveLength(0)
+    await user.click(screen.getByTestId('kbs-gaps-go'))
+    await waitFor(() => expect(transport.callsTo('booking.checkOutMany')).toHaveLength(1))
+  })
+
   it('bir oda işaretini kaldırınca toplu giriş yalnız kalan odalar için gider', async () => {
     const transport = bookingTransport()
     const id = await seededGroup(transport)

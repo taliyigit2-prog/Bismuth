@@ -10,6 +10,7 @@ import {
   laundryDeliveryListSchema,
   laundryPriceInputSchema,
   laundrySettlementInputSchema,
+  laundryReopenInputSchema,
   PRODUCT_UNITS,
   productCategoryNameSchema,
   productInputSchema,
@@ -312,6 +313,7 @@ export const supplyProcedures = {
   ),
   'laundry.month': proc(contactMonth, laundryMonthViewSchema),
   'laundry.settle': proc(laundrySettlementInputSchema, laundryMonthViewSchema),
+  'laundry.reopenMonth': proc(laundryReopenInputSchema, laundryMonthViewSchema),
   'laundry.trend': proc(
     z
       .object({

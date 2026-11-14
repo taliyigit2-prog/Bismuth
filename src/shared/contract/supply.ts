@@ -156,6 +156,13 @@ export const laundrySettlementInputSchema = yearMonthSchema.extend({
 })
 export type LaundrySettlementInput = z.input<typeof laundrySettlementInputSchema>
 
+/** Opens a settled month again (S-127): manager / owner, with the reason the audit row keeps. */
+export const laundryReopenInputSchema = yearMonthSchema.extend({
+  contactId: idSchema,
+  reason: z.string().trim().min(3).max(300)
+})
+export type LaundryReopenInput = z.input<typeof laundryReopenInputSchema>
+
 /** Pieces already at the laundry before tracking started, per item type id. */
 export const laundryOpeningSchema = z.record(idSchema, z.number().int().min(-100_000).max(100_000))
 

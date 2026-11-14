@@ -174,6 +174,7 @@ export const bookingHandlers = (services: Services): HandlersFor<keyof typeof bo
     'booking.createGroup': (ctx, input) => services.reservations.createGroup(ctx, input),
     'booking.checkInMany': (ctx, input) => services.reservations.checkInMany(ctx, input),
     'booking.checkOutMany': (ctx, input) => services.reservations.checkOutMany(ctx, input),
+    'booking.kbsGaps': (ctx, input) => services.reservations.kbsGaps(ctx, input),
     'booking.addGroupNote': (ctx, input) => services.reservations.addGroupNote(ctx, input),
     'booking.cancelGroup': (ctx, input) => services.reservations.cancelGroup(ctx, input),
     'booking.payGroup': (ctx, input) => services.reservations.payGroup(ctx, input),

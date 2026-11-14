@@ -26,6 +26,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
 import { ResponsiveDialog } from '@/components/responsive-dialog'
 import { ErrorState } from '@/components/states'
+import { useKbsGapsConfirm } from './kbs-gaps-confirm'
 import { useFormat } from '@/hooks/use-format'
 import { deferForPendingAmount } from '@/features/settings/use-admin'
 import { useIsMobile } from '@/hooks/use-mobile'
@@ -140,6 +141,7 @@ function Group({
     success: t('booking.group.toast.checkedOut'),
     onSuccess: reset
   })
+  const kbsGaps = useKbsGapsConfirm()
   const toggle = (stayId: string, on: boolean): void => {
     const next = new Set(chosen)
     if (on) next.add(stayId)
@@ -151,6 +153,7 @@ function Group({
   const total = view.totals
   return (
     <>
+      {kbsGaps.dialog}
       <SheetHeader className="gap-2 border-b text-start">
         <div className="flex flex-wrap items-center gap-2 pe-8">
           <UsersIcon className="size-5 shrink-0" aria-hidden />
@@ -180,7 +183,11 @@ function Group({
               size="sm"
               variant="secondary"
               disabled={!toCheckOut.length || busy}
-              onClick={() => checkOut.mutate({ groupId: view.id, stayIds: toCheckOut })}
+              onClick={() =>
+                void kbsGaps.check(toCheckOut, () =>
+                  checkOut.mutate({ groupId: view.id, stayIds: toCheckOut })
+                )
+              }
               data-testid="group-check-out"
             >
               <LogOutIcon aria-hidden />

@@ -190,6 +190,8 @@ export const settingsShape = {
   'fx.hotelRates': z.partialRecord(currencyCode, z.number().int().positive().safe()),
   /** "Misafire bu kurdan söyle": hotel rates are used by the converter, the guest view and new records. */
   'fx.quoteHotelRate': z.boolean(),
+  /** A typed rate this many % or more away from the last known one gets a warning, never a block (S-125). */
+  'fx.manualRateWarnPercent': z.number().int().min(1).max(1000),
   /** Rounding of the converter's answer (the stored records always keep minor units). */
   'fx.rounding': z.enum(['minor', 'unit', 'ten']),
   'weather.enabled': z.boolean(),
@@ -353,6 +355,7 @@ export const SETTINGS_DEFAULTS: SettingsValues = {
   'fx.showTcmb': true,
   'fx.hotelRates': {},
   'fx.quoteHotelRate': true,
+  'fx.manualRateWarnPercent': 20,
   'fx.rounding': 'minor',
   'weather.enabled': true,
   'weather.location': null,

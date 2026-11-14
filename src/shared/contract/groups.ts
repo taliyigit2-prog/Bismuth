@@ -43,6 +43,16 @@ export const groupStaysSchema = z
   .strict()
 export type GroupStaysInput = z.input<typeof groupStaysSchema>
 
+/**
+ * Which of these rooms still lack KBS information (someone in the room not reported, or nobody recorded) before a
+ * bulk check-out (S-124). Only a warning: the check-out itself is never refused for it.
+ */
+export const kbsGapsInputSchema = z
+  .object({ stayIds: z.array(idSchema).min(1).max(MAX_GROUP_ROOMS) })
+  .strict()
+export type KbsGapsInput = z.input<typeof kbsGapsInputSchema>
+export const kbsGapsSchema = z.array(z.object({ stayId: idSchema, roomNumber: z.string() }))
+
 export const groupNoteSchema = z.object({ groupId: idSchema, text: bookingNoteTextSchema }).strict()
 export type GroupNoteInput = z.input<typeof groupNoteSchema>
 

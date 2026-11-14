@@ -417,6 +417,11 @@
         "attachBodyNew_one": "Seçilen {{count}} rezervasyon yeni bir grupta birleşir. Konaklama ve tutarlar değişmez.",
         "attachBodyNew_other": "Seçilen {{count}} rezervasyon yeni bir grupta birleşir. Konaklama ve tutarlar değişmez."
       }
+    },
+    "kbsGaps": {
+      "title": "Bazı odaların KBS bilgisi eksik",
+      "body": "Şu odalarda KBS bildirimi eksik: {{rooms}}. Çıkış yine de yapılabilir; KBS işlemlerini sonra tamamlayın.",
+      "go": "Yine de çıkış yap"
     }
   },
   "today": {
@@ -1800,7 +1805,9 @@
     "dateTooFar": "Gider tarihi en fazla bir yıl sonrası olabilir.",
     "notEmployedOn": "{{date}} tarihinde çalışan işte değil; bu güne kayıt girilemez.",
     "notEmployedInPeriod": "Çalışan {{month}}/{{year}} döneminde işte değil; bu döneme tutar yazılamaz.",
-    "laundryMonthSettled": "Bu ayın faturası girilmiş; gelen fiş eklenemez ya da iptal edilemez."
+    "laundryMonthSettled": "Bu ayın faturası girilmiş; gelen fiş eklenemez ya da iptal edilemez.",
+    "roomTypeInactive": "Bu oda tipi kapalı. Önce oda tipini etkinleştirin, sonra odayı ekleyin ya da taşıyın.",
+    "laundryMonthNotSettled": "Bu ayın faturası girilmemiş; açılacak bir şey yok."
   },
   "common": {
     "close": "Kapat",
@@ -3998,7 +4005,15 @@
       "confirm": "Kaydı iptal et",
       "saved": "Teslim kaydı iptal edildi"
     },
-    "closedType": "{{name}} (listeden kaldırıldı)"
+    "closedType": "{{name}} (listeden kaldırıldı)",
+    "reopen": {
+      "open": "Ayı yeniden aç",
+      "title": "{{month}} ayı yeniden açılsın mı?",
+      "body": "Faturası girilmiş ay açılır: fatura bilgisi silinir, ödendiyse gideri iptal edilir. Fişleri düzelttikten sonra faturayı yeniden girin. Gerekçe kayda geçer.",
+      "reason": "Gerekçe",
+      "confirm": "Yeniden aç",
+      "saved": "{{month}} yeniden açıldı."
+    }
   },
   "contacts": {
     "description": "Tedarikçi, çamaşırhane, usta, taksi ve acil numaralar. Numaraya tıklayınca kopyalanır; telefonda dokununca aranır.",
@@ -4808,7 +4823,8 @@
       "saved": "{{currency}} için otel kuru kaydedildi",
       "cleared": "{{currency}} için piyasa kuruna dönüldü",
       "quote": "Misafire bu kurdan söyle",
-      "quoteHelp": "Açıkken çevirici, misafir ekranı ve yeni ödeme ve gider kayıtları otel kurunu kullanır."
+      "quoteHelp": "Açıkken çevirici, misafir ekranı ve yeni ödeme ve gider kayıtları otel kurunu kullanır.",
+      "deviates": "Yazdığınız kur, son bilinen kurdan {{percent}}% ve üzeri farklı: {{rate}}. Doğruysa kaydedebilirsiniz."
     },
     "tabs": {
       "fx": "Döviz",

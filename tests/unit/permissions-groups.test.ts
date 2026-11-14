@@ -134,4 +134,11 @@ describe('grup ödemesi, gruba bağlama ve son iptaller (P17c)', () => {
     expect((await call('accountant', 'reservations.recentEnded', { days: 7 })).status).toBe(200)
     expect((await call('reception', 'reservations.recentEnded', { days: 0 })).status).toBe(400)
   })
+
+  it('booking.kbsGaps: kat hizmetleri reddedilir (takvim yok), resepsiyon ve muhasebeci okur (S-124)', async () => {
+    expect((await call('housekeeping', 'booking.kbsGaps', { stayIds })).status).toBe(403)
+    expect((await call('reception', 'booking.kbsGaps', { stayIds })).status).toBe(200)
+    expect((await call('accountant', 'booking.kbsGaps', { stayIds })).status).toBe(200)
+    expect((await call('reception', 'booking.kbsGaps', { stayIds: [] })).status).toBe(400)
+  })
 })

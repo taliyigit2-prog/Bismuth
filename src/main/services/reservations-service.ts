@@ -33,6 +33,8 @@ import {
   groupNoteSchema,
   groupPaySchema,
   groupStaysSchema,
+  kbsGapsInputSchema,
+  type KbsGapsInput,
   type GroupAttachInput,
   type GroupCancelInput,
   type GroupCreateInput,
@@ -78,6 +80,7 @@ import {
   type Slot,
   type StaySlot
 } from '@shared/domain/stays'
+import { kbsMissing } from '@shared/domain/occupants'
 import { standingNoteAlert } from '@shared/domain/cell-status'
 import type * as z from 'zod'
 import {
@@ -2090,6 +2093,59 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
       })
       for (const l of result.left) afterCheckout(ctx, l.roomId, l.day)
       return result.view
+    },
+
+    /**
+     * Rooms among `stayIds` that still lack KBS information (a person in the room not reported, or nobody recorded;
+     * S-124). Read only: a bulk check-out lists them as a warning and goes on. Empty when the hotel's KBS checks
+     * are off or the user may not see the people.
+     */
+    kbsGaps(ctx: Ctx, input: KbsGapsInput): { stayId: string; roomNumber: string }[] {
+      requirePermission(ctx, 'calendar', 'view')
+      const data = parseInput(kbsGapsInputSchema, input)
+      if (!ctx.can('in_house', 'view') || !readSetting(db, 'kbs.checksEnabled')) return []
+      const stayIds = [...new Set(data.stayIds)]
+      const nowIso = deps.clock().toISOString()
+      const stays = db
+        .select({
+          id: reservationRooms.id,
+          roomId: reservationRooms.roomId,
+          reservationId: reservationRooms.reservationId,
+          checkIn: reservationRooms.checkIn,
+          checkOut: reservationRooms.checkOut,
+          checkedInAt: reservationRooms.checkedInAt,
+          checkedOutAt: reservationRooms.checkedOutAt,
+          status: reservationRooms.status,
+          roomNumber: rooms.number
+        })
+        .from(reservationRooms)
+        .innerJoin(rooms, eq(rooms.id, reservationRooms.roomId))
+        .where(inArray(reservationRooms.id, stayIds))
+        .all()
+      const occupants = db
+        .select()
+        .from(stayOccupants)
+        .where(inArray(stayOccupants.reservationRoomId, stayIds))
+        .all()
+      const gaps = new Set(
+        kbsMissing(
+          stays.map((s) => ({
+            id: s.id,
+            roomId: s.roomId,
+            reservationId: s.reservationId,
+            checkIn: s.checkIn as LocalDate,
+            checkOut: s.checkOut as LocalDate,
+            checkedInAt: s.checkedInAt,
+            checkedOutAt: s.checkedOutAt,
+            cancelled: s.status === 'cancelled'
+          })),
+          occupants,
+          nowIso
+        )
+          .filter((k) => k.kind !== 'checkout')
+          .map((k) => k.reservationRoomId)
+      )
+      return stays.filter((s) => gaps.has(s.id)).map((s) => ({ stayId: s.id, roomNumber: s.roomNumber }))
     },
 
     /** One note on every reservation of the group (bulk note); a note is never edited or deleted. */

@@ -43,6 +43,8 @@ import {
   groupNoteSchema,
   groupPaySchema,
   groupStaysSchema,
+  kbsGapsInputSchema,
+  kbsGapsSchema,
   groupViewSchema
 } from '../groups'
 import {
@@ -205,6 +207,8 @@ export const bookingProcedures = {
   /** Every named room or none: one transaction. */
   'booking.checkInMany': proc(groupStaysSchema, groupViewSchema),
   'booking.checkOutMany': proc(groupStaysSchema, groupViewSchema),
+  /** Rooms among `stayIds` with missing KBS information; the bulk check-out dialog lists them (S-124). */
+  'booking.kbsGaps': proc(kbsGapsInputSchema, kbsGapsSchema),
   'booking.addGroupNote': proc(groupNoteSchema, groupViewSchema),
   'booking.cancelGroup': proc(groupCancelSchema, groupViewSchema),
   /** One payment on the group's single account, spread over the rooms' open balances (S-106). */

@@ -367,6 +367,7 @@ function LaundryView({
             base={base}
             canInvoice={edit}
             canPay={edit && can('expenses', 'edit')}
+            canReopen={edit && can('business_day.close', 'edit')}
           />
         ) : null}
         {money ? (

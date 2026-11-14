@@ -21,6 +21,7 @@ import { ClosedDayReason, useMayWriteClosedDay } from '@/components/closed-day-r
 import { useFormat, type Format } from '@/hooks/use-format'
 import { ApiError } from '@/lib/transport/types'
 import { useTransport } from '@/lib/api/api-context'
+import { useKbsGapsConfirm } from './kbs-gaps-confirm'
 import { useCan } from '@/lib/view-as'
 import {
   bookingErrorText,
@@ -96,6 +97,7 @@ export function SelectionBar({
     ungrouped.length > 0 &&
     (groupIds.length === 1 || (groupIds.length === 0 && ungrouped.length > 1))
 
+  const kbsGaps = useKbsGapsConfirm()
   const report = (
     key: 'checkIn' | 'checkOut',
     r: { ok: number; failed: number; firstError: unknown }
@@ -140,6 +142,7 @@ export function SelectionBar({
       aria-label={t('calendar.quick.bulk.label')}
       data-testid="selection-bar"
     >
+      {kbsGaps.dialog}
       <p className="me-auto text-sm font-medium" role="status" data-testid="selection-count">
         {t('calendar.quick.bulk.count', { count: picked.length })}
       </p>
@@ -158,7 +161,12 @@ export function SelectionBar({
             size="sm"
             variant="secondary"
             disabled={!toCheckOut.length || busy}
-            onClick={() => void run('checkOut', toCheckOut)}
+            onClick={() =>
+              void kbsGaps.check(
+                toCheckOut.map((x) => x.id),
+                () => void run('checkOut', toCheckOut)
+              )
+            }
             data-testid="bulk-check-out"
           >
             <LogOutIcon aria-hidden />

@@ -89,13 +89,23 @@ export function createRoomsService(deps: ServiceDeps) {
       )
       .get() !== undefined
 
+  /** A room can only be put on a room type that exists and is switched on (S-128). */
+  const assertTypeActive = (tx: Pick<typeof db, 'select'>, roomTypeId: string): void => {
+    const type = tx
+      .select({ id: roomTypes.id, active: roomTypes.active })
+      .from(roomTypes)
+      .where(eq(roomTypes.id, roomTypeId))
+      .get()
+    if (!type) throw notFound('room_type', roomTypeId)
+    if (!type.active) throw invalid('errors.roomTypeInactive')
+  }
+
   function createRoom(ctx: Ctx, input: RoomInput): RoomRow {
     requirePermission(ctx, 'settings.rooms', 'edit')
     const data = parseInput(roomInputSchema, input)
     return inTransaction(deps, ctx, (tx, audit, now) => {
       if (numberTaken(tx, data.number)) throw conflict('errors.roomNumberTaken', { number: data.number })
-      if (!tx.select({ id: roomTypes.id }).from(roomTypes).where(eq(roomTypes.id, data.roomTypeId)).get())
-        throw notFound('room_type', data.roomTypeId)
+      assertTypeActive(tx, data.roomTypeId)
       const id = newId(now)
       const row = {
         id,
@@ -237,11 +247,8 @@ export function createRoomsService(deps: ServiceDeps) {
       const data = parseInput(roomUpdateSchema, input)
       return inTransaction(deps, ctx, (tx, audit, now) => {
         const before = getRoomTx(tx, id)
-        if (
-          data.roomTypeId &&
-          !tx.select({ id: roomTypes.id }).from(roomTypes).where(eq(roomTypes.id, data.roomTypeId)).get()
-        )
-          throw notFound('room_type', data.roomTypeId)
+        // Staying on the type it already has is fine even if that type was switched off later (S-128).
+        if (data.roomTypeId && data.roomTypeId !== before.roomTypeId) assertTypeActive(tx, data.roomTypeId)
         if (data.number && data.number !== before.number) {
           if (numberTaken(tx, data.number, id))
             throw conflict('errors.roomNumberTaken', { number: data.number })

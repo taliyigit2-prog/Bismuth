@@ -119,6 +119,17 @@ export function multiplyRatio(m: Money, numerator: number | bigint, denominator:
 }
 
 /**
+ * True when a typed rate (micro units) is `percent` % or more away from the last known one: exact integer
+ * comparison, no floats (S-125). No reference rate (null / not positive) means nothing to compare with.
+ */
+export function rateDeviates(typedMicro: number, referenceMicro: number | null, percent: number): boolean {
+  if (referenceMicro === null || referenceMicro <= 0 || typedMicro <= 0) return false
+  const diff = BigInt(typedMicro) - BigInt(referenceMicro)
+  const abs = diff < 0n ? -diff : diff
+  return abs * 100n >= BigInt(referenceMicro) * BigInt(Math.max(0, Math.round(percent)))
+}
+
+/**
  * m rounded to a whole multiple of `unitMinor` minor units, half away from zero (₺2.347,50 to whole lira → ₺2.348;
  * to tens → ₺2.350). For amounts said out loud; records keep their minor units.
  */

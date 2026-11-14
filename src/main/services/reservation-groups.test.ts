@@ -155,6 +155,22 @@ describe('toplu giriş ve çıkış', () => {
     expect(out.rooms.map((r) => r.status)).toEqual(['checked_out', 'checked_out', 'checked_out'])
   })
 
+  it('KBS bilgisi eksik odalar listelenir, çıkış yine engellenmez; yetkisiz rol reddedilir (S-124)', async () => {
+    const { svc, input } = await setup()
+    const g = svc.reservations.createGroup(reception, input())
+    const stayIds = g.rooms.flatMap((r) => r.stays.map((s) => s.stayId))
+    expect(svc.reservations.kbsGaps(reception, { stayIds })).toEqual([])
+    svc.reservations.checkInMany(reception, { groupId: g.id, stayIds })
+    const gaps = svc.reservations.kbsGaps(reception, { stayIds })
+    expect(gaps.map((x) => x.stayId).sort()).toEqual([...stayIds].sort())
+    expect(gaps.every((x) => x.roomNumber.length > 0)).toBe(true)
+    const out = svc.reservations.checkOutMany(reception, { groupId: g.id, stayIds })
+    expect(out.rooms.map((r) => r.status)).toEqual(['checked_out', 'checked_out', 'checked_out'])
+    expect(() => svc.reservations.kbsGaps(housekeeping, { stayIds })).toThrowError(
+      /PERMISSION_DENIED|permission/i
+    )
+  })
+
   it('biri başarısızsa hiçbiri giriş yapmaz (atomik)', async () => {
     const { svc, input } = await setup()
     const g = svc.reservations.createGroup(reception, input())
