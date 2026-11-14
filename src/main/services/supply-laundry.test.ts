@@ -82,7 +82,7 @@ describe('tedarik: fiyat geçmişi ve zam uyarısı (§6.13, G-170)', () => {
   it('kategori ve ürün yönetimi; stok sayacı isteğe bağlı; yetkisiz rol göremez', async () => {
     const { deps } = await setup()
     const supply = createSupplyService(deps)
-    const cat = supply.createCategory(owner, 'Kahvaltı')
+    const cat = supply.createCategory(owner, 'Mutfak malzemesi')
     const seeded = supply.listCategories(reception).find((c) => c.code !== null)!
     expect(seeded.displayName?.tr).toBeTruthy()
     expect(supply.updateCategory(owner, seeded.id, { name: 'Temizlik ürünleri' })).toMatchObject({
@@ -270,8 +270,8 @@ describe('çamaşırhane: giden/gelen, bekleyen ve aylık mutabakat (§6.13, S-9
         items: [{ itemTypeId: sheet, qty: 1 }]
       })
     ).toThrow(/PERMISSION_DENIED/)
-    const custom = laundry.createItemType(reception, 'Masa örtüsü')
-    expect(custom).toMatchObject({ name: 'Masa örtüsü', code: null, displayName: null })
+    const custom = laundry.createItemType(reception, 'Perde')
+    expect(custom).toMatchObject({ name: 'Perde', code: null, displayName: null })
     expect(() => laundry.createItemType(reception, ' ')).toThrow(/errors.validation/)
     expect(() =>
       laundry.settle(roleCtx('housekeeping'), {

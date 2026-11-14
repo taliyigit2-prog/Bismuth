@@ -1,6 +1,8 @@
 // The purchases of the last two months (S-74, K-35): each is one expense in the ledger with its product lines.
 // A wrong slip is voided here with a reason (it stays in the ledger as voided and leaves the price history); the
 // slip's photo can be looked at or added.
+import { maxLengthOf } from '@shared/contract/limits'
+import { reasonSchema } from '@shared/contract/expenses'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { CameraIcon, ReceiptTextIcon } from 'lucide-react'
@@ -53,7 +55,13 @@ function VoidDialog({ purchase, onClose }: { purchase: PurchaseView; onClose: ()
         </AlertDialogHeader>
         <div className="grid gap-1.5">
           <Label htmlFor="void-reason">{t('supply.purchases.reason')}</Label>
-          <Textarea id="void-reason" rows={2} value={reason} onChange={(e) => setReason(e.target.value)} />
+          <Textarea
+            id="void-reason"
+            rows={2}
+            value={reason}
+            maxLength={maxLengthOf(reasonSchema)}
+            onChange={(e) => setReason(e.target.value)}
+          />
         </div>
         <AlertDialogFooter>
           <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>

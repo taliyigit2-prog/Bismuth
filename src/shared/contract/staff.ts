@@ -9,7 +9,10 @@ import { optionalPhone } from './text'
 
 const name = z.string().trim().min(1).max(60)
 
-export const employeeCreateSchema = z.object({
+const endAfterStart = (v: { startDate?: string; endDate?: string | null }): boolean =>
+  !v.startDate || !v.endDate || v.endDate >= v.startDate
+
+const employeeBaseSchema = z.object({
   firstName: name,
   lastName: name,
   position: z.string().trim().max(60).nullish(),
@@ -29,13 +32,18 @@ export const employeeCreateSchema = z.object({
     })
     .optional()
 })
+export const employeeCreateSchema = employeeBaseSchema.refine(endAfterStart, {
+  path: ['endDate'],
+  message: 'end before start'
+})
 export type EmployeeCreateInput = z.input<typeof employeeCreateSchema>
 
-export const employeeUpdateSchema = employeeCreateSchema
+export const employeeUpdateSchema = employeeBaseSchema
   .omit({ salary: true })
   .partial()
   .extend({ active: z.boolean().optional() })
   .refine((p) => Object.keys(p).length > 0, { message: 'empty patch' })
+  .refine(endAfterStart, { path: ['endDate'], message: 'end before start' })
 export type EmployeeUpdateInput = z.input<typeof employeeUpdateSchema>
 
 /** Hiring a former employee again from a day after their last day (B6: a new employment period). */

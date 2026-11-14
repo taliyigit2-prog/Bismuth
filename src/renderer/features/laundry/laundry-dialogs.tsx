@@ -5,6 +5,8 @@
 // - the agreed unit price from a date (a rise is a new row, the old prices stay for the old slips);
 // - the laundry's invoice of the month (then "Ödendi" writes the one expense, G-71);
 // - voiding a wrong slip with a reason.
+import { maxLengthOf } from '@shared/contract/limits'
+import { reasonSchema } from '@shared/contract/expenses'
 import { useId, useState, type FormEvent, type KeyboardEvent } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import { InfoIcon } from 'lucide-react'
@@ -586,6 +588,7 @@ export function VoidDeliveryDialog({
             id="laundry-void-reason"
             rows={2}
             value={reason}
+            maxLength={maxLengthOf(reasonSchema)}
             onChange={(e) => setReason(e.target.value)}
           />
         </div>

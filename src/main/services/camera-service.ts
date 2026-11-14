@@ -40,7 +40,7 @@ import { parseProfileTable, recommendProfile } from '@shared/domain/camera-profi
 import { isCameraHost, rtspHost } from '@shared/domain/camera-source'
 import { ulid } from '@shared/ids'
 import { localDateOf } from '@shared/date'
-import { and, count as countRows, desc, eq, gte, inArray, isNotNull, lt } from 'drizzle-orm'
+import { and, count as countRows, desc, eq, gte, inArray, isNotNull, isNull, lt } from 'drizzle-orm'
 import {
   auditLog,
   cameraEvents,
@@ -505,6 +505,30 @@ export function createCameraService(deps: CameraServiceDeps) {
         .slice(0, 50)
       const sized = Number.isInteger(width) && width > 0 && Number.isInteger(height) && height > 0
       return { header, frame: sized ? { width, height } : null, boxes: sized ? boxes : [] }
+    },
+
+    /**
+     * The Bugün card (K-50): how many alarms nobody looked at yet and whether the sidecar gave up / crashed in the
+     * last day (`camera_problem` notification rows). Counts only, no personal data.
+     */
+    todayNotice(ctx: Ctx): { newAlerts: number; problem: boolean } {
+      requirePermission(ctx, 'camera', 'view')
+      const newAlerts =
+        db.select({ n: countRows() }).from(cameraEvents).where(eq(cameraEvents.state, 'new')).get()?.n ?? 0
+      const since = new Date(deps.clock().getTime() - 86_400_000).toISOString()
+      const problem = !!db
+        .select({ id: notifications.id })
+        .from(notifications)
+        .where(
+          and(
+            eq(notifications.kind, 'camera_problem'),
+            isNull(notifications.readAt),
+            isNull(notifications.dismissedAt),
+            gte(notifications.dueAt, since)
+          )
+        )
+        .get()
+      return { newAlerts, problem }
     },
 
     /** The alarm list: Bismuth's own `camera_events` (P20c), newest first; phones get id, time and state only (S-108). */

@@ -38,7 +38,8 @@ import {
   requirePermission,
   stamps,
   type ServiceDeps,
-  type Tx
+  type Tx,
+  assertNameFree
 } from './kit'
 
 export type ProductCategoryRow = typeof productCategories.$inferSelect
@@ -186,7 +187,8 @@ export function createSupplyService(deps: ServiceDeps) {
       requirePermission(ctx, 'supplies', 'edit')
       const label = parseInput(productCategoryNameSchema, name)
       return inTransaction(deps, ctx, (tx, audit, now) => {
-        const last = tx.select({ sort: productCategories.sort }).from(productCategories).all()
+        const last = tx.select().from(productCategories).all()
+        assertNameFree(last, label)
         const row: ProductCategoryRow = {
           id: newId(now),
           code: null,
@@ -259,6 +261,7 @@ export function createSupplyService(deps: ServiceDeps) {
       return inTransaction(deps, ctx, (tx, audit, now) => {
         categoryOf(tx, data.categoryId)
         checkSupplier(tx, data.supplierContactId)
+        assertNameFree(tx.select().from(products).all(), data.name)
         const row: ProductRow = {
           id: newId(now),
           name: data.name,

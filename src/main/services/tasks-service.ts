@@ -30,6 +30,7 @@ import {
   type TaskTemplateUpdate
 } from '@shared/contract/operations'
 import { addDays, localDateOf, type LocalDate } from '@shared/date'
+import { TOURISM_TEMPLATE_CODE } from '@shared/domain/today'
 import { addMinutes, datePart, localDateTimeOf, type LocalDateTime } from '@shared/domain/local-datetime'
 import {
   isOverdue,
@@ -49,6 +50,7 @@ import {
 import type { DbOrTx } from '../db/client'
 import type { I18nText } from '../db/schema/columns'
 import {
+  kbsImports,
   notifications,
   reservationRooms,
   reservations,
@@ -254,6 +256,46 @@ export function syncLegalPeriodTask(
         reason: `${code}:${period}`
       })
     }
+  }
+}
+
+/**
+ * Tek giriş (G-60), the other direction: ticking the monthly tourism-statistics task marks the previous month's
+ * table(s) "bildirildi" (and un-ticking takes the mark back), so Bugün shows one obligation, not a task and a warning.
+ */
+function syncTourismMark(
+  tx: Tx,
+  audit: (entry: AuditEntry) => void,
+  ctx: Ctx,
+  template: TaskTemplateRow,
+  dueAt: string | null,
+  reported: boolean,
+  now: Date
+): void {
+  if (template.code !== TOURISM_TEMPLATE_CODE || !dueAt) return
+  const period = shiftMonth(dueAt.slice(0, 7), -1)
+  const year = Number(period.slice(0, 4))
+  const month = Number(period.slice(5, 7))
+  const iso = now.toISOString()
+  const rows = tx
+    .select()
+    .from(kbsImports)
+    .where(and(eq(kbsImports.periodYear, year), eq(kbsImports.periodMonth, month)))
+    .all()
+    .filter((r) => (reported ? r.reportedAt === null : r.reportedAt !== null))
+  for (const r of rows) {
+    const set = reported
+      ? { reportedAt: iso, reportedBy: ctx.userId, updatedAt: iso }
+      : { reportedAt: null, reportedBy: null, updatedAt: iso }
+    tx.update(kbsImports).set(set).where(eq(kbsImports.id, r.id)).run()
+    audit({
+      entity: 'kbs_import',
+      entityId: r.id,
+      action: 'update',
+      before: { reportedAt: r.reportedAt, reportedBy: r.reportedBy },
+      after: { reportedAt: set.reportedAt, reportedBy: set.reportedBy },
+      reason: `task:${template.code}`
+    })
   }
 }
 
@@ -496,6 +538,8 @@ export function createTasksService(deps: ServiceDeps) {
     }
     const after = getTask(tx, before.id)
     audit({ entity: 'task', entityId: before.id, action: 'done', before, after })
+    if (before.templateId)
+      syncTourismMark(tx, audit, ctx, getTemplate(tx, before.templateId), before.dueAt, true, now)
     return after
   }
 
@@ -565,7 +609,12 @@ export function createTasksService(deps: ServiceDeps) {
         const scheduleChanged =
           JSON.stringify(after.recurrence) !== JSON.stringify(before.recurrence) ||
           after.firstDueAt !== before.firstDueAt
-        if (scheduleChanged) cancelUpcoming(tx, audit, id, now)
+        // Only N of an every-N-stays rule changed: the counters are live (derived from checkouts), nothing to cancel.
+        const onlyNChanged =
+          parseRule(before.recurrence)?.kind === 'everyNStays' &&
+          parseRule(after.recurrence)?.kind === 'everyNStays' &&
+          after.firstDueAt === before.firstDueAt
+        if (scheduleChanged && !onlyNChanged) cancelUpcoming(tx, audit, id, now)
         followTemplate(tx, audit, before, after, now)
         return after
       })
@@ -750,10 +799,16 @@ export function createTasksService(deps: ServiceDeps) {
             continue
           let since: LocalDate = t.firstDueAt ? datePart(t.firstDueAt as LocalDateTime) : dayOf(t.createdAt)
           for (const c of tx
-            .select({ doneAt: tasks.doneAt, updatedAt: tasks.updatedAt })
+            .select({
+              doneAt: tasks.doneAt,
+              updatedAt: tasks.updatedAt,
+              status: tasks.status,
+              cancelReason: tasks.cancelReason
+            })
             .from(tasks)
             .where(and(mine, inArray(tasks.status, ['done', 'cancelled'])))
             .all()) {
+            if (c.status === 'cancelled' && c.cancelReason === TEMPLATE_CHANGED_REASON) continue
             const closed = dayOf(c.doneAt ?? c.updatedAt)
             if (closed > since) since = closed
           }
@@ -861,6 +916,8 @@ export function createTasksService(deps: ServiceDeps) {
           .set({ status: 'open', doneAt: null, doneBy: null, updatedAt: iso })
           .where(eq(tasks.id, id))
           .run()
+        if (before.templateId)
+          syncTourismMark(tx, audit, ctx, getTemplate(tx, before.templateId), before.dueAt, false, now)
         if (before.templateId && before.dueAt) {
           const template = getTemplate(tx, before.templateId)
           if (parseRule(template.recurrence)?.kind === 'interval') {
@@ -1420,6 +1477,7 @@ export function createTasksService(deps: ServiceDeps) {
               let lastDoneAt: string | null = null
               for (const x of mine) {
                 if (x.status === 'open') continue
+                if (x.status === 'cancelled' && x.cancelReason === TEMPLATE_CHANGED_REASON) continue
                 const closed = dayOf(x.doneAt ?? x.updatedAt)
                 if (closed > since) since = closed
                 if (x.status === 'done' && x.doneAt && (!lastDoneAt || x.doneAt > lastDoneAt))

@@ -168,6 +168,8 @@ export const todaySummarySchema = z.object({
   /** Cash that should be in the drawer, per currency (cash viewers). */
   drawer: z.array(z.object({ currency: z.string(), amountMinor: money })).nullable(),
   specialDays: z.array(todaySpecialDaySchema),
+  /** Camera alarms nobody looked at and a crashed sidecar (K-50); null without the camera right. */
+  camera: z.object({ newAlerts: z.number().int(), problem: z.boolean() }).nullable().optional(),
   reminders: z.array(todayReminderSchema)
 })
 export type TodaySummaryDto = z.infer<typeof todaySummarySchema>

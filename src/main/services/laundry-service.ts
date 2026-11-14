@@ -50,7 +50,8 @@ import {
   requirePermission,
   stamps,
   type ServiceDeps,
-  type Tx
+  type Tx,
+  assertNameFree
 } from './kit'
 
 export type LaundryItemTypeRow = typeof laundryItemTypes.$inferSelect
@@ -170,6 +171,13 @@ export function createLaundryService(deps: ServiceDeps) {
       )
       .get()
 
+  /** An incoming slip changes the month's total: not once the month's invoice is entered (the stored comparison would go stale). */
+  const assertMonthOpen = (tx: Reader, contactId: string, direction: string, date: string): void => {
+    if (direction !== 'in') return
+    if (settlementRow(tx, contactId, Number(date.slice(0, 4)), Number(date.slice(5, 7))))
+      throw conflict('errors.laundryMonthSettled')
+  }
+
   const compute = (tx: Reader, contactId: string, year: number, month: number) => {
     const { from, last } = monthBounds(year, month)
     return laundrySettlement(
@@ -200,7 +208,8 @@ export function createLaundryService(deps: ServiceDeps) {
       if (!label || label.length > 80)
         throw invalid('errors.validation', { fields: { name: ['1–80 characters'] } })
       return inTransaction(deps, ctx, (tx, audit, now) => {
-        const sorts = tx.select({ sort: laundryItemTypes.sort }).from(laundryItemTypes).all()
+        const sorts = tx.select().from(laundryItemTypes).all()
+        assertNameFree(sorts, label)
         const row: LaundryItemTypeRow = {
           id: newId(now),
           code: null,
@@ -295,6 +304,7 @@ export function createLaundryService(deps: ServiceDeps) {
           )
           .all()
         if (known.length !== data.items.length) throw notFound('laundry_item_type')
+        assertMonthOpen(tx, data.contactId, data.direction, data.date)
         const row: LaundryDeliveryRow = {
           id: newId(now),
           date: data.date,
@@ -335,6 +345,7 @@ export function createLaundryService(deps: ServiceDeps) {
         const before = tx.select().from(laundryDeliveries).where(eq(laundryDeliveries.id, id)).get()
         if (!before) throw notFound('laundry_delivery', id)
         if (before.voidedAt) throw conflict('errors.alreadyCancelled')
+        assertMonthOpen(tx, before.laundryContactId, before.direction, before.date)
         tx.update(laundryDeliveries)
           .set({ voidedAt: now.toISOString(), updatedAt: now.toISOString() })
           .where(eq(laundryDeliveries.id, id))

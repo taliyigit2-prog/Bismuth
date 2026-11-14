@@ -1,4 +1,6 @@
 // Cancel a task with a reason (§6.17 open → cancelled; the task is never deleted, the reason stays with it).
+import { maxLengthOf } from '@shared/contract/limits'
+import { taskCancelSchema } from '@shared/contract/operations'
 import { useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -72,6 +74,7 @@ export function CancelTaskDialog({ task, onClose }: { task: TaskItem; onClose: (
             id={`${id}-reason`}
             rows={2}
             value={reason}
+            maxLength={maxLengthOf(taskCancelSchema.shape.reason)}
             autoFocus
             onChange={(e) => setReason(e.target.value)}
             aria-invalid={tried && missing}

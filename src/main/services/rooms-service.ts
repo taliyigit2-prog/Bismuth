@@ -1,6 +1,6 @@
 // Room types, rooms, capacity history, housekeeping status and blocks (03-mimari.md §4.2, §6.1; G-11, G-12, G-38,
 // G-90, K-27). Read methods need no special permission (room lists are not sensitive); writes are checked here.
-import { and, asc, desc, eq, gt, gte, isNull, lt } from 'drizzle-orm'
+import { and, asc, desc, eq, gt, gte, isNull, lt, ne } from 'drizzle-orm'
 import {
   hkNoteSchema,
   hkStatusSchema,
@@ -18,7 +18,7 @@ import {
 import { localDate, localDateOf, type LocalDate } from '@shared/date'
 import { nameKey } from '@shared/name-key'
 import { blockKindOf, closesRoom, stateAfterCheckout } from '@shared/domain/housekeeping'
-import { roomBlocks, roomCapacityChanges, roomNights, rooms, roomTypes } from '../db/schema'
+import { roomBlocks, roomCapacityChanges, roomIssues, roomNights, rooms, roomTypes } from '../db/schema'
 import type { Ctx } from './context'
 import { permissionDenied } from './errors'
 import {
@@ -541,6 +541,37 @@ function hkBlockOf(tx: Pick<Tx, 'select'>, roomId: string, now: Date): RoomBlock
 }
 
 /**
+ * A room that was closed (maintenance / out of order, or a room-closing issue) while a guest slept in it got no
+ * block then (the guest had to be moved first). Once the guest is gone the block opens, so the room is not sold again.
+ */
+function openDeferredBlocks(
+  tx: Tx,
+  audit: AuditFn,
+  ctx: Ctx,
+  roomId: string,
+  hk: RoomRow['hkStatus'],
+  now: Date
+): void {
+  const kind = blockKindOf(hk)
+  if (kind && !hkBlockOf(tx, roomId, now))
+    openAutoBlock(tx, audit, ctx, now, { roomId, kind, reason: '', source: 'hk_status' })
+  const issues = tx
+    .select()
+    .from(roomIssues)
+    .where(
+      and(eq(roomIssues.roomId, roomId), eq(roomIssues.blocksRoom, true), ne(roomIssues.status, 'resolved'))
+    )
+    .all()
+  for (const issue of issues) {
+    if (
+      liveBlockWhere(tx, and(eq(roomBlocks.roomIssueId, issue.id), gt(roomBlocks.dateTo, localDateOf(now))))
+    )
+      continue
+    openAutoBlock(tx, audit, ctx, now, { roomId, kind: 'oos', reason: issue.title, roomIssueId: issue.id })
+  }
+}
+
+/**
  * The check-out event for room status (S-14): a guest left the room — a check-out, a same-day stay's check-out
  * or the old room of a room move — so it needs cleaning (`stateAfterCheckout`; a room under maintenance or out of
  * order keeps its state). Runs inside the caller's transaction and writes its own audit row. The reservation
@@ -554,6 +585,7 @@ export function markRoomDirtyAfterCheckout(
   now: Date
 ): RoomRow {
   const before = getRoomTx(tx, roomId)
+  openDeferredBlocks(tx, audit, ctx, roomId, before.hkStatus, now)
   const next = stateAfterCheckout(before.hkStatus)
   if (next === before.hkStatus && next !== 'dirty') return before
   const iso = now.toISOString()

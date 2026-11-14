@@ -27,7 +27,14 @@ import { PhotoPicker, useUploadPhotos } from '@/components/record-photos'
 import { ResponsiveDialog } from '@/components/responsive-dialog'
 import { RoomPicker, type PickerRoom } from '@/components/room-picker'
 import { TimeInput } from '@/components/time-input'
+import { limitsOf, maxLengthOf } from '@shared/contract/limits'
+import { lostItemInputSchema, lostItemReturnSchema } from '@shared/contract/operations'
+import { reasonSchema } from '@shared/contract/expenses'
 import { useAdminMutation } from '../settings/use-admin'
+
+const LOST = limitsOf(lostItemInputSchema)
+const RETURN = limitsOf(lostItemReturnSchema)
+const REASON_MAX = maxLengthOf(reasonSchema)
 
 const PLACE_KINDS = ['room', 'area'] as const
 type PlaceKind = (typeof PLACE_KINDS)[number]
@@ -119,6 +126,7 @@ export function NewLostItemDialog({
           <Input
             id={`${id}-what`}
             value={what}
+            maxLength={LOST.description.maxLength}
             onChange={(e) => setWhat(e.target.value)}
             placeholder={t('lostItems.form.whatPlaceholder')}
             aria-invalid={tried && problems.what}
@@ -133,6 +141,7 @@ export function NewLostItemDialog({
           <Input
             id={`${id}-by`}
             value={foundBy}
+            maxLength={LOST.foundBy.maxLength}
             onChange={(e) => setFoundBy(e.target.value)}
             placeholder={t('lostItems.form.foundByPlaceholder')}
             autoComplete="off"
@@ -170,6 +179,7 @@ export function NewLostItemDialog({
               <Input
                 id={`${id}-place`}
                 value={place}
+                maxLength={LOST.locationText.maxLength}
                 onChange={(e) => setPlace(e.target.value)}
                 placeholder={t('lostItems.form.placePlaceholder')}
                 aria-invalid={tried && problems.place}
@@ -186,6 +196,7 @@ export function NewLostItemDialog({
           <Input
             id={`${id}-storage`}
             value={storage}
+            maxLength={LOST.storageLocation.maxLength}
             onChange={(e) => setStorage(e.target.value)}
             placeholder={t('lostItems.form.storagePlaceholder')}
             aria-invalid={tried && problems.storage}
@@ -199,6 +210,7 @@ export function NewLostItemDialog({
             id={`${id}-note`}
             rows={2}
             value={note}
+            maxLength={LOST.note.maxLength}
             onChange={(e) => setNote(e.target.value)}
             placeholder={t('lostItems.form.notePlaceholder')}
           />
@@ -271,6 +283,7 @@ export function ReturnDialog({
           <Input
             id={`${id}-to`}
             value={to}
+            maxLength={RETURN.returnedTo.maxLength}
             onChange={(e) => setTo(e.target.value)}
             aria-invalid={tried && missing}
             autoComplete="off"
@@ -301,6 +314,7 @@ export function ReturnDialog({
             id={`${id}-note`}
             rows={2}
             value={note}
+            maxLength={RETURN.note.maxLength}
             onChange={(e) => setNote(e.target.value)}
             placeholder={t('lostItems.return.notePlaceholder')}
           />
@@ -346,6 +360,7 @@ export function StatusReasonDialog({
             id="lost-reason"
             rows={2}
             value={reason}
+            maxLength={REASON_MAX}
             onChange={(e) => setReason(e.target.value)}
             placeholder={t(`lostItems.${mode}.reasonPlaceholder`)}
           />
