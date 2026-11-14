@@ -11,6 +11,23 @@ export interface SidecarDirs {
   modelsDir?: string
 }
 
+/** The `camera.*` settings the sidecar reads at start: only a change of one of these restarts it. */
+export const SIDECAR_SETTING_KEYS: readonly string[] = [
+  'camera.location',
+  'camera.similarityThreshold',
+  'camera.confirmSimilarity',
+  'camera.uncertainMargin',
+  'camera.idleFaceScanEvery',
+  'camera.streamMaxWidth',
+  'camera.minFaceScore',
+  'camera.minFacePx',
+  'camera.confirmationFrames',
+  'camera.processEveryN',
+  'camera.alarmCooldownSeconds',
+  'camera.verifiedTtlSeconds',
+  'camera.zonePolygon'
+]
+
 export function buildSidecarConfig(
   settings: SettingsValues,
   source: string | null,

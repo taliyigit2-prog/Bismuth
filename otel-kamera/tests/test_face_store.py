@@ -69,3 +69,12 @@ def test_kuyruk_sınırlıdır_en_eski_düşer_ve_her_çalışmanın_kendi_boot_
         queue.add(track, b"x")
     assert [a.id for a in queue.since(0)] == [3, 4]
     assert AlertQueue().boot != AlertQueue().boot
+
+
+def test_liste_ilk_kez_gelene_kadar_yüklenmedi_sayılır_boş_liste_de_yükler():
+    store = FaceStore()
+    assert not store.loaded
+    store.clear()
+    assert not store.loaded
+    store.replace([])
+    assert store.loaded

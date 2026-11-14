@@ -39,7 +39,9 @@ import {
   createDiscoverer,
   createFaceCrypto,
   createProbeRunner,
-  findCameraAddon
+  findCameraAddon,
+  SIDECAR_SETTING_KEYS,
+  type CameraRuntime
 } from './camera'
 import { removeLegacyCameraFiles } from './camera/legacy'
 import { LOCAL_CONFIG, readConnectionConfig, writeConnectionConfig } from './server/connection-config'
@@ -448,7 +450,7 @@ async function start(): Promise<void> {
         )
       }
     })
-    services.camera.attach(camera)
+    services.camera.attach({ ...camera, apply: (o) => coalesced(o) })
     cameraRuntime = camera
     // P20c: the first versions kept plain face files; Bismuth's own database is the only keeper now (K-51, K-53).
     removeLegacyCameraFiles(paths.root)
@@ -490,16 +492,53 @@ async function start(): Promise<void> {
       clearInterval(camTimer)
       clearInterval(purgeTimer)
     })
+    // Starts and restarts are gathered for a moment: the wizard's save (address + settings) restarts the sidecar
+    // once, and when it is up the face list goes out at once instead of waiting for the next round (no window in
+    // which every guest looks like a stranger).
+    let pending: {
+      restart: boolean
+      waiters: { resolve: () => void; reject: (e: unknown) => void }[]
+    } | null = null
+    const flush = (): void => {
+      const batch = pending
+      pending = null
+      if (!batch) return
+      camera.apply({ restart: batch.restart }).then(
+        () => {
+          batch.waiters.forEach((w) => w.resolve())
+          void pushFacesWhenUp()
+        },
+        (error: unknown) => batch.waiters.forEach((w) => w.reject(error))
+      )
+    }
+    const pushFacesWhenUp = async (): Promise<void> => {
+      for (let i = 0; i < 240; i++) {
+        const state = camera.snapshot().state
+        if (state === 'running') {
+          await services.camera.tick(systemCtx(), { force: true }).catch(() => null)
+          return
+        }
+        if (state === 'stopped' || state === 'gaveUp') return
+        await new Promise((r) => setTimeout(r, 500))
+      }
+    }
+    const coalesced: CameraRuntime['apply'] = (o) =>
+      new Promise<void>((resolve, reject) => {
+        if (!pending) {
+          pending = { restart: false, waiters: [] }
+          setTimeout(flush, 300)
+        }
+        pending.restart ||= o?.restart === true
+        pending.waiters.push({ resolve, reject })
+      })
     const apply = (restart: boolean): void =>
-      void camera.apply({ restart }).catch((error: unknown) => log.warn('camera sidecar', error))
+      void coalesced({ restart }).catch((error: unknown) => log.warn('camera sidecar', error))
     services.settings.onChange((_values, changed) => {
       // Not while the hotel is being set up (the wizard's camera step): the first round after setup starts it.
-      // The notice's contact line is read by the screen only; the sidecar does not care.
-      if (
-        services.setup.isDone() &&
-        changed.some((key) => key.startsWith('camera.') && key !== 'camera.privacyContact')
-      )
-        apply(true)
+      // Only what the sidecar reads restarts it; on/off is a start or a stop.
+      if (!services.setup.isDone()) return
+      if (changed.some((key) => SIDECAR_SETTING_KEYS.includes(key))) apply(true)
+      else if (changed.includes('camera.enabled')) apply(false)
     })
     app.on('will-quit', () => void camera.stop())
     if (services.setup.isDone() && hostRuntime.guard.replaced() === null) apply(false)

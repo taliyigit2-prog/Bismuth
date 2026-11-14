@@ -192,7 +192,7 @@ def test_ağ_kapalıyken_hizmet_gerçek_yükleyicilerle_açılır_tanır_ve_alar
     monkeypatch.setitem(sys.modules, "insightface.app", insight)
     rec = Recorder()
     service = SecurityService(  # face_engine ve person_detector verilmez: gerçek yükleyiciler çalışır
-        faces=FaceStore(), alerts=AlertQueue(), settings=cfg, recorder=rec, grabber_factory=FakeGrabber, sleep=lambda _s: None
+        faces=FaceStore(loaded=True), alerts=AlertQueue(), settings=cfg, recorder=rec, grabber_factory=FakeGrabber, sleep=lambda _s: None
     )
     service._grabber = FakeGrabber(frame=noise_frame())
     from security_service import _LoopState

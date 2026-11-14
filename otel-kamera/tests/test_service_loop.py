@@ -21,7 +21,7 @@ def cfg(settings):
 def build(cfg, faces, detector=None, recorder=None):
     app = FakeInsightApp(faces)
     service = SecurityService(
-        faces=FaceStore(),
+        faces=FaceStore(loaded=True),
         alerts=AlertQueue(),
         settings=cfg,
         face_engine=FaceEngine(settings=cfg, app=app),
@@ -126,3 +126,18 @@ def test_kayıtlı_iz_yabancıya_geçmez_ardışık_eşleşmemede_kayıtsız_olu
     assert [kind == "known" for kind in labels] == [True, True, False, False]
     assert labels[-1] == "unknown"
     assert rec.calls == []  # henüz CONFIRMATION_FRAMES kez kayıtsız görülmedi
+
+
+def test_yüz_listesi_gelmeden_tanımsız_yüz_alarm_üretmez_liste_gelince_üretir(cfg):
+    """Yeniden başlatma sonrası ilk tur: liste henüz yok, misafir de personel de tanımsız görünür; alarm yok."""
+    from security_service import _LoopState
+
+    rec = Recorder()
+    service, _, _ = build(cfg, [fake_face(unit_embedding(7))], recorder=rec)
+    service.faces._loaded = False
+    state = _LoopState()
+    service._tick(state)
+    assert rec.calls == []
+    service.faces.replace([])
+    service._tick(state)
+    assert len(rec.calls) == 1

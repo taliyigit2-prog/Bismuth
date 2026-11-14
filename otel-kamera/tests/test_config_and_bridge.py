@@ -45,7 +45,7 @@ def test_redact_masks_credentials_in_rtsp_urls():
 
 
 def test_redact_masks_passwords_with_slash_or_at_sign():
-    for pw in ("p/ss", "p@ss", "a:b@c/d"):
+    for pw in ("p/ss", "p@ss", "a:b@c/d", "pa'ss", 'pa"ss', "pa`ss"):
         out = redact("hata rtsp:" "//admin:" + pw + "@10.0.0.9:554/x")
         assert pw not in out and "admin" not in out and "10.0.0.9:554/x" in out
 

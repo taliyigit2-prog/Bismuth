@@ -270,7 +270,7 @@ export function purgeExpired(tx: Writer, audit: AuditFn, now: Date): PurgeResult
   // One statement: no id list (parameter limit), and the cleared rows leave the expiry index scan.
   const crops = tx
     .update(cameraEvents)
-    .set({ cropEnc: null, expiresAt: null, updatedAt: iso })
+    .set({ cropEnc: null, expiresAt: null, guestId: null, updatedAt: iso })
     .where(
       and(
         isNotNull(cameraEvents.cropEnc),
@@ -279,6 +279,11 @@ export function purgeExpired(tx: Writer, audit: AuditFn, now: Date): PurgeResult
       )
     )
     .run().changes
+  // KVKK: an event with no sealed picture left keeps no link to a guest either (the row stays, the field is cleared).
+  tx.update(cameraEvents)
+    .set({ guestId: null, updatedAt: iso })
+    .where(and(isNull(cameraEvents.cropEnc), isNotNull(cameraEvents.guestId)))
+    .run()
   if (crops > 0)
     audit({
       entity: 'camera_event',

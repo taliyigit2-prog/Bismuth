@@ -233,6 +233,11 @@ export function createSidecar(opts: SidecarOptions): Sidecar {
       state = 'stopped'
       return
     }
+    afterCrash()
+  }
+
+  /** One more failed run (the process died, or it could not even be started): backoff, a notice, finally give up. */
+  function afterCrash(): void {
     const t = now()
     crashTimes = [...crashTimes.filter((c) => t - c < windowMs), t]
     totalCrashes++
@@ -275,9 +280,10 @@ export function createSidecar(opts: SidecarOptions): Sidecar {
         return
       }
       lastError = redactSecrets(error instanceof Error ? error.message : String(error))
-      state = 'stopped'
-      wantRunning = false
       note('not started: configuration failed')
+      // Counted like a crash: a few tries with a pause, then one "gave up" notice (not a retry every round).
+      if (wantRunning) afterCrash()
+      else state = 'stopped'
       return
     }
     if (gen !== generation || !wantRunning) return

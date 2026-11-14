@@ -8,9 +8,9 @@ import type { DatabaseHandle } from '../db/client'
 import {
   cameraEvents,
   contacts,
+  guests,
   kbsImports,
   laundryItemTypes,
-  notifications,
   roomBlocks,
   roomTypes,
   salesChannels,
@@ -111,36 +111,60 @@ describe('room closed while a guest is in it', () => {
 })
 
 describe('Bugün', () => {
-  it('shows camera alarms and a crashed camera process only to those with the camera right', async () => {
-    const { svc } = await setup()
+  it('camera card: null while the camera is off; counts recent unseen alarms; problem follows the live sidecar state', async () => {
+    const { svc, clock } = await setup()
     const summary = (ctx: unknown) => todaySummaryOf(svc, ctx)
+    expect(summary(owner).camera ?? null).toBeNull() // camera.enabled is off by default
+    svc.settings.set(owner, { 'camera.enabled': true } as never)
     expect(summary(owner).camera).toEqual({ newAlerts: 0, problem: false })
     const now = new Date('2026-10-15T09:00:00.000Z').toISOString()
+    const addEvent = (id: string, at: string) =>
+      handle.db
+        .insert(cameraEvents)
+        .values({ id, kind: 'alarm', occurredAt: at, state: 'new', createdAt: at, updatedAt: at } as never)
+        .run()
+    addEvent('ev1', now)
+    let snap = { state: 'running', crashes: 0 }
+    svc.camera.attach({
+      snapshot: () => snap,
+      bridge: () => null,
+      apply: () => Promise.resolve(),
+      restart: () => Promise.resolve(),
+      stop: () => Promise.resolve()
+    } as never)
+    expect(summary(owner).camera).toEqual({ newAlerts: 1, problem: false })
+    snap = { state: 'gaveUp', crashes: 5 }
+    expect(summary(owner).camera).toEqual({ newAlerts: 1, problem: true })
+    clock.set('2026-10-30T09:00:00.000Z') // 15 days later: the alarm is past `camera.alertRetentionDays`
+    expect(summary(owner).camera).toEqual({ newAlerts: 0, problem: true }) // still gave up: the card stays
+    snap = { state: 'running', crashes: 0 }
+    expect(summary(owner).camera).toEqual({ newAlerts: 0, problem: false })
+    expect(summary(housekeeping).camera ?? null).toBeNull()
+  })
+
+  it('retention purge empties the sealed picture and the guest link of an alarm; the row stays', async () => {
+    const { svc, rooms, book } = await setup()
+    await book(rooms[0]!.id, '2026-10-15', '2026-10-16')
+    const guest = handle.db.select().from(guests).get()!
+    const old = '2026-10-10T09:00:00.000Z'
     handle.db
       .insert(cameraEvents)
       .values({
-        id: 'ev1',
+        id: 'ev-old',
         kind: 'alarm',
-        occurredAt: now,
-        state: 'new',
-        createdAt: now,
-        updatedAt: now
+        occurredAt: old,
+        state: 'seen',
+        guestId: guest.id,
+        cropEnc: Buffer.from('sealed'),
+        expiresAt: '2026-10-13T09:00:00.000Z',
+        createdAt: old,
+        updatedAt: old
       } as never)
       .run()
-    handle.db
-      .insert(notifications)
-      .values({
-        id: 'n1',
-        kind: 'camera_problem',
-        refId: 'gaveUp',
-        title: 'x',
-        dueAt: now,
-        createdAt: now,
-        updatedAt: now
-      } as never)
-      .run()
-    expect(summary(owner).camera).toEqual({ newAlerts: 1, problem: true })
-    expect(summary(housekeeping).camera ?? null).toBeNull()
+    svc.camera.purge(owner)
+    const row = handle.db.select().from(cameraEvents).where(eq(cameraEvents.id, 'ev-old')).get()!
+    expect(row.cropEnc).toBeNull()
+    expect(row.guestId).toBeNull()
   })
 
   it('ticking the monthly tourism task marks the table reported and clears the reminder', async () => {

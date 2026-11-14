@@ -37,9 +37,13 @@ export interface HikvisionForm {
 }
 
 /** The Hikvision main stream of a channel: `/Streaming/Channels/<channel>01` (channel 1 → 101, 2 → 201 …). */
+/** `encodeURIComponent` leaves `! ' ( ) *` as they are; a camera address carries them as `%XX` too. */
+const encodeCredential = (text: string): string =>
+  encodeURIComponent(text).replace(/[!'()*]/g, (c) => '%' + c.charCodeAt(0).toString(16).toUpperCase())
+
 export function buildHikvisionRtsp(form: HikvisionForm): string {
   const port = form.port ?? DEFAULT_RTSP_PORT
-  const auth = form.user ? `${encodeURIComponent(form.user)}:${encodeURIComponent(form.password)}` + '@' : ''
+  const auth = form.user ? `${encodeCredential(form.user)}:${encodeCredential(form.password)}` + '@' : ''
   return (
     SCHEME +
     auth +

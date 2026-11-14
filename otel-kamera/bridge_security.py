@@ -35,7 +35,7 @@ def verify_stream_token(secret: str, value: str, now: Optional[float] = None) ->
 
 
 # Son `@` işaretine kadar: elle yazılan şifre `/`, `:` ya da `@` içerebilir.
-_URL_CREDENTIALS = re.compile(r"(?i)\b([a-z][a-z0-9+.-]*://)[^\s\"'`]*@")
+_URL_CREDENTIALS = re.compile(r"(?i)\b([a-z][a-z0-9+.-]*://)\S*@")
 
 
 def redact(text: str) -> str:

@@ -51,9 +51,17 @@ def encode_embedding(vec: np.ndarray) -> str:
 class FaceStore:
     """İçerideki misafirlerin yüzleri. Okuma anlık görüntü verir; tam değiştirme tek kilit altındadır."""
 
-    def __init__(self) -> None:
+    def __init__(self, loaded: bool = False) -> None:
         self._lock = threading.Lock()
         self._faces: List[ActiveFace] = []
+        # Bismuth listeyi ilk kez gönderene kadar kimse "tanımsız" sayılamaz: yeniden başlatma sonrası yanlış alarm kapısı.
+        self._loaded = loaded
+
+    @property
+    def loaded(self) -> bool:
+        """Bismuth'tan en az bir kez (boş da olsa) liste geldi mi?"""
+        with self._lock:
+            return self._loaded
 
     def replace(self, items: Sequence[Tuple[str, str, str, str]]) -> int:
         """`(id, ad, oda, base64 vektör)` listesiyle tüm listeyi değiştirir; biri geçersizse hiçbiri alınmaz."""
@@ -62,6 +70,7 @@ class FaceStore:
         parsed: List[ActiveFace] = [(fid, name, room, decode_embedding(emb)) for fid, name, room, emb in items]
         with self._lock:
             self._faces = parsed
+            self._loaded = True
         return len(parsed)
 
     def snapshot(self) -> List[ActiveFace]:

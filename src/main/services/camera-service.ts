@@ -40,7 +40,7 @@ import { parseProfileTable, recommendProfile } from '@shared/domain/camera-profi
 import { isCameraHost, rtspHost } from '@shared/domain/camera-source'
 import { ulid } from '@shared/ids'
 import { localDateOf } from '@shared/date'
-import { and, count as countRows, desc, eq, gte, inArray, isNotNull, isNull, lt } from 'drizzle-orm'
+import { and, count as countRows, desc, eq, gte, inArray, isNotNull, lt } from 'drizzle-orm'
 import {
   auditLog,
   cameraEvents,
@@ -508,26 +508,24 @@ export function createCameraService(deps: CameraServiceDeps) {
     },
 
     /**
-     * The Bugün card (K-50): how many alarms nobody looked at yet and whether the sidecar gave up / crashed in the
-     * last day (`camera_problem` notification rows). Counts only, no personal data.
+     * The Bugün card (K-50): unseen alarms of the last `camera.alertRetentionDays` days and whether the sidecar is
+     * down now (gave up, or crashing repeatedly and not running), read from its live state. Null while the camera
+     * is switched off. Counts only, no personal data.
      */
-    todayNotice(ctx: Ctx): { newAlerts: number; problem: boolean } {
+    todayNotice(ctx: Ctx): { newAlerts: number; problem: boolean } | null {
       requirePermission(ctx, 'camera', 'view')
+      if (!readSetting(db, 'camera.enabled')) return null
+      const days = readSetting(db, 'camera.alertRetentionDays')
+      const since = new Date(deps.clock().getTime() - days * 86_400_000).toISOString()
       const newAlerts =
-        db.select({ n: countRows() }).from(cameraEvents).where(eq(cameraEvents.state, 'new')).get()?.n ?? 0
-      const since = new Date(deps.clock().getTime() - 86_400_000).toISOString()
-      const problem = !!db
-        .select({ id: notifications.id })
-        .from(notifications)
-        .where(
-          and(
-            eq(notifications.kind, 'camera_problem'),
-            isNull(notifications.readAt),
-            isNull(notifications.dismissedAt),
-            gte(notifications.dueAt, since)
-          )
-        )
-        .get()
+        db
+          .select({ n: countRows() })
+          .from(cameraEvents)
+          .where(and(eq(cameraEvents.state, 'new'), gte(cameraEvents.occurredAt, since)))
+          .get()?.n ?? 0
+      const snap = runtime?.snapshot() ?? null
+      const problem =
+        snap !== null && (snap.state === 'gaveUp' || (snap.crashes >= 3 && snap.state !== 'running'))
       return { newAlerts, problem }
     },
 

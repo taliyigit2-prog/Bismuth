@@ -111,7 +111,7 @@ def build(cfg, faces, detector=None):
     app = FakeInsightApp(faces)
     rec = Recorder()
     service = SecurityService(
-        faces=FaceStore(),
+        faces=FaceStore(loaded=True),
         alerts=AlertQueue(),
         settings=cfg,
         face_engine=FaceEngine(settings=cfg, app=app),

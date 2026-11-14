@@ -18,6 +18,7 @@ import {
 import { buildSidecarConfig } from './config'
 import { removeLegacyCameraFiles } from './legacy'
 import { redactSecrets } from './redact'
+import { SIDECAR_SETTING_KEYS } from './config'
 
 const FIXTURE = fileURLToPath(new URL('../../../tests/fixtures/fake-sidecar.mjs', import.meta.url))
 const ROOT = fileURLToPath(new URL('../../..', import.meta.url))
@@ -204,6 +205,26 @@ describe('yan süreç yaşam döngüsü (K-49)', () => {
     expect(record()).toHaveLength(0)
   })
 
+  it('yapılandırma okunamazsa (izin hatası) sınırlı denenir, bir kez vazgeçme bildirimi verilir', async () => {
+    const { sidecar, notices, record } = make(
+      {},
+      {
+        giveUpAfter: 3,
+        notifyAfter: 99,
+        backoffMs: () => 10,
+        buildConfig: () => {
+          throw new Error('EACCES: permission denied')
+        }
+      }
+    )
+    await sidecar.start()
+    await until(() => sidecar.snapshot().state === 'gaveUp')
+    expect(notices).toEqual([{ kind: 'gaveUp', crashes: 3 }])
+    expect(record()).toHaveLength(0)
+    await new Promise((r) => setTimeout(r, 100))
+    expect(sidecar.snapshot().state).toBe('gaveUp') // no endless retries
+  })
+
   it('başlatılamayan komut (ENOENT) çökme sayılır, program çökmez', async () => {
     const { sidecar } = make(
       {},
@@ -318,7 +339,7 @@ describe('ayar ve sır', () => {
   })
 
   it('şifrede / ya da @ olsa da kamera şifresi maskelenir', () => {
-    for (const pw of ['p/ss', 'p@ss', 'a:b@c/d']) {
+    for (const pw of ['p/ss', 'p@ss', 'a:b@c/d', "pa'ss", 'pa"ss', 'pa`ss']) {
       const out = redactSecrets('fail rtsp:' + '//admin:' + pw + '@10.0.0.9:554/x')
       expect(out).not.toContain(pw)
       expect(out).not.toContain('admin')
@@ -370,5 +391,20 @@ describe('eski düz dosyalar (P20c; K-51, K-53)', () => {
     expect(existsSync(join(root, 'camera', 'ultralytics'))).toBe(true)
     // Nothing left to remove the second time.
     expect(removeLegacyCameraFiles(root)).toEqual([])
+  })
+})
+
+describe('yan sürecin okuduğu ayarlar', () => {
+  it('yalnız yan sürecin okuduğu anahtarlar yeniden başlatma listesindedir; Telegram ve saklama değil', () => {
+    expect(SIDECAR_SETTING_KEYS).toContain('camera.similarityThreshold')
+    expect(SIDECAR_SETTING_KEYS).toContain('camera.zonePolygon')
+    for (const k of [
+      'camera.telegram.enabled',
+      'camera.telegram.photo',
+      'camera.faceRetentionDays',
+      'camera.alertRetentionDays',
+      'camera.enabled'
+    ])
+      expect(SIDECAR_SETTING_KEYS).not.toContain(k)
   })
 })

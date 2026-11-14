@@ -178,7 +178,6 @@ export function createCameraSync(deps: CameraSyncDeps, bridge: () => Bridge | nu
     }
     const location = readSetting(db, 'camera.location')
     let added = 0
-    const sends: Promise<unknown>[] = []
     for (const a of [...parsed.alerts].sort((x, y) => x.id - y.id)) {
       if (a.id <= cursor.last) continue
       const made = ingest(ctx, parsed.boot, a, location)
@@ -194,9 +193,9 @@ export function createCameraSync(deps: CameraSyncDeps, bridge: () => Bridge | nu
         deps.alertMessage?.({ time: made.notice.time, location }) ??
         `Bismuth: unknown person at the camera ${made.notice.time}${location ? ` (${location})` : ''}`
       // K-50: a copy to Telegram when the hotel asked for it; a failure is silent and nothing is queued.
-      sends.push(deps.telegram.sendAlert({ text, photo: made.crop }).catch(() => null))
+      // Fire and forget: the send has its own timeouts and must not hold the round (the face list goes out next).
+      void deps.telegram.sendAlert({ text, photo: made.crop }).catch(() => null)
     }
-    await Promise.all(sends)
     return added
   }
 

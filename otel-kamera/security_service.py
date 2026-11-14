@@ -437,7 +437,12 @@ class SecurityService:
                 continue
             new_face_boxes.append({"box": bbox.tolist(), "kind": KIND_UNKNOWN, "name": None, "room": None, "score": None})
             self.last_detection_summary = f"Tanımsız Kişi (#{tid})"
-            if not self.alarms_paused and self.tracker.record_unknown_and_check_alarm(tid, embedding=embedding):
+            # Liste ilk kez gelene kadar herkes tanımsız görünür; sayaç ve alarm üretilmez.
+            if (
+                self.faces.loaded
+                and not self.alarms_paused
+                and self.tracker.record_unknown_and_check_alarm(tid, embedding=embedding)
+            ):
                 pending.append((tid, bbox, embedding))
 
         if len(valid) > 0 and valid.tracker_id is not None:

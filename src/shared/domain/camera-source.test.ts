@@ -27,6 +27,11 @@ describe('Hikvision RTSP kalıbı (K-59)', () => {
     expect(rtspHost(url)).toBe('10.0.0.5')
   })
 
+  it("şifredeki ' ! ( ) * karakterleri de kodlanır", () => {
+    const url = buildHikvisionRtsp({ host: '10.0.0.5', user: 'admin', password: "a'b!(c)*", channel: 1 })
+    expect(url).toBe(S + 'admin:a%27b%21%28c%29%2A@10.0.0.5:554/Streaming/Channels/101')
+  })
+
   it('adres yalnız özel ağ ve bu bilgisayar için kamera sayılır', () => {
     for (const ok of ['10.1.2.3', '172.16.0.1', '172.31.255.1', '192.168.0.9', '169.254.3.4'])
       expect(isPrivateIpv4(ok)).toBe(true)
