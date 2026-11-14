@@ -9,11 +9,13 @@
 //     --light                   light mode: server mode + window closed, tree measured with no window
 //     --seed <dir>              data folder to copy (default .tmp/perf/seed, made once: 19 rooms, ~19,000 stays)
 //   node scripts/perf-measure.mjs --attach <pid|process name> [--idle 30] [--label tauri]   (any running program)
+//   node scripts/perf-measure.mjs --tauri <binary> [--runs 3] [--label tauri]   (P22c: the Tauri shell + Node sidecar, same
+//     seed and the same steps; needs `npm run build`, `node shell-tauri/sidecar/build.mjs` and `cargo build --release`)
 //   node scripts/perf-measure.mjs --report a.json b.json                                      (Markdown table, side by side)
 //
 // Output: <out>/<label>.json and <label>.md. Numbers: RSS and PSS (PSS does not count shared pages twice; Linux only),
 // CPU as percent of one core, by process type (main, renderer, gpu-process, utility ...).
-import { execFileSync } from 'node:child_process'
+import { execFileSync, spawn } from 'node:child_process'
 import {
   cpSync,
   existsSync,
@@ -60,6 +62,7 @@ function parseArgs(argv) {
     else if (a === '--no-busy') o.busy = false
     else if (a === '--light') o.light = true
     else if (a === '--attach') o.attach = next()
+    else if (a === '--tauri') o.tauri = resolve(next())
     else if (a === '--report') o.report = argv.slice(i + 1)
   }
   return o
@@ -165,7 +168,14 @@ function kindOf(r, rootPid) {
   if (typeHints.has(r.pid)) return typeHints.get(r.pid)
   const t = /--type=([\w-]+)/.exec(r.cmd)
   if (t) return t[1]
-  return r.pid === rootPid ? 'main' : 'child'
+  if (r.pid === rootPid) return 'main'
+  // A Tauri tree: the Node sidecar and the system WebView's helper processes (WebKitGTK; WebView2 on Windows).
+  const exe = (r.cmd.split(' ')[0] ?? '').split(/[\\/]/).pop() ?? ''
+  if (/^node(\.exe)?$/i.test(exe)) return 'node-sidecar'
+  const web = /^WebKit(\w+)Process$/.exec(exe)
+  if (web) return `webkit-${web[1].toLowerCase()}`
+  if (/^msedgewebview2/i.test(exe)) return 'webview2'
+  return 'child'
 }
 
 function summarize(before, after, seconds, rootPid) {
@@ -347,6 +357,84 @@ async function electronRun(o, seed, idx) {
   }
 }
 
+// ---------- the Tauri scenario (P22c) ----------
+async function tauriRun(o, seed, idx) {
+  const dir = mkdtempSync(join(tmpdir(), 'bismuth-perf-'))
+  cpSync(seed, dir, { recursive: true })
+  const port = Number(o.env.BISMUTH_PORT ?? 47931)
+  const marks = {}
+  const t0 = Date.now()
+  const child = spawn(o.tauri, [], {
+    env: {
+      ...process.env,
+      BISMUTH_ROOT: root,
+      BISMUTH_DATA: dir,
+      BISMUTH_PORT: String(port),
+      BISMUTH_PERF: '1',
+      ...o.env
+    },
+    stdio: ['ignore', 'ignore', 'pipe']
+  })
+  let err = ''
+  child.stderr.on('data', (b) => {
+    for (const line of b.toString().split('\n')) {
+      const m = /^PERF (\w+) (\d+)/.exec(line)
+      if (m) marks[m[1]] = Number(m[2])
+      else if (line.trim() && err.length < 4000) err += line + '\n'
+    }
+  })
+  let exited = false
+  child.on('exit', () => (exited = true))
+  const probe = async (path) => {
+    try {
+      return await (await fetch(`http://127.0.0.1:${port}/__perf/${path}`)).text()
+    } catch {
+      return null
+    }
+  }
+  const sidecar = async () => JSON.parse((await probe('mark/ping')) ?? '{}')
+  const waitFor = async (name, ms = 120000) => {
+    const t = Date.now()
+    for (;;) {
+      const m = await sidecar()
+      if (m[name]) return m
+      if (exited) throw new Error(`the program exited early: ${err}`)
+      if (Date.now() - t > ms) throw new Error(`no '${name}' mark in ${ms} ms: ${err}`)
+      await sleep(100)
+    }
+  }
+  const pid = child.pid
+  try {
+    const ready = await waitFor('ready')
+    const calendar = await waitFor('calendar')
+    const startup = {
+      windowMs: marks.window_created - t0,
+      readyMs: ready.ready - t0,
+      calendarAfterReloadMs: calendar.calendar - calendar.reloadStart
+    }
+    const extra = {
+      processStartMs: marks.process_start - t0,
+      sidecarListeningMs: marks.sidecar_listening - t0,
+      pageFinishedMs: marks.page_finished - t0
+    }
+    await sleep(3000)
+    const out = { run: idx, startup, extra, versions: { shell: 'tauri', node: process.versions.node } }
+    out.idle = await sampleWindow(pid, o.idle)
+    if (o.busy) {
+      const busy = sampleWindow(pid, 20)
+      await probe('cmd/busy')
+      out.busy = await busy
+      await waitFor('busyDone', 60000)
+    }
+    return out
+  } finally {
+    child.kill('SIGTERM')
+    for (let i = 0; i < 50 && !exited; i++) await sleep(100)
+    if (!exited) child.kill('SIGKILL')
+    rmSync(dir, { recursive: true, force: true })
+  }
+}
+
 // ---------- report ----------
 const med = (xs) => [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)]
 function medianRun(runs) {
@@ -432,6 +520,16 @@ if (o.attach) {
       )
   if (!rootProc) throw new Error(`no running process matches ${o.attach}`)
   runs.push({ run: 0, idle: await sampleWindow(rootProc.pid, o.idle) })
+} else if (o.tauri) {
+  if (platform() === 'linux' && !process.env.DISPLAY) console.error('no DISPLAY: run under xvfb-run -a')
+  if (!existsSync(join(root, 'out/renderer/index.html'))) throw new Error('run `npm run build` first')
+  const seed = ensureSeed(o)
+  for (let i = 0; i < o.runs; i++) {
+    runs.push(await tauriRun(o, seed, i))
+    versions ??= runs[0].versions
+    console.error(`run ${i + 1}/${o.runs} done`)
+    await sleep(2000)
+  }
 } else {
   if (platform() === 'linux' && !process.env.DISPLAY) console.error('no DISPLAY: run under xvfb-run -a')
   if (!existsSync(join(root, 'out/main/index.js'))) throw new Error('run `npm run build` first')
@@ -445,7 +543,7 @@ if (o.attach) {
 }
 const report = {
   label: o.label,
-  tool: o.attach ? 'attach' : 'electron',
+  tool: o.attach ? 'attach' : o.tauri ? 'tauri' : 'electron',
   args: o.args,
   light: o.light,
   env,

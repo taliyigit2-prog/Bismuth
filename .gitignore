@@ -5,6 +5,10 @@ node_modules/
 /out/
 /dist/
 /release/
+# Tauri prototype (P22c): build output and generated files stay out; Cargo.lock is committed
+shell-tauri/src-tauri/target/
+shell-tauri/src-tauri/gen/
+shell-tauri/sidecar/dist/
 .vite/
 
 # local data — never commit a database or backups

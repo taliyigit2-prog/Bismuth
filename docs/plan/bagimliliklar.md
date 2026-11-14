@@ -154,6 +154,19 @@ Dosya başında kaynak satırı var; lisans metinleri `THIRD_PARTY_NOTICES.md`'d
 |---|---|---|---|---|
 | @anthropic-ai/claude-agent-sdk | 0.3.322 | Anthropic ticari şartları | Geliştirme ajanını Anthropic API anahtarıyla çalıştıran başlatıcı (`node tools/ajan/ajan.mjs`) | yalnızca geliştirme · `tools/ajan/` |
 
+## Rust prototipi (uygulamaya girmez; Faz 22 P22c)
+
+`shell-tauri/` kendi `Cargo.lock` dosyası olan ayrı bir klasördür; Electron paketine ve `package.json`'a girmez. Sürümler
+`Cargo.lock` ile sabit (413 kayıt, çoğu geçişli); doğrudan bağımlılıklar:
+
+| Crate | Sürüm (kilitli) | Lisans | Ne için | Nerede |
+|---|---|---|---|---|
+| tauri | 2.12.5 | MIT / Apache-2.0 | Pencere + sistem WebView'ı (WebView2 / WKWebView / WebKitGTK); yalnızca `wry`, `compression` | `shell-tauri/src-tauri` |
+| tauri-build | 2.7.4 | MIT / Apache-2.0 | Derleme zamanı yardımcısı | aynı |
+| tauri-plugin-window-state | 2.5.0 | MIT / Apache-2.0 | Pencere boyutu/konumunu hatırlar | aynı |
+
+Ürünleştirilirse (P22d) `THIRD_PARTY_NOTICES` Rust crate lisanslarını da kapsamalı (`cargo about`/`cargo license`); `ort` gibi rc crate eklenmez.
+
 ## Plan listesinde olup bu fazda **eklenmeyenler** (gerektiği fazda eklenecek)
 
 | Paket | Neden ertelendi | Hangi faz |

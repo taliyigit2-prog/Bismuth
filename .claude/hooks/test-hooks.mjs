@@ -48,6 +48,8 @@ const pKbsSheet = project("kbs-sheet", { git: true, files: { "data/EGM_Konaklaya
 // Built at run time so this file itself never holds a valid identity number (the guard would block it).
 const fakeIdentity = ["123456", "78950"].join("");
 const pKbsNumber = project("kbs-number", { git: true, files: { "src/guest.ts": `export const id = '${fakeIdentity}'\n` } });
+// A valid-checksum number inside a hex checksum (lock files) is not an identity number.
+const pKbsHash = project("kbs-hash", { git: true, files: { "Cargo.lock": `checksum = "ab${fakeIdentity}cd"\n` } });
 const pKbsClean = project("kbs-clean", {
   git: true,
   files: { "src/guest.ts": "export const sample = '10000000146' // public test number\nexport const phone = '05321234567'\n" },
@@ -221,6 +223,7 @@ const cases = [
   { hook: "kbs-data-guard.mjs", input: { cwd: pKbsSheet, tool_name: "Bash", tool_input: { command: "git add -A" } }, expect: 2, stderr: /EGM_Konaklayan_Listesi\.xlsx/, note: "spreadsheet in the changes: blocked" },
   { hook: "kbs-data-guard.mjs", input: { cwd: pKbsNumber, tool_name: "Bash", tool_input: { command: `${commit} -am x` } }, expect: 2, stderr: /src\/guest\.ts:1/, note: "valid identity number: blocked" },
   { hook: "kbs-data-guard.mjs", input: { cwd: pKbsClean, tool_name: "Bash", tool_input: { command: "git add -A" } }, expect: 0, note: "public test number and a phone number pass" },
+  { hook: "kbs-data-guard.mjs", input: { cwd: pKbsHash, tool_name: "Bash", tool_input: { command: "git add -A" } }, expect: 0, note: "digits inside a hex checksum pass" },
   { hook: "kbs-data-guard.mjs", input: { cwd: pKbsClean, tool_name: "Bash", tool_input: { command: `cd ${pKbsSheet} && git add -A` } }, expect: 2, stderr: /xlsx/, note: "cd <dir> && git add: that checkout is scanned" },
   { hook: "kbs-data-guard.mjs", input: { cwd: pKbsSheet, tool_name: "Bash", tool_input: { command: "git status --short" } }, expect: 0, note: "not add/commit: ignored" },
 

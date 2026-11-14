@@ -15,3 +15,8 @@ i18n-spec
 
 # Python camera project (separate toolchain; ruff/black if any)
 otel-kamera
+
+# Tauri prototype (Faz 22 P22c): Rust has cargo fmt; generated output stays out
+shell-tauri/src-tauri/target
+shell-tauri/src-tauri/gen
+shell-tauri/sidecar/dist

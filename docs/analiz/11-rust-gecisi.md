@@ -159,3 +159,58 @@ dalgalandığı için **karşılaştırmada kullanılmaz**; temiz yükte (≤1) 
 
 **Gerçek otel bilgisayarı:** ölçüm tablosu bu bilgisayarda henüz yok; sahibin PC'sinde `--perf-out` ile alınacak
 (`docs/kurulum.md` → "Teknik: bilgisayarı ne kadar yorduğunu ölçmek"). Sahip onay paketine yazıldı.
+
+## 8. P22c sonuç: Tauri 2 prototipi ve Electron karşılaştırması (Codespace, Xvfb, 2026-11-14)
+
+**Ne yapıldı.** `shell-tauri/` (ürün paketine girmez): Tauri 2.12.5 penceresi, sistem WebView'ında (Linux: WebKitGTK 2.54) mevcut
+`out/renderer`; yan süreç olarak **Node** (`shell-tauri/sidecar/server.ts`: aynı `createServices` + `createApiApp` + `createHostApp`,
+yalnız `127.0.0.1:47931`); arayüz HTTP taşımasıyla (tarayıcı/istemci gibi, IPC yok) bağlanır. Pencere durumu
+(`tauri-plugin-window-state`: 1100×700 @120,90 kapatıp açınca geri geldi), Dosya/Düzen/Görünüm menüsü, kabuk kapanınca yan süreç
+kapanır (doğrulandı), `capabilities` boş, `withGlobalTauri` kapalı, CSP sunucu modundakiyle aynı dize. Kontroller: `cargo fmt`,
+`cargo clippy --release -D warnings`, `cargo test` (3 test) yeşil; `Cargo.lock` depoda (413 kayıt).
+
+**Aynı betik, aynı veri** (`scripts/perf-measure.mjs`; Electron `--runs 3`, Tauri `--tauri <ikili> --runs 3`; aynı tohum: 19 oda + 1,
+~19.000 rezervasyon; sırayla koşuldu; koşu başı yük Electron 2,39 / Tauri 0,76; medyan). Süreç ağacı: Electron 6 süreç; Tauri
+kabuk + Node yan süreç + WebKitWebProcess + WebKitNetworkProcess = 4 süreç.
+
+| Ölçüt | Electron 37 | Tauri 2 (+ Node yan süreç) | Fark |
+|---|---:|---:|---:|
+| Pencere açıldı (ms) | 1.991 | 1.745 | −%12 |
+| Uygulama hazır (ms) | 2.571 | 2.565 | **%0** |
+| Takvim çubukları, yeniden yüklemeden (ms) | 1.281 | 1.375 | +%7 |
+| Boşta toplam RSS (MB) | 864 | 1.010 | **+%17** |
+| Boşta toplam PSS (MB) (dürüst olan) | 567 | 800 | **+%41** |
+| Boşta CPU (% tek çekirdek) | 0,5 | 8,6 | +8,1 puan |
+| Yoğun toplam RSS / PSS (MB) | 939 / 636 | 1.111 / 900 | +%18 / +%42 |
+| Yoğun CPU (% tek çekirdek) | 27,4 | 77,7 | 2,8 kat |
+
+Boşta PSS'nin süreçlere dağılımı (MB, 3 koşu medyanı):
+
+| Electron | | Tauri | |
+|---|---:|---|---:|
+| ana süreç (Electron + Node servisler + SQLite) | 265 | Node yan süreç (servisler + SQLite) | 214 |
+| renderer | 210 | WebKitWebProcess (arayüz) | 445 |
+| GPU süreci / yardımcı / zygote | 36 / 30 / 28 | WebKitNetworkProcess | 38 |
+| | | Tauri kabuğu (Rust + GTK) | 102 |
+
+**Okuma ve K-62 sınaması.** K-62: boşta RAM **ve** açılışta ≥ %30 kazanç yoksa Electron kalır. Bu ölçümde ikisi de yok: RAM
+**artmış** (+%41 PSS), açılışta fark yok (hazır: 2.571 → 2.565 ms; yalnız pencere 250 ms erken açılıyor ama içerik Node yan
+sürecin hazır olmasını bekliyor: kabuk 68 ms, yan süreç dinliyor 1.630 ms, sayfa 2.870 ms). Açıklama: kazancın kaynağı
+(Electron'un kendi Chromium'u) Linux'ta WebKitGTK ile değişiyor, WebKit bu arayüz için Chromium'dan **ağır** (445 MB'a karşı 210 MB,
+yazılım çizimi altında); Node yan süreç servislerin payını (≈214 MB) aynen taşıyor. Yani **kazanç Linux'ta ölçüldü: yok**.
+
+**Linux ölçümü Windows'u temsil etmez (sınır).** Otel Windows'ta WebView2 (Chromium) kullanacak; onu burada ölçemedik. Ama
+parça parça akıl yürütülebilir (tahmin, ölçüm değil): Electron'da ana süreç 265 MB'ın ≈214 MB'ı servisler, yani Electron'un kendi
+tarayıcı süreci yükü ≈50 MB; renderer (≈210 MB) ve GPU (≈36 MB) WebView2'de de var, ağ yardımcısı (≈30 MB) de. Servisleri Node
+yan süreçte tuttuğumuz sürece, kabuk değişiminin tavanı ≈50–80 MB'dır (≈ −%9…−%14 boşta PSS); −%30'a **ulaşamaz**. Bunun için
+servislerin kendisi Rust'a taşınmalı (P22e: `axum` + `rusqlite`; Node yan süreç 214 → belki 40–60 MB), ama bu "yalnız ölçülmüş
+darboğazda" ve K-62 tam yeniden yazımı reddediyor.
+
+**Sahibin PC'sinde tekrar:** `shell-tauri/README.md` → "Ölçüm"; Windows'ta `--tauri <exe>` aynı betikle (PSS Windows'ta yok,
+çalışma kümesi kullanılır; WebView2 süreçleri `webview2` diye ayrılır; ölçmeden önce `docs/kurulum.md` "Teknik: bilgisayarı ne kadar
+yorduğunu ölçmek"). Karar belgesi: `docs/analiz/13-tauri-karar.md`.
+
+**Prototipin sınırları (yapılmadı / doğrulanmadı):** ilk kurulum sihirbazı HTTP'de reddedilir (yalnız IPC; kurulmuş otel klasörüyle
+çalışır); `safeStorage` mührü, Drive kutusu, PDF özeti (gizli `BrowserWindow`), tepsi/hafif mod, kamera yan süreci, yazdırma, dosya
+diyaloğu, tek örnek kilidi yok; paketli yerleşim (`externalBin`) ve Windows NSIS/macOS DMG yazıldı ama **üretilmedi**; WKWebView
+(macOS) hiç denenmedi. Menü metinleri koda gömülü (prototip; üründe i18n).

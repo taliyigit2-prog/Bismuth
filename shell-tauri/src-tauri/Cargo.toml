@@ -1,0 +1,20 @@
+[package]
+name = "bismuth-shell"
+version = "0.0.1"
+description = "Bismuth Tauri 2 shell prototype (P22c): a window on the Node sidecar's 127.0.0.1 server"
+edition = "2021"
+publish = false
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", default-features = false, features = ["wry", "compression"] }
+tauri-plugin-window-state = "2"
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

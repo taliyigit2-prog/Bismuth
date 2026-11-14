@@ -112,8 +112,8 @@ Harcama sütunu: başlatıcının yazdığı `$` (dalga toplamı, gerçek).
 | 13 | P21a Profil altyapısı (isteğe bağlı; tek makinede iki otel) | 21 | main/app/paths, auth, settings | feature-builder | $10–15 | | ⏭ atlandı (otonom varsayılan) |
 | 14 | P22a Ölç ve hafiflet (perf betiği, Electron denemeleri, hafif mod) | 22 | scripts, main/windows, main/app | feature-builder | $15–30 | ~$20 | ✅ |
 | 14 | P22b Kabuk soyutlaması `lib/shell` (Electron + tarayıcı) | 22 | renderer/lib/shell, preload | feature-builder | $20–40 | ~$12 | ✅ |
-| 15 | P22c Tauri 2 prototipi + aynı ölçümle karşılaştırma + sahip karar sayfası (**durma noktası**) | 22 | shell-tauri/ (ürün dışı) | rust-shell-builder | $60–120 | | ⬜ |
-| 16 | P22d Tauri ürünleştirme (yalnız sahip "devam" derse); P22e Rust servis pilotu (yalnız darboğazda) | 22 | shell-tauri, .github, docs | rust-shell-builder + packager | $80–160 (+$100–200) | | ⬜ |
+| 15 | P22c Tauri 2 prototipi + aynı ölçümle karşılaştırma + sahip karar sayfası (**durma noktası**) | 22 | shell-tauri/ (ürün dışı) | rust-shell-builder | $60–120 | ~$25 | ✅ |
+| 16 | P22d Tauri ürünleştirme (yalnız sahip "devam" derse); P22e Rust servis pilotu (yalnız darboğazda) | 22 | shell-tauri, .github, docs | rust-shell-builder + packager | $80–160 (+$100–200) | | ⏭ açılmadı (K-62: ölçüm olumsuz; sahip "devam" demedi) |
 | Son | Tam kontrol sürüsü (bug-hunter + flow-tester modül başına, decision, security, db, ui, screen, privacy, copy, tracer) → **modül başına Ponytail `full` sadeleştirme turu (K-61; testler aynı)** → düzeltme turu → `/owner-review` | — | — | hepsi | $50–75 | | ⬜ |
 
 Dalga sırası kuralları: bir paket bağımlı olduğu paketten **sonraki** dalgada (P17c → P17b, P18b → P17c, P20b/P20d → P20a,
@@ -385,3 +385,12 @@ QA2b, akış testleri C/D) bu plana **Son** satırında katılır; ayrı yürüt
   `src/renderer/lib/shell/` (`electron.ts` köprüye dokunan tek dosya, `browser.ts`), 6 çağrı taşındı, ESLint `no-restricted-properties`
   ile köprü erişimi yalnız `lib/shell/electron.ts` + `lib/transport/**`. Telefon e2e bu ortamda koşulamadı → Son dalgası.
   **Dalga 14 bitti.**
+- 2026-11-14: Dalga 15 başladı (P22c rust-shell-builder; taban 8637baf). Codespace'te Rust yoktu; pip önbelleği ve `release/` silinerek 8,7 GB yer açıldı.
+- 2026-11-14: P22c ✅ — `shell-tauri/` Tauri 2.12.5 prototipi (WebView'da `out/renderer`, Hono + servisler Node yan süreçte `127.0.0.1`,
+  HTTP taşıma; menü, pencere durumu; `capabilities` boş), `perf-measure.mjs --tauri`. Aynı ölçüm (Codespace/Xvfb, 3 koşu medyanı):
+  boşta PSS Electron 567 MB → Tauri 800 MB (**+%41**), RSS 864 → 1.010 MB, uygulama hazır 2,57 sn ≈ 2,57 sn, yoğun CPU 2,8 kat.
+  **K-62 kuralı (≥ %30 kazanç yoksa Electron kalır) → Electron kalır.** Windows (WebView2) ve Mac (WKWebView) ölçülmedi; servisler Node'da
+  kaldıkça kabuk değişiminin tavanı tahminen −%9…−%14. Karar sayfası `docs/analiz/13-tauri-karar.md`. **Durma noktası (otonom):** sahibe
+  soru sorulmadı; K-62'nin kendi kuralı uygulandı, P22d/P22e açılmadı (sahip isterse Windows PC'sinde deneme adımları `shell-tauri/README.md`).
+  Ek: `kbs-data-guard` harf/rakam bitişik dizileri (hex özetler, `Cargo.lock`) kimlik numarası saymaz (+ kanca testi, 117 senaryo).
+  **Dalga 15 bitti; dalga 16 açılmadı. Sıradaki: Son dalgası.**

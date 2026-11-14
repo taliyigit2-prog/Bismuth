@@ -37,7 +37,9 @@ export default tseslint.config(
       'test-results/**',
       '.tmp/**',
       // The Python camera project (own toolchain: ruff/pytest); its venv holds third-party JS.
-      'otel-kamera/**'
+      'otel-kamera/**',
+      // The Tauri prototype (Faz 22 P22c): not part of the product package; its sidecar listens on 127.0.0.1 only.
+      'shell-tauri/**'
     ]
   },
   js.configs.recommended,
