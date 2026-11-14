@@ -349,3 +349,38 @@ export const reservationCodeSequences = sqliteTable('reservation_code_sequences'
   year: integer('year').primaryKey(),
   lastNumber: integer('last_number').notNull()
 })
+
+/**
+ * Damage deposit (P21d, Ö-22): money held for the stay's damages. It is not income and not a folio payment: it is
+ * either given back (`refunded`) or, with a reason, turned into a damage charge + payment (`converted`) on the folio.
+ */
+export const damageDeposits = sqliteTable(
+  'damage_deposits',
+  {
+    id: id(),
+    reservationId: text('reservation_id')
+      .notNull()
+      .references(() => reservations.id),
+    amountMinor: minor('amount_minor').notNull(),
+    currency: text('currency').notNull(),
+    methodId: text('method_id')
+      .notNull()
+      .references(() => paymentMethods.id),
+    takenDate: day('taken_date').notNull(),
+    status: text('status', { enum: ['held', 'refunded', 'converted'] })
+      .notNull()
+      .default('held'),
+    settledDate: day('settled_date'),
+    settledAt: text('settled_at'),
+    settledBy: text('settled_by'),
+    settleNote: text('settle_note'),
+    convertedChargeId: text('converted_charge_id'),
+    note: text('note'),
+    createdBy: text('created_by'),
+    ...timestamps
+  },
+  (t) => [
+    index('damage_deposits_reservation_idx').on(t.reservationId),
+    index('damage_deposits_status_idx').on(t.status)
+  ]
+)

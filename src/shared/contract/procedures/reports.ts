@@ -7,6 +7,7 @@ import { APP_LOCALES } from '../../format'
 import { diffDays, isLocalDate, type LocalDate } from '../../date'
 import { METHOD_GROUPS } from '../../domain/cash'
 import { MAX_PERIOD_DAYS } from '../../domain/reports-period'
+import { nightReportSchema } from '../fees'
 import { exportFileSchema } from '../backup'
 import { proc, type Procedure } from '../proc'
 import { i18nTextSchema, idSchema, localDateSchema, minorSchema } from '../rooms'
@@ -508,5 +509,7 @@ export const reportsProcedures = {
   'reports.monthEnd': proc(monthEndInputSchema, monthEndSchema),
   'reports.monthEndTicks': proc(monthEndInputSchema, monthEndTicksSchema),
   'reports.setMonthEndTicks': proc(monthEndTicksInputSchema, monthEndTicksSchema),
+  /** One A4 page for a day: arrivals, departures, in-house, no-shows, room states and the cash summary (P21d). */
+  'reports.nightReport': proc(z.object({ date: localDateSchema }).strict(), nightReportSchema),
   'reports.export': proc(reportExportInputSchema, exportFileSchema)
 } as const satisfies Record<string, Procedure>

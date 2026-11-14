@@ -57,6 +57,7 @@ export type NavPath =
   | '/contacts'
   | '/staff'
   | '/reports'
+  | '/portfolio'
   | '/tourism'
   | '/settings'
   | '/audit'
@@ -84,6 +85,7 @@ export type NavLabelKey =
   | 'nav.maintenance'
   | 'nav.monthEnd'
   | 'nav.reports'
+  | 'nav.portfolio'
   | 'nav.rooms'
   | 'nav.settings'
   | 'nav.shift'
@@ -282,6 +284,15 @@ export const NAV_ITEMS: readonly NavItem[] = [
     icon: ChartColumnIcon,
     group: 'reports',
     permission: 'reports.operations',
+    mobile: 'more'
+  },
+  {
+    to: '/portfolio',
+    labelKey: 'nav.portfolio',
+    icon: Building2Icon,
+    group: 'reports',
+    // P21c: the owner's view of every hotel; the service checks the same owner-only rights (G-23).
+    permission: 'remote.settings',
     mobile: 'more'
   },
   {

@@ -1,7 +1,7 @@
 // Electron side of Faz 13 (kept out of index.ts so the start-up file stays readable): the server mode on the
 // hotel's computer and the whole of client mode. Everything here is plumbing; the rules live in the Electron-free
 // modules next to it (host-app, http-sessions, host-link, client-app) and are unit-tested there.
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { hostname, networkInterfaces } from 'node:os'
 import { join } from 'node:path'
 import type Database from 'better-sqlite3'
@@ -20,7 +20,7 @@ import { createHandlers } from '../api/handlers'
 import { tFor } from '../app/i18n'
 import type { BismuthDb } from '../db/client'
 import { createDiscovery, type Discovery } from '../discovery'
-import { createReplicaStore, migrateLegacyCopy } from '../replica/store'
+import { copyFolder, createReplicaStore, migrateLegacyCopy } from '../replica/store'
 import { conflictingChanges, conflictRows, createEpochGuard, type EpochGuard } from '../relay/epoch'
 import { createRelayRuntime, type RelayRuntime } from '../relay/runtime'
 import { printSummaryPdf } from '../relay/summary-pdf'
@@ -315,6 +315,29 @@ export function createClientMode(options: ClientModeOptions): {
     onError: (error, what) => options.log.warn(what, error)
   })
   replica.start()
+  // P21c: the other hotels' copies, opened for the portfolio only (never the one in use: that is `store`).
+  const others = new Map<string, ReturnType<typeof createReplicaStore>>()
+  const closeOthers = (): void => {
+    for (const other of others.values()) other.close()
+    others.clear()
+  }
+  const portfolioCopy = (code: string) => {
+    if (code === (config.get().activeHotel ?? null)) return store.readable()
+    let other = others.get(code)
+    // No copy file = nothing to read (opening would only make an empty one).
+    if (!other && !existsSync(join(copyFolder(options.root, code), 'replica.db'))) return null
+    if (!other) {
+      other = createReplicaStore({
+        root: options.root,
+        hotel: code,
+        migrationsFolder: options.migrationsFolder,
+        version: options.version,
+        onError: (error, what) => options.log.warn(what, error)
+      })
+      others.set(code, other)
+    }
+    return other.readable()
+  }
   const api = createClientApp({
     link,
     config,
@@ -322,8 +345,16 @@ export function createClientMode(options: ClientModeOptions): {
     openExternal: (url) => void shell.openExternal(url),
     leaveClient: () => options.leaveClient(),
     replica: { client: replica, store },
-    onHotelChanged: (code) => replica.switchHotel(code),
-    removeHotelData: (code) => store.removeCopy(code)
+    onHotelChanged: (code) => {
+      closeOthers()
+      replica.switchHotel(code)
+    },
+    removeHotelData: (code) => {
+      closeOthers()
+      store.removeCopy(code)
+    },
+    portfolioCopy,
+    onError: (error, what) => options.log.warn(what, error)
   })
   const device = () => ({ deviceName: machineName(), kind: 'desktop' as const, platform: process.platform })
   return {
@@ -333,6 +364,7 @@ export function createClientMode(options: ClientModeOptions): {
     sessionFor: (sender) => clientBinding(sender.id, device),
     windowClosed: (_win, contentsId) => void link.forget(contentsId),
     close: () => {
+      closeOthers()
       replica.stop()
       link.close()
       discovery.destroy()

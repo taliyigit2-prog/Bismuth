@@ -159,6 +159,11 @@ export function createReplicaStore(options: ReplicaStoreOptions) {
         return false
       }
     },
+    /** The services over this copy, for reading as the person who asks (P21c portfolio); null when it holds no data. */
+    readable(): { services: Services; asOf: string | null } | null {
+      if (!this.usable()) return null
+      return { services: router().services, asOf: readState(open().writer).asOf }
+    },
     /** The copier's connection (live sync, box reader). */
     writer: () => open().writer,
     schemaVersion: () => open().schemaVersion,

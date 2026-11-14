@@ -26,6 +26,7 @@ import { levelAllows } from '@shared/permissions'
 import type { ApiEnv } from '../api/app'
 import type { SessionBinding } from '../api/session'
 import type { ReplicaStore } from '../replica/store'
+import { createPortfolioClient, type PortfolioCopy } from './portfolio-client'
 import { AppError } from '../services/errors'
 import { hostOf, type ConfigStore } from './connection-config'
 import { fingerprintOf } from './host-identity'
@@ -83,6 +84,9 @@ export interface ClientAppDeps {
   onHotelChanged?(code: string | null): void
   /** P21b: a hotel left the list: its copy on this computer goes. */
   removeHotelData?(code: string): void
+  /** P21c: a saved hotel's read-only copy opened for the portfolio (null: none with data on this computer). */
+  portfolioCopy?(code: string): PortfolioCopy | null
+  onError?(error: unknown, what: string): void
 }
 
 const json = (status: number, value: unknown): LinkAnswer => ({ status, body: JSON.stringify(value) })
@@ -178,6 +182,19 @@ export function createClientApp(deps: ClientAppDeps): Hono<ApiEnv> {
     return answer
   }
 
+  /** P21c: the owner's portfolio of every saved hotel. */
+  const portfolio = createPortfolioClient({
+    hotels: hotelViews,
+    live: (windowId, name, body) => link.call(windowId, `/api/${name}`, body),
+    session: async (windowId) => {
+      const answer = await forward('auth.state', '{}', windowId)
+      if (answer.status !== 200 && answer.status !== 203) return null
+      return (JSON.parse(answer.body) as AuthState).session
+    },
+    copy: (code) => deps.portfolioCopy?.(code) ?? null,
+    ...(deps.onError ? { onError: deps.onError } : {})
+  })
+
   /** A signed-in answer from the main computer: the copy grant is asked for once (when the role allows). */
   function afterSignedIn(windowId: number, session: unknown): void {
     if (!replica) return
@@ -245,6 +262,10 @@ export function createClientApp(deps: ClientAppDeps): Hono<ApiEnv> {
     const copyAnswer = await replicaCall(name, body)
     if (copyAnswer) return copyAnswer
     switch (name) {
+      case 'portfolio.overview':
+        return portfolio.overview(windowId, body)
+      case 'portfolio.grid':
+        return portfolio.grid(windowId, body)
       case 'remote.clientStatus':
         return json(LOCAL, link.status())
       case 'remote.discover':

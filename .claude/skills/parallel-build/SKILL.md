@@ -35,7 +35,7 @@ parametresi verilmez (tablo: `docs/analiz/09-ajan-sistemi.md` §2). Paket → aj
 | Alan araştırması | `researcher` |
 | Kontroller, e2e, özet | `/qa` |
 
-Aynı anda en çok **2 kodlayan ajan** (bu Codespace 2 çekirdek; 4 çekirdekte 4). Kontrol ajanları kodlayanlar bittikten
+Aynı anda en çok **3 kodlayan ajan** (bu Codespace 4 çekirdek; yük > 5 ise 2; tam test/e2e/build aynı anda tek). Kontrol ajanları kodlayanlar bittikten
 sonra, tek mesajda paralel.
 
 ## 3. Görev metni (her pakete)

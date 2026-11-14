@@ -48,6 +48,7 @@ import { CHANNEL_REF_MAX, NOTE_LOG_MAX, RESERVATION_NOTE_MAX } from './booking-l
 import { NightPriceTable } from './night-price-table'
 import { useBlockOverride } from './override'
 import { OverrideDialog } from './override-dialog'
+import { FeesSection } from './fees-panel'
 import { TagPicker } from './tag-picker'
 import { useCustomTags } from './use-custom-tags'
 
@@ -755,6 +756,7 @@ export function MoneyTab({ view, onPay }: { view: BookingView; onPay?: () => voi
           {t('calendar.panel.takePayment')}
         </Button>
       ) : null}
+      <FeesSection view={view} />
     </div>
   )
 }

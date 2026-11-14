@@ -14,7 +14,7 @@ description: Ajan dağıtırken ve uzun işlerde token harcamasını düşürme 
   `model: sonnet` ile çağır).
 - Orkestra şefi: ana oturum (Opus 5.5). Fable yalnız sahibin açık isteğiyle.
 - Tek dosya bulmak için ajan açma; `rg`/`code-graph` yeter.
-- Aynı anda en çok 2 kodlayan ajan (2 çekirdek); yük > 6 ise ajan başlatma.
+- Aynı anda en çok 3 kodlayan ajan (4 çekirdek); yük > 5 ise yeni ajan başlatma; tam test/e2e/build aynı anda tek.
 
 ## Görev metni
 - Ortak bilgi bir kez dosyaya (scratchpad `*-common.md`); ajana yalnız yol + kendi maddeleri (≤40 satır).

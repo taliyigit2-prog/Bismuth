@@ -18,6 +18,7 @@ export const AUDIT_ENTITIES = [
   'camera_event',
   'cash_handover',
   'charge',
+  'damage_deposit',
   'folio',
   'company',
   'contact',

@@ -41,6 +41,7 @@ import { AppearanceSection } from './appearance-section'
 import { CalendarSection } from './calendar-section'
 import { CameraSection } from './camera-section'
 import { GeneralSection, IdleLockCard } from './general-section'
+import { FeesCard } from './fees-card'
 import { HotelSection } from './hotel-section'
 import { ListsSection } from './lists-section'
 import { AboutNote, CurrencyNote } from './note-sections'
@@ -144,7 +145,12 @@ export function SettingsPage() {
           </div>
         )
       case 'hotel':
-        return <HotelSection values={values} onSave={save} pending={update.isPending} />
+        return (
+          <div className="grid gap-6">
+            <HotelSection values={values} onSave={save} pending={update.isPending} />
+            <FeesCard values={values} onSave={save} />
+          </div>
+        )
       case 'rooms':
         return <RoomsSection values={values} />
       case 'lists':

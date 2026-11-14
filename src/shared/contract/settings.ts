@@ -12,6 +12,19 @@ export const currencyCode = z.string().regex(/^[A-Z]{3}$/, 'ISO 4217 code')
 export const MAX_ACCEPTED_CURRENCIES = 20
 export const clockTime = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'HH:MM')
 
+export const lateCheckoutRuleSchema = z.object({
+  mode: z.enum(['none', 'fixed', 'percent']),
+  afterTime: clockTime,
+  amountMinor: z.number().int().min(0).max(100_000_000_000),
+  percentBp: z.number().int().min(0).max(100_000)
+})
+export type LateCheckoutRule = z.infer<typeof lateCheckoutRuleSchema>
+export const noShowRuleSchema = z.object({
+  mode: z.enum(['none', 'first_night', 'fixed']),
+  amountMinor: z.number().int().min(0).max(100_000_000_000)
+})
+export type NoShowRule = z.infer<typeof noShowRuleSchema>
+
 export const hexColor = z.string().regex(/^#[0-9a-fA-F]{6}$/, 'hex color #rrggbb')
 
 /** A time zone the clock library knows ("Europe/Istanbul"); a made-up one ("Mars/Olympus") is refused. */
@@ -143,6 +156,15 @@ export const settingsShape = {
    * only warned about, never blocked. 0 = no gap.
    */
   'dayUse.turnoverMinutes': z.number().int().min(0).max(240),
+  /**
+   * Late check-out fee rule (P21d, Ö-22): after `afterTime` the desk's suggestion is a fixed amount or a share of the
+   * nightly price (basis points, 50 % = 5000); the desk can change the amount. 'none' = no suggestion.
+   */
+  'fees.lateCheckout': lateCheckoutRuleSchema,
+  /** No-show fee rule: none, the first night's price or a fixed amount (the desk can still change it). */
+  'fees.noShow': noShowRuleSchema,
+  /** Default damage deposit (minor units of the folio currency); 0 = the desk types it each time. */
+  'fees.damageDepositMinor': z.number().int().min(0).max(100_000_000_000),
   /** Photos of resolved issues are deleted after N days; the text stays (K-25). */
   'attachments.resolvedIssueRetentionDays': z.number().int().min(1).max(3650),
   /** Staff may take an advance from the reception drawer (G-69, S-38). */
@@ -312,6 +334,9 @@ export const SETTINGS_DEFAULTS: SettingsValues = {
   'tasks.everyNStays': 10,
   'businessDay.closingEnabled': false,
   'dayUse.turnoverMinutes': 60,
+  'fees.lateCheckout': { mode: 'none', afterTime: '12:00', amountMinor: 0, percentBp: 5000 },
+  'fees.noShow': { mode: 'none', amountMinor: 0 },
+  'fees.damageDepositMinor': 0,
   'attachments.resolvedIssueRetentionDays': 30,
   'staff.advanceFromDrawer': false,
   'staff.expenseSection': 'general',

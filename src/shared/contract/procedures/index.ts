@@ -18,6 +18,7 @@ import { systemProcedures } from './system'
 import { roomsProcedures } from './rooms'
 import { usersProcedures } from './users'
 import { cameraProcedures } from './camera'
+import { portfolioProcedures } from './portfolio'
 
 export const MODULE_PROCEDURES = {
   ...reservationsProcedures,
@@ -38,5 +39,6 @@ export const MODULE_PROCEDURES = {
   ...systemProcedures,
   ...roomsProcedures,
   ...usersProcedures,
-  ...cameraProcedures
+  ...cameraProcedures,
+  ...portfolioProcedures
 } as const

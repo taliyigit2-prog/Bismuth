@@ -16,6 +16,7 @@ import type { CameraDiscovery, CameraProbe } from '@shared/contract/camera'
 import { createFaceCrypto } from '../camera/crypto'
 import type { Hardware } from '../camera/hardware'
 import { createSecretStore } from '../camera/secrets'
+import { createFeesService } from './fees-service'
 import { createExpensesService } from './expenses-service'
 import { createExternalService } from './external-service'
 import { createHttpClient, type FetchLike } from '../network/http'
@@ -139,6 +140,7 @@ export function createServices(handle: DatabaseHandle, runtime: RuntimeInfo, sto
       }
     }
   })
+  const fees = createFeesService(deps, { payments })
   const settings = createSettingsService(handle.db, clock, storage.writeGate)
   const rooms = createRoomsService(deps)
   const lists = createListsService(deps)
@@ -219,6 +221,7 @@ export function createServices(handle: DatabaseHandle, runtime: RuntimeInfo, sto
     camera,
     reservations,
     payments,
+    fees,
     occupants: createOccupantsService(deps),
     guests: createGuestsService(deps),
     companies: createCompaniesService(deps),

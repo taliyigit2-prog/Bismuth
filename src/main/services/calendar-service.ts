@@ -244,6 +244,8 @@ export function createCalendarService(deps: ServiceDeps) {
       (row.country ?? HOLIDAY_COUNTRY) === hotelCountry()
     )
       return { year, generated: false, inserted: 0, updated: 0, cancelled: 0 }
+    // A read-only copy (or the portfolio reading one) shows the days it has; it cannot make the year's holidays.
+    if (ctx.readOnly) return { year, generated: false, inserted: 0, updated: 0, cancelled: 0 }
     return regenerate(ctx, year)
   }
 

@@ -70,7 +70,7 @@ Faz durumu: `docs/plan/fazlar/DURUM.md` · Yürütme (dalgalar): `docs/plan/fazl
   `screen-auditor` (çözünürlük/ölçek/tam ekran), `privacy-auditor` (KVKK) (sonnet/medium); `decision-auditor`
   (opus/medium); `turkish-ui-copy`, `requirements-tracer` (haiku). Her ajan raporunu `.tmp/<ad>/REPORT.md`'ye yazar,
   ana oturuma ≤15 satır döner. UI değişen her maddeden sonra metin + arayüz; birden fazlası gerekiyorsa tek mesajda paralel.
-- Makine 2 çekirdek: aynı anda en çok 2 kodlayan ajan; kontrol ajanları kodlayanlar bittikten sonra.
+- Makine 4 çekirdek, 15 GB: aynı anda en çok 3 kodlayan ajan (birbirine dokunmayan paketler); ağır iş (tam test, e2e, build, paketleme) aynı anda tek. Yük ortalaması (`uptime`) > 5 ise yeni ajan başlatma, 2 ajanla sürdür. Kontrol ajanları kodlayanlar bittikten sonra, en çok 3 paralel.
 - Sözleşme ve işleyiciler modül dosyalarında: `src/shared/contract/procedures/<modül>.ts`, `src/main/api/handlers/<modül>.ts`.
 - i18n anahtarları paralel çalışmada `npm run i18n:add -- <spec.json>` ile eklenir; üç json dosyası elle düzenlenmez.
 

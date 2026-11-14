@@ -18,7 +18,7 @@ argument-hint: "[dalga-no | devam | durum]"
   koşullarında sahibe sorulur; soru mesajın sonunda `❓ SORULARIM` başlığı altında numaralı yazılır ve tur biter.
 - **Yasaklar:** `gh workflow run`/`gh release`/`git tag v*` yok (kanca); push yalnız `claude/…` dalına; `01-gereksinimler.md`
   yalnız `/requirement-change` ile; migrasyon değişmez; commit mesajında model adı yok.
-- **Maliyet:** `/token-economy` kuralları; aynı anda en çok **2 kodlayan ajan** (2 çekirdek, 8 GB; 4 çekirdekte 4), kontrol
+- **Maliyet:** `/token-economy` kuralları; aynı anda en çok **3 kodlayan ajan** (4 çekirdek, 15 GB; yük > 5 ise 2; tam test/e2e/build aynı anda tek), kontrol
   ajanları kodlayanlar bittikten sonra; tam `npm run check` dalga başına bir kez (ajanlar kendi worktree'lerinde bir kez).
   Dalga başına tahmini maliyet `08-gelistirme-plani.md` §6'dan; gerçek harcama başlatıcının yazdığı `$` satırından günlüğe.
 

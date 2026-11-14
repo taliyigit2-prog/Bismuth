@@ -51,7 +51,8 @@
     "companies": "Companies",
     "calendarNotes": "Calendar notes",
     "guide": "Guide",
-    "camera": "Camera"
+    "camera": "Camera",
+    "portfolio": "Portfolio"
   },
   "topbar": {
     "search": "Search or go to…",
@@ -1434,6 +1435,27 @@
         "title": "Camera setup",
         "description": "Search the network for cameras again, test the new details and save them. The saved password is not shown."
       }
+    },
+    "fees": {
+      "title": "Fees",
+      "help": "Suggested amounts for late check-out, no-shows and the damage deposit. The desk can change the amount on every line.",
+      "late": "Late check-out fee",
+      "mode": "Rule",
+      "lateNone": "No suggestion",
+      "lateFixed": "Fixed amount",
+      "latePercent": "Share of the nightly price",
+      "afterTime": "After this time",
+      "amount": "Amount",
+      "percent": "Percent",
+      "percentInvalid": "Enter a whole number from 0 to 1000.",
+      "noShow": "No-show fee",
+      "noShowNone": "No fee",
+      "noShowFirstNight": "First night's price",
+      "noShowFixed": "Fixed amount",
+      "deposit": "Damage deposit",
+      "depositAmount": "Default amount",
+      "depositHelp": "Leave it empty or zero to type the amount each time.",
+      "save": "Save fees"
     }
   },
   "status": {
@@ -1736,7 +1758,11 @@
     "hostTimeout": "The main computer did not answer in time. Check your connection (is NetBird on?) and that the main computer is on, then try again.",
     "hostDenied": "The main computer refused this computer's connection. Tell the hotel owner.",
     "hotelInUse": "The address of the hotel in use cannot be changed. Switch to another hotel first.",
-    "hotelExists": "This address is already saved for another hotel."
+    "hotelExists": "This address is already saved for another hotel.",
+    "feeStayNotStarted": "This room has not been checked in yet. Check the guest in first.",
+    "feeNotVoidable": "This line cannot be voided here.",
+    "depositSettled": "This deposit has already been given back or turned into income.",
+    "portfolioNoCopy": "This computer has no copy of this hotel. Connect to the hotel once and sign in."
   },
   "common": {
     "close": "Close",
@@ -4444,7 +4470,8 @@
       "occupancy": "Occupancy and indicators",
       "cash": "Cash and payments",
       "expenses": "Expenses",
-      "staff": "Staff"
+      "staff": "Staff",
+      "night": "Night report"
     },
     "compare": {
       "label": "Compare with",
@@ -4627,6 +4654,34 @@
       "all": "All",
       "overnight": "Overnight",
       "hourly": "Hourly"
+    },
+    "night": {
+      "date": "Day",
+      "arrivals": "Arrivals",
+      "departures": "Departures",
+      "staying": "Staying",
+      "noShows": "No-shows",
+      "none": "None.",
+      "room": "Room",
+      "guest": "Guest",
+      "dates": "Dates",
+      "balance": "Balance due",
+      "rooms": {
+        "total": "Rooms",
+        "occupied": "Occupied",
+        "clean": "Clean",
+        "dirty": "Dirty",
+        "inspected": "Inspected",
+        "outOfService": "Out of service"
+      },
+      "cash": "Cash summary",
+      "cashNone": "No cash movements on this day.",
+      "currency": "Currency",
+      "income": "Income",
+      "refunds": "Refunds",
+      "expenses": "Expenses",
+      "depositHeld": "Deposits held",
+      "depositNote": "Deposits held are not income; they are money to give back to the guest."
     }
   },
   "currency": {
@@ -5760,7 +5815,8 @@
       "camera_alert": "Camera alarm",
       "guest_face": "Face record",
       "camera_event": "Camera event",
-      "staff_face": "Staff face record"
+      "staff_face": "Staff face record",
+      "damage_deposit": "Damage deposit"
     },
     "fieldName": {
       "name": "Name",
@@ -6060,7 +6116,9 @@
     "noShow": {
       "title": "Mark the reservation as a no-show?",
       "description": "The nights are freed, the payments stay on record.",
-      "confirm": "Mark as no-show"
+      "confirm": "Mark as no-show",
+      "fee": "No-show fee",
+      "feeHelp": "Leave it empty for no fee. The fee is added to the guest's folio."
     },
     "cancelStay": {
       "menu": "Room {{room}}: cancel",
@@ -6212,6 +6270,12 @@
         "tooMuch": "The amount is more than the open balance ({{amount}}).",
         "spread": "The amount is spread over the rooms' open balances in booking order; each room gets its own payment row."
       }
+    },
+    "lateCheckout": {
+      "added": "Late check-out fee added",
+      "failed": "Checked out, but the late check-out fee could not be added. Add it from the Money tab.",
+      "offer": "Add a late check-out fee ({{time}})",
+      "amount": "Late check-out fee"
     }
   },
   "holidayCheck": {
@@ -7482,6 +7546,99 @@
       "addFailed": "The face could not be taken",
       "removed": "Taken off the list",
       "removeFailed": "Could not take off the list"
+    }
+  },
+  "feesPanel": {
+    "title": "Fee lines and deposit",
+    "error": "The lines could not be loaded. Refresh and try again.",
+    "empty": "No fee lines or deposits yet.",
+    "addLate": "Add late check-out",
+    "takeDeposit": "Take deposit",
+    "voided": "Voided",
+    "void": "Void line",
+    "deposit": "Damage deposit",
+    "status": {
+      "held": "Held",
+      "refunded": "Given back",
+      "converted": "Turned into income"
+    },
+    "refund": "Give back",
+    "convert": "Turn into income",
+    "heldHint": "A held deposit is not income; give it back at check-out or turn it into income with a reason.",
+    "lateTitle": "Late check-out fee",
+    "lateHelp": "Enter the departure time and the amount; the amount follows the hotel's rule.",
+    "lateSave": "Add line",
+    "room": "Room",
+    "lateTime": "Departure time",
+    "amount": "Amount",
+    "note": "Note (optional)",
+    "takeTitle": "Take a damage deposit",
+    "takeHelp": "A deposit is not income and does not change the folio balance.",
+    "takeSave": "Save deposit",
+    "method": "Payment method",
+    "taken": "Deposit saved",
+    "refunded": "Deposit given back",
+    "converted": "Deposit turned into income",
+    "refundTitle": "Give the deposit back?",
+    "convertTitle": "Turn the deposit into income?",
+    "settleHelp": "This cannot be undone; the record stays in the audit log.",
+    "refundBody": "{{amount}} is given back to the guest ({{method}}).",
+    "convertBody": "{{amount}} is charged as a damage fee and counted as collected.",
+    "convertReason": "What was damaged? (required)",
+    "voidTitle": "Void this line?",
+    "voidHelp": "The line leaves the folio; the record is kept.",
+    "voidReason": "Reason",
+    "voidedToast": "Line voided"
+  },
+  "portfolio": {
+    "title": "Portfolio",
+    "description": "Tonight's occupancy, cash drawer, income and expenses and the calendar of all your hotels in one place.",
+    "source": {
+      "live": "Live · from the main computer",
+      "copy": "Read-only copy · last synced {{date}} {{time}}",
+      "copyNoTime": "Read-only copy"
+    },
+    "hotel": {
+      "active": "In use"
+    },
+    "noCopy": {
+      "title": "No copy of this hotel",
+      "body": "This computer has no read-only copy of this hotel yet. Connect to the hotel once and sign in as the owner; the copy is prepared by itself."
+    },
+    "failed": "This hotel's copy could not be read. Connect to the hotel and wait for the copy to refresh.",
+    "kpi": {
+      "tonight": "Occupancy tonight",
+      "tonightHint": "{{count}}/{{rooms}} rooms",
+      "drawer": "Cash that should be in the drawer",
+      "drawerHint": "Not yet collected by the owner",
+      "periodOccupancy": "Occupancy in period",
+      "periodOccupancyHint": "Sold nights",
+      "revenue": "Income",
+      "expenses": "Expenses",
+      "profit": "Profit",
+      "partial": "Some expense sections are hidden"
+    },
+    "currencyNote": "Amounts are in {{currency}}.",
+    "noHotels": {
+      "title": "No saved hotels",
+      "body": "Connect to a hotel's main computer from the connection screen; the hotel appears here."
+    },
+    "hostNote": {
+      "title": "The other hotel is not shown here",
+      "body": "This computer is the hotel's main computer, so only your own hotel is shown. To see the other hotel, connect to both hotels from your own device and open this screen there."
+    },
+    "totals": {
+      "title": "Totals (same currency)",
+      "line_one": "{{currency}} · {{count}} hotel",
+      "line_other": "{{currency}} · {{count}} hotels",
+      "figures": "Income {{revenue}} · Expenses {{expenses}} · Profit {{profit}}",
+      "mixed": "Hotels use different currencies, so no total is shown; amounts are never converted."
+    },
+    "calendar": {
+      "title": "Calendar",
+      "hotel": "Hotel",
+      "noRooms": "This hotel has no rooms yet.",
+      "readOnlyHint": "View only; connect to the hotel to make changes."
     }
   }
 }

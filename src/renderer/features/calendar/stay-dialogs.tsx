@@ -20,7 +20,9 @@ import { MoneyInput, type MoneyValue } from '@/components/money-input'
 import { ResponsiveDialog } from '@/components/responsive-dialog'
 import { deferForPendingAmount } from '@/features/settings/use-admin'
 import { useFormat } from '@/hooks/use-format'
+import { toast } from 'sonner'
 import { useApiQuery } from '@/lib/api/hooks'
+import { useTransport } from '@/lib/api/api-context'
 import { useCan } from '@/lib/view-as'
 import { useBookingMutation, useBookingOptions, type BookingStay } from './booking-api'
 import { MoneyChoiceFields } from './giveup-dialog'
@@ -93,9 +95,37 @@ export function CheckoutDialog({
   const [freeOk, setFreeOk] = useState(false)
   const [freeError, setFreeError] = useState(false)
   const showDayUse = plan.kind === 'sameDay' && sameDay !== null
+  // P21d: leaving after the hotel's late check-out hour offers the fee line (the desk can change or untick it).
+  const can = useCan()
+  const [nowTime] = useState(() => {
+    const d = new Date()
+    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+  })
+  const lateQuote = useApiQuery(
+    'booking.feeQuote',
+    { kind: 'lateCheckout', stayId: stay.id, time: nowTime },
+    { enabled: open && can('extras', 'edit') && plan.kind === 'onTime' }
+  )
+  const [lateOn, setLateOn] = useState(true)
+  const [lateFee, setLateFee] = useState<MoneyValue | null>(null)
+  const lateShown: MoneyValue = lateFee ?? {
+    amountMinor: lateQuote.data?.suggestedMinor ?? null,
+    currency
+  }
+  const offerLate = !!lateQuote.data && lateQuote.data.suggestedMinor > 0
+  const transport = useTransport()
   const checkOut = useBookingMutation('booking.checkOut', {
     success: t('booking.toast.checkedOut', { room: stay.roomNumber }),
     onSuccess: () => {
+      if (offerLate && lateOn && lateShown.amountMinor && lateShown.amountMinor > 0)
+        void transport
+          .call('booking.addLateCheckout', {
+            stayId: stay.id,
+            time: nowTime,
+            amountMinor: lateShown.amountMinor
+          })
+          .then(() => toast.success(t('booking.lateCheckout.added')))
+          .catch(() => toast.error(t('booking.lateCheckout.failed')))
       onOpenChange(false)
       onCheckedOut?.()
     }
@@ -236,6 +266,22 @@ export function CheckoutDialog({
                 .join(' ')}
             </AlertDescription>
           </Alert>
+        ) : null}
+        {offerLate ? (
+          <div className="grid gap-2 rounded-md border p-3" data-testid="checkout-late">
+            <label className="flex min-h-8 items-center gap-2 text-sm font-medium max-md:min-h-11">
+              <Checkbox checked={lateOn} onCheckedChange={(c) => setLateOn(c === true)} />
+              {t('booking.lateCheckout.offer', { time: nowTime })}
+            </label>
+            {lateOn ? (
+              <MoneyInput
+                label={t('booking.lateCheckout.amount')}
+                value={lateShown}
+                onChange={(v) => setLateFee({ ...v, currency })}
+                currencies={[currency]}
+              />
+            ) : null}
+          </div>
         ) : null}
         <p className="text-muted-foreground text-sm">{t('booking.checkout.dirty')}</p>
       </form>
@@ -412,7 +458,10 @@ export function CancelDialog({
   )
 }
 
-/** "Gelmedi" (G-42): the nights are freed, payments stay; from the panel or the park area. */
+/**
+ * "Gelmedi" (G-42): the nights are freed, payments stay; from the panel or the park area. The hotel's no-show fee rule
+ * (`fees.noShow`) offers an amount that the desk can change or empty (P21d, Ö-22); it lands on the folio.
+ */
 export function NoShowDialog({
   reservationId,
   open,
@@ -423,6 +472,20 @@ export function NoShowDialog({
   onOpenChange: (open: boolean) => void
 }) {
   const { t } = useTranslation()
+  const can = useCan()
+  const mayFee = can('extras', 'edit')
+  const quote = useApiQuery(
+    'booking.feeQuote',
+    { kind: 'noShow', reservationId },
+    { enabled: open && mayFee }
+  )
+  const [fee, setFee] = useState<MoneyValue | null>(null)
+  const currency = quote.data?.currency ?? ''
+  // Until the desk types something the field shows the rule's suggestion (0 = no fee, an empty field).
+  const shown: MoneyValue = fee ?? {
+    amountMinor: quote.data && quote.data.suggestedMinor > 0 ? quote.data.suggestedMinor : null,
+    currency
+  }
   const noShow = useBookingMutation('booking.noShow', {
     success: t('booking.toast.noShow'),
     onSuccess: () => onOpenChange(false)
@@ -445,11 +508,26 @@ export function NoShowDialog({
     >
       <form
         id="no-show-form"
+        className="grid gap-3"
         onSubmit={(e) => {
           e.preventDefault()
-          noShow.mutate({ id: reservationId })
+          if (deferForPendingAmount(e.currentTarget)) return
+          const amount = mayFee ? shown.amountMinor : null
+          noShow.mutate({ id: reservationId, ...(amount && amount > 0 ? { feeMinor: amount } : {}) })
         }}
-      />
+      >
+        {mayFee && quote.data ? (
+          <div className="grid gap-1.5" data-testid="no-show-fee">
+            <MoneyInput
+              label={t('booking.noShow.fee')}
+              value={shown}
+              onChange={(v) => setFee({ ...v, currency })}
+              currencies={[currency]}
+            />
+            <p className="text-muted-foreground text-xs">{t('booking.noShow.feeHelp')}</p>
+          </div>
+        ) : null}
+      </form>
     </ResponsiveDialog>
   )
 }

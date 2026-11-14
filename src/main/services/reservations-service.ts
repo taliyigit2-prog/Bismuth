@@ -53,6 +53,7 @@ import {
   reservationUpdateSchema,
   type ReservationUpdateInput
 } from '@shared/contract/booking'
+import { insertFeeCharge } from './fees-service'
 import { checkoutPlan, suggestStayPrices } from '@shared/domain/booking'
 import { addDays, diffDays, localDate, localDateOf, weekday, type LocalDate } from '@shared/date'
 import {
@@ -1626,8 +1627,23 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
       )
     },
 
-    noShow(ctx: Ctx, id: string, reason = 'no_show'): ReservationDetail {
-      return endReservation(ctx, id, 'no_show', {}, reason)
+    /** `feeMinor` > 0: the no-show fee line lands on the folio in the same transaction (P21d, Ö-22). */
+    noShow(ctx: Ctx, id: string, reason = 'no_show', feeMinor = 0): ReservationDetail {
+      if (!Number.isSafeInteger(feeMinor) || feeMinor < 0) throw invalid('errors.validation')
+      if (feeMinor > 0) requirePermission(ctx, 'extras', 'edit')
+      const settle: SettleFn | undefined =
+        feeMinor > 0
+          ? (tx, audit, now) => {
+              insertFeeCharge(tx, audit, ctx, now, {
+                reservationId: id,
+                code: 'no_show_fee',
+                date: today(now),
+                amountMinor: feeMinor
+              })
+              return { noShowFeeMinor: feeMinor }
+            }
+          : undefined
+      return endReservation(ctx, id, 'no_show', {}, reason, settle)
     },
 
     /**

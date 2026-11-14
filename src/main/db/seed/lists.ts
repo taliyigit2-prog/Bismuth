@@ -265,6 +265,8 @@ export const EXTRA_SERVICE_SEED = [
   ex('extra_bed', 'per_night', 'İlave yatak', 'Extra bed', 'Дополнительная кровать'),
   ex('early_checkin', 'per_booking', 'Erken giriş', 'Early check-in', 'Ранний заезд'),
   ex('late_checkout', 'per_booking', 'Geç çıkış', 'Late check-out', 'Поздний выезд'),
+  ex('no_show_fee', 'per_booking', 'Gelmeme bedeli', 'No-show fee', 'Плата за неявку'),
+  ex('damage_fee', 'per_booking', 'Hasar bedeli', 'Damage fee', 'Плата за ущерб'),
   ex('airport_transfer', 'per_booking', 'Havalimanı transferi', 'Airport transfer', 'Трансфер из аэропорта'),
   ex('laundry_service', 'per_item', 'Çamaşır yıkama', 'Laundry service', 'Стирка'),
   ex('parking', 'per_night', 'Otopark', 'Parking', 'Парковка'),

@@ -51,7 +51,8 @@
     "companies": "Firmalar",
     "calendarNotes": "Takvim notları",
     "guide": "Kılavuz",
-    "camera": "Kamera"
+    "camera": "Kamera",
+    "portfolio": "Portföy"
   },
   "topbar": {
     "search": "Ara ya da git…",
@@ -1434,6 +1435,27 @@
         "title": "Kamera kurulumu",
         "description": "Ağdaki kameraları yeniden arayın, yeni bilgileri deneyin ve kaydedin. Kayıtlı şifre gösterilmez."
       }
+    },
+    "fees": {
+      "title": "Ücretler",
+      "help": "Geç çıkış, gelmeme ve hasar depozitosu için önerilen tutarlar. Resepsiyon her kalemde tutarı değiştirebilir.",
+      "late": "Geç çıkış ücreti",
+      "mode": "Kural",
+      "lateNone": "Öneri yok",
+      "lateFixed": "Sabit tutar",
+      "latePercent": "Gecelik fiyatın yüzdesi",
+      "afterTime": "Bu saatten sonra",
+      "amount": "Tutar",
+      "percent": "Yüzde",
+      "percentInvalid": "0 ile 1000 arasında bir tam sayı yazın.",
+      "noShow": "Gelmeme bedeli",
+      "noShowNone": "Bedel yok",
+      "noShowFirstNight": "İlk gecenin fiyatı",
+      "noShowFixed": "Sabit tutar",
+      "deposit": "Hasar depozitosu",
+      "depositAmount": "Varsayılan tutar",
+      "depositHelp": "Boş ya da sıfır bırakırsanız tutarı her seferinde siz yazarsınız.",
+      "save": "Ücretleri kaydet"
     }
   },
   "status": {
@@ -1736,7 +1758,11 @@
     "hostTimeout": "Ana bilgisayar zamanında yanıt vermedi. Bağlantınızı (NetBird açık mı?) ve ana bilgisayarın açık olduğunu kontrol edip yeniden deneyin.",
     "hostDenied": "Ana bilgisayar bu bilgisayarın bağlanmasını kabul etmedi. Otel sahibine haber verin.",
     "hotelInUse": "Kullanımdaki otelin adresi değiştirilemez. Önce başka otele geçin.",
-    "hotelExists": "Bu adres listede başka bir otel için kayıtlı."
+    "hotelExists": "Bu adres listede başka bir otel için kayıtlı.",
+    "feeStayNotStarted": "Bu oda için henüz giriş yapılmadı. Önce odaya yerleştirin.",
+    "feeNotVoidable": "Bu kalem buradan iptal edilemez.",
+    "depositSettled": "Bu depozito zaten iade edilmiş ya da gelire çevrilmiş.",
+    "portfolioNoCopy": "Bu otelin kopyası bu bilgisayarda yok. Otele bir kez bağlanıp oturum açın."
   },
   "common": {
     "close": "Kapat",
@@ -4444,7 +4470,8 @@
       "occupancy": "Doluluk ve göstergeler",
       "cash": "Kasa ve ödemeler",
       "expenses": "Giderler",
-      "staff": "Personel"
+      "staff": "Personel",
+      "night": "Gece raporu"
     },
     "compare": {
       "label": "Karşılaştır",
@@ -4627,6 +4654,34 @@
       "all": "Tümü",
       "overnight": "Gecelik",
       "hourly": "Saatlik"
+    },
+    "night": {
+      "date": "Gün",
+      "arrivals": "Gelenler",
+      "departures": "Gidenler",
+      "staying": "Kalanlar",
+      "noShows": "Gelmeyenler",
+      "none": "Kayıt yok.",
+      "room": "Oda",
+      "guest": "Misafir",
+      "dates": "Tarihler",
+      "balance": "Bakiye",
+      "rooms": {
+        "total": "Toplam oda",
+        "occupied": "Dolu",
+        "clean": "Temiz",
+        "dirty": "Kirli",
+        "inspected": "Kontrol edildi",
+        "outOfService": "Hizmet dışı"
+      },
+      "cash": "Kasa özeti",
+      "cashNone": "Bu gün için kasa hareketi yok.",
+      "currency": "Para birimi",
+      "income": "Gelir",
+      "refunds": "İadeler",
+      "expenses": "Gider",
+      "depositHeld": "Emanetteki depozito",
+      "depositNote": "Emanetteki depozito gelir değildir; misafire iade edilecek paradır."
     }
   },
   "currency": {
@@ -5760,7 +5815,8 @@
       "camera_alert": "Kamera alarmı",
       "guest_face": "Yüz kaydı",
       "camera_event": "Kamera olayı",
-      "staff_face": "Personel yüz kaydı"
+      "staff_face": "Personel yüz kaydı",
+      "damage_deposit": "Hasar depozitosu"
     },
     "fieldName": {
       "name": "Ad",
@@ -6060,7 +6116,9 @@
     "noShow": {
       "title": "Rezervasyon \"gelmedi\" olarak işaretlensin mi?",
       "description": "Geceler boşalır, ödemeler kayıtta kalır.",
-      "confirm": "Gelmedi olarak işaretle"
+      "confirm": "Gelmedi olarak işaretle",
+      "fee": "Gelmeme bedeli",
+      "feeHelp": "Boş bırakırsanız bedel yazılmaz. Bedel misafirin hesabına eklenir."
     },
     "cancelStay": {
       "menu": "Oda {{room}}: iptal et",
@@ -6212,6 +6270,12 @@
         "tooMuch": "Tutar açık bakiyeyi ({{amount}}) aşıyor.",
         "spread": "Tutar odaların açık bakiyelerine rezervasyon sırasıyla dağıtılır; her oda için ayrı ödeme satırı yazılır."
       }
+    },
+    "lateCheckout": {
+      "added": "Geç çıkış ücreti eklendi",
+      "failed": "Çıkış yapıldı ama geç çıkış ücreti eklenemedi. Para sekmesinden ekleyin.",
+      "offer": "Geç çıkış ücreti ekle ({{time}})",
+      "amount": "Geç çıkış ücreti"
     }
   },
   "holidayCheck": {
@@ -7482,6 +7546,99 @@
       "addFailed": "Yüz alınamadı",
       "removed": "Listeden çıkarıldı",
       "removeFailed": "Listeden çıkarılamadı"
+    }
+  },
+  "feesPanel": {
+    "title": "Ücret kalemleri ve emanet",
+    "error": "Kalemler yüklenemedi. Sayfayı yenileyip tekrar deneyin.",
+    "empty": "Henüz ücret kalemi ya da depozito yok.",
+    "addLate": "Geç çıkış ekle",
+    "takeDeposit": "Depozito al",
+    "voided": "İptal edildi",
+    "void": "Kalemi iptal et",
+    "deposit": "Hasar depozitosu",
+    "status": {
+      "held": "Emanette",
+      "refunded": "İade edildi",
+      "converted": "Gelire çevrildi"
+    },
+    "refund": "İade et",
+    "convert": "Gelire çevir",
+    "heldHint": "Emanetteki depozito gelir sayılmaz; çıkışta iade edin ya da gerekçeyle gelire çevirin.",
+    "lateTitle": "Geç çıkış ücreti",
+    "lateHelp": "Çıkış saatini ve tutarı yazın; tutar otelin kuralına göre önerilir.",
+    "lateSave": "Kalemi ekle",
+    "room": "Oda",
+    "lateTime": "Çıkış saati",
+    "amount": "Tutar",
+    "note": "Not (isteğe bağlı)",
+    "takeTitle": "Hasar depozitosu al",
+    "takeHelp": "Depozito gelir sayılmaz ve hesabın bakiyesini değiştirmez.",
+    "takeSave": "Depozitoyu kaydet",
+    "method": "Ödeme yöntemi",
+    "taken": "Depozito kaydedildi",
+    "refunded": "Depozito iade edildi",
+    "converted": "Depozito gelire çevrildi",
+    "refundTitle": "Depozito iade edilsin mi?",
+    "convertTitle": "Depozito gelire çevrilsin mi?",
+    "settleHelp": "Bu işlem geri alınamaz; kayıt denetim günlüğünde kalır.",
+    "refundBody": "{{amount}} misafire iade edilir ({{method}}).",
+    "convertBody": "{{amount}} hasar bedeli olarak hesaba yazılır ve tahsil edilmiş sayılır.",
+    "convertReason": "Hasar nedir? (zorunlu)",
+    "voidTitle": "Kalem iptal edilsin mi?",
+    "voidHelp": "Kalem hesaptan düşer; kayıt silinmez.",
+    "voidReason": "İptal nedeni",
+    "voidedToast": "Kalem iptal edildi"
+  },
+  "portfolio": {
+    "title": "Portföy",
+    "description": "Otellerinizin bugünkü doluluğu, kasası, gelir-gideri ve takvimi tek ekranda.",
+    "source": {
+      "live": "Canlı · ana bilgisayardan",
+      "copy": "Yedek kopya · son eşitleme {{date}} {{time}}",
+      "copyNoTime": "Yedek kopya"
+    },
+    "hotel": {
+      "active": "Kullanımda"
+    },
+    "noCopy": {
+      "title": "Bu otelin kopyası yok",
+      "body": "Bu bilgisayarda bu otelin yedek kopyası henüz yok. Otele bir kez bağlanıp sahip olarak oturum açın; kopya kendiliğinden hazırlanır."
+    },
+    "failed": "Bu otelin kopyası okunamadı. Otele bağlanıp kopyanın yenilenmesini bekleyin.",
+    "kpi": {
+      "tonight": "Bu gece doluluk",
+      "tonightHint": "{{count}}/{{rooms}} oda",
+      "drawer": "Kasada olması gereken",
+      "drawerHint": "Sahibin henüz teslim almadığı",
+      "periodOccupancy": "Dönem doluluğu",
+      "periodOccupancyHint": "Satılan geceler",
+      "revenue": "Gelir",
+      "expenses": "Gider",
+      "profit": "Kâr",
+      "partial": "Bazı gider bölümleri gizli"
+    },
+    "currencyNote": "Tutarlar {{currency}} cinsindendir.",
+    "noHotels": {
+      "title": "Kayıtlı otel yok",
+      "body": "Bağlan ekranından bir otelin ana bilgisayarına bağlanın; otel buraya eklenir."
+    },
+    "hostNote": {
+      "title": "Diğer otel burada görünmez",
+      "body": "Bu bilgisayar otelin ana bilgisayarı; yalnız kendi oteliniz gösterilir. Diğer otelin rakamları için kendi cihazınızdan her iki otele bağlanıp bu ekranı açın."
+    },
+    "totals": {
+      "title": "Toplam (aynı para birimi)",
+      "line_one": "{{currency}} · {{count}} otel",
+      "line_other": "{{currency}} · {{count}} otel",
+      "figures": "Gelir {{revenue}} · Gider {{expenses}} · Kâr {{profit}}",
+      "mixed": "Oteller farklı para birimi kullandığı için toplam alınmadı; kur çevirisi yapılmaz."
+    },
+    "calendar": {
+      "title": "Takvim",
+      "hotel": "Otel",
+      "noRooms": "Bu otelde henüz oda yok.",
+      "readOnlyHint": "Yalnız görüntülenir; değişiklik için otele bağlanın."
     }
   }
 }

@@ -24,7 +24,7 @@ node tools/ajan/ajan.mjs --model claude-opus-5-5 --butce 200 "docs/analiz/OPUS-B
 6. Dalga 1 için: `docs/analiz/03-resepsiyon-geri-bildirimi.md` (P17a tasarımı), `docs/plan/fazlar/faz-17-*.md`,
    `.claude/agents/calendar-specialist.md`, `.claude/skills/orkestra/SKILL.md`.
 
-Okumadan kod yazma; ajan dağıtmadan `/token-economy` kurallarını hatırla (aynı anda en çok 2 kodlayan ajan).
+Okumadan kod yazma; ajan dağıtmadan `/token-economy` kurallarını hatırla (4 çekirdek: aynı anda en çok 3 kodlayan ajan, yük > 5 ise 2).
 
 Sahip sorularının tamamı cevaplandı; ilk mesajda soru sorma. Yeni soru yalnız durma koşullarında (§4).
 

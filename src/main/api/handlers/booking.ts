@@ -136,7 +136,15 @@ export const bookingHandlers = (services: Services): HandlersFor<keyof typeof bo
       ),
     'booking.cancelStay': (ctx, input) =>
       view(ctx, services.reservations.cancelStay(ctx, input.stayId, input.reason).reservation.id),
-    'booking.noShow': (ctx, input) => view(ctx, services.reservations.noShow(ctx, input.id).reservation.id),
+    'booking.noShow': (ctx, input) =>
+      view(ctx, services.reservations.noShow(ctx, input.id, 'no_show', input.feeMinor ?? 0).reservation.id),
+    'booking.feeQuote': (ctx, input) => services.fees.quote(ctx, input),
+    'booking.addLateCheckout': (ctx, input) =>
+      view(ctx, services.fees.addLateCheckout(ctx, input).reservationId),
+    'booking.voidFee': (ctx, input) => view(ctx, services.fees.voidFee(ctx, input).reservationId),
+    'booking.folioLines': (ctx, input) => services.fees.folioLines(ctx, input.id),
+    'booking.takeDeposit': (ctx, input) => view(ctx, services.fees.takeDeposit(ctx, input).reservationId),
+    'booking.settleDeposit': (ctx, input) => view(ctx, services.fees.settleDeposit(ctx, input).reservationId),
     'booking.park': (ctx, input) =>
       view(ctx, services.reservations.park(ctx, input.id, input.park).reservation.id),
     'booking.unpark': (ctx, input) =>

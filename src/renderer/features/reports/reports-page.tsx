@@ -5,7 +5,7 @@
 import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSearch } from '@tanstack/react-router'
-import { ChartColumnIcon } from 'lucide-react'
+import { ChartColumnIcon, PrinterIcon } from 'lucide-react'
 import type { ReportKind } from '@shared/contract/procedures/reports'
 import type { LocalDate } from '@shared/date'
 import {
@@ -14,6 +14,7 @@ import {
   type CompareMode,
   type PeriodPreset
 } from '@shared/domain/reports-period'
+import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -28,6 +29,7 @@ import type { PermissionKey } from '@shared/permissions'
 import { CashTab } from './cash-tab'
 import { LedgerLink, NoAccess, ReportSkeleton } from './common'
 import { ExpensesTab } from './expenses-tab'
+import { NightTab } from './night-tab'
 import { OccupancyTab } from './occupancy-tab'
 import { compareOf, initialChoice, lastDay, periodOf, yearsBetween, type PeriodChoice } from './period'
 import { PrintLayout } from './print-layout'
@@ -37,7 +39,7 @@ import { StaffTab } from './staff-tab'
 import { SummaryTab } from './summary-tab'
 import { YearlyTab } from './yearly-tab'
 
-const REPORT_TABS = ['summary', 'yearly', 'occupancy', 'cash', 'expenses', 'staff'] as const
+const REPORT_TABS = ['summary', 'yearly', 'occupancy', 'cash', 'expenses', 'staff', 'night'] as const
 type ReportTab = (typeof REPORT_TABS)[number]
 
 const TAB_PERMISSION: Record<ReportTab, PermissionKey> = {
@@ -46,7 +48,8 @@ const TAB_PERMISSION: Record<ReportTab, PermissionKey> = {
   occupancy: 'reports.operations',
   cash: 'reports.finance',
   expenses: 'reports.finance',
-  staff: 'reports.staff'
+  staff: 'reports.staff',
+  night: 'reports.operations'
 }
 
 const TAB_REPORT: Record<ReportTab, ReportKind> = {
@@ -55,7 +58,9 @@ const TAB_REPORT: Record<ReportTab, ReportKind> = {
   occupancy: 'occupancy',
   cash: 'cash',
   expenses: 'expenses',
-  staff: 'staff'
+  staff: 'staff',
+  // The night report has its own day and print button; the workbook export is not offered there.
+  night: 'occupancy'
 }
 
 const isTab = (v: unknown): v is ReportTab =>
@@ -202,6 +207,16 @@ function YearControls({
   )
 }
 
+function NightPrintButton({ onPrint }: { onPrint: () => void }) {
+  const { t } = useTranslation()
+  return (
+    <Button variant="outline" onClick={onPrint} data-testid="print-report">
+      <PrinterIcon aria-hidden />
+      {t('reports.print.button')}
+    </Button>
+  )
+}
+
 function ReportsScreen({ today, firstDay }: { today: LocalDate; firstDay: LocalDate | null }) {
   const { t } = useTranslation()
   const f = useFormat()
@@ -216,16 +231,23 @@ function ReportsScreen({ today, firstDay }: { today: LocalDate; firstDay: LocalD
   const years = yearsBetween(firstDay, today)
   const [year, setYear] = useState(Number(today.slice(0, 4)))
   const [other, setOther] = useState<number | null>(null)
+  const [nightDate, setNightDate] = useState<LocalDate>(today)
   const print = usePrint()
 
   const period = periodOf(choice, today)
   const compare = tab === 'cash' ? null : compareOf(choice, today)
   const yearTab = tab === 'yearly' || tab === 'staff'
-  const range = yearTab
-    ? tab === 'yearly' && other
-      ? `${year} · ${other}`
-      : String(year)
-    : t('reports.period.shown', { from: f.date(period.from, 'long'), until: f.date(lastDay(period), 'long') })
+  const range =
+    tab === 'night'
+      ? f.date(nightDate, 'long')
+      : yearTab
+        ? tab === 'yearly' && other
+          ? `${year} · ${other}`
+          : String(year)
+        : t('reports.period.shown', {
+            from: f.date(period.from, 'long'),
+            until: f.date(lastDay(period), 'long')
+          })
   const ref: ReportRef =
     tab === 'yearly'
       ? { report: 'yearly', years: other ? [year, other] : [year] }
@@ -247,6 +269,8 @@ function ReportsScreen({ today, firstDay }: { today: LocalDate; firstDay: LocalD
         return <ExpensesTab period={period} compare={compare} />
       case 'staff':
         return <StaffTab year={year} />
+      case 'night':
+        return <NightTab date={nightDate} />
     }
   }
 
@@ -280,7 +304,11 @@ function ReportsScreen({ today, firstDay }: { today: LocalDate; firstDay: LocalD
           )}
         </div>
         <div className="flex flex-wrap items-end gap-3">
-          {yearTab ? (
+          {tab === 'night' ? (
+            <div className="grid gap-1.5 max-sm:w-full" data-testid="night-date">
+              <DateInput value={nightDate} onChange={setNightDate} label={t('reports.night.date')} />
+            </div>
+          ) : yearTab ? (
             <YearControls
               years={years}
               year={year}
@@ -291,10 +319,14 @@ function ReportsScreen({ today, firstDay }: { today: LocalDate; firstDay: LocalD
             <PeriodControls choice={choice} onChoice={setChoice} showCompare={tab !== 'cash'} />
           )}
           <div className="flex flex-wrap gap-2 max-md:w-full md:ms-auto max-md:[&>[data-slot=button]]:flex-1">
-            <ReportActions onPrint={print.start} />
+            {tab === 'night' ? (
+              <NightPrintButton onPrint={print.start} />
+            ) : (
+              <ReportActions onPrint={print.start} />
+            )}
           </div>
         </div>
-        {!yearTab ? (
+        {!yearTab && tab !== 'night' ? (
           <p className="text-muted-foreground -mt-2 text-xs" data-testid="period-range">
             {range}
             {compare

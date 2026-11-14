@@ -23,6 +23,7 @@ export const SCREEN_ROUTES = [
   'contacts',
   'staff',
   'reports',
+  'portfolio',
   'tourism',
   'settings?tab=general',
   'settings?tab=hotel',

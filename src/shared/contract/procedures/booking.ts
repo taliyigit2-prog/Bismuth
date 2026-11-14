@@ -28,6 +28,15 @@ import {
   reservationUpdateSchema
 } from '../booking'
 import {
+  depositSettleSchema,
+  depositTakeSchema,
+  feeQuoteInputSchema,
+  feeQuoteSchema,
+  feeVoidSchema,
+  folioLinesSchema,
+  lateCheckoutInputSchema
+} from '../fees'
+import {
   groupAttachSchema,
   groupCancelSchema,
   groupCreateSchema,
@@ -149,7 +158,19 @@ export const bookingProcedures = {
   /** One room of the reservation that is still to come (G-35, G-42). */
   'booking.cancelStay': proc(z.object({ stayId: idSchema, reason }).strict(), bookingViewSchema),
   /** "Gelmedi" (G-42): the nights are freed, payments stay; also from the park area. */
-  'booking.noShow': proc(z.object({ id: idSchema }).strict(), bookingViewSchema),
+  /** No-show; `feeMinor` writes the no-show fee line on the folio at the same time (P21d). */
+  'booking.noShow': proc(
+    z.object({ id: idSchema, feeMinor: amountSchema.nonnegative().optional() }).strict(),
+    bookingViewSchema
+  ),
+  /** The fee the hotel's rule suggests (late check-out hour or no-show). */
+  'booking.feeQuote': proc(feeQuoteInputSchema, feeQuoteSchema),
+  'booking.addLateCheckout': proc(lateCheckoutInputSchema, bookingViewSchema),
+  'booking.voidFee': proc(feeVoidSchema, bookingViewSchema),
+  /** Fee lines of the folio and the damage deposits of the reservation. */
+  'booking.folioLines': proc(byId, folioLinesSchema),
+  'booking.takeDeposit': proc(depositTakeSchema, bookingViewSchema),
+  'booking.settleDeposit': proc(depositSettleSchema, bookingViewSchema),
   'booking.park': proc(z.object({ id: idSchema, park: parkSchema }).strict(), bookingViewSchema),
   'booking.unpark': proc(
     z

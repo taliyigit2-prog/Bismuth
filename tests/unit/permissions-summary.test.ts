@@ -332,6 +332,7 @@ const SCREEN_READS: Record<NavPath, { name: string; body: unknown } | null> = {
   '/contacts': { name: 'contacts.list', body: { includeInactive: false } },
   '/staff': { name: 'staff.employees', body: {} },
   '/reports': { name: 'reports.summary', body: { from: '2026-10-01', to: '2026-10-31' } },
+  '/portfolio': { name: 'portfolio.overview', body: { from: '2026-10-01', to: '2026-10-31' } },
   '/tourism': { name: 'tourism.listImports', body: {} },
   '/audit': { name: 'audit.list', body: {} },
   // Settings (each section checks its own key), the colour preview, the guide and About read nothing of their own.
