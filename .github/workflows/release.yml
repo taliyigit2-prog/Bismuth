@@ -7,6 +7,11 @@ name: release
 # Bismuth-Intel.dmg, SHA256SUMS.txt. Release notes: docs/surum-notlari/<tag>.md (Turkish, for the owner).
 on:
   workflow_dispatch:
+    inputs:
+      camera_addon:
+        description: 'Also build the camera add-on (Bismuth-Kamera-Windows.zip, Bismuth-Kamera-Mac.zip); needs the model files in a secret'
+        type: boolean
+        default: false
   push:
     tags: ['v*']
 
@@ -106,6 +111,49 @@ jobs:
           name: installers-macOS
           path: |
             release/*.dmg
+          retention-days: 14
+          compression-level: 0
+
+  # Camera add-on (Faz 20 P20f): separate download, ~0.7 GB each (docs/kurulum.md). Only when asked (dispatch input), never
+  # on a plain tag: the model weights are not in the repository (yasak 14) and come from the owner's private
+  # release-assets storage via the secret CAMERA_MODELS_URL (a .tar.gz of resources/camera/models; sha256 in CAMERA_MODELS_SHA256).
+  camera-addon:
+    needs: verify
+    if: inputs.camera_addon
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: win-x64
+            runs-on: ubuntu-24.04 # Linux builds the Windows add-on (wheels for win_amd64); x1, not the Windows x2
+          - target: mac-arm64
+            runs-on: macos-latest # x10: the wheels are native here (insightface compiles); run only when the Mac add-on changed
+    runs-on: ${{ matrix.runs-on }}
+    timeout-minutes: 60
+    env:
+      MODELS_URL: ${{ secrets.CAMERA_MODELS_URL }}
+      MODELS_SHA256: ${{ secrets.CAMERA_MODELS_SHA256 }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Model files (kept outside the repository)
+        run: |
+          [ -n "$MODELS_URL" ] || { echo "secret CAMERA_MODELS_URL is empty"; exit 1; }
+          mkdir -p "$RUNNER_TEMP/models"
+          curl -fL --retry 3 -o "$RUNNER_TEMP/models.tar.gz" "$MODELS_URL"
+          echo "$MODELS_SHA256  $RUNNER_TEMP/models.tar.gz" | (sha256sum -c - 2>/dev/null || shasum -a 256 -c -)
+          tar -xzf "$RUNNER_TEMP/models.tar.gz" -C "$RUNNER_TEMP/models"
+      - name: Build the add-on
+        run: node scripts/camera-bundle.mjs --target ${{ matrix.target }} --models "$RUNNER_TEMP/models" --out "$RUNNER_TEMP/addon" --pip python
+      - uses: actions/upload-artifact@v6
+        with:
+          name: camera-addon-${{ matrix.target }}
+          path: ${{ runner.temp }}/addon/Bismuth-Kamera-*.zip
           retention-days: 14
           compression-level: 0
 

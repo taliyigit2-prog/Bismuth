@@ -48,6 +48,9 @@ const unavailable = (messageKey: string): LinkAnswer => ({
   body: JSON.stringify({ error: { code: 'UNAVAILABLE', messageKey } })
 })
 
+const isTimeout = (error: unknown): boolean =>
+  error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError')
+
 /** Name and value of one `Set-Cookie` header, and whether it deletes the cookie. */
 function readSetCookie(header: string): { name: string; value: string; remove: boolean } | null {
   const [pair, ...attrs] = header.split(';')
@@ -64,11 +67,26 @@ export interface ProbeResult extends Hello {
   key: string
 }
 
+export type LinkFailure = 'unreachable' | 'timeout' | 'denied' | 'notBismuth' | 'identityChanged'
+
 export class LinkError extends Error {
-  constructor(readonly reason: 'unreachable' | 'notBismuth' | 'identityChanged') {
+  /**
+   * unreachable = nobody answers (refused, no route); timeout = no answer in time; denied = the main computer or
+   * the network refuses this computer (H-33); notBismuth = something else answers; identityChanged = another key.
+   */
+  constructor(readonly reason: LinkFailure) {
     super(reason)
     this.name = 'LinkError'
   }
+}
+
+/** The refusal's message key for each reason (the connection screen says which one it was, H-33). */
+export const LINK_FAILURE_KEY: Record<LinkFailure, string> = {
+  unreachable: 'errors.hostUnreachable',
+  timeout: 'errors.hostTimeout',
+  denied: 'errors.hostDenied',
+  notBismuth: 'errors.notBismuth',
+  identityChanged: 'errors.hostIdentityChanged'
 }
 
 export function createHostLink(deps: HostLinkDeps) {
@@ -178,10 +196,13 @@ export function createHostLink(deps: HostLinkDeps) {
         // restarted main computer.
         () => post(url, '/api/remote.hello', body, null)
       )
-    } catch {
+    } catch (error) {
       if (url === hostUrl) setState('unreachable')
-      throw new LinkError('unreachable')
+      throw new LinkError(isTimeout(error) ? 'timeout' : 'unreachable')
     }
+    // The main computer or the network says no (a rule of its own, too many tries): not "another program".
+    if (response.status === 401 || response.status === 403 || response.status === 429)
+      throw new LinkError('denied')
     let parsed: ReturnType<typeof helloSchema.safeParse>
     try {
       parsed = helloSchema.safeParse(await response.json())
@@ -225,13 +246,7 @@ export function createHostLink(deps: HostLinkDeps) {
       return verifiedFor === hostUrl ? null : unavailable('errors.hostUnreachable')
     } catch (error) {
       const reason = error instanceof LinkError ? error.reason : 'unreachable'
-      return unavailable(
-        reason === 'identityChanged'
-          ? 'errors.hostIdentityChanged'
-          : reason === 'notBismuth'
-            ? 'errors.notBismuth'
-            : 'errors.hostUnreachable'
-      )
+      return unavailable(LINK_FAILURE_KEY[reason])
     }
   }
 

@@ -118,6 +118,43 @@
 3. Mac'te NetBird'ü kapatın: birkaç dakika içinde Yedek kopya kartında "Güncel · saat (Drive kutusundan)" yazar.
 4. Telefonda Drive uygulamasında `Bismuth/ozet.pdf` dosyasını açın.
 
+## İkinci otelin ana bilgisayarına bağlanın (birden çok otel)
+
+Her otelin kendi bilgisayarı ve kendi kayıtları vardır (K-54); oteller birbirine yalnız **bağlanır**, kayıtlar
+karışmaz. İkinci otelin bilgisayarında da sunucu modu açık olmalı (bölüm 4) ve sahip o bilgisayarı NetBird ağına
+katmış olmalı (bölüm 1–3). Aşağıdaki adresler örnektir; sizinkiler farklıdır.
+
+1. İki otelin bilgisayarı da **aynı NetBird ağında** olsun (ya da ikinci otelin bilgisayarını bu ağa davet edin).
+   Sizin bilgisayarınızda NetBird açıkken diğer otelin bilgisayarı da ağ listesinde görünür.
+2. **İkinci otelin bilgisayarında** Ayarlar → Uzaktan erişim → **Dışarıdan (NetBird)** adresine bakın; örneğin
+   `http://100.64.0.20:7373` ya da `bismuth-b.netbird.cloud:7373`. (Birinci otelin örnek adresi
+   `100.64.0.10:7373` olsun.)
+3. Kendi (birinci otelin) bilgisayarınızda ya da Mac'te Ayarlar → Uzaktan erişim → Bu bilgisayar kartında
+   **Başka ana bilgisayar seç**'e basın. Bağlantı ekranının üstünde **Kayıtlı oteller** listesi açılır; kullandığınız
+   otel burada görünür.
+4. **Ana bilgisayarın adresi** alanına ikinci otelin adresini yazıp **Bağlan**'a basın. Adres yanlışsa Bismuth
+   hiçbir şey göndermeden nedenini yazar (örn. "Bağlantı noktası 1 ile 65535 arasında olmalı").
+5. Bismuth ikinci otelin bilgisayarının **kimliğini** (parmak izi) ilk bağlantıda saklar ve listede otelin adının
+   altında gösterir. Otel bilgisayarındaki Ayarlar → Uzaktan erişim → "Bu bilgisayarın kimliği" ile aynı olduğuna bakın.
+6. Kullanıcı adınızla ve şifrenizle **o otelin** hesabında oturum açın (iki otelin kullanıcıları ayrıdır; şifre
+   saklanmaz). Artık ikinci otelin kayıtlarını görür ve yazarsınız.
+7. **Otel değiştirmek** için aynı yoldan **Başka ana bilgisayar seç**'e basın ve listeden oteli seçin: Bismuth önceki
+   otelin oturumunu ve bu ekrandaki bilgileri temizler, seçtiğiniz otelde yeniden oturum açmanızı ister. Son kullanılan
+   otel listenin en üstündedir. Her otelin yedek kopyası (Mac'teki salt okunur kopya) ayrı tutulur.
+8. Listede bir otelin yanındaki kalem ile **adını** (ya da kullanımda değilse adresini) değiştirebilir, çöp kutusu ile
+   listeden **kaldırabilirsiniz**. Kaldırmak otelin kendi kayıtlarına dokunmaz; yalnız bu bilgisayardaki kayıt satırını
+   ve o otelin yedek kopyasını siler. Liste bu bilgisayarın kendi ayar dosyasındadır (`connection.json`); şifre içermez.
+
+Bağlanamazsanız ekran nedenini söyler:
+
+| Ekranda | Anlamı | Ne yapın |
+|---|---|---|
+| "Ana bilgisayara ulaşılamadı" | O adreste kimse yanıt vermiyor | Otel bilgisayarı açık mı? İki tarafta da NetBird açık mı? Adres doğru mu? |
+| "Ana bilgisayar zamanında yanıt vermedi" | Yanıt gecikti (uyku, zayıf bağlantı) | Bağlantıyı ve bilgisayarın uyanık olduğunu kontrol edip yeniden deneyin. |
+| "Bu adreste başka bir bilgisayar cevap veriyor" | O otelin kayıtlı kimliği ile yanıt veren bilgisayarın kimliği farklı | Devir ya da yeniden kurulum yoksa kabul etmeyin; varsa iki kimliği karşılaştırıp kabul edin. Hiçbir bilgi gönderilmez. |
+| "Bismuth sürümleri farklı" | İki bilgisayarda farklı Bismuth sürümü | Eski olanı güncelleyin; o zamana kadar "Tarayıcıda aç". |
+| "Ana bilgisayar bu bilgisayarın bağlanmasını kabul etmedi" | Ana bilgisayar ya da ağ kuralı reddetti | O otelin sahibine haber verin (rolün ağ kuralı, çok sık deneme). |
+
 ## Otel bilgisayarı bozulursa: devral
 
 Yalnız otel bilgisayarı gerçekten kullanılamaz olduğunda (çalınma, disk arızası) yapın.
@@ -219,7 +256,7 @@ Yalnız otel bilgisayarı gerçekten kullanılamaz olduğunda (çalınma, disk a
   TOFU), duyuru `src/main/discovery/` (`_bismuth._tcp`), istemci modu dosyası
   `userData/connection.json` (istemci otel veritabanını açmaz).
 - Değişiklik günlüğü (`change_log`, tetikleyiciler şemadan açılışta üretilir: `src/main/replica/triggers.ts`), yedek
-  kopya `userData/replica/replica.db` (ayrı dosya; `src/main/replica/store.ts`), canlı akış `GET /api/replica/changes`
+  kopya `userData/replica/<otel kodu>/replica.db` (otel başına ayrı dosya; P21b'den önceki tek kopya ilk açılışta taşınır; `src/main/replica/store.ts`), canlı akış `GET /api/replica/changes`
   (SSE) ve `/api/replica/snapshot` (kopya izni ya da `remote.settings` oturumu), kutu `.bmr` biçimi
   `src/main/relay/format.ts` (gzip + AES‑256‑GCM, HKDF ile dosya anahtarı, başlık AAD), devral
   `src/main/replica/takeover.ts` + `src/main/relay/epoch.ts`, PDF özet `src/main/relay/summary.ts`.

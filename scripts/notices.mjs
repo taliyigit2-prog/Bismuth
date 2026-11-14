@@ -115,8 +115,14 @@ const CAMERA_PACKAGES = {
     license: 'MIT (code)',
     note: 'face detection and recognition; model weights are NON-COMMERCIAL (below)'
   },
-  onnxruntime: { license: 'MIT', note: 'runs the InsightFace models on the CPU' }
+  onnxruntime: { license: 'MIT', note: 'runs the InsightFace models on the CPU' },
+  torch: { license: 'BSD-3-Clause', note: 'PyTorch (CPU build) runs YOLO11n for Ultralytics' },
+  torchvision: { license: 'BSD-3-Clause', note: 'image helpers of PyTorch used by Ultralytics' }
 }
+// Libraries pulled in by the ones above (not pinned by us; the exact versions and every licence text ship in the add-on's
+// `licenses/` folder, collected from the installed packages by scripts/camera-bundle.mjs).
+const CAMERA_TRANSITIVE =
+  'scipy, scikit-learn, scikit-image, matplotlib, onnx, albumentations, sympy, networkx, pillow, polars, av, requests: BSD / MIT / Apache-2.0 / PSF style licences (matplotlib: PSF-based)'
 const CAMERA_MODELS = [
   {
     file: 'yolo11n.pt',
@@ -129,7 +135,9 @@ const CAMERA_MODELS = [
     license: 'non-commercial research only'
   }
 ]
-const cameraRequirements = readFileSync(join(root, 'otel-kamera/requirements.txt'), 'utf8')
+const cameraRequirements = ['otel-kamera/requirements.txt', 'otel-kamera/requirements-bundle.txt']
+  .map((f) => readFileSync(join(root, f), 'utf8'))
+  .join('\n')
   .split(/\r?\n/)
   .map((line) => /^([A-Za-z0-9_.-]+)==([^\s#]+)/.exec(line))
   .filter(Boolean)
@@ -165,7 +173,7 @@ const cameraSection = [
   '|---|---|---|',
   ...CAMERA_MODELS.map((m) => `| ${m.file} | ${m.from} | ${m.license} |`),
   '',
-  '### Python packages (pinned in `otel-kamera/requirements.txt`)',
+  '### Python packages (pinned in `otel-kamera/requirements.txt` and `requirements-bundle.txt`)',
   '',
   '| Package | Version | Licence | Use |',
   '|---|---|---|---|',
@@ -174,7 +182,11 @@ const cameraSection = [
       `| ${r.name} | ${r.version} | ${CAMERA_PACKAGES[r.name].license} | ${CAMERA_PACKAGES[r.name].note} |`
   ),
   '',
-  'Full licence texts of these packages are shipped inside the camera add-on next to the Python files (P20f packaging).',
+  `Pulled in by these (versions fixed when the add-on is built): ${CAMERA_TRANSITIVE}.`,
+  '',
+  'The camera is a separate download (the camera add-on, `Bismuth-Kamera-*.zip`). Full licence texts of every Python package in it are',
+  'in its `licenses/` folder; the interpreter is Python (PSF-2.0, python.org embeddable / python-build-standalone).',
+  'The Ultralytics source (AGPL-3.0) is available from github.com/ultralytics/ultralytics for the pinned version.',
   ''
 ]
 

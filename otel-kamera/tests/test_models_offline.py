@@ -201,3 +201,35 @@ def test_ağ_kapalıyken_hizmet_gerçek_yükleyicilerle_açılır_tanır_ve_alar
     assert ultralytics.calls[0] == ("settings.update", {"sync": False})
     assert insight.created and insight.created[0]["root"] == str(base / "insightface")
     assert len(rec.calls) == 1  # kayıtsız yüz → alarm; hepsi ağsız
+
+
+def _write_sums(base, names):
+    lines = [f"{hashlib.sha256((base / n).read_bytes()).hexdigest()}  {n}" for n in names]
+    (base / "SHA256SUMS").write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def test_paketli_sürümde_sha256sums_zorunlu(settings, tmp_path, monkeypatch):
+    base = make_models(tmp_path)
+    monkeypatch.setenv("BISMUTH_CAMERA_PACKAGED", "1")
+    with pytest.raises(ModelMissingError, match="zorunlu"):
+        models.load_yolo(cfg_for(settings, base), importer=lambda: object())
+
+
+def test_paketli_sürümde_listede_olmayan_model_reddedilir(settings, tmp_path, monkeypatch):
+    base = make_models(tmp_path)
+    folder = "insightface/models/buffalo_s/"
+    _write_sums(base, [folder + "det_500m.onnx", folder + "w600k_mbf.onnx"])  # yolo11n.pt listede yok
+    monkeypatch.setenv("BISMUTH_CAMERA_PACKAGED", "1")
+    with pytest.raises(ModelMissingError, match="listesinde yok"):
+        models.load_yolo(cfg_for(settings, base), importer=lambda: object())
+
+
+def test_paketli_sürümde_listedeki_modeller_yüklenir(settings, tmp_path, monkeypatch):
+    base = make_models(tmp_path)
+    folder = "insightface/models/buffalo_s/"
+    _write_sums(base, ["yolo11n.pt", folder + "det_500m.onnx", folder + "w600k_mbf.onnx"])
+    monkeypatch.setenv("BISMUTH_CAMERA_PACKAGED", "1")
+    fake = FakeInsightFaceApp()
+    models.load_insightface(cfg_for(settings, base), importer=lambda: fake.FaceAnalysis)
+    assert fake.created[0]["name"] == "buffalo_s"
+    assert models.verify_checksums(base, required=[base / "yolo11n.pt"]) == 3

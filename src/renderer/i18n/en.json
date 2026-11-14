@@ -1732,7 +1732,11 @@
     "cameraNoFace": "The camera does not see a clear face. Ask the guest to face the camera and try again.",
     "cameraFaceLimit": "This guest has the most face records allowed. Delete an old one first.",
     "cameraCropGone": "The picture of this alarm was deleted because its keep time ran out.",
-    "cameraStaffLeft": "This staff member has left; they cannot be added to the list."
+    "cameraStaffLeft": "This staff member has left; they cannot be added to the list.",
+    "hostTimeout": "The main computer did not answer in time. Check your connection (is NetBird on?) and that the main computer is on, then try again.",
+    "hostDenied": "The main computer refused this computer's connection. Tell the hotel owner.",
+    "hotelInUse": "The address of the hotel in use cannot be changed. Switch to another hotel first.",
+    "hotelExists": "This address is already saved for another hotel."
   },
   "common": {
     "close": "Close",
@@ -5566,7 +5570,30 @@
     "foundTitle": "Found on the local network",
     "searchAgain": "Search again",
     "searching": "Searching the local network…",
-    "noneFound": "No Bismuth main computer was found on the local network. Type its address below."
+    "noneFound": "No Bismuth main computer was found on the local network. Type its address below.",
+    "hotels": {
+      "title": "Saved hotels",
+      "empty": "No hotels saved yet. Type a main computer address below; the hotel is added here once connected.",
+      "active": "In use",
+      "noFingerprint": "Identity not received yet",
+      "lastUsed": "Last used: {{date}} {{time}}",
+      "neverUsed": "Not connected yet",
+      "editLabel": "Edit: {{name}}",
+      "removeLabel": "Remove from list: {{name}}",
+      "editTitle": "Edit hotel",
+      "name": "Hotel name",
+      "addressHelp": "If you type another address, the main computer's identity is checked again when you connect.",
+      "addressInUse": "The address of the hotel in use cannot be changed. Switch to another hotel first.",
+      "removeTitle": "Remove {{name}} from the list?",
+      "removeBody": "The hotel's own records stay on its main computer. Its read-only copy on this computer is deleted; you can connect again later.",
+      "remove": "Remove from list"
+    },
+    "problem": {
+      "empty": "Type an address.",
+      "scheme": "The address must start with http or be just the address (e.g. 192.168.1.20:7373). https is not supported.",
+      "port": "The port must be between 1 and 65535 (e.g. 7373).",
+      "invalid": "This does not look like an address. Write it like 192.168.1.20 or 192.168.1.20:7373."
+    }
   },
   "userMenu": {
     "open": "Account menu",

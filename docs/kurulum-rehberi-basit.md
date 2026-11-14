@@ -46,11 +46,14 @@
 - Yeni sürüm kurmadan önce **Ayarlar → Yedek → Şimdi yedek al** düğmesine basın.
 - Telefondan ya da Mac'ten bağlanmak için: [`uzaktan-erisim.md`](uzaktan-erisim.md).
 
-## 5. Kamera bileşeni (isteğe bağlı; henüz ürünün parçası değil)
+## 5. Kamera eki (isteğe bağlı; ayrı indirme)
 
-Bugün kamera sistemi ayrı bir Python programıdır (`otel-kamera/`), teknik kurulum ister (Python 3.12, internet, `.bat`
-dosyaları) ve lisans/KVKK nedenleriyle satışa uygun değildir. Bismuth'un içine sekme olarak alınması planlanmıştır
-(`docs/analiz/06-kamera-entegrasyonu.md`). O sürüm çıkana kadar kamera kurulumu için geliştiriciyle görüşün.
+Kamera, ana programa dahil değildir; büyük bir dosyadır (yaklaşık 0,7 GB indirir, diskte 2 GB kadar yer tutar).
+Yalnız kamera kullanacaksanız kurun: **Bismuth-Kamera-Windows.zip** (Windows) ya da **Bismuth-Kamera-Mac.zip** (Apple
+çipli Mac) dosyasını indirin, sağ tıklayıp açın ve çıkan **camera-addon** klasörünü Bismuth'un veri klasörüne koyun
+(bu rehberin sonundaki klasör). Sonra Bismuth'u kapatıp açın; Kamera sekmesindeki kurulum sihirbazı devam eder.
+Kurmazsanız Kamera sekmesi "kamera eki kurulu değil" der; program başka her şeyde aynı çalışır. Intel Mac ve Windows ARM
+için kamera eki yoktur. Ayrıntı: [`kurulum.md`](kurulum.md#kamera-eki). <!-- doğrula -->
 
 ## 6. Sorun giderme (en sık üç durum)
 

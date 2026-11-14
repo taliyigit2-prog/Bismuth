@@ -13,19 +13,22 @@ import {
 import {
   acceptHostIdentitySchema,
   connectInputSchema,
+  hotelCodeInputSchema,
+  hotelUpdateInputSchema,
   normalizeHostUrl,
   replicaFolderInputSchema,
   replicaKeyInputSchema,
   takeOverInputSchema,
-  type FoundHost
+  type FoundHost,
+  type SavedHotel
 } from '@shared/contract/remote'
 import type { ApiEnv } from '../api/app'
 import type { SessionBinding } from '../api/session'
 import type { ReplicaStore } from '../replica/store'
 import { AppError } from '../services/errors'
-import type { ConfigStore } from './connection-config'
+import { hostOf, type ConfigStore } from './connection-config'
 import { fingerprintOf } from './host-identity'
-import { LinkError, type HostLink, type LinkAnswer, type ProbeResult } from './host-link'
+import { LINK_FAILURE_KEY, LinkError, type HostLink, type LinkAnswer, type ProbeResult } from './host-link'
 import type { ReplicaClient } from './replica-client'
 
 /**
@@ -75,6 +78,10 @@ export interface ClientAppDeps {
    * connection strip only, as before.
    */
   replica?: { client: ReplicaClient; store: Pick<ReplicaStore, 'call'> }
+  /** P21b: another hotel is in use now (or none): the copy follows (its own folder). */
+  onHotelChanged?(code: string | null): void
+  /** P21b: a hotel left the list: its copy on this computer goes. */
+  removeHotelData?(code: string): void
 }
 
 const json = (status: number, value: unknown): LinkAnswer => ({ status, body: JSON.stringify(value) })
@@ -88,6 +95,11 @@ const identityChanged = (known: string, offered: string): LinkAnswer =>
   })
 const failure = (status: number, code: ErrorCode, messageKey: string): LinkAnswer =>
   json(status, { error: { code, messageKey } })
+/** A failed first contact, with the reason (H-33): the screen says which one it was. */
+const linkFailure = (reason: LinkError['reason']): LinkAnswer =>
+  reason === 'notBismuth'
+    ? failure(400, 'VALIDATION', LINK_FAILURE_KEY[reason])
+    : failure(503, 'UNAVAILABLE', LINK_FAILURE_KEY[reason])
 
 export function createClientApp(deps: ClientAppDeps): Hono<ApiEnv> {
   const { link, config } = deps
@@ -101,6 +113,32 @@ export function createClientApp(deps: ClientAppDeps): Hono<ApiEnv> {
   })
 
   const replica = deps.replica
+
+  /** The saved hotels, last used first (the one in use shows the name its main computer announces when none was typed). */
+  function hotelViews(): SavedHotel[] {
+    const active = config.get().activeHotel ?? null
+    const announced = link.status().host?.hotelName ?? ''
+    return [...config.hotels()]
+      .sort((a, b) => (b.lastUsedAt ?? '').localeCompare(a.lastUsedAt ?? ''))
+      .map((h) => {
+        const key = config.hotelKey(h.code)
+        return {
+          code: h.code,
+          name: h.name || (h.code === active ? announced : '') || hostOf(h.url),
+          url: h.url,
+          fingerprint: key ? fingerprintOf(key) : null,
+          lastUsedAt: h.lastUsedAt,
+          active: h.code === active
+        }
+      })
+  }
+
+  /** The hotel in use changes: this computer's windows start over there (their sessions end in the link). */
+  function useHotel(code: string | null): void {
+    config.activate(code)
+    link.setHost(code ? (config.get().hostUrl ?? null) : null)
+    deps.onHotelChanged?.(code)
+  }
 
   /** The copy answers (status 203 = "from the read-only copy"). */
   async function fromCopy(name: string, text: string): Promise<LinkAnswer | null> {
@@ -199,6 +237,9 @@ export function createClientApp(deps: ClientAppDeps): Hono<ApiEnv> {
         if (!url) return failure(400, 'VALIDATION', 'errors.hostAddress')
         // N-7: the fingerprint the person saw; only a key with exactly that fingerprint is accepted.
         const accept = parsed.success ? (parsed.data.acceptIdentity ?? null) : null
+        // P21b: a saved hotel (by its address) has its own identity; the one in use is checked by the link itself.
+        const saved = config.findByUrl(url)
+        const inUse = saved !== undefined && saved.code === (config.get().activeHotel ?? null)
         try {
           let hello: ProbeResult
           try {
@@ -209,12 +250,23 @@ export function createClientApp(deps: ClientAppDeps): Hono<ApiEnv> {
             if (!(await link.acceptOffered(accept))) throw error
             hello = await link.probe(url)
           }
-          const known = link.knownKey()
+          const known = inUse ? link.knownKey() : saved ? config.hotelKey(saved.code) : null
           // K-45 (1): another computer than the one met before answers. Not connected until the person accepts it.
           if (known && known !== hello.key && fingerprintOf(hello.key) !== accept)
             return identityChanged(known, hello.key)
-          config.update({ hostUrl: url })
-          link.setHost(url, hello)
+          // The same main computer under a new address is the same hotel; else a new hotel joins the list.
+          const same = saved ?? config.findByKey(hello.key)
+          const code = same?.code ?? config.addHotel(hello.hotelName.trim() || hostOf(url), url)
+          if (same && same.url !== url) config.updateHotel(same.code, { url })
+          if (same && !same.name) config.updateHotel(same.code, { name: hello.hotelName.trim().slice(0, 80) })
+          if (code === (config.get().activeHotel ?? null)) {
+            config.update({ hostUrl: url })
+            link.setHost(url, hello)
+          } else {
+            config.activate(code)
+            link.setHost(url, hello)
+            deps.onHotelChanged?.(code)
+          }
           return json(LOCAL, link.status())
         } catch (error) {
           if (error instanceof LinkError && error.reason === 'identityChanged') {
@@ -227,10 +279,41 @@ export function createClientApp(deps: ClientAppDeps): Hono<ApiEnv> {
               }
             })
           }
-          return error instanceof LinkError && error.reason === 'notBismuth'
-            ? failure(400, 'VALIDATION', 'errors.notBismuth')
-            : failure(503, 'UNAVAILABLE', 'errors.hostUnreachable')
+          return linkFailure(error instanceof LinkError ? error.reason : 'unreachable')
         }
+      }
+      case 'remote.hotels':
+        return json(LOCAL, hotelViews())
+      case 'remote.hotelUpdate': {
+        const parsed = hotelUpdateInputSchema.safeParse(body)
+        if (!parsed.success) return failure(400, 'VALIDATION', 'errors.validation')
+        const { code, name, url: typed } = parsed.data
+        const entry = config.hotels().find((h) => h.code === code)
+        if (!entry) return failure(404, 'NOT_FOUND', 'errors.notFound')
+        let url: string | undefined
+        if (typed !== undefined) {
+          const normalized = normalizeHostUrl(typed)
+          if (!normalized) return failure(400, 'VALIDATION', 'errors.hostAddress')
+          if (normalized !== entry.url) {
+            // The hotel in use keeps its address (the link and its checked identity stand on it).
+            if (code === (config.get().activeHotel ?? null))
+              return failure(409, 'CONFLICT', 'errors.hotelInUse')
+            if (config.findByUrl(normalized)) return failure(409, 'CONFLICT', 'errors.hotelExists')
+            url = normalized
+          }
+        }
+        config.updateHotel(code, { ...(name !== undefined ? { name } : {}), ...(url ? { url } : {}) })
+        return json(LOCAL, hotelViews())
+      }
+      case 'remote.hotelRemove': {
+        const parsed = hotelCodeInputSchema.safeParse(body)
+        if (!parsed.success) return failure(400, 'VALIDATION', 'errors.validation')
+        const { code } = parsed.data
+        if (!config.hotels().some((h) => h.code === code)) return failure(404, 'NOT_FOUND', 'errors.notFound')
+        if (code === (config.get().activeHotel ?? null)) useHotel(null)
+        config.removeHotel(code)
+        deps.removeHotelData?.(code)
+        return json(LOCAL, hotelViews())
       }
       case 'remote.acceptHostIdentity': {
         const parsed = acceptHostIdentitySchema.safeParse(body)
@@ -245,8 +328,8 @@ export function createClientApp(deps: ClientAppDeps): Hono<ApiEnv> {
         return json(LOCAL, link.status())
       }
       case 'remote.forgetHost':
-        config.update({ hostUrl: null })
-        link.setHost(null)
+        // The hotel stays in the list; this computer uses none until one is chosen.
+        useHotel(null)
         return json(LOCAL, link.status())
       case 'remote.leaveClient':
         deps.leaveClient()

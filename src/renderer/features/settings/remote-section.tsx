@@ -480,8 +480,9 @@ function ClientCard() {
   const [confirmIdentity, setConfirmIdentity] = useState(false)
   const accept = useAdminMutation('remote.acceptHostIdentity', { invalidate: ['remote.clientStatus'] })
   const afterChange = async (): Promise<void> => {
+    // Another hotel (or none) from now on: the earlier one's data leaves the cache (P21b).
+    await events.hotelChanged()
     await queryClient.invalidateQueries()
-    await events.refresh()
   }
   return (
     <Card className="lg:col-span-2" data-testid="remote-client-card">

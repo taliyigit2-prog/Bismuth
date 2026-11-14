@@ -157,6 +157,19 @@ export function createReplicaClient(deps: ReplicaClientDeps) {
         if (sync.state() !== 'live') readFromBox()
       }, 3_000).unref?.()
     },
+    /**
+     * P21b: another hotel is in use (or none): its own copy folder, nothing of the earlier hotel's state stays (the
+     * box reading, "serving", a grant in progress). The live link starts over with the new address and grant.
+     */
+    switchHotel(code: string | null): void {
+      lastBox = null
+      lastBoxAt = null
+      servingAt = 0
+      granting = false
+      store.use(code)
+      sync.poke()
+      deps.onChange?.()
+    },
     stop(): void {
       sync.stop()
       if (boxTimer) clearInterval(boxTimer)

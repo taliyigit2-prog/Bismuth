@@ -80,6 +80,28 @@ denenmedi <!-- doğrula -->. Windows paketi için duman testi (wine altında) ek
 | **Dispatch (yayınsız)** | | | **≈ 130–150** |
 | **Tag** | | | **≈ 135–155** |
 
+### P20f: kamera eki (2026-11-13)
+
+Karar (otonom varsayılan): kamera **ayrı indirme** (`Bismuth-Kamera-Windows.zip`, `Bismuth-Kamera-Mac.zip`), ana pakete
+eklenmez. Gerekçe: ana kurulum ≈ 100 MB iken kamera ≈ 0,6 GB indirme / ≈ 2 GB açık; her ana sürümde yeniden indirilmez;
+kamerasız bilgisayar yük taşımaz; ayrı NSIS kurulum dosyası yerine zip + `<userData>/camera-addon` (terminalsiz, yönetici şifresiz,
+kaldırıcı veriyi silmez). Ana uygulama eki bulamazsa kamerayı başlatmaz (`src/main/camera/addon.ts`). PyPI meta verisinden
+(Linux x64, Python 3.12) çözümlenen tekerlekler: toplam ≈ 600 MB sıkıştırılmış (torch CPU 210 MB, opencv ×2 135 MB, polars 54 MB,
+scipy 35 MB, av 35 MB, onnxruntime 28 MB); Windows/Mac gerçek boyutu **ölçülmedi** <!-- doğrula -->.
+
+`release.yml` işi `camera-addon` (yalnız elle, `camera_addon` kutusu; model arşivi sırdan): Windows eki Linux'ta (×1), Mac eki
+macOS'ta (×10).
+
+| İş | Süre (tahmin) | Çarpan | Eşdeğer |
+|---|---|---|---|
+| camera-addon win-x64 (Linux) | ≈ 15–20 dk | ×1 | 15–20 |
+| camera-addon mac-arm64 | ≈ 15–20 dk | ×10 | 150–200 |
+| **Yalnız ana sürüm (kutu işaretsiz)** | | | **değişmez (≈ 130–155)** |
+| **Kutu işaretli, yalnız Windows eki ilgili** | | | **+15–20 (Mac işi de koşar: +150–200)** |
+
+Mac eki pahalıdır: yalnız kamera eki değiştiğinde ve sahibin Mac'inde üretemediği durumda CI'da koşturun; Mac'te yerel
+`npm run camera:bundle -- --target mac-arm64 --models <klasör>` 0 dakikadır.
+
 Önceki durum: release ≈ 180 + ci elle ≈ 130–200. Windows'u Linux'ta üretmek Windows runner'ının ×2 çarpanını da
 kaldırır. wine adımı runner'da çalışmazsa yedek: `windows` işini `runs-on: windows-latest` yapıp wine adımını silmek
 (yalnız tag'de çalıştırmak ≈ +40 dk eşdeğeri).

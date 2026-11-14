@@ -64,3 +64,6 @@ otel-kamera/models/
 
 # agent runner logs and session state
 tools/ajan/kayit/
+
+# Kamera eki uretim ciktisi (scripts/camera-bundle.mjs): agirliklar ve tekerlekler depoya girmez
+camera-addon-out/

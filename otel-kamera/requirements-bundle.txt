@@ -1,0 +1,5 @@
+# Yalnız kamera eki paketlenirken (scripts/camera-bundle.mjs) requirements.txt'e eklenir; ultralytics'in istediği PyTorch'u
+# sabitler. Windows'ta CPU tekerleği (download.pytorch.org/whl/cpu, "+cpu" yerel sürümü) kullanılır: CUDA yok, boyut küçük.
+# Sürümler 2026-11-13'te pip çözümleyicisiyle (Linux x64, Python 3.12) doğrulandı; Windows/Mac tekerleği ilk gerçek paketlemede.
+torch==2.15.0
+torchvision==0.29.2

@@ -31,7 +31,13 @@ import { closingBackupNeeded, createBackupScheduler } from './backup/scheduler'
 import { readSetting } from './services/settings-service'
 import { processImage, startAttachmentRetention } from './attachments'
 import { createTaskScheduler, showOsNotice } from './notifications'
-import { createCameraRuntime, createDiscoverer, createFaceCrypto, createProbeRunner } from './camera'
+import {
+  createCameraRuntime,
+  createDiscoverer,
+  createFaceCrypto,
+  createProbeRunner,
+  findCameraAddon
+} from './camera'
 import { removeLegacyCameraFiles } from './camera/legacy'
 import { LOCAL_CONFIG, readConnectionConfig, writeConnectionConfig } from './server/connection-config'
 import {
@@ -59,9 +65,14 @@ let mainWindow: BrowserWindow | null = null
 const CAMERA_ROUND_MS = 3_000
 const CAMERA_PURGE_MS = 3_600_000
 
-/** The folder with the camera's Python files: `<app>/otel-kamera` in development, `resources/camera` once packaged. */
+/** The camera add-on (P20f): Python, libraries, files and models unpacked into `<userData>/camera-addon`; packaged only. */
+const cameraAddon = () => (app.isPackaged ? findCameraAddon(app.getPath('userData')) : null)
+
+/** The folder with the camera's Python files: `<app>/otel-kamera` in development, the add-on's `app` once packaged. */
 const cameraScriptDir = (): string =>
-  app.isPackaged ? join(process.resourcesPath, 'camera') : join(app.getAppPath(), 'otel-kamera')
+  app.isPackaged
+    ? (cameraAddon()?.scriptDir ?? join(app.getPath('userData'), 'camera-addon', 'app'))
+    : join(app.getAppPath(), 'otel-kamera')
 
 /** The camera sidecar's runtime once built (Faz 20): the request filter reads its address for the live picture. */
 let cameraRuntime: ReturnType<typeof createCameraRuntime> | null = null
@@ -214,7 +225,11 @@ async function start(): Promise<void> {
           ? { faceCrypto: createFaceCrypto(null, null) }
           : {}),
         // P20g: the wizard's one-picture test and its search of the local network (both only on request).
-        probe: createProbeRunner({ scriptDir: cameraScriptDir(), packaged: app.isPackaged }),
+        probe: createProbeRunner({
+          scriptDir: cameraScriptDir(),
+          packaged: app.isPackaged,
+          addon: cameraAddon()
+        }),
         discover: createDiscoverer({ packaged: app.isPackaged }),
         testMessage: () => tMain('main.camera.telegramTest'),
         // K-50: the Telegram text and the window notice of an alarm carry the time and the camera's place, never a name.
@@ -399,8 +414,9 @@ async function start(): Promise<void> {
       packaged: app.isPackaged,
       scriptDir: cameraScriptDir(),
       dataDir: paths.root,
+      addon: cameraAddon(),
       modelsDir: app.isPackaged
-        ? join(process.resourcesPath, 'camera', 'models')
+        ? (cameraAddon()?.modelsDir ?? join(app.getPath('userData'), 'camera-addon', 'models'))
         : join(app.getAppPath(), 'resources', 'camera', 'models'),
       settings: () => services.settings.get(localOwnerCtx()),
       source: () => services.camera.sidecarSource(),

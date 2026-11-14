@@ -2,7 +2,7 @@
 
 Bu klasör kamera yan sürecinin (`otel-kamera/`) YEREL model dosyalarını taşır. **Dosyaların kendisi depoya girmez**
 (CLAUDE.md yasak 14, `camera-data-guard` kancası; `.gitignore` yalnız bu README ve `SHA256SUMS` dosyasına izin verir).
-Paketleme (P20f) dosyaları kurulum paketine `resources/camera/models/` olarak koyar. Yan süreç hiçbir model indirmez
+Paketleme (P20f) `npm run camera:bundle -- --models <bu yerleşimde klasör>` ile dosyaları **kamera ekine** (ayrı zip, `camera-addon/models/`) koyar ve `SHA256SUMS`'ı üretir; ana kurulum paketine girmezler. Yan süreç hiçbir model indirmez
 (G-01, G-07): dosya yoksa `model_loader.ModelMissingError` ile açık hata verir ve Kamera sekmesi "başlatılamadı" gösterir.
 
 ## Beklenen yerleşim
@@ -26,7 +26,8 @@ resources/camera/models/
 
 `sha256` sütunu bilerek boş: değerler dosyalar indirildiği gün hesaplanır (`sha256sum yolo11n.pt insightface/...`) ve
 `SHA256SUMS` dosyasına `<sha256>  <göreli yol>` satırlarıyla yazılır; uydurma değer yazılmaz. `SHA256SUMS` varsa yan süreç
-açılışta doğrular, uyuşmazlıkta yüklemeyi reddeder.
+açılışta doğrular, uyuşmazlıkta yüklemeyi reddeder. **Paketli (kamera eki) sürümde `SHA256SUMS` zorunludur** ve listede olmayan model
+dosyası reddedilir (`BISMUTH_CAMERA_PACKAGED=1`); geliştirmede isteğe bağlıdır.
 
 ## Lisans uyarısı (sahip kararı K-57, 2026-11-13; ayrıntı `docs/analiz/06-kamera-entegrasyonu.md` §6.3)
 

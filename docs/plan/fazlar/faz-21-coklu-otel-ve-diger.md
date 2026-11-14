@@ -34,7 +34,7 @@ takvim, gelir-gider, bugünkü doluluk, kasa; ortak personel yok. K-54 kesin.
 
 ## Kabul ölçütleri
 - [ ] (P21a yapılırsa) tek otel kurulumu veri kaybı olmadan `hotels/<kod>/` altına taşınır; iki profil arasında geçiş ≤ 3 sn; veri sızmaz.
-- [ ] İstemci iki ana bilgisayar kaydı tutar; yanlış parmak izinde bağlanmaz (mevcut QA3d testi iki kayıtla).
+- [x] İstemci iki ana bilgisayar kaydı tutar; yanlış parmak izinde bağlanmaz (mevcut QA3d testi iki kayıtla). — `tests/unit/hotel-list.test.ts` «oteller arasında geçince…yanlış parmak izinde bağlanmaz», e2e `tests/e2e/electron/hotels.spec.ts`
 - [ ] Portföy ekranı yalnız owner; iki otelin takvimi, gelir-gider, doluluk ve kasa doğru (fabrika ile iki otel; rakamlar `ledger`/`reports` ile aynı).
 - [ ] Geç çıkış ve no-show kalemleri folyoda; gece raporu yazdırılır (e2e print preview).
 - [ ] `db-reviewer`, `security-reviewer` (profil yolu, kopya), `decision-auditor` (K-54) temiz.
@@ -48,3 +48,21 @@ değerlendirilir (ağ gerektirmez).
 Merkezi bulut veritabanı; oteller arası ortak misafir kartı (ileride öneri); konsolide bordro.
 
 ## Sonuç
+
+### P21b İstemci çoklu ana bilgisayar (2026-11-13)
+- **Yapılanlar:** bağlan ekranında *Kayıtlı oteller* listesi (ad, adres, parmak izi, son kullanım; son kullanılan üstte; düzenle/kaldır;
+  boş/yükleniyor/hata durumları; telefon düzeni). Liste `connection.json` içinde (`hotels`, `activeHotel`, `parked`);
+  şifre yok. Kullanımdaki otelin cihaz çerezi, kimliği ve kopya izni üst düzeyde, diğerlerininki `parked` altında
+  bekler; otel değişince yer değiştirir (kimlik ve çerez karışmaz). Bağlanınca otel adı ana bilgisayardan gelir; aynı
+  ana bilgisayar yeni adresle gelirse aynı otel sayılır. Otel değişince pencere oturumu biter, önbellek (TanStack
+  Query dahil) temizlenir (`sessionEvents.hotelChanged`). Kopya klasörü `replica/<kod>/`; eski tek kopya ilk açılışta
+  taşınır (`migrateLegacyCopy`). H-33: adres doğrulama (yazarken nedenli) ve bağlantı hataları ayrı: ulaşılamadı,
+  zaman aşımı, yetki (401/403/429), Bismuth değil, parmak izi değişti, sürüm farklı.
+- **Yeni yordamlar** (`remote.*`, yalnız istemci modu, ana bilgisayarda "istemci değil"): `remote.hotels`, `remote.hotelUpdate`,
+  `remote.hotelRemove`. Otele bağlanmak = `remote.connect` (adresiyle). `remote.forgetHost` artık oteli listede bırakır.
+- **Belge:** `docs/uzaktan-erisim.md` → "İkinci otelin ana bilgisayarına bağlanın" (uydurma NetBird adresleri).
+- **Karşılanan:** G-140…G-146 (istemci modu), K-54, S-114…S-117, H-33. Kabul: iki kayıt, yanlış parmak izinde bağlanmaz.
+- **Varsayılanlar (otonom varsayılan):** otel kodu adın ASCII kısaltmasıdır (çakışırsa `-2`); kullanımdaki otelin adresi
+  düzenlenemez; listeden kaldırınca o otelin salt okunur kopyası bu bilgisayardan silinir (otelin kendi verisine dokunulmaz);
+  "tek başına kur"a dönünce liste silinir (dosya yeniden yazılır).
+- **Kalan:** gerçek iki otelde NetBird ile deneme (sahip onay paketine). Ana bilgisayar adı/ikonu P21c'de (portföy) kullanılabilir.

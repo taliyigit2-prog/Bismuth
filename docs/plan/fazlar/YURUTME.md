@@ -104,8 +104,8 @@ Harcama sütunu: başlatıcının yazdığı `$` (dalga toplamı, gerçek).
 | 9 | P20c Veri entegrasyonu (migrasyon 0021, şifreleme, alarm → bildirim; rıza alanı yok K-58) | 20 | camera, today | db-migration-builder → camera-integrator | $15–22 | | 🔄 |
 | 10 | P20e KVKK paketi (aydınlatma şablonu, saklama/imha, personel dışlama) | 20 | camera settings | camera-integrator | $8–12 | ~$25 | ✅ |
 | 10 | P20g Kamera kurulum sihirbazı (K-59: donanım otomatik, Hikvision keşif + RTSP kalıbı + test) | 20 | features/setup, main/camera/discovery, otel-kamera/discovery | camera-integrator | $10–15 | ~$25 | ✅ |
-| 11 | P20f Kamera paketleme (torch dahil; gerekirse ayrı kamera eki kurulumu) | 20 | electron-builder, resources | packager | $12–18 | | ⬜ |
-| 11 | P21b İstemci çoklu ana bilgisayar (K-54: kayıtlı otel listesi) | 21 | remote | feature-builder | $8–12 | | ⬜ |
+| 11 | P20f Kamera paketleme (torch dahil; gerekirse ayrı kamera eki kurulumu) | 20 | electron-builder, resources | packager | $12–18 | | 🔄 |
+| 11 | P21b İstemci çoklu ana bilgisayar (K-54: kayıtlı otel listesi) | 21 | remote | feature-builder | $8–12 | | 🔄 |
 | 12 | P21c Portföy özeti (iki otelin takvimi, gelir-gider, doluluk, kasa) | 21 | portfolio | feature-builder | $8–12 | | ⬜ |
 | 12 | P21d Geç çıkış, no-show bedeli, hasar depozitosu kalemi, gece raporu | 21 | booking, reports | feature-builder | $6–9 | | ⬜ |
 | 13 | P21e Orta/Düşük bulgular (02 + 04 listesi, faz-21) | 21 | bulguya göre | feature-builder-lite / feature-builder | $4–6 | | ⬜ |
@@ -347,3 +347,4 @@ QA2b, akış testleri C/D) bu plana **Son** satırında katılır; ayrı yürüt
   listesi eşitleme, RTSP kullanıcı adında CR/LF reddi, keşifte paket/sonuç sınırı ve tek tarama kilidi, önizleme `image` `.max()`,
   `camera.staff` `desktopOnly`, `BISMUTH_CAMERA_PYTHON` paketli sürümde kapalı, telefonda personel satırı düğmeleri, ru yazdırma tek
   A4 doğrulaması, aydınlatma metninde toplama yöntemi/alıcı grupları. 2958 test yeşil. **Dalga 10 bitti.**
+- 2026-11-13: Dalga 10 sadeleştirme dalga 11 ile birlikte. Dalga 11 başladı (P20f packager + P21b feature-builder; taban 96684ee).

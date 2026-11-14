@@ -141,6 +141,48 @@ export function normalizeHostUrl(input: string, defaultPort: number = DEFAULT_HO
   return `http://${url.hostname}:${port}`
 }
 
+// ---- P21b: the hotels a client computer knows (K-54: each hotel has its own main computer) ----
+
+/** Folder-safe short name of a saved hotel (`replica/<code>`). */
+export const hotelCodeSchema = z.string().regex(/^[a-z0-9][a-z0-9-]{0,39}$/)
+
+export const savedHotelSchema = z.object({
+  code: hotelCodeSchema,
+  /** The hotel's name as the person (or the main computer) gave it. */
+  name: z.string(),
+  url: z.string(),
+  /** The main computer's identity this computer kept ("AB12-CD34-EF56-7890"); null before the first meeting. */
+  fingerprint: fingerprintSchema.nullable(),
+  /** ISO time of the last connection made from the list. */
+  lastUsedAt: z.string().nullable(),
+  /** This computer is connected to it (or tries to) right now. */
+  active: z.boolean()
+})
+export type SavedHotel = z.infer<typeof savedHotelSchema>
+
+export const hotelCodeInputSchema = z.object({ code: hotelCodeSchema }).strict()
+/** Edits a saved hotel; the address of the hotel in use cannot be changed (leave it first). */
+export const hotelUpdateInputSchema = z
+  .object({
+    code: hotelCodeSchema,
+    name: z.string().trim().min(1).max(80).optional(),
+    url: z.string().trim().min(1).max(300).optional()
+  })
+  .strict()
+
+/** Why a typed address is not an address (shown before anything is sent). Null: it is one. */
+export type HostAddressProblem = 'empty' | 'scheme' | 'port' | 'invalid'
+export function hostAddressProblem(input: string): HostAddressProblem | null {
+  const text = input.trim()
+  if (!text) return 'empty'
+  const scheme = /^([a-z][a-z0-9+.-]*):\/\//i.exec(text)
+  if (scheme && scheme[1]?.toLowerCase() !== 'http') return 'scheme'
+  if (normalizeHostUrl(text) !== null) return null
+  const port = /:(\d+)(?:\/|$)/.exec(text)
+  if (port && (Number(port[1]) < 1 || Number(port[1]) > 65535)) return 'port'
+  return 'invalid'
+}
+
 // ---- P13b: the change log, the owner's read-only copy, the encrypted box, takeover, the PDF summary ----
 
 /** Why the box is not being written on the hotel's computer. */

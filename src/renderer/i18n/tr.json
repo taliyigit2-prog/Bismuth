@@ -1732,7 +1732,11 @@
     "cameraNoFace": "Kamerada net bir yüz görünmüyor. Misafiri kameraya doğru çevirip yeniden deneyin.",
     "cameraFaceLimit": "Bu misafirin yüz kayıtları dolu. Önce eski kaydı silin.",
     "cameraCropGone": "Bu alarmın resmi, saklama süresi dolduğu için silindi.",
-    "cameraStaffLeft": "Bu çalışan işten ayrılmış; listeye eklenemez."
+    "cameraStaffLeft": "Bu çalışan işten ayrılmış; listeye eklenemez.",
+    "hostTimeout": "Ana bilgisayar zamanında yanıt vermedi. Bağlantınızı (NetBird açık mı?) ve ana bilgisayarın açık olduğunu kontrol edip yeniden deneyin.",
+    "hostDenied": "Ana bilgisayar bu bilgisayarın bağlanmasını kabul etmedi. Otel sahibine haber verin.",
+    "hotelInUse": "Kullanımdaki otelin adresi değiştirilemez. Önce başka otele geçin.",
+    "hotelExists": "Bu adres listede başka bir otel için kayıtlı."
   },
   "common": {
     "close": "Kapat",
@@ -5566,7 +5570,30 @@
     "foundTitle": "Yerel ağda bulunanlar",
     "searchAgain": "Yeniden ara",
     "searching": "Yerel ağda aranıyor…",
-    "noneFound": "Yerel ağda Bismuth ana bilgisayarı bulunamadı. Adresi aşağıya yazın."
+    "noneFound": "Yerel ağda Bismuth ana bilgisayarı bulunamadı. Adresi aşağıya yazın.",
+    "hotels": {
+      "title": "Kayıtlı oteller",
+      "empty": "Henüz kayıtlı otel yok. Aşağıdan bir ana bilgisayar adresi yazın; bağlanınca otel buraya eklenir.",
+      "active": "Kullanımda",
+      "noFingerprint": "Kimlik henüz alınmadı",
+      "lastUsed": "Son kullanım: {{date}} {{time}}",
+      "neverUsed": "Henüz bağlanılmadı",
+      "editLabel": "Düzenle: {{name}}",
+      "removeLabel": "Listeden kaldır: {{name}}",
+      "editTitle": "Oteli düzenle",
+      "name": "Otelin adı",
+      "addressHelp": "Başka bir adres yazarsanız, oradaki ana bilgisayarın kimliği bağlanırken yeniden denetlenir.",
+      "addressInUse": "Kullanımdaki otelin adresi değiştirilemez. Önce başka otele geçin.",
+      "removeTitle": "Listeden kaldırılsın mı: {{name}}?",
+      "removeBody": "Otelin kendi kayıtları ana bilgisayarında kalır. Bu bilgisayardaki yedek kopyası silinir; sonra yeniden bağlanabilirsiniz.",
+      "remove": "Listeden kaldır"
+    },
+    "problem": {
+      "empty": "Adres yazın.",
+      "scheme": "Adres http ile başlamalı ya da yalnız adres yazılmalı (örn. 192.168.1.20:7373). https desteklenmez.",
+      "port": "Bağlantı noktası 1 ile 65535 arasında olmalı (örn. 7373).",
+      "invalid": "Bu bir adres gibi görünmüyor. 192.168.1.20 ya da 192.168.1.20:7373 gibi yazın."
+    }
   },
   "userMenu": {
     "open": "Hesap menüsü",

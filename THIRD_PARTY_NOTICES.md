@@ -1300,7 +1300,7 @@ It listens on 127.0.0.1 only, downloads nothing and sends nothing out; its model
 | yolo11n.pt | Ultralytics (github.com/ultralytics/assets) | AGPL-3.0 |
 | buffalo_s (det_500m.onnx, w600k_mbf.onnx) | InsightFace model zoo (github.com/deepinsight/insightface) | non-commercial research only |
 
-### Python packages (pinned in `otel-kamera/requirements.txt`)
+### Python packages (pinned in `otel-kamera/requirements.txt` and `requirements-bundle.txt`)
 
 | Package | Version | Licence | Use |
 |---|---|---|---|
@@ -1314,8 +1314,14 @@ It listens on 127.0.0.1 only, downloads nothing and sends nothing out; its model
 | ultralytics | 8.4.212 | AGPL-3.0 | YOLO11n person detection; code is called, never modified (K-57) |
 | insightface | 0.7.3 | MIT (code) | face detection and recognition; model weights are NON-COMMERCIAL (below) |
 | onnxruntime | 1.32.0 | MIT | runs the InsightFace models on the CPU |
+| torch | 2.15.0 | BSD-3-Clause | PyTorch (CPU build) runs YOLO11n for Ultralytics |
+| torchvision | 0.29.2 | BSD-3-Clause | image helpers of PyTorch used by Ultralytics |
 
-Full licence texts of these packages are shipped inside the camera add-on next to the Python files (P20f packaging).
+Pulled in by these (versions fixed when the add-on is built): scipy, scikit-learn, scikit-image, matplotlib, onnx, albumentations, sympy, networkx, pillow, polars, av, requests: BSD / MIT / Apache-2.0 / PSF style licences (matplotlib: PSF-based).
+
+The camera is a separate download (the camera add-on, `Bismuth-Kamera-*.zip`). Full licence texts of every Python package in it are
+in its `licenses/` folder; the interpreter is Python (PSF-2.0, python.org embeddable / python-build-standalone).
+The Ultralytics source (AGPL-3.0) is available from github.com/ultralytics/ultralytics for the pinned version.
 
 ## Source code adapted from other projects
 

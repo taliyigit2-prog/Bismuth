@@ -14,7 +14,7 @@ import hashlib
 import logging
 import os
 from pathlib import Path
-from typing import Any, Callable, Dict, Optional, Tuple
+from typing import Any, Callable, Dict, Iterable, Optional, Tuple
 
 from config import Config
 
@@ -27,6 +27,9 @@ INSIGHTFACE_DIR = "insightface"
 INSIGHTFACE_MODULES = ["detection", "recognition"]
 INSIGHTFACE_FILES = {"buffalo_s": ["det_500m.onnx", "w600k_mbf.onnx"]}
 CHECKSUM_FILE = "SHA256SUMS"
+# Bismuth paketli sürümde bu ortam değişkenini kurar: o zaman SHA256SUMS zorunludur ve yüklenen her model dosyası listede
+# olmalıdır (listede olmayan dosya reddedilir). Geliştirmede (değişken yok) doğrulama isteğe bağlı kalır.
+STRICT_ENV = "BISMUTH_CAMERA_PACKAGED"
 
 OFFLINE_ENV: Dict[str, str] = {
     "YOLO_OFFLINE": "1",  # ultralytics.utils.is_online() → False (içe aktarmada DNS yoklaması yapılmaz)
@@ -71,12 +74,23 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def verify_checksums(base: Path) -> int:
+def strict_mode(environ: Optional[Dict[str, str]] = None) -> bool:
+    env = os.environ if environ is None else environ
+    return env.get(STRICT_ENV, "") not in ("", "0", "false")
+
+
+def verify_checksums(base: Path, required: Optional[Iterable[Path]] = None, strict: Optional[bool] = None) -> int:
     """`SHA256SUMS` (her satır `<sha256>  <göreli yol>`) varsa listedeki dosyaları doğrular; uyumsuzluk hata verir.
-    Dosya yoksa 0 döner (doğrulama isteğe bağlı). Doğrulanan dosya sayısını döner."""
+    Dosya yoksa 0 döner (doğrulama isteğe bağlı) — `strict` (paketli sürüm) açıksa dosya ZORUNLUDUR ve `required`
+    içindeki her dosya listede olmalıdır. Doğrulanan dosya sayısını döner."""
+    if strict is None:
+        strict = strict_mode()
     sums = base / CHECKSUM_FILE
     if not sums.is_file():
+        if strict:
+            raise ModelMissingError(f"{CHECKSUM_FILE} yok: paketli sürümde model doğrulaması zorunlu")
         return 0
+    listed = set()
     checked = 0
     for raw in sums.read_text(encoding="utf-8").splitlines():
         line = raw.strip()
@@ -93,7 +107,12 @@ def verify_checksums(base: Path) -> int:
             raise ModelMissingError(f"Model dosyası yok: {rel}")
         if _sha256(target) != expected:
             raise ModelMissingError(f"Model dosyası bozuk (sha256 uyuşmuyor): {rel}")
+        listed.add(target)
         checked += 1
+    if strict:
+        for path in required or []:
+            if path.resolve() not in listed:
+                raise ModelMissingError(f"Model dosyası {CHECKSUM_FILE} listesinde yok, reddedildi: {path.name}")
     return checked
 
 
@@ -126,7 +145,7 @@ def require_insightface(settings: Config) -> Tuple[Path, str]:
 def load_yolo(settings: Config, importer: Optional[Callable[[], Any]] = None) -> Any:
     """YOLO11n'i yerel dosyadan yükler. `importer` yalnız testlerde (sahte `ultralytics`) verilir."""
     weights = require_yolo_weights(settings)  # dosya yoksa ultralytics'e hiç girilmez (o indirirdi)
-    verify_checksums(models_dir(settings))
+    verify_checksums(models_dir(settings), required=[weights])
     apply_offline_env(str(Path(settings.RUNTIME_DIR or ".").resolve() / "ultralytics"))
     if importer is None:
         import ultralytics as _ultralytics
@@ -142,7 +161,8 @@ def load_yolo(settings: Config, importer: Optional[Callable[[], Any]] = None) ->
 def load_insightface(settings: Config, importer: Optional[Callable[[], Any]] = None) -> Any:
     """InsightFace `FaceAnalysis`'i yerel klasörden yükler (yalnız tespit + tanıma modülü)."""
     root, name = require_insightface(settings)
-    verify_checksums(models_dir(settings))
+    folder = root / "models" / name
+    verify_checksums(models_dir(settings), required=[folder / f for f in INSIGHTFACE_FILES.get(name, [])])
     apply_offline_env()
     if importer is None:
         from insightface.app import FaceAnalysis

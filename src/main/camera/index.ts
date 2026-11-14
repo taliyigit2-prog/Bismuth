@@ -5,6 +5,7 @@ import { existsSync, mkdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { SettingsValues } from '@shared/contract'
 import { cameraDiscoverySchema, type CameraDiscovery, type CameraProbe } from '@shared/contract/camera'
+import { addonEnv, type CameraAddon } from './addon'
 import { buildSidecarConfig } from './config'
 import { discoverCameras } from './discovery'
 import { probeCamera } from './probe'
@@ -24,6 +25,7 @@ export { createFaceCrypto, FaceCryptoError, type FaceCrypto, type FaceCryptoErro
 export { SidecarConfigError, createSidecar, pickFreePort } from './sidecar'
 export type { Sidecar, SidecarNotice, SidecarSnapshot, SidecarState } from './sidecar'
 export { buildSidecarConfig } from './config'
+export { addonRoot, findCameraAddon, type CameraAddon } from './addon'
 export { discoverCameras, parseSadp, parseWsDiscovery, mergeDevices } from './discovery'
 export { probeCamera, readProbeOutput } from './probe'
 export { readHardware, type Hardware } from './hardware'
@@ -36,6 +38,8 @@ export interface CameraRuntime {
   stop(): Promise<void>
   snapshot(): SidecarSnapshot
   bridge(): Bridge | null
+  /** False in a packaged build without the camera add-on (the UI wiring of "not installed" is the camera package's). */
+  addonInstalled?(): boolean
 }
 
 export interface CameraRuntimeOptions {
@@ -54,10 +58,26 @@ export interface CameraRuntimeOptions {
   script?: string
   /** A packaged build ignores `BISMUTH_CAMERA_SCRIPT`. */
   packaged?: boolean
-  /** `BISMUTH_CAMERA_PYTHON`, or a bundled interpreter; otherwise the folder's venv, then `python3`. */
+  /**
+   * Packaged build: the camera add-on found under userData (`findCameraAddon`); without it the sidecar never starts.
+   * `BISMUTH_CAMERA_PYTHON` counts only in an unpackaged build (a variable must not name an installed program's interpreter).
+   */
+  addon?: CameraAddon | null
+  /** `BISMUTH_CAMERA_PYTHON` (unpackaged only); otherwise the folder's venv, then `python3`. */
   python?: string | null
   /** Tests: command, arguments and timing of a fake sidecar. */
   overrides?: Partial<SidecarOptions>
+}
+
+/** Packaged: the add-on's Python only. Unpackaged: `BISMUTH_CAMERA_PYTHON`, the folder's venv, the system's. */
+export function pythonFor(opts: {
+  scriptDir: string
+  packaged?: boolean
+  addon?: CameraAddon | null
+  python?: string | null
+}): string {
+  if (opts.packaged) return opts.addon?.python ?? ''
+  return resolvePython(opts.scriptDir, opts.python ?? process.env['BISMUTH_CAMERA_PYTHON'] ?? null)
 }
 
 /** The interpreter: explicit > the folder's virtual environment > the system's. */
@@ -78,15 +98,17 @@ export function resolvePython(scriptDir: string, explicit?: string | null): stri
 export function createProbeRunner(opts: {
   scriptDir: string
   packaged: boolean
+  addon?: CameraAddon | null
   python?: string | null
 }): (source: string) => Promise<CameraProbe> {
   const script =
     (!opts.packaged ? process.env['BISMUTH_CAMERA_PROBE_SCRIPT'] : undefined) ?? 'probe_camera.py'
   return (source) =>
     probeCamera(source, {
-      command: resolvePython(opts.scriptDir, opts.python ?? process.env['BISMUTH_CAMERA_PYTHON'] ?? null),
+      command: pythonFor(opts),
       args: [script],
-      cwd: opts.scriptDir
+      cwd: opts.scriptDir,
+      ...(opts.packaged && opts.addon ? { env: addonEnv(opts.addon) as Record<string, string> } : {})
     })
 }
 
@@ -109,9 +131,10 @@ const scriptName = (opts: CameraRuntimeOptions): string =>
 export function createCameraRuntime(opts: CameraRuntimeOptions): CameraRuntime {
   const localDir = join(opts.dataDir, 'camera')
   const sidecar: Sidecar = createSidecar({
-    command: resolvePython(opts.scriptDir, opts.python ?? process.env['BISMUTH_CAMERA_PYTHON'] ?? null),
+    command: pythonFor(opts),
     args: [scriptName(opts)],
     cwd: opts.scriptDir,
+    ...(opts.packaged && opts.addon ? { env: addonEnv(opts.addon) } : {}),
     buildConfig: (port) => {
       mkdirSync(localDir, { recursive: true })
       return buildSidecarConfig(opts.settings(), opts.source(), port, {
@@ -124,7 +147,9 @@ export function createCameraRuntime(opts: CameraRuntimeOptions): CameraRuntime {
     ...opts.overrides
   })
 
-  const wanted = (): boolean => opts.settings()['camera.enabled']
+  // Packaged without the add-on: nothing to start (the Camera tab says "camera add-on not installed", docs/kurulum.md).
+  const addonMissing = !!opts.packaged && !opts.addon
+  const wanted = (): boolean => opts.settings()['camera.enabled'] && !addonMissing
   const running = (): boolean => ['starting', 'running', 'backoff'].includes(sidecar.snapshot().state)
 
   return {
@@ -136,6 +161,7 @@ export function createCameraRuntime(opts: CameraRuntimeOptions): CameraRuntime {
     restart: () => sidecar.restart(),
     stop: () => sidecar.stop(),
     snapshot: () => sidecar.snapshot(),
-    bridge: () => sidecar.bridge()
+    bridge: () => sidecar.bridge(),
+    addonInstalled: () => !addonMissing
   }
 }

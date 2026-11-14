@@ -93,6 +93,23 @@ export function sessionEvents(client: QueryClient) {
       void client.invalidateQueries({ predicate: changesWithUser, refetchType: 'none' })
       return refetchShared(client)
     },
+    /**
+     * P21b (client mode): another hotel's main computer is in use (or none): nothing of the earlier hotel stays in
+     * the cache, not even what a screen still shows; the window starts over at its sign-in.
+     */
+    async hotelChanged(): Promise<unknown> {
+      setViewAs(null)
+      lockedAt = null
+      placeForgotten = true
+      await client.cancelQueries({ predicate: changesWithUser })
+      setSession(client, null)
+      // The connection screen's own questions stay (they are asked again); the hotel's data goes.
+      const hotelData = (q: Query): boolean =>
+        changesWithUser(q) && !String(q.queryKey[0]).startsWith('remote.')
+      client.removeQueries({ predicate: hotelData })
+      void client.invalidateQueries({ queryKey: ['remote.hotels'] })
+      return refetchShared(client)
+    },
     /** Ask again (password changed, PIN set, mode changed, a call said the session is gone). */
     refresh(): Promise<unknown> {
       return client.invalidateQueries({ queryKey: AUTH_STATE_KEY })

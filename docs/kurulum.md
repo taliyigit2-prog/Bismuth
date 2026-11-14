@@ -180,6 +180,54 @@ Kaldırmak **kayıtlarınızı silmez**. Veri klasörü yerinde kalır; Bismuth'
 Kayıtlarınızı **de** silmek istiyorsanız (örneğin bilgisayarı satıyorsanız): önce **Şimdi yedek al** ile yedek alıp güvenli
 bir yere kopyalayın, sonra yukarıdaki veri klasörünü silin. Bu işlem geri alınamaz.
 
+## Kamera eki
+
+Kamera tanıma (Python, yapay zekâ kitaplıkları ve model dosyaları) ana programın içinde **değildir**: ana kurulum 100 MB
+kadardır, kamera eki bunun yedi katıdır. Ayrı dosya olmasının nedenleri: (1) kamerası olmayan bilgisayar bu yükü indirmez;
+(2) ana programın yeni sürümü her seferinde 0,7 GB indirtmez; (3) model dosyaları depoda tutulmaz, ayrı üretilir.
+Kamera eki olmadan Bismuth tüm işlevleriyle çalışır; Kamera sekmesi "kamera eki kurulu değil" yazar ve kamera başlamaz.
+
+| Dosya | Hangi bilgisayar | Boyut (tahmin) |
+|---|---|---|
+| `Bismuth-Kamera-Windows.zip` | Windows 10/11, 64 bit (Intel/AMD) | indirme ≈ 0,6–0,8 GB, açılınca ≈ 1,6–2 GB <!-- doğrula: ilk gerçek paketlemede ölçülecek --> |
+| `Bismuth-Kamera-Mac.zip` | Apple çipli Mac (M1 ve sonrası) | aynı büyüklükte <!-- doğrula --> |
+
+Intel Mac ve Windows ARM için kamera eki üretilmez (PyTorch'un bu sistemler için hazır paketi yok). Kamera eki yalnız
+**ana bilgisayarda** (kameranın bağlı olduğu, Bismuth'un sunucu/tek bilgisayar modundaki makine) gerekir; telefon ve diğer
+bilgisayarlar için gerekmez.
+
+**Kurulum (terminal gerekmez):**
+
+1. Bismuth'u kapatın.
+2. `Bismuth-Kamera-…zip` dosyasını indirin (internet yalnız bu indirme için gerekir; kamera eki çalışırken hiçbir şey indirmez).
+3. Zip'i açın (Windows: sağ tık → **Tümünü ayıkla**; Mac: çift tık). Çıkan klasörün adı **camera-addon** olmalıdır.
+4. Bu klasörü Bismuth'un veri klasörüne taşıyın: Windows `C:\Users\<ad>\AppData\Roaming\Bismuth` (Dosya Gezgini'nin
+   adres çubuğuna `%APPDATA%\Bismuth` yazıp Enter'a basın), Mac `Kullanıcı/Kütüphane/Application Support/Bismuth`
+   (Finder'da **Git → Klasöre Git**, `~/Library/Application Support/Bismuth` yazın). Sonuç: `…\Bismuth\camera-addon\addon.json`.
+5. Bismuth'u açın; **Kamera** sekmesi artık kurulum sihirbazını gösterir.
+
+Mac'te ilk kamera başlatmada macOS "geliştiricisi doğrulanamadı" derse: **Sistem Ayarları → Gizlilik ve Güvenlik**
+bölümünde çıkan satırdaki **Yine de Aç** düğmesine basın. <!-- doğrula -->
+
+**Güncelleme ve kaldırma:** Ana programı güncellemek kamera ekine dokunmaz. Bismuth'un yeni sürümü yeni bir kamera eki
+isterse sürüm notunda yazılır; eski `camera-addon` klasörünü silip yenisini aynı yere koyun. Kamera ekini kaldırmak için
+Bismuth kapalıyken `camera-addon` klasörünü silin; kamera verileri (yüz kayıtları) Bismuth'un veritabanındadır, klasörde değildir.
+
+**Güvenlik notları:** Kamera eki yalnız bu klasörden çalışır (sistemdeki başka bir Python'a bakılmaz). Model dosyalarının
+parmak izi (`models/SHA256SUMS`) her açılışta denetlenir; listede olmayan ya da değiştirilmiş model dosyası yüklenmez.
+Kamera eki hiçbir şey indirmez ve internete bağlanmaz.
+
+**Lisans:** kamera ekindeki InsightFace modelleri "ticari olmayan araştırma", Ultralytics ise AGPL-3.0 lisanslıdır
+(`THIRD_PARTY_NOTICES.md`, `docs/analiz/06-kamera-entegrasyonu.md` §6.3). Bu kamera eki yalnız sahibin kendi otelinde
+kullanılır; başkasına verilemez ya da satılamaz.
+
+**Paketleyen için (sahip ya da geliştirici):** model dosyaları depoda yoktur; `resources/camera/models/README.md`'deki
+yerleşimle bir klasörde tutulur. Üretim: `npm run camera:bundle -- --target win-x64 --models <klasör>` (Linux/Mac/Windows'ta
+Python 3.12 gerekir; Windows eki Linux'ta da üretilir) ya da `release` iş akışını elle çalıştırıp `camera_addon` kutusunu
+işaretleyin (model arşivi `CAMERA_MODELS_URL` / `CAMERA_MODELS_SHA256` sırlarından alınır). Mac eki `--target mac-arm64`
+ile ve Mac'te üretilir. Çıktı: `camera-addon-out/Bismuth-Kamera-*.zip` (git dışı). Python bağlantı adresleri ve ilk
+paketlemede doğrulanacak noktalar `scripts/camera-bundle.mjs` başındadır.
+
 ## Sorun giderme
 
 **Bismuth açılmıyor, hiçbir şey olmuyor.**

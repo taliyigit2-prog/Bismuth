@@ -20,7 +20,7 @@ import { createHandlers } from '../api/handlers'
 import { tFor } from '../app/i18n'
 import type { BismuthDb } from '../db/client'
 import { createDiscovery, type Discovery } from '../discovery'
-import { createReplicaStore } from '../replica/store'
+import { createReplicaStore, migrateLegacyCopy } from '../replica/store'
 import { conflictingChanges, conflictRows, createEpochGuard, type EpochGuard } from '../relay/epoch'
 import { createRelayRuntime, type RelayRuntime } from '../relay/runtime'
 import { printSummaryPdf } from '../relay/summary-pdf'
@@ -284,8 +284,12 @@ export function createClientMode(options: ClientModeOptions): {
   }
   const discovery = createDiscovery()
   // P13b: the read-only copy (a separate file; never the hotel's database, yasak 13).
+  // P21b: the single copy of an earlier version moves under its hotel's code (replica/<code>/).
+  const migrated = config.takeMigration()
+  if (migrated) migrateLegacyCopy(options.root, migrated)
   const store = createReplicaStore({
     root: options.root,
+    hotel: config.get().activeHotel ?? null,
     migrationsFolder: options.migrationsFolder,
     version: options.version,
     onError: (error, what) => options.log.warn(what, error)
@@ -317,7 +321,9 @@ export function createClientMode(options: ClientModeOptions): {
     discover: () => discovery.browse(3000),
     openExternal: (url) => void shell.openExternal(url),
     leaveClient: () => options.leaveClient(),
-    replica: { client: replica, store }
+    replica: { client: replica, store },
+    onHotelChanged: (code) => replica.switchHotel(code),
+    removeHotelData: (code) => store.removeCopy(code)
   })
   const device = () => ({ deviceName: machineName(), kind: 'desktop' as const, platform: process.platform })
   return {
