@@ -321,6 +321,7 @@ export function createCameraService(deps: CameraServiceDeps) {
         enabled: readSetting(db, 'camera.enabled'),
         state: snap?.state ?? 'unavailable',
         blocked: snap?.blocked ?? null,
+        addonInstalled: runtime?.addonInstalled?.() ?? true,
         crashes: snap?.crashes ?? 0,
         totalCrashes: snap?.totalCrashes ?? 0,
         lastExitAt: snap?.lastExitAt ?? null,

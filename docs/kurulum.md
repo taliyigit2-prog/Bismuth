@@ -185,12 +185,15 @@ bir yere kopyalayın, sonra yukarıdaki veri klasörünü silin. Bu işlem geri 
 Kamera tanıma (Python, yapay zekâ kitaplıkları ve model dosyaları) ana programın içinde **değildir**: ana kurulum 100 MB
 kadardır, kamera eki bunun yedi katıdır. Ayrı dosya olmasının nedenleri: (1) kamerası olmayan bilgisayar bu yükü indirmez;
 (2) ana programın yeni sürümü her seferinde 0,7 GB indirtmez; (3) model dosyaları depoda tutulmaz, ayrı üretilir.
-Kamera eki olmadan Bismuth tüm işlevleriyle çalışır; Kamera sekmesi "kamera eki kurulu değil" yazar ve kamera başlamaz.
+Kamera eki olmadan Bismuth tüm işlevleriyle çalışır; kamera başlamaz ve şu yerlerde açık bir uyarı görünür: **Kamera** ekranı
+(**Kamera eki kurulu değil**), **Ayarlar → Kamera** ve ilk kurulum sihirbazının Kamera adımı ile **Yeniden tara** penceresi (orada
+"Bağlantıyı dene" de aynı nedenle çalışmaz). Uyarı, eki nereden indireceğinizi ve nereye açacağınızı tek cümleyle söyler; aşağıdaki
+kurulum adımlarıyla aynıdır. Ek yalnız Bismuth açılırken aranır: ekledikten sonra Bismuth'u kapatıp yeniden açın.
 
 | Dosya | Hangi bilgisayar | Boyut (tahmin) |
 |---|---|---|
 | `Bismuth-Kamera-Windows.zip` | Windows 10/11, 64 bit (Intel/AMD) | indirme ≈ 0,6–0,8 GB, açılınca ≈ 1,6–2 GB <!-- doğrula: ilk gerçek paketlemede ölçülecek --> |
-| `Bismuth-Kamera-Mac.zip` | Apple çipli Mac (M1 ve sonrası) | aynı büyüklükte <!-- doğrula --> |
+| `Bismuth-Kamera-Mac.zip` | Apple çipli Mac (M1 ve sonrası), macOS 14 (Sonoma) ya da üstü | aynı büyüklükte <!-- doğrula --> |
 
 Intel Mac ve Windows ARM için kamera eki üretilmez (PyTorch'un bu sistemler için hazır paketi yok). Kamera eki yalnız
 **ana bilgisayarda** (kameranın bağlı olduğu, Bismuth'un sunucu/tek bilgisayar modundaki makine) gerekir; telefon ve diğer
@@ -204,7 +207,9 @@ bilgisayarlar için gerekmez.
 4. Bu klasörü Bismuth'un veri klasörüne taşıyın: Windows `C:\Users\<ad>\AppData\Roaming\Bismuth` (Dosya Gezgini'nin
    adres çubuğuna `%APPDATA%\Bismuth` yazıp Enter'a basın), Mac `Kullanıcı/Kütüphane/Application Support/Bismuth`
    (Finder'da **Git → Klasöre Git**, `~/Library/Application Support/Bismuth` yazın). Sonuç: `…\Bismuth\camera-addon\addon.json`.
-5. Bismuth'u açın; **Kamera** sekmesi artık kurulum sihirbazını gösterir.
+5. Bismuth'u açın; uyarı kalkar. Kamerayı bağlamak için **Ayarlar → Kamera → Yeniden tara** düğmesine basın: kamera kurulum
+   sihirbazı orada açılır (ilk kurulumdaysanız sihirbazın Kamera adımı aynı işi yapar). **Kamera** ekranının kendisi sihirbazı
+   göstermez; kamera adresi girilene kadar "Kamera adresi yok" der.
 
 Mac'te ilk kamera başlatmada macOS "geliştiricisi doğrulanamadı" derse: **Sistem Ayarları → Gizlilik ve Güvenlik**
 bölümünde çıkan satırdaki **Yine de Aç** düğmesine basın. <!-- doğrula -->
@@ -223,9 +228,12 @@ kullanılır; başkasına verilemez ya da satılamaz.
 
 **Paketleyen için (sahip ya da geliştirici):** model dosyaları depoda yoktur; `resources/camera/models/README.md`'deki
 yerleşimle bir klasörde tutulur. Üretim: `npm run camera:bundle -- --target win-x64 --models <klasör>` (Linux/Mac/Windows'ta
-Python 3.12 gerekir; Windows eki Linux'ta da üretilir) ya da `release` iş akışını elle çalıştırıp `camera_addon` kutusunu
-işaretleyin (model arşivi `CAMERA_MODELS_URL` / `CAMERA_MODELS_SHA256` sırlarından alınır). Mac eki `--target mac-arm64`
-ile ve Mac'te üretilir. Çıktı: `camera-addon-out/Bismuth-Kamera-*.zip` (git dışı). Python bağlantı adresleri ve ilk
+Python 3.12 ve bir C++ derleyicisi gerekir). Ek, **hedef sistemin kendisinde** üretilir: Windows eki Windows'ta, Mac eki
+`--target mac-arm64` ile Apple çipli Mac'te (insightface derlenir; başka sistemde derlenen çalışmaz). Ya da `release` iş akışını
+elle çalıştırıp `camera_addon` kutusunu işaretleyin; sürüm etiketinde iş akışı eki yalnız depo değişkeni `CAMERA_ADDON` `true`
+iken üretir ve iki zip dosyası sürümün `SHA256SUMS.txt` listesine girer (model arşivi `CAMERA_MODELS_URL` /
+`CAMERA_MODELS_SHA256` sırlarından alınır). Kütüphaneler hash'li kilit dosyalarından kurulur (`otel-kamera/requirements-*.lock`,
+yenilemek için `node scripts/camera-lock.mjs`; `pip install uv` gerekir); Python arşivi betikteki sabit özetle doğrulanır. Çıktı: `camera-addon-out/Bismuth-Kamera-*.zip` (git dışı). Python bağlantı adresleri ve ilk
 paketlemede doğrulanacak noktalar `scripts/camera-bundle.mjs` başındadır.
 
 ## Sorun giderme

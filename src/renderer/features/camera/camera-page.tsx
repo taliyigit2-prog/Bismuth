@@ -132,7 +132,7 @@ function SwitchedOff({ status }: { status: CameraStatus }) {
       title={t(`camera.state.${view.key}`)}
       body={t(`camera.stateHelp.${view.key}`)}
       action={
-        can('camera', 'edit') && status.state !== 'unavailable' ? (
+        can('camera', 'edit') && status.state !== 'unavailable' && view.key !== 'noAddon' ? (
           <Button asChild>
             <Link to="/settings" search={{ tab: 'camera' }}>
               <SettingsIcon aria-hidden />
@@ -157,7 +157,8 @@ function Body({ status }: { status: CameraStatus }) {
   const live = useApiQuery('camera.live', {}, { enabled: hostWindow && running, refetchInterval: 2_000 })
   // The list is Bismuth's own table (P20c): new alarms land there within a few seconds of the sidecar seeing them.
   const alerts = useApiQuery('camera.alerts', {}, { refetchInterval: 5_000 })
-  const off = view.key === 'disabled' || view.key === 'noSource' || view.key === 'unavailable'
+  const off =
+    view.key === 'disabled' || view.key === 'noSource' || view.key === 'unavailable' || view.key === 'noAddon'
 
   if (off) return <SwitchedOff status={status} />
   return (

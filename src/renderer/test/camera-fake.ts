@@ -25,6 +25,7 @@ export const RUNNING: CameraStatus = {
   enabled: true,
   state: 'running',
   blocked: null,
+  addonInstalled: true,
   crashes: 0,
   totalCrashes: 0,
   lastExitAt: null,

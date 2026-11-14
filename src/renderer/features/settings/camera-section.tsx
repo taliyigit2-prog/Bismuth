@@ -18,6 +18,7 @@ import { useTransport } from '@/lib/api/api-context'
 import { useApiMutation, useApiQuery } from '@/lib/api/hooks'
 import { useCan } from '@/lib/view-as'
 import { PrivacySettings } from '../camera/privacy-settings'
+import { CameraAddonMissing } from '../camera/addon-missing'
 import { CameraRescan } from './camera-rescan'
 import { numberValid, parseNumber, type NumberRule } from './camera-numbers'
 import { SwitchRow } from './room-dialogs'
@@ -302,6 +303,7 @@ export function CameraSection({ values, onSave }: Props) {
 
   return (
     <div className="grid gap-6" data-testid="camera-settings">
+      {status.data?.addonInstalled === false ? <CameraAddonMissing /> : null}
       <Card>
         <CardHeader>
           <CardTitle>{t('settings.camera.systemTitle')}</CardTitle>

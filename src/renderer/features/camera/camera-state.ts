@@ -14,6 +14,7 @@ export type CameraStateKey =
   | 'noSource'
   | 'disabled'
   | 'unavailable'
+  | 'noAddon'
 
 export interface CameraStateView {
   tone: CameraTone
@@ -23,6 +24,7 @@ export interface CameraStateView {
 
 export function cameraStateView(status: CameraStatus): CameraStateView {
   if (status.state === 'unavailable') return { tone: 'off', key: 'unavailable' }
+  if (!status.addonInstalled) return { tone: 'off', key: 'noAddon' }
   if (!status.enabled) return { tone: 'off', key: 'disabled' }
   if (status.blocked === 'noSource') return { tone: 'off', key: 'noSource' }
   switch (status.state) {

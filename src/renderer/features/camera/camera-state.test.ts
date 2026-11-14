@@ -14,7 +14,9 @@ describe('kamera durumu kelimeleri', () => {
     [{ state: 'stopped' as const }, 'stopped', 'off'],
     [{ enabled: false, state: 'stopped' as const }, 'disabled', 'off'],
     [{ blocked: 'noSource' as const, state: 'stopped' as const }, 'noSource', 'off'],
-    [{ state: 'unavailable' as const }, 'unavailable', 'off']
+    [{ state: 'unavailable' as const }, 'unavailable', 'off'],
+    [{ addonInstalled: false, state: 'stopped' as const }, 'noAddon', 'off'],
+    [{ addonInstalled: false, enabled: false, state: 'stopped' as const }, 'noAddon', 'off']
   ])('%o → %s (%s)', (patch, key, tone) => {
     expect(cameraStateView({ ...RUNNING, ...patch })).toEqual({ key, tone })
   })

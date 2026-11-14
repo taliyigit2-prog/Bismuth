@@ -178,7 +178,8 @@ describe('kamera kurulum akışı', () => {
     ['path', 'Kamera bu kanalı tanımıyor'],
     ['noFrame', 'görüntü alınamadı'],
     ['badAddress', 'otelin kendi ağındaki'],
-    ['unavailable', 'Kamera bölümü bu bilgisayarda çalışmıyor']
+    ['unavailable', 'Kamera bölümü bu bilgisayarda çalışmıyor'],
+    ['noAddon', 'Kamera eki kurulu değil']
   ] as const)(
     'deneme "%s" nedeniyle başarısızsa anlaşılır mesaj verir ve görüntü göstermez',
     async (reason, text) => {
@@ -191,6 +192,21 @@ describe('kamera kurulum akışı', () => {
       expect(screen.queryByTestId('setup-camera-preview')).toBeNull()
     }
   )
+
+  it('kamera eki yoksa akışın başında nereden indirilip nereye açılacağı yazar; ek varsa uyarı yok', async () => {
+    await open((s) => {
+      s.status.addonInstalled = false
+    })
+    expect(await screen.findByTestId('camera-addon-missing')).toHaveTextContent(
+      /Bismuth-Kamera-Windows\.zip.*camera-addon klasörünü/
+    )
+  })
+
+  it('kamera eki kuruluysa uyarı çıkmaz', async () => {
+    await open()
+    await screen.findByTestId('setup-camera-computer')
+    expect(screen.queryByTestId('camera-addon-missing')).toBeNull()
+  })
 
   it('adres değişince eski deneme sonucu kalkar', async () => {
     const { user } = await open()

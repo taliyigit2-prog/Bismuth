@@ -62,6 +62,30 @@ function readSetCookie(header: string): { name: string; value: string; remove: b
   return { name, value, remove }
 }
 
+/** A hello is a few hundred bytes; a stranger's answer is not read past this. */
+const HELLO_MAX_BYTES = 16_384
+
+/** The body as text, stopping (and failing) once it passes `max` bytes. */
+async function readLimited(response: Response, max: number): Promise<string> {
+  const declared = Number(response.headers.get('content-length') ?? 0)
+  if (declared > max) throw new Error('too large')
+  if (!response.body) return ''
+  const reader = response.body.getReader()
+  const chunks: Uint8Array[] = []
+  let size = 0
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) break
+    size += value.byteLength
+    if (size > max) {
+      void reader.cancel().catch(() => undefined)
+      throw new Error('too large')
+    }
+    chunks.push(value)
+  }
+  return Buffer.concat(chunks).toString('utf8')
+}
+
 /** What `probe` learned: the main computer's hello and its checked public key. */
 export interface ProbeResult extends Hello {
   key: string
@@ -138,18 +162,20 @@ export function createHostLink(deps: HostLinkDeps) {
     hello.version === deps.version && hello.schemaVersion === deps.schemaVersion
 
   const headers = (url: string, windowId: number | null): Record<string, string> => {
+    // The device cookie and this computer's name belong to the hotel in use and go to its address only; a new or
+    // other address is asked who it is with nothing of the saved hotel (it may be a stranger).
+    const own = url === hostUrl
     const cookies: string[] = []
-    const device = deps.loadDevice()
+    const device = own ? deps.loadDevice() : null
     if (device) cookies.push(`${DEVICE_COOKIE}=${device}`)
-    const session = windowId === null ? undefined : windowSessions.get(windowId)
+    const session = !own || windowId === null ? undefined : windowSessions.get(windowId)
     if (session) cookies.push(`${SESSION_COOKIE}=${session}`)
     return {
       'content-type': 'application/json',
       // The main computer accepts calls only from its own origin: this computer speaks as its own page would.
       origin: new URL(url).origin,
       'x-bismuth-client': 'desktop',
-      'x-bismuth-device-name': deps.deviceName,
-      'x-bismuth-platform': deps.platform,
+      ...(own ? { 'x-bismuth-device-name': deps.deviceName, 'x-bismuth-platform': deps.platform } : {}),
       ...(cookies.length ? { cookie: cookies.join('; ') } : {})
     }
   }
@@ -205,7 +231,7 @@ export function createHostLink(deps: HostLinkDeps) {
       throw new LinkError('denied')
     let parsed: ReturnType<typeof helloSchema.safeParse>
     try {
-      parsed = helloSchema.safeParse(await response.json())
+      parsed = helloSchema.safeParse(JSON.parse(await readLimited(response, HELLO_MAX_BYTES)))
     } catch {
       throw new LinkError('notBismuth')
     }
@@ -294,6 +320,8 @@ export function createHostLink(deps: HostLinkDeps) {
     /** The saved address, once its identity was checked in this run (the copy's feed goes nowhere else). */
     verifiedHostUrl: (): string | null => (verifiedFor !== null && verifiedFor === hostUrl ? hostUrl : null),
     probe,
+    /** This window holds a session on the main computer (it is signed in there). */
+    hasSession: (windowId: number): boolean => windowSessions.has(windowId),
     compatible,
     hostUrl: () => hostUrl,
     /** The main computer answered at least once since this program started. */

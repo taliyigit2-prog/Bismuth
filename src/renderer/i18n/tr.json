@@ -2762,7 +2762,8 @@
         "path": "Kamera bu kanalı tanımıyor. Kanal numarasını kontrol edin.",
         "noFrame": "Kameraya bağlanıldı ama görüntü alınamadı. Birkaç saniye sonra yeniden deneyin.",
         "badAddress": "Bu adres otelin kendi ağındaki bir kamera gibi görünmüyor.",
-        "unavailable": "Kamera bölümü bu bilgisayarda çalışmıyor. Kurulum kılavuzundaki kamera bölümüne bakın."
+        "unavailable": "Kamera bölümü bu bilgisayarda çalışmıyor. Kurulum kılavuzundaki kamera bölümüne bakın.",
+        "noAddon": "Kamera eki kurulu değil, bu yüzden görüntü denemesi yapılamıyor. Kamera ekini kurduktan sonra Bismuth'u yeniden açıp tekrar deneyin."
       },
       "save": {
         "run": "Kamerayı kaydet",
@@ -7271,7 +7272,8 @@
       "stopped": "Durdu",
       "noSource": "Kamera adresi yok",
       "disabled": "Kapalı",
-      "unavailable": "Bu bilgisayarda yok"
+      "unavailable": "Bu bilgisayarda yok",
+      "noAddon": "Kamera eki kurulu değil"
     },
     "stateHelp": {
       "running": "Kamera görüntüsü izleniyor. Kayıtsız biri girerse alarm verilir.",
@@ -7282,7 +7284,8 @@
       "stopped": "Kamera sistemi şu an çalışmıyor. Yeniden başlat'a basın.",
       "noSource": "Kamera adresi girilmedi. Ayarlar'da Kamera bölümünden girin; yetkiniz yoksa otel sahibine başvurun.",
       "disabled": "Kamera sistemi kapalı. Açmak için Ayarlar'da Kamera bölümüne gidin; yetkiniz yoksa otel sahibine başvurun.",
-      "unavailable": "Kamera sistemi bu bilgisayarda çalışmıyor. Otelin ana bilgisayarını kullanın."
+      "unavailable": "Kamera sistemi bu bilgisayarda çalışmıyor. Otelin ana bilgisayarını kullanın.",
+      "noAddon": "Kamera eki ayrı bir indirmedir: Bismuth'un sürüm sayfasından Bismuth-Kamera-Windows.zip (Mac: Bismuth-Kamera-Mac.zip) dosyasını indirip açın, çıkan camera-addon klasörünü ana bilgisayarda Bismuth'un veri klasörüne koyun (Windows: %APPDATA%\\Bismuth, Mac: ~/Library/Application Support/Bismuth) ve Bismuth'u yeniden açın."
     },
     "pause": {
       "label": "Alarmları duraklat",

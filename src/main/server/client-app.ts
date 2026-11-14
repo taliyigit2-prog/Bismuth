@@ -22,6 +22,7 @@ import {
   type FoundHost,
   type SavedHotel
 } from '@shared/contract/remote'
+import { levelAllows } from '@shared/permissions'
 import type { ApiEnv } from '../api/app'
 import type { SessionBinding } from '../api/session'
 import type { ReplicaStore } from '../replica/store'
@@ -223,6 +224,23 @@ export function createClientApp(deps: ClientAppDeps): Hono<ApiEnv> {
     }
   }
 
+  /**
+   * Who may change the hotel list from this window (G-23, P21bfix). Before any sign-in (first set-up, choosing a
+   * hotel on the connection screen) the screen is open: the list is only a convenience of this computer and every
+   * real right is the hotel's own. A window signed in at its hotel needs `remote.settings` (edit) there, and is
+   * not locked. When the main computer cannot say who is signed in, the window is let through: the connection
+   * screen is the only way out of that state.
+   */
+  async function mayChangeHotels(windowId: number): Promise<boolean> {
+    if (!link.hasSession(windowId)) return true
+    const answer = await forward('auth.state', '{}', windowId)
+    if (answer.status !== 200 && answer.status !== 203) return true
+    const session = (JSON.parse(answer.body) as AuthState).session
+    if (!session) return true
+    return !session.locked && levelAllows(session.permissions['remote.settings'] ?? 'none', 'edit')
+  }
+  const denied = (): LinkAnswer => failure(403, 'PERMISSION_DENIED', 'errors.permissionDenied')
+
   async function local(name: string, body: unknown, windowId: number): Promise<LinkAnswer | null> {
     const copyAnswer = await replicaCall(name, body)
     if (copyAnswer) return copyAnswer
@@ -232,6 +250,7 @@ export function createClientApp(deps: ClientAppDeps): Hono<ApiEnv> {
       case 'remote.discover':
         return json(LOCAL, await deps.discover())
       case 'remote.connect': {
+        if (!(await mayChangeHotels(windowId))) return denied()
         const parsed = connectInputSchema.safeParse(body)
         const url = parsed.success ? normalizeHostUrl(parsed.data.url) : null
         if (!url) return failure(400, 'VALIDATION', 'errors.hostAddress')
@@ -285,6 +304,7 @@ export function createClientApp(deps: ClientAppDeps): Hono<ApiEnv> {
       case 'remote.hotels':
         return json(LOCAL, hotelViews())
       case 'remote.hotelUpdate': {
+        if (!(await mayChangeHotels(windowId))) return denied()
         const parsed = hotelUpdateInputSchema.safeParse(body)
         if (!parsed.success) return failure(400, 'VALIDATION', 'errors.validation')
         const { code, name, url: typed } = parsed.data
@@ -306,6 +326,7 @@ export function createClientApp(deps: ClientAppDeps): Hono<ApiEnv> {
         return json(LOCAL, hotelViews())
       }
       case 'remote.hotelRemove': {
+        if (!(await mayChangeHotels(windowId))) return denied()
         const parsed = hotelCodeInputSchema.safeParse(body)
         if (!parsed.success) return failure(400, 'VALIDATION', 'errors.validation')
         const { code } = parsed.data

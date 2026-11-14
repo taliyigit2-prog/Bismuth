@@ -38,6 +38,17 @@ async function open(opts: Parameters<typeof cameraTransport>[1] = {}, patch = {}
 }
 
 describe('Ayarlar → Kamera', () => {
+  it('kamera eki yoksa bölümün başında nereden indirilip nereye açılacağı yazar', async () => {
+    const state = emptyCamera()
+    state.status.addonInstalled = false
+    await renderWithProviders(<CameraSection values={{ ...SETTINGS_DEFAULTS }} onSave={() => {}} />, {
+      transport: cameraTransport(state)
+    })
+    expect(await screen.findByTestId('camera-addon-missing')).toHaveTextContent(
+      /Kamera eki kurulu değil.*Bismuth-Kamera-Windows\.zip.*camera-addon klasörünü/
+    )
+  })
+
   it('anahtarlar ve metin alanları ayarı kaydeder', async () => {
     const { saved, user } = await open()
     await user.click(screen.getByRole('switch', { name: 'Kamera sistemini aç' }))

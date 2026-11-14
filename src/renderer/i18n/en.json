@@ -2762,7 +2762,8 @@
         "path": "The camera does not know this channel. Check the channel number.",
         "noFrame": "The camera answered but no picture came. Try again in a few seconds.",
         "badAddress": "This address does not look like a camera on the hotel's own network.",
-        "unavailable": "The camera part does not run on this computer. See the camera section of the installation guide."
+        "unavailable": "The camera part does not run on this computer. See the camera section of the installation guide.",
+        "noAddon": "The camera add-on is not installed, so the picture test cannot run. Install it, reopen Bismuth and try again."
       },
       "save": {
         "run": "Save the camera",
@@ -7271,7 +7272,8 @@
       "stopped": "Stopped",
       "noSource": "No camera address",
       "disabled": "Off",
-      "unavailable": "Not on this computer"
+      "unavailable": "Not on this computer",
+      "noAddon": "Camera add-on not installed"
     },
     "stateHelp": {
       "running": "The camera picture is being watched. An alarm is raised when someone unregistered walks in.",
@@ -7282,7 +7284,8 @@
       "stopped": "The camera system is not running. Press Restart.",
       "noSource": "No camera address has been entered. Enter it in Settings under Camera; if you cannot, ask the hotel owner.",
       "disabled": "The camera system is off. To switch it on, go to Settings under Camera; if you cannot, ask the hotel owner.",
-      "unavailable": "The camera system does not run on this computer. Use the hotel's main computer."
+      "unavailable": "The camera system does not run on this computer. Use the hotel's main computer.",
+      "noAddon": "The camera add-on is a separate download: get Bismuth-Kamera-Windows.zip (Mac: Bismuth-Kamera-Mac.zip) from Bismuth's releases page, unpack it, put the camera-addon folder into Bismuth's data folder on the main computer (Windows: %APPDATA%\\Bismuth, Mac: ~/Library/Application Support/Bismuth) and reopen Bismuth."
     },
     "pause": {
       "label": "Pause alarms",

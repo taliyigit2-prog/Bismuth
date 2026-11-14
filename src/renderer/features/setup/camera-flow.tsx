@@ -30,6 +30,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton'
 import { useApiMutation, useApiQuery, useSettings, useUpdateSettings } from '@/lib/api/hooks'
 import { ApiError } from '@/lib/transport'
+import { CameraAddonMissing } from '../camera/addon-missing'
 import { SecretInput } from './fields'
 
 const OS_NAMES: Record<string, string> = { win32: 'Windows', darwin: 'macOS', linux: 'Linux' }
@@ -86,6 +87,8 @@ export function CameraFlow({ onSaved }: { onSaved?: () => void }) {
   const hardware = useApiQuery('camera.hardware', {}, { staleTime: Infinity, refetchOnWindowFocus: false })
   const discover = useApiMutation('camera.discover')
   const probe = useApiMutation('camera.probe')
+  const cameraStatus = useApiQuery('camera.status', {}, { refetchInterval: 10_000 })
+  const addonMissing = cameraStatus.data?.addonInstalled === false
   const setSecrets = useApiMutation('camera.setSecrets', { invalidates: ['camera.status'] })
   const update = useUpdateSettings()
 
@@ -196,6 +199,7 @@ export function CameraFlow({ onSaved }: { onSaved?: () => void }) {
 
   return (
     <div className="grid gap-6" onKeyDown={onKeyDown} data-testid="setup-camera-flow">
+      {addonMissing ? <CameraAddonMissing /> : null}
       {/* 1. This computer */}
       <section className="grid gap-3" aria-labelledby="setup-camera-computer-title">
         <h3 id="setup-camera-computer-title" className="text-sm font-semibold">

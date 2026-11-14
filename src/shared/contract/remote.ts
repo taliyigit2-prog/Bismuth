@@ -144,7 +144,17 @@ export function normalizeHostUrl(input: string, defaultPort: number = DEFAULT_HO
 // ---- P21b: the hotels a client computer knows (K-54: each hotel has its own main computer) ----
 
 /** Folder-safe short name of a saved hotel (`replica/<code>`). */
-export const hotelCodeSchema = z.string().regex(/^[a-z0-9][a-z0-9-]{0,39}$/)
+const RESERVED_CODES = new Set([
+  ...['con', 'prn', 'aux', 'nul', 'constructor', 'prototype', 'proto', 'tostring', 'hasownproperty'],
+  ...['attachments', 'backups', 'replica', 'logs', 'cache', 'camera', 'tmp', 'temp', 'db', 'models'],
+  ...Array.from({ length: 9 }, (_, i) => [`com${i + 1}`, `lpt${i + 1}`]).flat()
+])
+/** Names a folder cannot have on Windows, folders this program keeps beside it, and object keys with a meaning. */
+export const isReservedHotelCode = (code: string): boolean => RESERVED_CODES.has(code)
+export const hotelCodeSchema = z
+  .string()
+  .regex(/^[a-z0-9][a-z0-9-]{0,39}$/)
+  .refine((code) => !isReservedHotelCode(code))
 
 export const savedHotelSchema = z.object({
   code: hotelCodeSchema,

@@ -2,8 +2,9 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { addonEnv, addonRoot, findCameraAddon } from './addon'
-import { createCameraRuntime, pythonFor } from './index'
+import { EventEmitter } from 'node:events'
+import { addonEnv, addonRoot, findCameraAddon, packagedBaseEnv } from './addon'
+import { createCameraRuntime, createProbeRunner, pythonFor } from './index'
 
 const dirs: string[] = []
 const temp = (): string => {
@@ -77,5 +78,80 @@ describe('interpreter choice', () => {
     await runtime.apply()
     expect(runtime.addonInstalled?.()).toBe(false)
     expect(runtime.snapshot().state).toBe('stopped')
+  })
+})
+
+describe('packaged sidecar environment', () => {
+  const hostile = {
+    PATH: '/usr/bin',
+    HOME: '/home/x',
+    SystemRoot: 'C:\\Windows',
+    PYTHONHOME: '/evil',
+    PYTHONPATH: '/evil',
+    PYTHONSTARTUP: '/evil/start.py',
+    PYTHONINSPECT: '1',
+    PYTHONWARNINGS: 'error',
+    LD_PRELOAD: '/evil.so',
+    DYLD_INSERT_LIBRARIES: '/evil.dylib',
+    HTTPS_PROXY: 'http://evil:8080',
+    BISMUTH_CAMERA_TOKEN: 'old'
+  }
+
+  it('lets only system folders and locale through, never a Python, loader or proxy variable', () => {
+    const env = packagedBaseEnv(hostile)
+    expect(Object.keys(env).sort()).toEqual(['HOME', 'PATH', 'SystemRoot'])
+  })
+
+  it('starts the packaged sidecar from that allow-list, then adds its own variables', async () => {
+    const userData = temp()
+    install(userData)
+    const seen: NodeJS.ProcessEnv[] = []
+    const fakeSpawn = ((_cmd: string, _args: string[], o: { env: NodeJS.ProcessEnv }) => {
+      seen.push(o.env)
+      const child = Object.assign(new EventEmitter(), {
+        pid: 1,
+        stdin: Object.assign(new EventEmitter(), { end: () => undefined }),
+        stdout: null,
+        stderr: null,
+        kill: () => {
+          queueMicrotask(() => child.emit('exit', 0, null))
+          return true
+        }
+      })
+      return child
+    }) as never
+    const saved = { ...process.env }
+    Object.assign(process.env, { PYTHONHOME: '/evil', PYTHONSTARTUP: '/evil/s.py', LD_PRELOAD: '/evil.so' })
+    try {
+      const runtime = createCameraRuntime({
+        scriptDir: join(addonRoot(userData), 'app'),
+        dataDir: temp(),
+        packaged: true,
+        addon: findCameraAddon(userData, 'linux', 'x64'),
+        settings: () => ({ 'camera.enabled': true }) as never,
+        source: () => 'rtsp://127.0.0.1/x',
+        overrides: { spawn: fakeSpawn, fetch: (() => Promise.reject(new Error('offline'))) as never }
+      })
+      await runtime.apply()
+      await runtime.stop()
+    } finally {
+      process.env = saved
+    }
+    expect(seen).toHaveLength(1)
+    const env = seen[0]!
+    for (const bad of ['PYTHONHOME', 'PYTHONSTARTUP', 'LD_PRELOAD']) expect(env[bad]).toBeUndefined()
+    expect(env['PYTHONNOUSERSITE']).toBe('1')
+    expect(env['BISMUTH_CAMERA_PACKAGED']).toBe('1')
+    expect(env['BISMUTH_CAMERA_TOKEN']).toMatch(/^[0-9a-f]{64}$/)
+  })
+})
+
+describe('probe without the add-on', () => {
+  it('says noAddon when installed Bismuth has no camera add-on', async () => {
+    const probe = createProbeRunner({ scriptDir: '/x', packaged: true, addon: null })
+    expect(await probe('rtsp://192.168.1.20:554/Streaming/Channels/101')).toMatchObject({
+      ok: false,
+      reason: 'noAddon'
+    })
   })
 })

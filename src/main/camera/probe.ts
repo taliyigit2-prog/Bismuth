@@ -17,6 +17,8 @@ export interface ProbeCommand {
   cwd: string
   /** Tests: more environment for a stand-in process. */
   env?: Record<string, string>
+  /** The environment it starts from (default: this process's own; a packaged build passes an allow-list). */
+  baseEnv?: NodeJS.ProcessEnv
   timeoutMs?: number
 }
 
@@ -83,7 +85,12 @@ export function probeCamera(source: string, how: ProbeCommand): Promise<CameraPr
     try {
       child = spawn(how.command, how.args, {
         cwd: how.cwd,
-        env: { ...process.env, ...how.env, BISMUTH_PROBE_SOURCE: source, PYTHONIOENCODING: 'utf-8' },
+        env: {
+          ...(how.baseEnv ?? process.env),
+          ...how.env,
+          BISMUTH_PROBE_SOURCE: source,
+          PYTHONIOENCODING: 'utf-8'
+        },
         stdio: ['ignore', 'pipe', 'ignore'],
         windowsHide: true
       })

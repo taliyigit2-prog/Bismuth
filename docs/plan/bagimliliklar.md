@@ -121,6 +121,14 @@ lisans notlarıyla (README); depoya girmez. P20d yeni bağımlılık eklemedi (B
 | onnxruntime | 1.32.0 | MIT | InsightFace çıkarımı | Codespace'te kurulmadı |
 | pytest 9.2.0 · httpx 0.28.1 · ruff 0.17.5 | — | MIT / BSD-3 / MIT | Python testleri ve lint | yalnız geliştirme |
 
+**Kamera eki kilit dosyaları (P20ffix):** `requirements.txt` sürümleri seçer; ek üretilirken kurulan her dosya
+`otel-kamera/requirements-bundle.lock` (Windows + macOS, hash'li, tek dizin PyPI; geçişli bağımlılıklar dahil) ile
+`pip --require-hashes` altında doğrulanır; `node scripts/camera-lock.mjs` üretir. `insightface` import zinciri için
+`onnx`, `albumentations`, `scikit-image`, `matplotlib`, `scipy`, `requests`, `tqdm`, `Pillow` ekte bulunur (insightface'in
+`app/mask_renderer.py`'si hepsini içe aktarır; `requests` Python tarafında ağ çağrısı için **kullanılmaz**, yalnız bu zincirde
+yüklenir). `ultralytics-platform` ve `httpx` ekte yok. Derleme araçları `requirements-build.lock`, insightface kaynak arşivi
+`requirements-insightface.lock`.
+
 Kaldırılanlar: `requests` (Python tarafında ağ çağrısı yok, K-50), `python-dotenv` (ayarlar Bismuth'tan JSON gelir).
 Python bağımlılıkları Codespace'te `otel-kamera/venv` içine kurulur (gitignore'da); `ultralytics` + `insightface`
 sürümleri sahibin makinesinde/P20d'de gerçek modellerle doğrulanır.

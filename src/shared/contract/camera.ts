@@ -22,6 +22,8 @@ export const cameraStatusSchema = z.object({
   state: cameraRuntimeStateSchema,
   /** Why it is not started: no camera address saved yet. */
   blocked: z.enum(['noSource']).nullable(),
+  /** False in an installed (packaged) Bismuth without the camera add-on (docs/kurulum.md "Kamera eki"); true otherwise. */
+  addonInstalled: z.boolean(),
   /** Crashes inside the last ten minutes and since the program started. */
   crashes: z.number().int().min(0),
   totalCrashes: z.number().int().min(0),
@@ -292,13 +294,14 @@ export const CAMERA_PROBE_REASONS = [
   'path',
   'noFrame',
   'badAddress',
-  'unavailable'
+  'unavailable',
+  'noAddon'
 ] as const
 export const cameraProbeSchema = z.object({
   ok: z.boolean(),
   /** Why no picture came: timeout, unreachable (nothing answers there), auth (user or password), path, noFrame
    *  (it answers but sends no picture), badAddress (not a camera address of this network), unavailable (this
-   *  computer cannot run the camera part). */
+   *  computer cannot run the camera part; noAddon: the camera add-on is not installed). */
   reason: z.enum(CAMERA_PROBE_REASONS).nullable(),
   /** `data:image/jpeg;base64,…` of the picture. */
   image: z.string().nullable(),

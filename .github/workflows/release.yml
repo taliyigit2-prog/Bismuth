@@ -2,14 +2,16 @@ name: release
 # The only workflow that builds installers (G-07: no update feed; owners download by hand).
 #   Run workflow (workflow_dispatch) → verify + Windows x64 + macOS, kept as artifacts for 14 days; nothing is published.
 #   Tag vX.Y.Z (the owner pushes it)  → the same, plus Windows arm64, then a GitHub Release with SHA-256 sums.
-# Jobs: verify (Linux, ci.yml: check + e2e) → windows (Linux + wine, NSIS) and macos (one job, both DMGs) → publish.
+# Jobs: verify (Linux, ci.yml: check + e2e) → windows (Linux + wine, NSIS) and macos (one job, both DMGs) and camera-addon
+# (Windows + Mac, the camera zips; on a tag when the variable CAMERA_ADDON is `true`) → publish.
 # Fixed file names (scripts/release-names.mjs): Bismuth-Setup.exe, Bismuth-Setup-arm64.exe, Bismuth.dmg (Apple chip),
-# Bismuth-Intel.dmg, SHA256SUMS.txt. Release notes: docs/surum-notlari/<tag>.md (Turkish, for the owner).
+# Bismuth-Intel.dmg, Bismuth-Kamera-Windows.zip, Bismuth-Kamera-Mac.zip, SHA256SUMS.txt (all of them).
+# Release notes: docs/surum-notlari/<tag>.md (Turkish, for the owner).
 on:
   workflow_dispatch:
     inputs:
       camera_addon:
-        description: 'Also build the camera add-on (Bismuth-Kamera-Windows.zip, Bismuth-Kamera-Mac.zip); needs the model files in a secret'
+        description: 'Also build the camera add-on (Bismuth-Kamera-Windows.zip, Bismuth-Kamera-Mac.zip; kept as artifacts); needs the model files in a secret'
         type: boolean
         default: false
   push:
@@ -114,25 +116,28 @@ jobs:
           retention-days: 14
           compression-level: 0
 
-  # Camera add-on (Faz 20 P20f): separate download, ~0.7 GB each (docs/kurulum.md). Only when asked (dispatch input), never
-  # on a plain tag: the model weights are not in the repository (yasak 14) and come from the owner's private
-  # release-assets storage via the secret CAMERA_MODELS_URL (a .tar.gz of resources/camera/models; sha256 in CAMERA_MODELS_SHA256).
+  # Camera add-on (Faz 20 P20f): separate download, ~0.7 GB each (docs/kurulum.md). Built on its own system because
+  # insightface is compiled there (a Linux-built Windows add-on would not run): Windows x64 on windows-latest (x2), Apple
+  # chip on macos-latest (x10). The model weights are not in the repository (yasak 14): they come from the owner's private
+  # release-assets storage via the secret CAMERA_MODELS_URL (a .tar.gz of resources/camera/models; sha256 in
+  # CAMERA_MODELS_SHA256). Runs when asked (dispatch input: artifacts only) and on a version tag (the zips join the release
+  # and SHA256SUMS.txt). On a tag it runs only when the repository variable CAMERA_ADDON is `true` (the owner sets it once the model secrets exist; Actions minutes).
   camera-addon:
     needs: verify
-    if: inputs.camera_addon
+    if: inputs.camera_addon || (startsWith(github.ref, 'refs/tags/v') && vars.CAMERA_ADDON == 'true')
     strategy:
       fail-fast: false
       matrix:
         include:
           - target: win-x64
-            runs-on: ubuntu-24.04 # Linux builds the Windows add-on (wheels for win_amd64); x1, not the Windows x2
+            runs-on: windows-latest
           - target: mac-arm64
-            runs-on: macos-latest # x10: the wheels are native here (insightface compiles); run only when the Mac add-on changed
+            runs-on: macos-latest
     runs-on: ${{ matrix.runs-on }}
-    timeout-minutes: 60
-    env:
-      MODELS_URL: ${{ secrets.CAMERA_MODELS_URL }}
-      MODELS_SHA256: ${{ secrets.CAMERA_MODELS_SHA256 }}
+    timeout-minutes: 90
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
@@ -142,14 +147,20 @@ jobs:
         with:
           python-version: '3.12'
       - name: Model files (kept outside the repository)
+        # The secrets reach only this step. Relative paths: GNU tar on Windows reads `C:\...` as a remote host.
+        env:
+          MODELS_URL: ${{ secrets.CAMERA_MODELS_URL }}
+          MODELS_SHA256: ${{ secrets.CAMERA_MODELS_SHA256 }}
         run: |
           [ -n "$MODELS_URL" ] || { echo "secret CAMERA_MODELS_URL is empty"; exit 1; }
-          mkdir -p "$RUNNER_TEMP/models"
-          curl -fL --retry 3 -o "$RUNNER_TEMP/models.tar.gz" "$MODELS_URL"
-          echo "$MODELS_SHA256  $RUNNER_TEMP/models.tar.gz" | (sha256sum -c - 2>/dev/null || shasum -a 256 -c -)
-          tar -xzf "$RUNNER_TEMP/models.tar.gz" -C "$RUNNER_TEMP/models"
+          [ -n "$MODELS_SHA256" ] || { echo "secret CAMERA_MODELS_SHA256 is empty"; exit 1; }
+          cd "$RUNNER_TEMP"
+          mkdir -p models
+          curl -fL --proto '=https' --tlsv1.2 --retry 3 -o models.tar.gz "$MODELS_URL"
+          echo "$MODELS_SHA256  models.tar.gz" | (sha256sum -c - 2>/dev/null || shasum -a 256 -c -)
+          tar -xzf models.tar.gz -C models
       - name: Build the add-on
-        run: node scripts/camera-bundle.mjs --target ${{ matrix.target }} --models "$RUNNER_TEMP/models" --out "$RUNNER_TEMP/addon" --pip python
+        run: node scripts/camera-bundle.mjs --target ${{ matrix.target }} --models "$RUNNER_TEMP/models" --out "$RUNNER_TEMP/addon"
       - uses: actions/upload-artifact@v6
         with:
           name: camera-addon-${{ matrix.target }}
@@ -158,8 +169,9 @@ jobs:
           compression-level: 0
 
   publish:
-    needs: [windows, macos]
-    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [windows, macos, camera-addon]
+    # camera-addon is skipped (not failed) unless CAMERA_ADDON=true or asked; a failed one blocks the release.
+    if: startsWith(github.ref, 'refs/tags/v') && !failure() && !cancelled()
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -172,7 +184,9 @@ jobs:
         with:
           path: dist
           merge-multiple: true
-      - name: Checksums
+      - name: Checksums (installers and, when it was built, the camera add-on zips)
+        env:
+          ADDON_RESULT: ${{ needs.camera-addon.result }}
         run: |
           cd dist
           rm -f SHA256SUMS.txt
@@ -181,6 +195,11 @@ jobs:
           for f in Bismuth-Setup.exe Bismuth-Setup-arm64.exe Bismuth.dmg Bismuth-Intel.dmg; do
             [ -f "$f" ] || { echo "missing $f"; exit 1; }
           done
+          if [ "$ADDON_RESULT" = success ]; then
+            for f in Bismuth-Kamera-Windows.zip Bismuth-Kamera-Mac.zip; do
+              [ -f "$f" ] || { echo "missing $f"; exit 1; }
+            done
+          fi
       - name: Create the GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}

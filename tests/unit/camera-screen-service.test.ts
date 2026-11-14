@@ -61,7 +61,7 @@ function fakeSidecar(): { sidecar: Sidecar; fetch: BridgeFetch } {
   return { sidecar, fetch }
 }
 
-async function setup(opts: { running?: boolean } = {}) {
+async function setup(opts: { running?: boolean; addonInstalled?: boolean } = {}) {
   handle = await seededDatabase()
   const clock = testClock()
   const fake = fakeSidecar()
@@ -72,7 +72,8 @@ async function setup(opts: { running?: boolean } = {}) {
     stop: () => Promise.resolve(),
     snapshot: () =>
       ({ state: opts.running === false ? 'stopped' : 'running' }) as ReturnType<CameraRuntime['snapshot']>,
-    bridge: () => (opts.running === false ? null : bridge)
+    bridge: () => (opts.running === false ? null : bridge),
+    addonInstalled: () => opts.addonInstalled !== false
   } satisfies CameraRuntime
   // The account the marks point at (seen_by / handled_by).
   const roleId = handle.db.select().from(roles).where(eq(roles.code, 'owner')).get()!.id
@@ -116,6 +117,16 @@ const code = async (fn: () => unknown): Promise<string> => {
     return error instanceof AppError ? `${error.code}:${error.messageKey}` : 'other'
   }
 }
+
+describe('kamera eki durumu', () => {
+  it('durum, kamera ekinin kurulu olup olmadığını söyler', async () => {
+    const present = await setup()
+    expect(present.service.status(phone()).addonInstalled).toBe(true)
+    handle.close()
+    const missing = await setup({ running: false, addonInstalled: false })
+    expect(missing.service.status(phone()).addonInstalled).toBe(false)
+  })
+})
 
 describe('canlı yayın adresi (S-108)', () => {
   it('çalışırken 127.0.0.1 üzerinde imzalı kısa ömürlü adres verir; belirtecin kendisi adreste yok', async () => {

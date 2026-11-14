@@ -14,7 +14,7 @@ import { createHostLink } from '../../src/main/server/host-link'
 import { hostIdentity } from '../../src/main/server/host-identity'
 import { copyFolder, migrateLegacyCopy } from '../../src/main/replica/store'
 
-type Behaviour = 'ok' | 'timeout' | 'refused' | 'denied' | 'html'
+type Behaviour = 'ok' | 'huge' | 'timeout' | 'refused' | 'denied' | 'html'
 const A = 'http://100.64.0.10:7373'
 const B = 'http://100.64.0.20:7373'
 
@@ -27,10 +27,35 @@ afterEach(() => rmSync(dir, { recursive: true, force: true }))
 /** Main computers by address; `seed` makes the key (another seed at the same address = another computer). */
 function network() {
   const hosts = new Map<string, { seed: number; name: string; behaviour: Behaviour }>()
+  /** Every request that went out (address, path, headers). */
+  const sent: Array<{ origin: string; path: string; headers: Record<string, string> }> = []
+  /** What `auth.state` says the signed-in person may do (`remote.settings`). */
+  const session = { level: 'edit', locked: false }
   const fetchLike = async (input: string, init: RequestInit): Promise<Response> => {
     const url = new URL(input)
+    sent.push({
+      origin: url.origin,
+      path: url.pathname,
+      headers: (init.headers ?? {}) as Record<string, string>
+    })
     const host = hosts.get(url.origin)
     if (!host || host.behaviour === 'refused') throw new TypeError('fetch failed')
+    if (url.pathname === '/api/auth.signIn')
+      return new Response('{}', { status: 200, headers: { 'set-cookie': 'bismuth_session=abc123; Path=/' } })
+    if (url.pathname === '/api/auth.state')
+      return new Response(
+        JSON.stringify({
+          setup: 'done',
+          mode: 'server',
+          session: { locked: session.locked, permissions: { 'remote.settings': session.level } }
+        }),
+        { status: 200 }
+      )
+    if (host.behaviour === 'huge')
+      return new Response('x'.repeat(200_000), {
+        status: 200,
+        headers: { 'content-type': 'application/json' }
+      })
     if (host.behaviour === 'timeout') throw new DOMException('timed out', 'TimeoutError')
     if (host.behaviour === 'denied') return new Response('{}', { status: 403 })
     if (host.behaviour === 'html') return new Response('<html></html>', { status: 200 })
@@ -47,7 +72,7 @@ function network() {
       { status: 200, headers: { 'content-type': 'application/json' } }
     )
   }
-  return { hosts, fetchLike }
+  return { hosts, fetchLike, sent, session }
 }
 
 function client(net: ReturnType<typeof network>, file = join(dir, 'connection.json')) {
@@ -299,5 +324,69 @@ describe('nedenli bağlantı hatası (H-33)', () => {
     expect(hostAddressProblem('http://')).toBe('invalid')
     expect(hostAddressProblem('192.168.1.20')).toBeNull()
     expect(hostAddressProblem('bismuth-b.netbird.cloud:7373')).toBeNull()
+  })
+
+  it('yeni ya da başka bir adres sorulurken cihaz çerezi ve bilgisayar adı gitmez; yanıt boyutu sınırlıdır', async () => {
+    const net = network()
+    net.hosts.set(A, { seed: 1, name: 'Pandora', behaviour: 'ok' })
+    net.hosts.set(B, { seed: 2, name: 'Bosphorus Inn', behaviour: 'ok' })
+    net.hosts.set('http://100.64.0.99:7373', { seed: 3, name: 'Huge', behaviour: 'huge' })
+    const c = client(net)
+    await c.call('remote.connect', { url: A })
+    c.config.update({ device: 'deviceA.mac' })
+    net.sent.length = 0
+    await c.call('remote.connect', { url: B })
+    const asked = net.sent.filter((r) => r.origin === B)
+    expect(asked.length).toBeGreaterThan(0)
+    for (const r of asked) {
+      expect(r.headers.cookie).toBeUndefined()
+      expect(r.headers['x-bismuth-device-name']).toBeUndefined()
+    }
+    const huge = await c.call<{ error: { messageKey: string } }>('remote.connect', {
+      url: 'http://100.64.0.99:7373'
+    })
+    expect(huge.status).toBe(400)
+    expect(huge.body.error.messageKey).toBe('errors.notBismuth')
+  })
+
+  it('otel kodu Windows ayrılmış adı ya da klasör adı olamaz; sonek alır', async () => {
+    const dirCfg = createConfigStore(join(dir, 'x.json'))
+    dirCfg.update({ mode: 'client' })
+    expect(dirCfg.addHotel('CON', 'http://100.64.0.1:7373')).toBe('con-otel')
+    expect(dirCfg.addHotel('Attachments', 'http://100.64.0.2:7373')).toBe('attachments-otel')
+    expect(dirCfg.addHotel('constructor', 'http://100.64.0.3:7373')).toBe('constructor-otel')
+    expect(dirCfg.addHotel('com1', 'http://100.64.0.4:7373')).toBe('com1-otel')
+    expect(() => dirCfg.activate('constructor')).toThrow()
+  })
+
+  it('oturum açık pencerede otel listesini değiştirmek remote.settings düzenleme yetkisi ister; oturumsuz bağlan ekranı açıktır', async () => {
+    const net = network()
+    net.hosts.set(A, { seed: 1, name: 'Pandora', behaviour: 'ok' })
+    net.hosts.set(B, { seed: 2, name: 'Bosphorus Inn', behaviour: 'ok' })
+    const c = client(net)
+    // No sign-in yet: the connection screen works.
+    expect((await c.call('remote.connect', { url: A })).status).toBe(202)
+    expect((await c.call('remote.connect', { url: B })).status).toBe(202)
+    const [pandora] = (await c.call<HotelView[]>('remote.hotels')).body.filter((h) => h.url === A)
+    // Signed in at the hotel in use, role without the right: refused.
+    await c.call('auth.signIn', { username: 'u', password: 'p' })
+    net.session.level = 'view'
+    for (const [name, body] of [
+      ['remote.hotelRemove', { code: pandora!.code }],
+      ['remote.hotelUpdate', { code: pandora!.code, name: 'X' }],
+      ['remote.connect', { url: A }]
+    ] as const) {
+      const denied = await c.call<{ error: { code: string } }>(name, body)
+      expect(denied.status).toBe(403)
+      expect(denied.body.error.code).toBe('PERMISSION_DENIED')
+    }
+    expect(c.config.hotels().length).toBe(2)
+    // With the right (and not locked) it works.
+    net.session.level = 'edit'
+    expect((await c.call('remote.hotelUpdate', { code: pandora!.code, name: 'X' })).status).toBe(202)
+    net.session.locked = true
+    expect((await c.call('remote.hotelRemove', { code: pandora!.code })).status).toBe(403)
+    net.session.locked = false
+    expect((await c.call('remote.hotelRemove', { code: pandora!.code })).status).toBe(202)
   })
 })

@@ -48,8 +48,10 @@ export interface SidecarOptions {
   command: string
   args: string[]
   cwd: string
-  /** Extra environment on top of this process's own. */
+  /** Extra environment on top of `baseEnv`. */
   env?: NodeJS.ProcessEnv
+  /** The environment the process starts from (default: this process's own; a packaged build passes an allow-list). */
+  baseEnv?: NodeJS.ProcessEnv
   /** The settings as the sidecar reads them (`BISMUTH_CAMERA_CONFIG`); asked at every start, may throw SidecarConfigError. */
   buildConfig: (port: number) => Record<string, unknown>
   onNotice?: (notice: SidecarNotice) => void
@@ -284,7 +286,7 @@ export function createSidecar(opts: SidecarOptions): Sidecar {
     const proc = spawnFn(opts.command, opts.args, {
       cwd: opts.cwd,
       env: {
-        ...process.env,
+        ...(opts.baseEnv ?? process.env),
         ...opts.env,
         PYTHONUNBUFFERED: '1',
         BISMUTH_CAMERA_TOKEN: token,

@@ -146,6 +146,23 @@ describe('kopya izni dosyada mühürlü (D5)', () => {
     expect(createConfigStore(file, sealer).get().replica?.token).toBe(token)
     expect(readFileSync(file, 'utf8')).not.toContain(token)
   })
+
+  it('cihaz çerezi de dosyaya açık yazılmaz; temizlenince eski mühür geri gelmez', () => {
+    const file = tempFile()
+    const store = createConfigStore(file, sealer)
+    store.update({ mode: 'client', device: 'abc123.mac456' })
+    expect(readFileSync(file, 'utf8')).not.toContain('abc123.mac456')
+    expect(createConfigStore(file, sealer).get().device).toBe('abc123.mac456')
+    store.update({ device: null })
+    expect(createConfigStore(file, sealer).get().device).toBeNull()
+  })
+
+  it('önceden açık yazılmış cihaz çerezi ilk açılışta mühürlenir', () => {
+    const file = tempFile()
+    createConfigStore(file).update({ mode: 'client', device: 'abc123.mac456' })
+    expect(createConfigStore(file, sealer).get().device).toBe('abc123.mac456')
+    expect(readFileSync(file, 'utf8')).not.toContain('abc123.mac456')
+  })
 })
 
 describe('ana bilgisayar bağlantısı', () => {

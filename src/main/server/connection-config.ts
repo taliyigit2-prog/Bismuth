@@ -5,7 +5,7 @@
 import { readFileSync, renameSync, writeFileSync } from 'node:fs'
 import * as z from 'zod'
 import { APP_LOCALES } from '@shared/format'
-import { hotelCodeSchema, normalizeHostUrl } from '@shared/contract/remote'
+import { hotelCodeSchema, isReservedHotelCode, normalizeHostUrl } from '@shared/contract/remote'
 
 const deviceSchema = z
   .string()
@@ -50,6 +50,8 @@ const configSchema = z.object({
     .transform((v) => (v ? normalizeHostUrl(v) : null)),
   /** The main computer's signed device cookie (`<id>.<mac>`): this computer is one device in its list. */
   device: deviceSchema,
+  /** The device cookie sealed with the system's key store (`device` is then null in the file). */
+  deviceSealed: z.string().max(4000).nullable().optional(),
   /**
    * The main computer's public key met first (K-45 (1), trust on first use): another one at the hotel's address
    * stops the link until the person accepts it.
@@ -73,7 +75,12 @@ const configSchema = z.object({
   parked: z
     .record(
       hotelCodeSchema,
-      z.object({ device: deviceSchema, hostKey: hostKeySchema, replica: replicaSchema.optional() })
+      z.object({
+        device: deviceSchema,
+        deviceSealed: z.string().max(4000).nullable().optional(),
+        hostKey: hostKeySchema,
+        replica: replicaSchema.optional()
+      })
     )
     .optional()
 })
@@ -115,6 +122,9 @@ const slug = (text: string): string =>
     .replace(/^-+|-+$/g, '')
     .slice(0, 30)
 
+/** A reserved name (`con`, `attachments`...) gets a suffix. */
+const safeCode = (code: string): string => (isReservedHotelCode(code) ? `${code}-otel` : code)
+
 /** The host name of a saved address ("bismuth-b.netbird.cloud"). */
 export const hostOf = (url: string): string => {
   try {
@@ -142,29 +152,48 @@ export function createConfigStore(file: string, sealer?: Sealer) {
     const { token } = replica
     return { ...replica, token: null, tokenSealed: token ? sealer.seal(token) : null }
   }
-  const through = (config: ConnectionConfig, fn: (r: ReplicaConfig) => ReplicaConfig): ConnectionConfig => {
+  const DEVICE_OK = /^[\w.-]{1,200}$/
+  const sealDevice = <T extends { device?: string | null; deviceSealed?: string | null }>(holder: T): T => {
+    if (!sealer) return holder
+    const { device } = holder
+    return {
+      ...holder,
+      device: null,
+      deviceSealed: device ? sealer.seal(device) : null
+    }
+  }
+  const unsealDevice = <T extends { device?: string | null; deviceSealed?: string | null }>(holder: T): T => {
+    if (!sealer || !holder.deviceSealed) return holder
+    const opened = sealer.open(holder.deviceSealed)
+    return { ...holder, device: opened && DEVICE_OK.test(opened) ? opened : null }
+  }
+  const through = (
+    config: ConnectionConfig,
+    fn: (r: ReplicaConfig) => ReplicaConfig,
+    device: <T extends { device?: string | null; deviceSealed?: string | null }>(h: T) => T
+  ): ConnectionConfig => {
     const parked = config.parked
       ? Object.fromEntries(
           Object.entries(config.parked).map(([code, p]) => [
             code,
-            p.replica ? { ...p, replica: fn(p.replica) } : p
+            device(p.replica ? { ...p, replica: fn(p.replica) } : p)
           ])
         )
       : undefined
-    return {
+    return device({
       ...config,
       ...(config.replica ? { replica: fn(config.replica) } : {}),
       ...(parked ? { parked } : {})
-    }
+    })
   }
-  const unseal = (config: ConnectionConfig): ConnectionConfig => through(config, unsealReplica)
+  const unseal = (config: ConnectionConfig): ConnectionConfig => through(config, unsealReplica, unsealDevice)
   const forFile = (config: ConnectionConfig): ConnectionConfig =>
-    sealer ? through(config, sealReplica) : config
+    sealer ? through(config, sealReplica, sealDevice) : config
   let current = unseal(readConnectionConfig(file))
   /** A computer from before the list: the hotel it used becomes the first entry (its copy moves under its code). */
   let migrated: string | null = null
   if (current.mode === 'client' && current.hostUrl && !current.hotels) {
-    const code = slug(hostOf(current.hostUrl)) || 'otel'
+    const code = safeCode(slug(hostOf(current.hostUrl)) || 'otel')
     migrated = code
     current = {
       ...current,
@@ -172,15 +201,19 @@ export function createConfigStore(file: string, sealer?: Sealer) {
       activeHotel: code
     }
     writeConnectionConfig(file, forFile(current))
-  } else if (sealer && current.replica?.token && !current.replica.tokenSealed)
-    // A grant written before sealing: sealed now.
+  } else if (
+    sealer &&
+    ((current.replica?.token && !current.replica.tokenSealed) || (current.device && !current.deviceSealed))
+  )
+    // A grant or device cookie written before sealing: sealed now.
     writeConnectionConfig(file, forFile(current))
   const save = (): void => writeConnectionConfig(file, forFile(current))
   const hotels = (): SavedHotelEntry[] => current.hotels ?? []
 
   /** The hotel in use is put aside with its credentials; `code` (or none) takes the top level. */
   function activate(code: string | null, now: Date = new Date()): void {
-    const parked = { ...current.parked }
+    // No prototype: a hotel code is never confused with an object's own keys.
+    const parked: NonNullable<ConnectionConfig['parked']> = Object.assign(Object.create(null), current.parked)
     if (current.activeHotel)
       parked[current.activeHotel] = {
         device: current.device ?? null,
@@ -230,7 +263,7 @@ export function createConfigStore(file: string, sealer?: Sealer) {
       ),
     /** Adds a hotel (not in use yet); returns its code, unique and safe as a folder name. */
     addHotel(name: string, url: string): string {
-      const base = slug(name) || slug(hostOf(url)) || 'otel'
+      const base = safeCode(slug(name) || slug(hostOf(url)) || 'otel')
       const taken = new Set(hotels().map((h) => h.code))
       let code = base
       for (let n = 2; taken.has(code); n++) code = `${base}-${n}`.slice(-40)
@@ -253,7 +286,9 @@ export function createConfigStore(file: string, sealer?: Sealer) {
     /** Takes the hotel off the list with everything kept for it (the one in use is left first). */
     removeHotel(code: string): void {
       if (current.activeHotel === code) activate(null)
-      const parked = { ...current.parked }
+      const parked = Object.assign(Object.create(null), current.parked) as NonNullable<
+        ConnectionConfig['parked']
+      >
       delete parked[code]
       current = { ...current, hotels: hotels().filter((h) => h.code !== code), parked }
       save()

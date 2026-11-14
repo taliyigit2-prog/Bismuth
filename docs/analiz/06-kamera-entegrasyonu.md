@@ -269,6 +269,15 @@ sınıfı bilgisayarda ~5–8 analiz/sn, 4 çekirdek %60–100; RAM 1,5–2,5 GB
 
 Bağımlılık: K2 → K3 → K4; K5' K2'den sonra paralel; K6' ve K8 K4'ten sonra; K7 en son. Toplam: 7 paket (P20a–P20g), dalga 7–11.
 
+**K7 — kabul edilen risk (P20ffix, 2026-11-14):** kamera eki (`camera-addon/`: Python, kütüphaneler, kod ve model dosyaları) kullanıcının
+yazabildiği `userData` klasöründedir; aynı kullanıcı hesabında çalışan başka bir program ekteki Python dosyalarını
+değiştirebilir ve Bismuth onları çalıştırır. Windows kurulumu da kullanıcı başına olduğu için `Bismuth.exe`'nin kendisi aynı
+yazma erişimi altındadır: tehdit modeli aynıdır (bilgisayarın o kullanıcı hesabına sızan kötü amaçlı program zaten uygulamayı
+da değiştirebilir). Kısmi önlemler: ek yalnız bu klasörden çalışır, ortam değişkeni ya da `PATH` ile başka Python seçilmez,
+paketli yan süreç ortamı izin listesiyle kurulur (`PYTHON*`, `LD_*`, `DYLD_*`, proxy değişkenleri geçmez), model dosyaları her
+açılışta `models/SHA256SUMS` ile denetlenir. İmza ve sağlama toplamı doğrulaması (ek + imzalı bildirim) ürün sonrası
+iyileştirmedir; şimdilik yapılmaz.
+
 ## 9. Sahibe sorular (bu rapor; numaralar `00-ozet.md` ile aynı) — **cevaplandı 2026-11-13, `06-kararlar.md` 7. tur**
 
 S-107 Kameralar personeli de görüyor mu? · S-108 Kamera görüntüsü telefonda/Mac'te de görünsün mü yoksa yalnız alarm

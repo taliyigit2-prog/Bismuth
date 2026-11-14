@@ -5,7 +5,7 @@ import { existsSync, mkdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { SettingsValues } from '@shared/contract'
 import { cameraDiscoverySchema, type CameraDiscovery, type CameraProbe } from '@shared/contract/camera'
-import { addonEnv, type CameraAddon } from './addon'
+import { addonEnv, packagedBaseEnv, type CameraAddon } from './addon'
 import { buildSidecarConfig } from './config'
 import { discoverCameras } from './discovery'
 import { probeCamera } from './probe'
@@ -25,7 +25,7 @@ export { createFaceCrypto, FaceCryptoError, type FaceCrypto, type FaceCryptoErro
 export { SidecarConfigError, createSidecar, pickFreePort } from './sidecar'
 export type { Sidecar, SidecarNotice, SidecarSnapshot, SidecarState } from './sidecar'
 export { buildSidecarConfig } from './config'
-export { addonRoot, findCameraAddon, type CameraAddon } from './addon'
+export { addonRoot, findCameraAddon, packagedBaseEnv, type CameraAddon } from './addon'
 export { discoverCameras, parseSadp, parseWsDiscovery, mergeDevices } from './discovery'
 export { probeCamera, readProbeOutput } from './probe'
 export { readHardware, type Hardware } from './hardware'
@@ -104,12 +104,17 @@ export function createProbeRunner(opts: {
   const script =
     (!opts.packaged ? process.env['BISMUTH_CAMERA_PROBE_SCRIPT'] : undefined) ?? 'probe_camera.py'
   return (source) =>
-    probeCamera(source, {
-      command: pythonFor(opts),
-      args: [script],
-      cwd: opts.scriptDir,
-      ...(opts.packaged && opts.addon ? { env: addonEnv(opts.addon) as Record<string, string> } : {})
-    })
+    // Packaged without the add-on there is no interpreter: say so instead of a bare "unavailable".
+    opts.packaged && !opts.addon
+      ? Promise.resolve({ ok: false, reason: 'noAddon', image: null, width: 0, height: 0 })
+      : probeCamera(source, {
+          command: pythonFor(opts),
+          args: [script],
+          cwd: opts.scriptDir,
+          ...(opts.packaged && opts.addon
+            ? { baseEnv: packagedBaseEnv(), env: addonEnv(opts.addon) as Record<string, string> }
+            : {})
+        })
 }
 
 /**
@@ -134,7 +139,7 @@ export function createCameraRuntime(opts: CameraRuntimeOptions): CameraRuntime {
     command: pythonFor(opts),
     args: [scriptName(opts)],
     cwd: opts.scriptDir,
-    ...(opts.packaged && opts.addon ? { env: addonEnv(opts.addon) } : {}),
+    ...(opts.packaged && opts.addon ? { baseEnv: packagedBaseEnv(), env: addonEnv(opts.addon) } : {}),
     buildConfig: (port) => {
       mkdirSync(localDir, { recursive: true })
       return buildSidecarConfig(opts.settings(), opts.source(), port, {

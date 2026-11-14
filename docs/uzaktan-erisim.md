@@ -129,9 +129,13 @@ katmış olmalı (bölüm 1–3). Aşağıdaki adresler örnektir; sizinkiler fa
 2. **İkinci otelin bilgisayarında** Ayarlar → Uzaktan erişim → **Dışarıdan (NetBird)** adresine bakın; örneğin
    `http://100.64.0.20:7373` ya da `bismuth-b.netbird.cloud:7373`. (Birinci otelin örnek adresi
    `100.64.0.10:7373` olsun.)
-3. Kendi (birinci otelin) bilgisayarınızda ya da Mac'te Ayarlar → Uzaktan erişim → Bu bilgisayar kartında
-   **Başka ana bilgisayar seç**'e basın. Bağlantı ekranının üstünde **Kayıtlı oteller** listesi açılır; kullandığınız
-   otel burada görünür.
+3. **Sahibin kendi cihazında** (dizüstü, ikinci bilgisayar ya da Mac; telefonda tarayıcıdan da olur) Bismuth'u
+   **istemci** olarak açın: Ayarlar → Uzaktan erişim → Bu bilgisayar kartında **Başka ana bilgisayar seç**'e basın.
+   Bağlantı ekranının üstünde **Kayıtlı oteller** listesi açılır; kullandığınız otel burada görünür.
+
+   > **Dikkat:** Bir otelin **ana bilgisayarını** istemci moduna almayın. Ana bilgisayar istemciye dönerse o otelin
+   > sunucusu durur; personel ve telefonlar bağlanamaz. Diğer otele sahibin dizüstü, ikinci bilgisayar ya da telefonuyla
+   > bağlanılır; her otelin ana bilgisayarı kendi kayıtlarını tutmaya devam eder.
 4. **Ana bilgisayarın adresi** alanına ikinci otelin adresini yazıp **Bağlan**'a basın. Adres yanlışsa Bismuth
    hiçbir şey göndermeden nedenini yazar (örn. "Bağlantı noktası 1 ile 65535 arasında olmalı").
 5. Bismuth ikinci otelin bilgisayarının **kimliğini** (parmak izi) ilk bağlantıda saklar ve listede otelin adının

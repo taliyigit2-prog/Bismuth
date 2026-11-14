@@ -58,6 +58,47 @@ export function findCameraAddon(
   return needed.every((p) => existsSync(p)) ? addon : null
 }
 
+// What a packaged sidecar (and the probe) inherits from Bismuth's own environment: system folders and locale only. Nothing
+// that steers Python (`PYTHONHOME`, `PYTHONPATH`, `PYTHONSTARTUP`, `PYTHONINSPECT`, `PYTHONWARNINGS`, ...), the loader
+// (`LD_PRELOAD`, `DYLD_*`) or a proxy (G-07) passes through. Names are compared case-insensitively (Windows).
+const INHERITED_ENV = new Set(
+  [
+    // all systems
+    'PATH',
+    'LANG',
+    'LC_ALL',
+    'LC_CTYPE',
+    'TZ',
+    // macOS / Linux
+    'HOME',
+    'USER',
+    'LOGNAME',
+    'TMPDIR',
+    // Windows (DLL search, temp folders, per-user folders the libraries' caches use)
+    'SYSTEMROOT',
+    'SYSTEMDRIVE',
+    'WINDIR',
+    'COMSPEC',
+    'PATHEXT',
+    'TEMP',
+    'TMP',
+    'USERPROFILE',
+    'APPDATA',
+    'LOCALAPPDATA',
+    'PROGRAMDATA',
+    'NUMBER_OF_PROCESSORS',
+    'PROCESSOR_ARCHITECTURE'
+  ].map((n) => n.toUpperCase())
+)
+
+/** Bismuth's environment cut down to the allow-list above: the base the packaged sidecar's own variables are added to. */
+export function packagedBaseEnv(source: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
+  const out: NodeJS.ProcessEnv = {}
+  for (const [name, value] of Object.entries(source))
+    if (value !== undefined && INHERITED_ENV.has(name.toUpperCase())) out[name] = value
+  return out
+}
+
 /** Environment of the packaged sidecar: only the add-on's libraries, strict model checks, nothing written to the disk. */
 export function addonEnv(
   addon: CameraAddon,
