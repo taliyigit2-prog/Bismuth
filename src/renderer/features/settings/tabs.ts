@@ -5,6 +5,7 @@ import type { PermissionKey, PermissionLevel } from '@shared/permissions'
 
 export const SETTINGS_SECTIONS = [
   'general',
+  'frequent',
   'hotel',
   'rooms',
   'lists',
@@ -14,6 +15,7 @@ export const SETTINGS_SECTIONS = [
   'calendar',
   'tags',
   'currency',
+  'camera',
   'remote',
   'backup',
   'users',
@@ -45,6 +47,8 @@ export const sectionOf = (tab: SettingsTab | undefined): SettingsSection =>
  */
 const SECTION_NEEDS: Record<SettingsSection, readonly PermissionKey[]> = {
   general: [],
+  // Shortcuts to the sections used most; open to whoever may open one of them.
+  frequent: ['settings', 'settings.rooms', 'settings.lists', 'settings.users', 'settings.backup'],
   hotel: ['settings'],
   rooms: ['settings.rooms'],
   lists: ['settings.lists'],
@@ -54,6 +58,7 @@ const SECTION_NEEDS: Record<SettingsSection, readonly PermissionKey[]> = {
   calendar: ['settings'],
   tags: ['settings.colors'],
   currency: ['currency'],
+  camera: ['camera'],
   remote: ['remote.settings', 'devices'],
   // Backups, and the export/import doors (`reports.export`: the manager exports without seeing backups).
   backup: ['settings.backup', 'reports.export'],
@@ -75,7 +80,8 @@ export const SECTION_EDIT: Partial<Record<SettingsSection, PermissionKey>> = {
   tasks: 'tasks',
   staff: 'staff.policy',
   calendar: 'settings',
-  tags: 'settings.colors'
+  tags: 'settings.colors',
+  camera: 'camera'
 }
 
 export type Can = (key: PermissionKey, level?: Exclude<PermissionLevel, 'none'>) => boolean

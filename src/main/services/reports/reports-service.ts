@@ -8,7 +8,9 @@ import {
   CHECK_GROUPS,
   monthEndInputSchema,
   monthEndTicksInputSchema,
+  kindedPeriodInputSchema,
   periodInputSchema,
+  type StayKind,
   reportExportInputSchema,
   staffInputSchema,
   yearlyInputSchema,
@@ -71,6 +73,7 @@ import {
   firstDataDay,
   fxSourceFacts,
   nightFacts,
+  outcomeFacts,
   paymentFacts,
   repeatGuests,
   roomRevenueByRoom,
@@ -112,6 +115,10 @@ export function createReportsService(deps: ReportsDeps) {
   const today = (): LocalDate => localDateOf(deps.clock())
   const can = (ctx: Ctx, key: Parameters<Ctx['can']>[0]): boolean => ctx.can(key, 'view')
   const period = (input: unknown): Period => parseInput(periodInputSchema, input) as Period
+  const kindedPeriod = (input: unknown): { p: Period; kind: StayKind } => {
+    const { stayKind, ...rest } = parseInput(kindedPeriodInputSchema, input)
+    return { p: rest as Period, kind: stayKind ?? 'all' }
+  }
 
   const channelNames = () =>
     new Map(
@@ -176,13 +183,13 @@ export function createReportsService(deps: ReportsDeps) {
 
   // ── nights ───────────────────────────────────────────────────────────────────────────────────────────────────
 
-  function nights(p: Period) {
-    const dayUseIncluded = readSetting(db, 'reports.dayUseInOccupancy')
+  function nights(p: Period, kind?: StayKind) {
     const cap = capacityInputs(db, p)
-    type Cell = { sold: number; dayUse: number; sellable: number }
+    // dayDays: room-days with a day-use or hourly sale (S-105: they always count as sold, once per room-day).
+    type Cell = { sold: number; dayUse: number; dayDays: number; sellable: number }
     const cell = (map: Map<string, Cell>, key: string): Cell => {
       let c = map.get(key)
-      if (!c) map.set(key, (c = { sold: 0, dayUse: 0, sellable: 0 }))
+      if (!c) map.set(key, (c = { sold: 0, dayUse: 0, dayDays: 0, sellable: 0 }))
       return c
     }
     const byRoom = new Map<string, Cell>()
@@ -195,43 +202,51 @@ export function createReportsService(deps: ReportsDeps) {
       cell(byMonth, month).sellable++
       cell(byHeat, `${month}|${wd}`).sellable++
     })
-    for (const f of nightFacts(db, p)) {
+    for (const f of nightFacts(db, p, kind)) {
       const field = f.slot === 'day' ? 'dayUse' : 'sold'
-      cell(byRoom, f.roomId)[field] += f.n
-      cell(byMonth, f.month)[field] += f.n
-      cell(byHeat, `${f.month}|${f.weekday}`)[field] += f.n
+      for (const c of [
+        cell(byRoom, f.roomId),
+        cell(byMonth, f.month),
+        cell(byHeat, `${f.month}|${f.weekday}`)
+      ]) {
+        c[field] += f.n
+        if (f.slot === 'day') c.dayDays += f.days
+      }
     }
-    const total: Cell = { sold: 0, dayUse: 0, sellable: 0 }
+    const total: Cell = { sold: 0, dayUse: 0, dayDays: 0, sellable: 0 }
     for (const c of byMonth.values()) {
       total.sold += c.sold
       total.dayUse += c.dayUse
+      total.dayDays += c.dayDays
       total.sellable += c.sellable
     }
     const view = (c: Cell) => ({
-      soldNights: c.sold + (dayUseIncluded ? c.dayUse : 0),
+      soldNights: c.sold + c.dayDays,
       dayUseNights: c.dayUse,
       sellableNights: c.sellable
     })
-    return { dayUseIncluded, cap, byRoom, byMonth, byHeat, total, view }
+    return { dayUseIncluded: true, cap, byRoom, byMonth, byHeat, total, view }
   }
 
-  function summaryOf(ctx: Ctx, p: Period): ReportSummary {
-    const n = nights(p)
+  function summaryOf(ctx: Ctx, p: Period, kind?: StayKind): ReportSummary {
+    const n = nights(p, kind)
     const t = n.view(n.total)
-    const lengths = stayLengths(db, p)
+    const lengths = stayLengths(db, p, kind)
     const base = baseCurrencyOf(db)
     let finance: ReportSummary['finance'] = null
     if (can(ctx, 'reports.finance')) {
       const m = money(ctx, p)
-      const rooms = roomRevenueByRoom(db, p, base)
+      const rooms = roomRevenueByRoom(db, p, base, kind)
       const roomRevenue = sum([...rooms.byRoom.values()], (v) => v)
-      // ADR divides by the sold room-nights the room charges belong to (day-use charges included only with them).
+      // ADR is the nightly rate only: night charges / sold nights. Same-day and hourly revenue is shown apart
+      // (`hourlyRevenueMinor`, the sale count is `occupancy.dayUseNights`) so cheap hours do not pull ADR down.
       finance = {
         revenueMinor: m.revenue,
         expensesMinor: m.spent,
         profitMinor: m.revenue - m.spent,
         roomRevenueMinor: roomRevenue,
-        adrMinor: adrMinor(roomRevenue, n.total.sold + n.total.dayUse, base),
+        adrMinor: adrMinor(roomRevenue - rooms.hourlyMinor, n.total.sold, base),
+        hourlyRevenueMinor: rooms.hourlyMinor,
         revparMinor: revparMinor(roomRevenue, t.sellableNights, base),
         missingRate: m.missingRate,
         missingNightRates: rooms.missing,
@@ -358,13 +373,13 @@ export function createReportsService(deps: ReportsDeps) {
     }
   }
 
-  function occupancyOf(ctx: Ctx, p: Period): OccupancyReport {
-    const n = nights(p)
+  function occupancyOf(ctx: Ctx, p: Period, kind?: StayKind): OccupancyReport {
+    const n = nights(p, kind)
     const base = baseCurrencyOf(db)
     const finance = can(ctx, 'reports.finance')
-    const rooms = finance ? roomRevenueByRoom(db, p, base) : null
+    const rooms = finance ? roomRevenueByRoom(db, p, base, kind) : null
     const revenue = rooms?.byRoom ?? null
-    const empty = { sold: 0, dayUse: 0, sellable: 0 }
+    const empty = { sold: 0, dayUse: 0, dayDays: 0, sellable: 0 }
     const types = db.select().from(roomTypes).all()
     const roomRows = n.cap.rooms
       .map((r) => ({ r, c: n.byRoom.get(r.id) ?? empty }))
@@ -375,6 +390,7 @@ export function createReportsService(deps: ReportsDeps) {
         const c = {
           sold: sum(mine, (x) => x.c.sold),
           dayUse: sum(mine, (x) => x.c.dayUse),
+          dayDays: sum(mine, (x) => x.c.dayDays),
           sellable: sum(mine, (x) => x.c.sellable)
         }
         return {
@@ -388,7 +404,8 @@ export function createReportsService(deps: ReportsDeps) {
       })
       .filter((t) => t.rooms > 0)
       .map(({ rooms: _rooms, ...t }) => t)
-    const g = repeatGuests(db, p)
+    const g = repeatGuests(db, p, kind)
+    const outcomes = outcomeFacts(db, p, (iso) => localDateOf(new Date(iso)))
     let topGuests: OccupancyReport['topGuests'] = null
     if (finance && can(ctx, 'guests')) {
       const signed = sql`case when ${payments.kind} = 'refund' then -1 else 1 end`
@@ -442,6 +459,12 @@ export function createReportsService(deps: ReportsDeps) {
       })),
       guests: { ...g, repeatBp: basisPoints(g.repeat, g.total) },
       topGuests,
+      outcomes: {
+        cancelled: outcomes.cancelled,
+        noShow: outcomes.noShow,
+        refundRows: finance ? outcomes.refundRows : null,
+        refundMinor: finance ? outcomes.refundBaseMinor : null
+      },
       missingNightRates: rooms?.missing ?? 0
     }
   }
@@ -882,14 +905,15 @@ export function createReportsService(deps: ReportsDeps) {
         today: today(),
         baseCurrency: baseCurrencyOf(db),
         firstDay: firstDataDay(db),
-        dayUseIncluded: readSetting(db, 'reports.dayUseInOccupancy')
+        dayUseIncluded: true
       }
     },
 
     /** KPI cards: occupancy for `reports.operations`, money only with `reports.finance`. */
     summary(ctx: Ctx, input: unknown): ReportSummary {
       requirePermission(ctx, 'reports.operations', 'view')
-      return summaryOf(ctx, period(input))
+      const { p, kind } = kindedPeriod(input)
+      return summaryOf(ctx, p, kind)
     },
 
     monthly(ctx: Ctx, input: unknown): MonthlyReport {
@@ -904,7 +928,8 @@ export function createReportsService(deps: ReportsDeps) {
 
     occupancy(ctx: Ctx, input: unknown): OccupancyReport {
       requirePermission(ctx, 'reports.operations', 'view')
-      return occupancyOf(ctx, period(input))
+      const { p, kind } = kindedPeriod(input)
+      return occupancyOf(ctx, p, kind)
     },
 
     cash(ctx: Ctx, input: unknown): CashReport {
@@ -953,7 +978,7 @@ export function createReportsService(deps: ReportsDeps) {
       switch (data.report) {
         case 'summary': {
           const p = needPeriod()
-          report = { kind: 'summary', data: service.summary(ctx, p) }
+          report = { kind: 'summary', data: service.summary(ctx, { ...p, stayKind: data.stayKind }) }
           break
         }
         case 'monthly':
@@ -963,7 +988,10 @@ export function createReportsService(deps: ReportsDeps) {
           report = { kind: 'yearly', data: service.yearly(ctx, { years: data.years ?? [data.year ?? 0] }) }
           break
         case 'occupancy':
-          report = { kind: 'occupancy', data: service.occupancy(ctx, needPeriod()) }
+          report = {
+            kind: 'occupancy',
+            data: service.occupancy(ctx, { ...needPeriod(), stayKind: data.stayKind })
+          }
           break
         case 'cash':
           report = { kind: 'cash', data: service.cash(ctx, needPeriod()) }

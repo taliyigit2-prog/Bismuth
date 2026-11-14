@@ -134,7 +134,7 @@ describe('rezervasyon paneli yetkileri (servis katmanında)', () => {
     expect((await call('housekeeping', 'booking.options', {})).status).toBe(403)
   })
 
-  it('Resepsiyon ödeme alır ama iade giremez; Müdür iade girer', async () => {
+  it('Resepsiyon ödeme alır ve iade girer (S-100); Temizlik ikisini de yapamaz', async () => {
     const payment = (kind: string) => ({
       reservationId: ids.reservation,
       date: '2026-10-01',
@@ -146,8 +146,8 @@ describe('rezervasyon paneli yetkileri (servis katmanında)', () => {
     const paid = await call('reception', 'booking.addPayment', payment('deposit'))
     expect(paid.status).toBe(200)
     expect((paid.body['folio'] as { creditedMinor: number }).creditedMinor).toBe(50_000)
-    expect((await call('reception', 'booking.addPayment', payment('refund'))).status).toBe(403)
-    expect((await call('manager', 'booking.addPayment', payment('refund'))).status).toBe(200)
+    expect((await call('housekeeping', 'booking.addPayment', payment('refund'))).status).toBe(403)
+    expect((await call('reception', 'booking.addPayment', payment('refund'))).status).toBe(200)
   })
 
   it('Resepsiyon panelin bütün yazmalarını yapabilir', async () => {
@@ -235,6 +235,38 @@ describe('P5fix: gelmedi, tek oda iptali, oda eklerken "yine de"', () => {
     expect((cancelled.body['reservation'] as { status: string }).status).toBe('cancelled')
   })
 
+  it('girişi geri al: Resepsiyon 403, Müdür 200; iptalde iade: Muhasebe 403, Resepsiyon iadeyi yazar (S-100)', async () => {
+    const a = await fresh('2026-10-01', '2026-10-02')
+    const body = { stayId: a.stayId, reason: 'odayı beğenmedi' }
+    expect((await call('reception', 'booking.checkIn', { stayId: a.stayId })).status).toBe(200)
+    for (const role of ['reception', 'accountant', 'housekeeping'] as const) {
+      const res = await call(role, 'booking.undoCheckIn', body)
+      expect(res.status, role).toBe(403)
+      expect(res.body.error?.['code']).toBe('PERMISSION_DENIED')
+    }
+    const undone = await call('manager', 'booking.undoCheckIn', body)
+    expect(undone.status, JSON.stringify(undone.body)).toBe(200)
+    expect((undone.body['reservation'] as { status: string }).status).toBe('confirmed')
+    const deposit = await call('manager', 'booking.addPayment', {
+      reservationId: a.id,
+      date: '2026-10-01',
+      kind: 'deposit',
+      methodId: ids.cash,
+      amountMinor: 50_000,
+      currency: 'TRY'
+    })
+    expect(deposit.status).toBe(200)
+    const refund = { mode: 'refund', methodId: ids.cash, amountMinor: 50_000 }
+    expect(
+      (await call('accountant', 'booking.cancel', { id: a.id, reason: 'vazgeçti', refund })).status
+    ).toBe(403)
+    const cancelled = await call('reception', 'booking.cancel', { id: a.id, reason: 'vazgeçti', refund })
+    expect(cancelled.status, JSON.stringify(cancelled.body)).toBe(200)
+    const view = cancelled.body as { reservation: { status: string }; payments: { kind: string }[] }
+    expect(view.reservation.status).toBe('cancelled')
+    expect(view.payments.map((p) => p.kind).sort()).toEqual(['deposit', 'refund'])
+  })
+
   it('oda eklerken blok gerekçesi işleyiciden servise gider: gerekçesiz 409, gerekçeyle 200', async () => {
     const block = await call(roleCtx('owner'), 'reservations.createBlock', {
       roomId: ids.room,
@@ -260,5 +292,40 @@ describe('P5fix: gelmedi, tek oda iptali, oda eklerken "yine de"', () => {
       overrideBlockReason: 'boya bitti'
     })
     expect(ok.status, JSON.stringify(ok.body)).toBe(200)
+  })
+})
+
+describe('saatlik satış yetkileri (K-48, P17d)', () => {
+  const sale = () => ({
+    guest: { firstName: 'Saatlik', lastName: 'Misafir' },
+    channelId: ids.channel,
+    roomId: ids.room2,
+    date: '2026-10-20',
+    startTime: '09:00',
+    endTime: '12:00',
+    priceMinor: 90_000
+  })
+
+  it('Muhasebe ve Temizlik booking.createHourlyStay yazamaz: 403; Resepsiyon yazar, tutar zorunlu', async () => {
+    for (const role of ['accountant', 'housekeeping'] as const) {
+      const res = await call(role, 'booking.createHourlyStay', sale())
+      expect(res.status, role).toBe(403)
+      expect(res.body.error?.['code']).toBe('PERMISSION_DENIED')
+    }
+    const { priceMinor: _price, ...noPrice } = sale()
+    expect((await call('reception', 'booking.createHourlyStay', noPrice)).status).toBe(400)
+    const ok = await call('reception', 'booking.createHourlyStay', sale())
+    expect(ok.status, JSON.stringify(ok.body)).toBe(200)
+    expect(ok.body['stays']).toMatchObject([{ dayUse: true, startTime: '09:00', endTime: '12:00' }])
+    // The same hours again: the router answers with the hourly refusal.
+    const again = await call('manager', 'booking.createHourlyStay', sale())
+    expect(again.status).toBe(409)
+    expect(again.body.error).toMatchObject({ messageKey: 'errors.roomOccupied' })
+  })
+
+  it('booking.hourlyCheck: Muhasebe görür, Temizlik göremez: 403', async () => {
+    const body = { roomId: ids.room2, date: '2026-10-21', startTime: '10:00', endTime: '11:00' }
+    expect((await call('accountant', 'booking.hourlyCheck', body)).status).toBe(200)
+    expect((await call('housekeeping', 'booking.hourlyCheck', body)).status).toBe(403)
   })
 })

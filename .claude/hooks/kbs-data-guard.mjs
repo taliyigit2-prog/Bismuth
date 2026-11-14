@@ -61,7 +61,8 @@ for (const file of changed) {
     if (statSync(full).size > 2 * 1024 * 1024) continue;
     const text = readFileSync(full, "utf8");
     if (text.includes("\0")) continue; // binary
-    const hit = [...text.matchAll(/(?<![\d.])\d{11}(?![\d.])/g)].find((m) => isIdentityNumber(m[0]));
+    // Letters around the digits mean a hash or an identifier (Cargo.lock checksums, ULIDs), not a number on its own.
+    const hit = [...text.matchAll(/(?<![\w.])\d{11}(?![\w.])/g)].find((m) => isIdentityNumber(m[0]));
     if (hit) {
       const line = text.slice(0, hit.index).split("\n").length;
       problems.push(`${file}:${line}: T.C. kimlik numarası biçiminde bir sayı`);

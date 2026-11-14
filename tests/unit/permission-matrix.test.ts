@@ -155,6 +155,12 @@ beforeAll(async () => {
       run: (c) => res.addNote(c, r.reservation.id, 'not')
     },
     {
+      name: 'girişi geri al',
+      permission: 'booking.undoCheckIn',
+      level: 'edit',
+      run: (c) => res.undoCheckIn(c, r.stays[0]!.id, { reason: 'vazgeçti' })
+    },
+    {
       name: 'ödeme gir',
       permission: 'payments',
       level: 'edit',
@@ -469,6 +475,13 @@ beforeAll(async () => {
       level: 'edit',
       run: (c) => svc.laundry.createItemType(c, 'Örtü')
     },
+    {
+      name: 'çamaşır ayını yeniden aç',
+      permission: 'laundry.reopen',
+      level: 'edit',
+      run: (c) =>
+        svc.laundry.reopenMonth(c, { contactId: 'yok', year: 2026, month: 9, reason: 'fatura yanlış' })
+    },
     { name: 'arızalar', permission: 'room_issues', level: 'view', run: (c) => svc.roomIssues.list(c) },
     {
       name: 'arıza bildir',
@@ -562,6 +575,59 @@ beforeAll(async () => {
       permission: 'staff.own_hours',
       level: 'view',
       run: (c) => svc.staff.myEmployee(c)
+    },
+    { name: 'kamera durumu', permission: 'camera', level: 'view', run: (c) => svc.camera.status(c) },
+    { name: 'kamera yeniden başlat', permission: 'camera', level: 'edit', run: (c) => svc.camera.restart(c) },
+    { name: 'kamera canlı adres', permission: 'camera', level: 'view', run: (c) => svc.camera.streamUrl(c) },
+    { name: 'kamera canlı şerit', permission: 'camera', level: 'view', run: (c) => svc.camera.live(c) },
+    { name: 'kamera alarmları', permission: 'camera', level: 'view', run: (c) => svc.camera.alerts(c) },
+    {
+      name: 'kamera alarmı işaretle',
+      permission: 'camera',
+      level: 'view',
+      run: (c) => svc.camera.markAlert(c, { id: '0'.repeat(26), state: 'seen' })
+    },
+    {
+      name: 'kamera yüz durumu',
+      permission: 'camera.enroll',
+      level: 'view',
+      run: (c) => svc.camera.faceStatus(c, { guestId: 'none' })
+    },
+    {
+      name: 'kamera yüz al',
+      permission: 'camera.enroll',
+      level: 'edit',
+      run: (c) => svc.camera.enrollFace(c, { guestId: 'none' })
+    },
+    {
+      name: 'kamera yüz sil',
+      permission: 'camera.enroll',
+      level: 'edit',
+      run: (c) => svc.camera.deleteFaces(c, { guestId: 'none' })
+    },
+    {
+      name: 'kamera aday misafirler',
+      permission: 'camera.enroll',
+      level: 'view',
+      run: (c) => svc.camera.candidates(c)
+    },
+    {
+      name: 'kamera alarm resmi',
+      permission: 'camera.enroll',
+      level: 'view',
+      run: (c) => svc.camera.alertCrop(c, { id: '0'.repeat(26) })
+    },
+    {
+      name: 'kamera alarmdan misafir kaydet',
+      permission: 'camera.enroll',
+      level: 'edit',
+      run: (c) => svc.camera.saveAlertAsGuest(c, { id: '0'.repeat(26), guestId: 'none' })
+    },
+    {
+      name: 'kamera alarmları duraklat',
+      permission: 'camera',
+      level: 'edit',
+      run: (c) => svc.camera.setAlarmsPaused(c, { paused: true })
     },
     {
       name: 'otel ayarı',

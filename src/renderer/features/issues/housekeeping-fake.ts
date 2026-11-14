@@ -161,7 +161,12 @@ export type HousekeepingTransport = Transport & {
 
 export function housekeepingTransport(
   state: HousekeepingState = defaultHousekeeping(),
-  opts: FakeTransportOptions & { settings?: SettingsValues; canBlock?: boolean; failBoard?: boolean } = {}
+  opts: FakeTransportOptions & {
+    settings?: SettingsValues
+    canBlock?: boolean
+    failBoard?: boolean
+    soldTonight?: boolean
+  } = {}
 ): HousekeepingTransport {
   const base = fakeTransport(opts.settings ?? SETTINGS_DEFAULTS, opts)
   const calls: HousekeepingTransport['calls'] = []
@@ -205,20 +210,21 @@ export function housekeepingTransport(
           if (opts.canBlock === false && status !== r.hk && (closesRoom(status) || closesRoom(r.hk)))
             throw new ApiError('PERMISSION_DENIED', 403, 'errors.permissionDenied')
           const kind = blockKindOf(status)
-          const block = kind
-            ? {
-                id: `b-${roomId}`,
-                kind,
-                reason: '',
-                dateFrom: state.today,
-                dateTo: addDays(state.today, 365),
-                active: true,
-                fromStatus: true,
-                roomIssueId: null
-              }
-            : r.block?.fromStatus
-              ? null
-              : r.block
+          const block =
+            kind && !opts.soldTonight
+              ? {
+                  id: `b-${roomId}`,
+                  kind,
+                  reason: '',
+                  dateFrom: state.today,
+                  dateTo: addDays(state.today, 365),
+                  active: true,
+                  fromStatus: true,
+                  roomIssueId: null
+                }
+              : r.block?.fromStatus
+                ? null
+                : r.block
           Object.assign(r, { hk: status, hkNote: note ?? null, hkAt: at, hkByName: 'Otel Sahibi', block })
           return out({
             id: r.id,

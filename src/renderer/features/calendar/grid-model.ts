@@ -110,6 +110,12 @@ export interface StayBar {
   width: number
   /** "Aynı gün iki misafir" (G-37): the day-use takes the cell's first half, the night stay the second. */
   split: 'start' | 'end' | null
+  /**
+   * Several hourly stays of one room and day (K-48) are stacked in lanes in the order of their hours: `lane` of
+   * `lanes` (0 of 1 for every other bar).
+   */
+  lane: number
+  lanes: number
 }
 
 /** Bars of one room's stays (G-34, G-37): one bar per stay, cells split where a day-use meets a night. */
@@ -120,16 +126,34 @@ export function stayBars(stays: readonly GridStayView[], base: LocalDate): StayB
     if (s.dayUse) dayUseDates.add(s.checkIn)
     else for (const n of s.nights) nightDates.add(n.date)
   }
+  const lanes = hourLanes(stays)
   return stays.map((stay) => {
     const col = diffDays(base, stay.checkIn)
+    const lane = lanes.get(stay.id) ?? { lane: 0, lanes: 1 }
     if (stay.dayUse) {
       const shared = nightDates.has(stay.checkIn)
-      return { stay, start: col, width: shared ? 0.5 : 1, split: shared ? 'start' : null }
+      return { stay, start: col, width: shared ? 0.5 : 1, split: shared ? 'start' : null, ...lane }
     }
     const width = Math.max(1, diffDays(stay.checkIn, stay.checkOut))
-    if (dayUseDates.has(stay.checkIn)) return { stay, start: col + 0.5, width: width - 0.5, split: 'end' }
-    return { stay, start: col, width, split: null }
+    if (dayUseDates.has(stay.checkIn))
+      return { stay, start: col + 0.5, width: width - 0.5, split: 'end', ...lane }
+    return { stay, start: col, width, split: null, ...lane }
   })
+}
+
+/**
+ * Lanes of the day-use stays of one room: the stays of one day (hourly sales of a room never overlap in time, so each
+ * gets a lane of its own) are stacked in the order of their hours, `lanes` = how many that day holds.
+ */
+function hourLanes(stays: readonly GridStayView[]): Map<string, { lane: number; lanes: number }> {
+  const byDay = new Map<string, GridStayView[]>()
+  for (const s of stays) if (s.dayUse) byDay.set(s.checkIn, [...(byDay.get(s.checkIn) ?? []), s])
+  const out = new Map<string, { lane: number; lanes: number }>()
+  for (const day of byDay.values()) {
+    const sorted = [...day].sort((a, b) => (a.startTime ?? '').localeCompare(b.startTime ?? ''))
+    sorted.forEach((s, lane) => out.set(s.id, { lane, lanes: sorted.length }))
+  }
+  return out
 }
 
 /** A block covers [dateFrom, dateTo) like a stay's nights. */
@@ -208,6 +232,7 @@ export function emptyCellStatus(past: boolean, enabled: ReadonlySet<StatusKey>):
 /** Small marks on a bar, most urgent first; colour never carries the meaning alone. */
 export function stayIcons(stay: GridStayView, depositIcon: boolean): StayIcon[] {
   const icons: StayIcon[] = []
+  if (stay.groupId) icons.push('group')
   if (stay.standingNote?.level === 'warn') icons.push('warn')
   if (stay.kbsMissing) icons.push('kbs')
   if (stay.vip) icons.push('vip')
@@ -216,6 +241,23 @@ export function stayIcons(stay: GridStayView, depositIcon: boolean): StayIcon[] 
   if (stay.children > 0) icons.push('child')
   if (depositIcon) icons.push('deposit')
   return icons
+}
+
+/** Frame colours of group reservations (G-194), in rotation: `--group-1…6` in globals.css (full class names for Tailwind). */
+const GROUP_RINGS = [
+  'ring-(--group-1)',
+  'ring-(--group-2)',
+  'ring-(--group-3)',
+  'ring-(--group-4)',
+  'ring-(--group-5)',
+  'ring-(--group-6)'
+] as const
+
+/** The same group always gets the same frame colour (a small hash of its id). */
+export function groupRing(groupId: string): string {
+  let h = 0
+  for (const ch of groupId) h = (h * 31 + ch.charCodeAt(0)) % 997
+  return GROUP_RINGS[h % GROUP_RINGS.length]!
 }
 
 /** Legend: the automatic statuses kept on, then the hotel's own tags (G-33). */

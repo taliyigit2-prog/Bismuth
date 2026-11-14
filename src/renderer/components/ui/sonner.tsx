@@ -12,6 +12,8 @@ const Toaster = ({ ...props }: ToasterProps) => {
     <Sonner
       theme={theme}
       containerAriaLabel={t('common.notifications')}
+      duration={4000}
+      visibleToasts={3}
       toastOptions={{ closeButtonAriaLabel: t('common.close') }}
       className="toaster group"
       icons={{

@@ -37,7 +37,8 @@ function pandora(): WizardDraft {
     tempKey: 'aile',
     name: 'Aile odası',
     basePriceMinor: 400_000,
-    weekendPriceMinor: null
+    weekendPriceMinor: null,
+    hourlyPriceMinor: null
   })
   d.rooms = generateRooms(fiveByFour(d)).filter((r) => r.number !== '504')
   d.owner = {
@@ -255,7 +256,13 @@ describe('kurulum taslağı: gönderilen veri ve ara kayıt', () => {
     expect(payload.rooms.reduce((sum, r) => sum + r.beds, 0)).toBe(40)
     expect(payload.rooms[18]).toMatchObject({ number: '503', beds: 4, roomType: { tempKey: 'aile' } })
     expect(payload.roomTypes.custom).toEqual([
-      { tempKey: 'aile', name: 'Aile odası', basePriceMinor: 400_000, weekendPriceMinor: null }
+      {
+        tempKey: 'aile',
+        name: 'Aile odası',
+        basePriceMinor: 400_000,
+        weekendPriceMinor: null,
+        hourlyPriceMinor: null
+      }
     ])
     expect(payload.shifts).toEqual([
       { id: 'sh-day', name: 'Sabah', startTime: '09:00', endTime: '21:00' },
@@ -369,8 +376,8 @@ describe('kurulum taslağı: gönderilen veri ve ara kayıt', () => {
   it('artık sunulmayan kayıtlar ara kayıttan atılır; üretici kalan ilk tipe geçer', () => {
     const d = pandora()
     d.roomTypes.selected = [
-      { id: 'rt-gone', basePriceMinor: null, weekendPriceMinor: null },
-      { id: 'rt-twin', basePriceMinor: 270_000, weekendPriceMinor: null }
+      { id: 'rt-gone', basePriceMinor: null, weekendPriceMinor: null, hourlyPriceMinor: null },
+      { id: 'rt-twin', basePriceMinor: 270_000, weekendPriceMinor: null, hourlyPriceMinor: null }
     ]
     d.generator.roomType = { id: 'rt-gone' }
     d.lists.salesChannels = ['ch-gone', 'ch-direct']

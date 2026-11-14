@@ -64,6 +64,24 @@ test.describe('telefonda rezervasyon', () => {
     if (shots) await page.screenshot({ path: `${shots}/booking-panel-phone.png` })
   })
 
+  test('tarih seçici ekrana sığar: yedi gün sütununun hepsi görünür ve tıklanabilir (H-04)', async ({
+    page
+  }) => {
+    await ready(page, '#/calendar')
+    await page.getByRole('button', { name: 'Yeni rezervasyon' }).first().click()
+    await page.getByRole('dialog').getByRole('button', { name: /Giriş/ }).first().click()
+    const calendar = page.getByTestId('month-calendar')
+    await expect(calendar).toBeVisible()
+    const box = (await page.locator('[data-slot="popover-content"]').boundingBox())!
+    expect(box.x).toBeGreaterThanOrEqual(0)
+    expect(box.x + box.width).toBeLessThanOrEqual(390)
+    for (const col of await calendar.getByRole('columnheader').all()) {
+      const b = (await col.boundingBox())!
+      expect(b.x + b.width).toBeLessThanOrEqual(390)
+      expect(b.width).toBeGreaterThan(20)
+    }
+  })
+
   test('ekran görüntüleri: Rusça, koyu tema (yalnız BOOKING_SHOTS ile)', async ({ page }) => {
     test.skip(!shots, 'screenshots only')
     await ready(page, '#/calendar')

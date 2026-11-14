@@ -117,6 +117,11 @@ describe('Vardiya devri ekranı', () => {
     })
     await vi.waitFor(() => expect(success).toHaveBeenCalledWith('Devir kaydedildi'))
     expect(within(write).getByLabelText('Devir notu')).toHaveValue('')
+    // H-30: the same handover is not written twice; typing again wakes the button.
+    expect(within(write).getByTestId('handover-save')).toBeDisabled()
+    expect(within(write).getByTestId('handover-empty-hint')).toBeInTheDocument()
+    await user.type(within(write).getByLabelText('Devir notu'), 'x')
+    expect(within(write).getByTestId('handover-save')).toBeEnabled()
   })
 
   it('kendime not hatırlatma saatiyle eklenir; saati gelen not öne çıkar ve kapatılır', async () => {

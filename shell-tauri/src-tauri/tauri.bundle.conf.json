@@ -1,0 +1,12 @@
+{
+  "bundle": {
+    "active": true,
+    "targets": ["nsis", "dmg", "deb", "appimage"],
+    "externalBin": ["binaries/node"],
+    "resources": {
+      "../sidecar/dist/server.mjs": "server.mjs",
+      "../../out/renderer": "renderer",
+      "../../drizzle": "drizzle"
+    }
+  }
+}

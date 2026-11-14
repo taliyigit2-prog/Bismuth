@@ -103,6 +103,9 @@ test('gün başlığından not eklenir; klavye: oklar gezer, N yeni rezervasyon 
   await page.keyboard.press('ArrowDown')
   await expect(page.getByTestId('grid-announce')).toHaveText(/^Oda 102, .*: Mehmet Demir/)
   await expect(page.getByTestId('grid-cursor')).toBeVisible()
+  // N on a cell opens the quick reservation bar (P17c); "Ayrıntı" hands the cell to the full form.
   await page.keyboard.press('n')
+  await expect(page.getByTestId('quick-book')).toBeVisible()
+  await page.getByTestId('quick-detail').click()
   await expect(page.getByRole('dialog', { name: 'Yeni rezervasyon' })).toBeVisible()
 })

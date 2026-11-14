@@ -72,6 +72,7 @@ import { assertDayWritable, drawerAllowedIn, sectionAccess } from './expenses-se
 import { permissionDenied } from './errors'
 import {
   conflict,
+  invalid,
   inTransaction,
   newId,
   notFound,
@@ -365,13 +366,20 @@ function roomNumbersOf(db: Reader, reservationIds: readonly string[]): Map<strin
   const ids = [...new Set(reservationIds)]
   if (!ids.length) return out
   const rows = db
-    .select({ reservationId: reservationRooms.reservationId, number: rooms.number })
+    .select({
+      reservationId: reservationRooms.reservationId,
+      number: rooms.number,
+      status: reservationRooms.status
+    })
     .from(reservationRooms)
     .innerJoin(rooms, eq(rooms.id, reservationRooms.roomId))
-    .where(and(inArray(reservationRooms.reservationId, ids), ne(reservationRooms.status, 'cancelled')))
+    .where(inArray(reservationRooms.reservationId, ids))
     .orderBy(asc(reservationRooms.sort), asc(reservationRooms.checkIn))
     .all()
+  // Cancelled stays count only when the reservation has no live stay left (a cancelled reservation keeps its rooms).
+  const live = new Set(rows.filter((r) => r.status !== 'cancelled').map((r) => r.reservationId))
   for (const r of rows) {
+    if (r.status === 'cancelled' && live.has(r.reservationId)) continue
     const list = out.get(r.reservationId) ?? []
     if (!list.includes(r.number)) list.push(r.number)
     out.set(r.reservationId, list)
@@ -984,18 +992,19 @@ export function createLedgerService(deps: ServiceDeps) {
         .from(reservations)
         .innerJoin(guests, eq(guests.id, reservations.primaryGuestId))
         .leftJoin(folios, eq(folios.reservationId, reservations.id))
-        .where(and(inArray(reservations.id, ids), ne(reservations.status, 'cancelled')))
+        .where(inArray(reservations.id, ids))
         .all()
       const stays = db
         .select({
           reservationId: reservationRooms.reservationId,
           checkIn: reservationRooms.checkIn,
           checkOut: reservationRooms.checkOut,
-          number: rooms.number
+          number: rooms.number,
+          status: reservationRooms.status
         })
         .from(reservationRooms)
         .innerJoin(rooms, eq(rooms.id, reservationRooms.roomId))
-        .where(and(inArray(reservationRooms.reservationId, ids), ne(reservationRooms.status, 'cancelled')))
+        .where(inArray(reservationRooms.reservationId, ids))
         .orderBy(asc(reservationRooms.sort))
         .all()
       const folioIds = rows.flatMap((r) => (r.folio ? [r.folio.id] : []))
@@ -1008,7 +1017,9 @@ export function createLedgerService(deps: ServiceDeps) {
       const collator = new Intl.Collator('tr', { numeric: true })
       return rows
         .map(({ r, first, last, folio }) => {
-          const own = stays.filter((s) => s.reservationId === r.id)
+          const all = stays.filter((s) => s.reservationId === r.id)
+          const live = all.filter((s) => s.status !== 'cancelled')
+          const own = live.length ? live : all
           const totals = folio
             ? folioTotals(
                 chargeRows
@@ -1062,6 +1073,8 @@ export function createLedgerService(deps: ServiceDeps) {
       const { date } = parseInput(closeDaySchema, { date: day } satisfies CloseDayInput)
       return inTransaction(deps, ctx, (tx, audit, now) => {
         if (!readSetting(tx, 'businessDay.closingEnabled')) throw conflict('errors.dayClosingDisabled')
+        // A day that has not started cannot be closed: nobody could write into it afterwards.
+        if (date > localDateOf(now)) throw invalid('errors.dayInFuture')
         const before = dayRow(tx, date) ?? null
         if (before?.status === 'closed') throw conflict('errors.dayAlreadyClosed', { date })
         const after = upsertDay(

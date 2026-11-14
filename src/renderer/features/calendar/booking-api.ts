@@ -18,6 +18,7 @@ export type BookingView = ProcedureOutput<'booking.get'>
 export type BookingStay = BookingView['stays'][number]
 export type BookingOptions = ProcedureOutput<'booking.options'>
 export type BookingRoom = BookingOptions['rooms'][number]
+export type GroupView = ProcedureOutput<'booking.group'>
 export type BlacklistHit = ProcedureOutput<'booking.checkBlacklist'>[number]
 
 /** Reads a reservation write can change: the tape chart, the panel, the ledger and cash drawer (payments taken
@@ -33,6 +34,10 @@ export const useBookingOptions = (enabled = true) =>
 
 export function useBooking(id: string | null) {
   return useApiQuery('booking.get', { id: id ?? '' }, { enabled: !!id })
+}
+
+export function useGroup(id: string | null) {
+  return useApiQuery('booking.group', { id: id ?? '' }, { enabled: !!id })
 }
 
 /** A seeded name in the UI language; the hotel's own rows keep their own words. */
@@ -59,6 +64,18 @@ export function bookingErrorText(t: TFunction, f: Format, error: unknown): strin
     string,
     unknown
   >
+  // An hourly clash names the hours in the way (K-48), not only the day.
+  if (
+    error.messageKey === 'errors.roomOccupied' &&
+    d['room'] &&
+    Array.isArray(d['hours']) &&
+    d['hours'].length
+  )
+    return t('booking.conflict.occupiedHours', {
+      room: d['room'],
+      dates: dateList(f, d['dates']),
+      hours: d['hours'].join(', ')
+    })
   if (error.messageKey === 'errors.roomOccupied' && d['room'])
     return t('booking.conflict.occupied', {
       room: d['room'],
@@ -123,9 +140,29 @@ export function rateTextToMicro(text: string): number | null {
 let requestedPanel: string | null = null
 const panelListeners = new Set<() => void>()
 
+/** What the panel does as soon as it has loaded (the calendar's right-click menu: "Ödeme al", "Gelmedi"…). */
+export interface PanelIntent {
+  kind: 'checkOut' | 'pay' | 'park' | 'noShow' | 'giveUp' | 'cancel' | 'stays' | 'note' | 'history'
+  /** The room (stay) the intent is about, where it matters. */
+  stayId?: string
+}
+
+let panelIntent: { reservationId: string; intent: PanelIntent } | null = null
+
+/** The intent waiting for reservation `id`'s panel (read without consuming: safe to call twice). */
+export function peekPanelIntent(id: string): PanelIntent | null {
+  return panelIntent && panelIntent.reservationId === id ? panelIntent.intent : null
+}
+
+/** The panel has done what was asked. */
+export function dropPanelIntent(id: string): void {
+  if (panelIntent?.reservationId === id) panelIntent = null
+}
+
 /** Opens the reservation panel on `id` (null closes it), from anywhere on the calendar screen. */
-export function requestPanel(id: string | null): void {
+export function requestPanel(id: string | null, intent?: PanelIntent): void {
   requestedPanel = id
+  panelIntent = id && intent ? { reservationId: id, intent } : null
   for (const listener of panelListeners) listener()
 }
 
@@ -136,6 +173,27 @@ export function usePanelRequest(): string | null {
       return () => panelListeners.delete(listener)
     },
     () => requestedPanel
+  )
+}
+
+// ---- which group the group panel shows (after "Grup rezervasyonu" is saved, from a reservation's group button) ----
+
+let requestedGroup: string | null = null
+const groupListeners = new Set<() => void>()
+
+/** Opens the group panel on `id` (null closes it), from anywhere on the calendar screen. */
+export function requestGroupPanel(id: string | null): void {
+  requestedGroup = id
+  for (const listener of groupListeners) listener()
+}
+
+export function useGroupPanelRequest(): string | null {
+  return useSyncExternalStore(
+    (listener) => {
+      groupListeners.add(listener)
+      return () => groupListeners.delete(listener)
+    },
+    () => requestedGroup
   )
 }
 

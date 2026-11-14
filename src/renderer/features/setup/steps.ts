@@ -7,10 +7,12 @@ export const STEPS = [
   'currencies',
   'roomTypes',
   'rooms',
+  'hourly',
   'money',
   'staff',
   'employees',
   'calendar',
+  'camera',
   'owner',
   'summary'
 ] as const

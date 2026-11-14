@@ -59,7 +59,7 @@ test.describe('telefonda Bugün, otelde kalanlar, takvim notları', () => {
     await ready(page, '#/in-house')
     const room = page.getByTestId(`in-house-room-${seeded!.numbers.inHouse}`)
     const elif = room.locator('li[data-kbs]', { hasText: 'Elif Yılmaz' })
-    const mark = elif.getByRole('button', { name: "KBS'ye bildirdim" })
+    const mark = elif.getByRole('button', { name: "KBS'ye bildirildi olarak işaretle" })
     expect((await mark.boundingBox())!.height).toBeGreaterThanOrEqual(44)
     await mark.click()
     await expect(elif).toHaveAttribute('data-kbs', 'ok')

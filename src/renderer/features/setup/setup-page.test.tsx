@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { setupDraftSchema } from '@shared/contract'
-import { ApiError, RECOVERY_CODES, renderSetup, setupTransport } from './test-kit'
+import { ApiError, BISMUTH_KEY, RECOVERY_CODES, renderSetup, setupTransport } from './test-kit'
 
 type User = ReturnType<typeof userEvent.setup>
 const next = (user: User) => user.click(screen.getByTestId('setup-next'))
@@ -52,16 +52,41 @@ describe('kurulum sihirbazı: düzen', () => {
     expect(screen.getByTestId('setup-loading-progress')).toHaveClass('md:hidden')
   })
 
-  it('on iki adım sırayla listelenir; zorunlu olmayan adımda "Atla" ve "İsteğe bağlı" görünür', async () => {
+  it('on dört adım sırayla listelenir; zorunlu olmayan adımda "Atla" ve "İsteğe bağlı" görünür', async () => {
     const user = userEvent.setup()
-    await renderSetup({ path: '/setup?step=7' })
+    await renderSetup({ path: '/setup?step=8' })
     expect(await heading('Ödeme ve satış')).toBeInTheDocument()
     expect(screen.getByText('İsteğe bağlı')).toBeInTheDocument()
     expect(
       screen.getAllByRole('listitem').filter((li) => li.querySelector('[data-testid^="setup-goto-"]'))
-    ).toHaveLength(12)
+    ).toHaveLength(14)
     await user.click(screen.getByTestId('setup-skip'))
     expect(await heading('Personel ve vardiyalar')).toBeInTheDocument()
+  })
+
+  it('saatlik satış adımı isteğe bağlıdır: seçili tipleri listeler, boş geçilebilir, "Atla" görünür', async () => {
+    const user = userEvent.setup()
+    await renderSetup({ path: '/setup?step=7' })
+    expect(await heading('Saatlik satış')).toBeInTheDocument()
+    expect(screen.getByText('İsteğe bağlı')).toBeInTheDocument()
+    expect(within(screen.getByTestId('setup-hourly-types')).getAllByRole('listitem')).toHaveLength(1)
+    // On the phone "Atla" is a 44 px target like the other footer buttons (the ghost button keeps its own height).
+    expect(screen.getByTestId('setup-skip')).toHaveClass('max-md:h-11')
+    await user.click(screen.getByTestId('setup-skip'))
+    expect(await heading('Ödeme ve satış')).toBeInTheDocument()
+  })
+
+  it('kamera adımı isteğe bağlıdır: akış görünür, "Atla" ve boş "İleri" kamera eklemeden geçer (P20g)', async () => {
+    const user = userEvent.setup()
+    const { transport } = await renderSetup({ path: '/setup?step=12' })
+    expect(await heading('Kamera')).toBeInTheDocument()
+    expect(screen.getByText('İsteğe bağlı')).toBeInTheDocument()
+    expect(await screen.findByTestId('setup-camera-flow')).toBeInTheDocument()
+    expect(screen.getByTestId('setup-goto-camera')).toBeInTheDocument()
+    await user.click(screen.getByTestId('setup-skip'))
+    expect(await heading('Sahip hesabı')).toBeInTheDocument()
+    // Nothing about the camera is part of the wizard's saved answers (the address is a secret).
+    expect(JSON.stringify(transport.saves)).not.toMatch(/camera|rtsp/i)
   })
 
   it('telefonda odaklanan alan yapışkan Geri / İleri çubuğunun altında kalmaz', async () => {
@@ -69,7 +94,7 @@ describe('kurulum sihirbazı: düzen', () => {
     window.matchMedia = ((query: string) => ({ ...media(query), matches: true })) as typeof window.matchMedia
     try {
       await renderSetup({ path: '/setup?step=3' })
-      expect(await screen.findByTestId('setup-step-of')).toHaveTextContent('Adım 3 / 12')
+      expect(await screen.findByTestId('setup-step-of')).toHaveTextContent('Adım 3 / 14')
       const field = screen.getByLabelText('Çıkış saati')
       vi.spyOn(screen.getByTestId('setup-footer'), 'getBoundingClientRect').mockReturnValue({
         top: 775
@@ -262,14 +287,14 @@ describe('kurulum sihirbazı: adımlar', () => {
 
   it('kendi eklenen adın kaldır düğmesi telefonda 44 px', async () => {
     const user = userEvent.setup()
-    await renderSetup({ path: '/setup?step=7' })
+    await renderSetup({ path: '/setup?step=8' })
     await user.type(await screen.findByTestId('setup-add-salesChannels'), 'Kapıdan tavsiye{Enter}')
     expect(screen.getByRole('button', { name: 'Kaldır: Kapıdan tavsiye' })).toHaveClass('max-md:size-11')
   })
 
   it('nakit ödeme yöntemi kapatılırsa İleri uyarır; kendi kanal adınız eklenir', async () => {
     const user = userEvent.setup()
-    const { transport } = await renderSetup({ path: '/setup?step=7' })
+    const { transport } = await renderSetup({ path: '/setup?step=8' })
     await user.click(await screen.findByTestId('setup-list-paymentMethods-cash'))
     await next(user)
     expect(screen.getByTestId('setup-cash-method-error')).toBeInTheDocument()
@@ -286,7 +311,7 @@ describe('kurulum sihirbazı: adımlar', () => {
   })
 
   it('satış kanalları türüne göre başlıklar altında gelir; yalnızca otelin kanalları işaretli başlar', async () => {
-    await renderSetup({ path: '/setup?step=7' })
+    await renderSetup({ path: '/setup?step=8' })
     const channels = await screen.findByTestId('setup-list-salesChannels')
     const groups = within(channels).getAllByRole('group')
     expect(
@@ -317,7 +342,7 @@ describe('kurulum sihirbazı: adımlar', () => {
 
   it('kanal işaretlenince seçim taslağa seçenek sırasıyla yazılır; kendi eklenen ad "Eklediğiniz kanallar" altında durur', async () => {
     const user = userEvent.setup()
-    const { transport } = await renderSetup({ path: '/setup?step=7' })
+    const { transport } = await renderSetup({ path: '/setup?step=8' })
     await user.click(await screen.findByTestId('setup-list-salesChannels-hotels_com'))
     await user.click(screen.getByTestId('setup-list-salesChannels-whatsapp'))
     await user.click(screen.getByTestId('setup-list-salesChannels-airbnb'))
@@ -335,7 +360,7 @@ describe('kurulum sihirbazı: adımlar', () => {
   })
 
   it('Otelz.com ve Hotels.com her dilde ayrı adla ve ayrı başlıkla ayırt edilir (Rusça dahil)', async () => {
-    await renderSetup({ path: '/setup?step=7', settings: { 'ui.language': 'ru' } })
+    await renderSetup({ path: '/setup?step=8', settings: { 'ui.language': 'ru' } })
     const channels = await screen.findByTestId('setup-list-salesChannels')
     const sites = within(within(channels).getByRole('group', { name: 'Сайты бронирования' }))
     expect(sites.getByTestId('setup-list-salesChannels-otelz')).toHaveAccessibleName('Otelz.com (Турция)')
@@ -347,7 +372,7 @@ describe('kurulum sihirbazı: adımlar', () => {
 
   it('personel: ek mesai katı sayı olmalı; yeni vardiyanın adı boş kalamaz', async () => {
     const user = userEvent.setup()
-    await renderSetup({ path: '/setup?step=8' })
+    await renderSetup({ path: '/setup?step=9' })
     const holiday = await screen.findByLabelText('Bayramda çalışma katı')
     await user.clear(holiday)
     await user.click(screen.getByTestId('setup-add-shift'))
@@ -359,7 +384,7 @@ describe('kurulum sihirbazı: adımlar', () => {
   })
 
   it('personel: vardiya saatleri 9rem genişliğinde; telefonda iki saat yan yana ayrı satırda', async () => {
-    await renderSetup({ path: '/setup?step=8' })
+    await renderSetup({ path: '/setup?step=9' })
     const times = (await screen.findAllByTestId('setup-shift-times'))[0]!
     expect(times).toHaveClass('grid-cols-2', 'sm:contents')
     expect(times.closest('li')).toHaveClass('sm:grid-cols-[minmax(0,1fr)_9rem_9rem_auto]', 'items-end')
@@ -367,7 +392,7 @@ describe('kurulum sihirbazı: adımlar', () => {
 
   it('personel: prim yüzdeyse oran istenir ve taslağa yazılır; sabit tutar seçilebilir', async () => {
     const user = userEvent.setup()
-    const { transport } = await renderSetup({ path: '/setup?step=8' })
+    const { transport } = await renderSetup({ path: '/setup?step=9' })
     expect(await screen.findByRole('combobox', { name: 'Prim' })).toHaveTextContent('Yok')
     await user.click(screen.getByRole('combobox', { name: 'Prim' }))
     await user.click(await screen.findByRole('option', { name: 'Yüzde' }))
@@ -389,7 +414,7 @@ describe('kurulum sihirbazı: adımlar', () => {
 
   it('personel: kendi göreviniz her sıklıkta doğru kuralla listeye eklenir, kaldırılır ve ara kayda girer', async () => {
     const user = userEvent.setup()
-    const { transport } = await renderSetup({ path: '/setup?step=8' })
+    const { transport } = await renderSetup({ path: '/setup?step=9' })
     const form = await screen.findByTestId('setup-own-task-form')
     const repeat = async (name: string): Promise<void> => {
       await user.click(within(form).getByRole('combobox', { name: 'Ne sıklıkla' }))
@@ -462,7 +487,7 @@ describe('kurulum sihirbazı: adımlar', () => {
   })
 
   it('personel: kendi görevleriniz başlığın hemen altında, hazır önerilerden önce gelir; yasal hatırlatıcılar sonda kalır', async () => {
-    await renderSetup({ path: '/setup?step=8' })
+    await renderSetup({ path: '/setup?step=9' })
     const own = await screen.findByRole('group', { name: 'Kendi görevleriniz' })
     expect(own).toHaveAttribute('data-testid', 'setup-own-tasks')
     const suggestions = screen.getByRole('group', { name: 'Günlük ve haftalık işler' })
@@ -478,7 +503,7 @@ describe('kurulum sihirbazı: adımlar', () => {
   })
 
   it('personel: Türkiye dışındaki otele TR yasal hatırlatıcıları önerilmez (K-46 (7))', async () => {
-    await renderSetup({ path: '/setup?step=8', settings: { 'hotel.country': 'DE' } })
+    await renderSetup({ path: '/setup?step=9', settings: { 'hotel.country': 'DE' } })
     await screen.findByRole('group', { name: 'Kendi görevleriniz' })
     expect(document.getElementById('setup-legal-reminders')).toBeNull()
     expect(screen.getByRole('group', { name: 'Günlük ve haftalık işler' })).toBeInTheDocument()
@@ -486,7 +511,7 @@ describe('kurulum sihirbazı: adımlar', () => {
 
   it('personel: kendi görevde eksik ad, seçilmemiş gün, aralık dışı ay sayısı ve bozuk saat söylenir', async () => {
     const user = userEvent.setup()
-    await renderSetup({ path: '/setup?step=8' })
+    await renderSetup({ path: '/setup?step=9' })
     const form = await screen.findByTestId('setup-own-task-form')
     const add = screen.getByTestId('setup-own-task-add')
     await user.click(add)
@@ -516,7 +541,7 @@ describe('kurulum sihirbazı: adımlar', () => {
 
   it('takvim: Türkiye seçiliyse bu yıl ve gelecek yılın bayramları gösterilir; başka ülkede sonra eklenir', async () => {
     const user = userEvent.setup()
-    await renderSetup({ path: '/setup?step=10' })
+    await renderSetup({ path: '/setup?step=11' })
     expect(await heading('Takvim')).toBeInTheDocument()
     const days = within(screen.getByTestId('setup-holidays')).getAllByTestId('setup-holiday')
     expect(days.map((d) => d.textContent)).toEqual([
@@ -543,7 +568,7 @@ describe('kurulum sihirbazı: adımlar', () => {
 
   it('çalışan kartı uzun adla genişlemez; ad kesilirse tamamı ipucunda', async () => {
     const user = userEvent.setup()
-    await renderSetup({ path: '/setup?step=9' })
+    await renderSetup({ path: '/setup?step=10' })
     await user.click(await screen.findByTestId('setup-add-employee'))
     const long = 'Muhammed Mustafa Abdurrahman'
     await user.type(screen.getByLabelText('Ad'), long)
@@ -559,7 +584,7 @@ describe('kurulum sihirbazı: adımlar', () => {
 
   it('çalışan eklenir; hesap açılınca kullanıcı adı ve geçici şifre istenir', async () => {
     const user = userEvent.setup()
-    await renderSetup({ path: '/setup?step=9' })
+    await renderSetup({ path: '/setup?step=10' })
     await user.click(await screen.findByTestId('setup-add-employee'))
     await user.type(screen.getByLabelText('Ad'), 'Deniz')
     await user.type(screen.getByLabelText('Soyad'), 'Arslan')
@@ -573,7 +598,7 @@ describe('kurulum sihirbazı: adımlar', () => {
 
   it('sahip: şifreler aynı olmalı, kolay PIN kabul edilmez; şifreler ilerleme kaydına girmez', async () => {
     const user = userEvent.setup()
-    const { transport } = await renderSetup({ path: '/setup?step=11' })
+    const { transport } = await renderSetup({ path: '/setup?step=13' })
     expect(await heading('Sahip hesabı')).toBeInTheDocument()
     await user.type(screen.getByLabelText('Adınız'), 'Otel Sahibi')
     await user.type(screen.getByLabelText('Kullanıcı adı'), 'sahip')
@@ -597,7 +622,7 @@ describe('kurulum sihirbazı: adımlar', () => {
 
   it('şifre göster düğmesi alanı düz metne çevirir', async () => {
     const user = userEvent.setup()
-    await renderSetup({ path: '/setup?step=11' })
+    await renderSetup({ path: '/setup?step=13' })
     const password = await screen.findByTestId('setup-owner-password')
     expect(password).toHaveAttribute('type', 'password')
     await user.click(screen.getAllByRole('button', { name: 'Şifreyi göster' })[0]!)
@@ -644,7 +669,7 @@ describe('kurulum sihirbazı: devam, bitirme, kurtarma kodları', () => {
 
   it('"Kurulumu bitir": eksik adım varsa oraya gider ve uyarır', async () => {
     const user = userEvent.setup()
-    const { transport } = await renderSetup({ path: '/setup?step=12' })
+    const { transport } = await renderSetup({ path: '/setup?step=14' })
     expect(await screen.findByTestId('setup-summary-hotel')).toHaveTextContent('Eksik')
     await user.click(screen.getByTestId('setup-finish'))
     expect(await heading('Otel')).toBeInTheDocument()
@@ -675,6 +700,10 @@ describe('kurulum sihirbazı: devam, bitirme, kurtarma kodları', () => {
     await user.click(screen.getByTestId('setup-generate'))
     await user.click(screen.getByTestId('setup-remove-room-504'))
     await next(user)
+    // The optional hourly-price step (K-48): the chosen type's price of one hour.
+    expect(await heading('Saatlik satış')).toBeInTheDocument()
+    await user.type(screen.getByLabelText('Saat ücreti'), '300')
+    await next(user)
     expect(await heading('Ödeme ve satış')).toBeInTheDocument()
     await next(user)
     expect(await heading('Personel ve vardiyalar')).toBeInTheDocument()
@@ -684,6 +713,9 @@ describe('kurulum sihirbazı: devam, bitirme, kurtarma kodları', () => {
     expect(await heading('Çalışanlar')).toBeInTheDocument()
     await next(user)
     expect(await heading('Takvim')).toBeInTheDocument()
+    await next(user)
+    // The optional camera step (P20g, K-59): nothing is added when it is passed by.
+    expect(await heading('Kamera')).toBeInTheDocument()
     await next(user)
     expect(await heading('Sahip hesabı')).toBeInTheDocument()
     await fillOwner(user)
@@ -707,7 +739,9 @@ describe('kurulum sihirbazı: devam, bitirme, kurtarma kodları', () => {
       hotel: { name: 'Martı Otel', country: 'TR', city: 'İstanbul', timezone: 'Europe/Istanbul' },
       money: { baseCurrency: 'TRY', currencies: ['TRY', 'EUR', 'USD', 'RUB'] },
       roomTypes: {
-        selected: [{ id: 'rt-double', basePriceMinor: 280_000, weekendPriceMinor: 320_000 }],
+        selected: [
+          { id: 'rt-double', basePriceMinor: 280_000, weekendPriceMinor: 320_000, hourlyPriceMinor: 30_000 }
+        ],
         custom: []
       },
       lists: { paymentMethods: ['pm-cash', 'pm-card', 'pm-bank'], customSalesChannels: [] },
@@ -745,10 +779,12 @@ describe('kurulum sihirbazı: devam, bitirme, kurtarma kodları', () => {
     expect(sent.rooms.map((r) => r.number)).not.toContain('504')
 
     expect(screen.getAllByTestId('recovery-code').map((c) => c.textContent)).toEqual(RECOVERY_CODES)
-    expect(screen.getByTestId('recovery-once')).toHaveTextContent('Bu kodlar bir daha gösterilmez.')
+    expect(screen.getByTestId('recovery-once')).toHaveTextContent('Bu bilgiler bir daha gösterilmez.')
+    expect(await screen.findByTestId('recovery-key')).toHaveTextContent(BISMUTH_KEY)
+    expect(screen.getByTestId('recovery-print')).toBeEnabled()
     expect(screen.getByTestId('recovery-codes')).not.toHaveClass('mx-auto')
     expect(screen.getByTestId('recovery-continue')).toBeDisabled()
-    expect(screen.getByText('Kodları sakladım')).toBeInTheDocument()
+    expect(screen.getByText('Kâğıda yazdım')).toBeInTheDocument()
     await user.click(screen.getByTestId('recovery-written'))
     await user.click(screen.getByTestId('recovery-continue'))
     expect(await screen.findByTestId('home')).toBeInTheDocument()
@@ -759,7 +795,7 @@ describe('kurulum sihirbazı: devam, bitirme, kurtarma kodları', () => {
     const transport = setupTransport({
       finishError: new ApiError('CONFLICT', 409, 'errors.usernameTaken', { username: 'sahip' }),
       progress: {
-        step: 11,
+        step: 13,
         draft: {
           hotel: {
             name: 'Martı Otel',

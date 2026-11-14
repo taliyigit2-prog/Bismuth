@@ -36,7 +36,8 @@ import { Switch } from '@/components/ui/switch'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { CopyButton } from '@/components/copy-button'
 import { sparkPoints } from '@/components/kpi-card'
-import { moneyToText, textToMoney, type MoneyValue } from '@/components/money-input'
+import { moneyToText, readMoneyText, type MoneyValue } from '@/components/money-input'
+import { MAX_AMOUNT_MINOR } from '@shared/money'
 import { QueryView } from '@/components/query-view'
 import { SectionCard } from '@/components/section-card'
 import { EmptyState } from '@/components/states'
@@ -245,9 +246,9 @@ function Converter({
   const [text, setText] = useState(() => moneyToText(250_000, base, f.locale))
   const [fromCurrency, setFromCurrency] = useState(base)
   const [to, setTo] = useState<string>(firstForeign)
-  const parsed = textToMoney(text, fromCurrency, f.locale)
-  const invalid = parsed !== null && Number.isNaN(parsed)
-  const from: MoneyValue = { amountMinor: invalid ? null : parsed, currency: fromCurrency }
+  const read = readMoneyText(text, fromCurrency, f.locale)
+  const invalid = read.problem !== null
+  const from: MoneyValue = { amountMinor: read.minor, currency: fromCurrency }
   const exact = from.amountMinor !== null ? convertMinor(from.amountMinor, from.currency, to, table) : null
   const others = currencies.filter((c) => c !== from.currency && c !== to)
   const swap = (): void => {
@@ -303,7 +304,7 @@ function Converter({
             </div>
             {invalid ? (
               <p id="fx-amount-error" className="text-destructive text-xs">
-                {t('money.invalid')}
+                {t(`money.${read.problem ?? 'invalid'}`, { max: f.money(MAX_AMOUNT_MINOR, fromCurrency) })}
               </p>
             ) : null}
           </div>
@@ -442,6 +443,63 @@ function HistoryCard({ overview }: { overview: FxOverview }) {
       )}
       <p className="text-muted-foreground mt-3 text-xs">{t('currency.history.note')}</p>
     </SectionCard>
+  )
+}
+
+/** S-125: how far (in percent) a typed rate may be from the last known one before the dialog warns. */
+function WarnPercentCard() {
+  const { t } = useTranslation()
+  const settings = useSettings()
+  const update = useUpdateSettings()
+  const failed = useErrorToast()
+  const saved = settings.data?.['fx.manualRateWarnPercent'] ?? 20
+  const [text, setText] = useState<string | null>(null)
+  const shown = text ?? String(saved)
+  const value = /^\d{1,4}$/.test(shown.trim()) ? Number(shown.trim()) : null
+  const valid = value !== null && value >= 1 && value <= 1000
+  const changed = valid && value !== saved
+  return (
+    <Card className="py-3" data-testid="fx-warn-percent">
+      <CardContent className="px-4">
+        <form
+          className="grid gap-1.5"
+          onSubmit={(e) => {
+            e.preventDefault()
+            if (!changed) return
+            update.mutate(
+              { 'fx.manualRateWarnPercent': value },
+              { onError: failed, onSuccess: () => toast.success(t('currency.warnPercent.saved')) }
+            )
+          }}
+        >
+          <Label htmlFor="fx-warn-percent">{t('currency.warnPercent.label')}</Label>
+          <div className="flex flex-wrap items-center gap-2">
+            <Input
+              id="fx-warn-percent"
+              inputMode="numeric"
+              dir="ltr"
+              autoComplete="off"
+              maxLength={4}
+              value={shown}
+              aria-invalid={!valid}
+              aria-describedby="fx-warn-percent-hint"
+              onChange={(e) => setText(e.target.value)}
+              className="w-28 tabular-nums max-md:text-base"
+            />
+            <Button type="submit" variant="outline" size="sm" disabled={!changed || update.isPending}>
+              {t('common.save')}
+            </Button>
+          </div>
+          <p
+            id="fx-warn-percent-hint"
+            role={valid ? undefined : 'alert'}
+            className={cn('text-sm', valid ? 'text-muted-foreground' : 'text-destructive')}
+          >
+            {valid ? t('currency.warnPercent.hint') : t('currency.warnPercent.invalid')}
+          </p>
+        </form>
+      </CardContent>
+    </Card>
   )
 }
 
@@ -619,6 +677,7 @@ function FxView({ overview }: { overview: FxOverview }) {
           ) : null}
         </>
       )}
+      {canEdit ? <WarnPercentCard /> : null}
       {editing ? <HotelRateDialog open={editing} onOpenChange={setEditing} overview={overview} /> : null}
       <SourcesDialog open={sources} onOpenChange={setSources} />
       <GuestViewDialog

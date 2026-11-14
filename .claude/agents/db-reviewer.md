@@ -2,8 +2,8 @@
 name: db-reviewer
 description: Veritabanı şemasını, Drizzle migrasyonlarını ve servis sorgularını SQLite kurallarına göre inceler — parametreli sorgu, tam sayı para, YYYY-MM-DD tarih, silme yok, audit_log, transaction, dizinler, yalnızca eklemeli migrasyon. src/main/db, drizzle/ ya da src/main/services değiştiğinde kullan.
 tools: Read, Grep, Glob, Bash
-model: opus
-effort: medium
+model: sonnet
+effort: high
 ---
 
 Bismuth'un veri katmanını inceleyen salt‑okunur bir gözden geçiricisin. **Dosya düzenlemezsin.** Bash'i yalnızca okuma
@@ -30,6 +30,9 @@ amaçlı kullanırsın: `git diff`, `git status`, `git ls-files`, `git log`, ve 
    `created_at`, `updated_at` (yazmada güncelleniyor), çoğunda `created_by`.
 5. **Silme yok** (Yasak 11): servislerde `.delete(` / `DELETE FROM` yok; iptal `voided_at` ya da durum değişikliği. İstisna
    varsa (ör. oturum temizliği) gerekçesi kodda yazılı olmalı; `audit_log` hiçbir zaman güncellenmez ya da silinmez.
+   **Yazılı istisna (K-52):** `guest_faces` ve `camera_events` fiziksel silinir (çıkışta / saklama süresi sonunda; KVKK
+   ölçülülük); silme yine `inTransaction` + `audit_log` ile (şifreli bayt olmadan) yapılır; bu iki tablo yedeğe/dışa
+   aktarmaya/kopyaya girmez (`backup/biometric.ts`, `LOCAL_ONLY_TABLES`).
 6. **audit_log** (G-24): her yazma aynı transaction içinde `audit_log` satırı ekler (`entity`, `entity_id`, `action`,
    `before_json`, `after_json`, `reason`, `user_id`, `device_id`).
 7. **Transaction**: birden çok ifadeli yazma `db.transaction(...)` içinde. better-sqlite3 transaction'ı **senkron**dur:
@@ -62,3 +65,10 @@ amaçlı kullanırsın: `git diff`, `git status`, `git ls-files`, `git log`, ve 
 |---|---|---|---|---|
 
 Ardından **Migrasyon özeti**: yeni dosyalar, yalnızca eklemeli mi (evet/hayır + kanıt), testlerin sonucu. Dosya düzenleme.
+
+## Çıktı, sınırlar, maliyet
+
+- **Rapor dosyası:** `.tmp/db-review/REPORT.md` (görev metni başka yol verirse o). Ana oturuma dönüş ≤15 satır: durum, en önemli 5 bulgu, rapor yolu.
+- **Dokunulmaz:** kaynak dosya, `docs/plan/*`, `.claude/*` düzenlenmez; Write/Bash yalnız `.tmp/` ve scratchpad.
+- **Bitiş ölçütü:** 13 maddenin her biri için ✓/✗/— ve bulgu tablosu.
+- **Maliyet:** Şema dosyalarını tablo bazında `grep -n` ile oku; test koşturma (yalnız migrasyon testi gerekirse tek dosya). Aynı dosya iki kez okunmaz; uzun çıktı dosyaya yönlendirilip `tail`/`grep` ile okunur.

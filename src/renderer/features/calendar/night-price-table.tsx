@@ -9,7 +9,8 @@ import type { LocalDate } from '@shared/date'
 import type { PriceReason } from '@shared/domain/booking'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { moneyToText, readMoneyText, useMoneySubmitGuard } from '@/components/money-input'
+import { MAX_AMOUNT_MINOR } from '@shared/money'
+import { moneyToText, readMoneyText, useMoneySubmitGuard, type MoneyProblem } from '@/components/money-input'
 import { useFormat } from '@/hooks/use-format'
 import { useApiQuery } from '@/lib/api/hooks'
 import { tagLabel } from '@/features/settings/use-status-tags'
@@ -54,36 +55,48 @@ function PriceCell({
   const f = useFormat()
   const inputRef = useRef<HTMLInputElement>(null)
   const [draft, setDraft] = useState<string | null>(null)
-  const [invalid, setInvalid] = useState(false)
+  // H-08: the cell says what is wrong under itself ("Tutar sayı olmalı", "…sıfırdan küçük olamaz", "…çok büyük").
+  const [problem, setProblem] = useState<MoneyProblem | null>(null)
+  const { t } = useTranslation()
   const text = draft ?? moneyToText(value, currency, f.locale)
   // QA2a: a text that is not a price leaves no older price behind (the night counts as not written) and stops
   // the form around it from being sent.
-  const refuse = (): void => {
-    setInvalid(true)
+  const refuse = (_text: string, why: MoneyProblem): void => {
+    setProblem(why)
     if (value !== null) onChange(null)
   }
   useMoneySubmitGuard(inputRef, currency, false, refuse)
   const commit = (): void => {
     if (draft === null) return
     const read = readMoneyText(draft, currency, f.locale)
-    if (read.problem) return refuse()
-    setInvalid(false)
+    if (read.problem) return refuse(draft, read.problem)
+    setProblem(null)
     setDraft(null)
     onChange(read.minor)
   }
   return (
-    <Input
-      ref={inputRef}
-      dir="ltr"
-      inputMode="decimal"
-      autoComplete="off"
-      aria-label={label}
-      aria-invalid={invalid || undefined}
-      value={text}
-      onChange={(e) => setDraft(e.target.value)}
-      onBlur={commit}
-      className="h-8 w-28 text-end tabular-nums max-md:h-11"
-    />
+    <div className="grid justify-items-end gap-1">
+      <Input
+        ref={inputRef}
+        dir="ltr"
+        inputMode="decimal"
+        autoComplete="off"
+        aria-label={label}
+        aria-invalid={problem ? true : undefined}
+        value={text}
+        onChange={(e) => {
+          setDraft(e.target.value)
+          setProblem(null)
+        }}
+        onBlur={commit}
+        className="h-8 w-28 text-end tabular-nums max-md:h-11"
+      />
+      {problem ? (
+        <p className="text-destructive max-w-56 text-end text-xs" role="alert" data-testid="price-cell-error">
+          {t(`money.${problem}`, { max: f.money(MAX_AMOUNT_MINOR, currency) })}
+        </p>
+      ) : null}
+    </div>
   )
 }
 

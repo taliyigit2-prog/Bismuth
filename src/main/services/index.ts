@@ -11,6 +11,12 @@ import { createDiagnosticsService, type DiagnosticsDeps } from './diagnostics-se
 import { createCalendarService } from './calendar-service'
 import { createContactsService } from './contacts-service'
 import { createCurrencyService } from './currency-service'
+import { createCameraService } from './camera-service'
+import type { CameraDiscovery, CameraProbe } from '@shared/contract/camera'
+import { createFaceCrypto } from '../camera/crypto'
+import type { Hardware } from '../camera/hardware'
+import { createSecretStore } from '../camera/secrets'
+import { createFeesService } from './fees-service'
 import { createExpensesService } from './expenses-service'
 import { createExternalService } from './external-service'
 import { createHttpClient, type FetchLike } from '../network/http'
@@ -63,6 +69,8 @@ export interface ServiceStorage {
       | 'openPath'
       | 'relaunch'
       | 'pickFolder'
+      | 'driveProbe'
+      | 'prepareDriveDir'
     >
   >
   /** Export (Faz 14): the program window's "Save as" dialog (main process). */
@@ -84,6 +92,20 @@ export interface ServiceStorage {
     /** The operating system's key store (Electron `safeStorage`): seals the rate providers' API keys (N-10). */
     secrets?: SecretStorage | null
   }
+  /** Camera (Faz 20): the sealed secrets file (default `camera-secrets.json` in the data folder) and the Telegram test text. */
+  camera?: {
+    secretsFile?: string | null
+    testMessage?: () => string
+    /** The Telegram text of an alarm (no guest name) and the program's window notice for it. */
+    alertMessage?: (info: { time: string; location: string }) => string
+    onAlert?: (notice: { eventId: string; time: string; location: string }) => void
+    /** P20g: the setup wizard's one-picture test, the search of the local network and (tests) another computer's facts. */
+    probe?: (source: string) => Promise<CameraProbe>
+    discover?: () => Promise<CameraDiscovery>
+    hardware?: () => Hardware
+    /** Tests: the face key (default: a file in the data folder sealed by the key store). */
+    faceCrypto?: ReturnType<typeof createFaceCrypto>
+  }
 }
 
 /** Wire every service to one database handle. No Electron imports below this line (03-mimari.md §1.3). */
@@ -98,6 +120,7 @@ export function createServices(handle: DatabaseHandle, runtime: RuntimeInfo, sto
   }
   const tasks = createTasksService(deps)
   const onBackgroundError = storage.onBackgroundError ?? (() => undefined)
+  const payments = createPaymentsService(deps)
   const reservations = createReservationsService({
     ...deps,
     hooks: {
@@ -108,9 +131,16 @@ export function createServices(handle: DatabaseHandle, runtime: RuntimeInfo, sto
         } catch (error) {
           onBackgroundError(error, 'tasks.onCheckout')
         }
+      },
+      recordRefund: (ctx, tx, audit, now, input) => {
+        payments.createIn(ctx, tx, audit, now, input)
+      },
+      recordPayment: (ctx, tx, audit, now, input) => {
+        payments.createIn(ctx, tx, audit, now, input)
       }
     }
   })
+  const fees = createFeesService(deps, { payments })
   const settings = createSettingsService(handle.db, clock, storage.writeGate)
   const rooms = createRoomsService(deps)
   const lists = createListsService(deps)
@@ -138,8 +168,36 @@ export function createServices(handle: DatabaseHandle, runtime: RuntimeInfo, sto
     settings,
     appVersion: runtime.version
   })
-  const payments = createPaymentsService(deps)
   const expenses = createExpensesService(deps)
+  const camera = createCameraService({
+    ...deps,
+    secrets: createSecretStore(
+      storage.camera?.secretsFile !== undefined
+        ? storage.camera.secretsFile
+        : runtime.dataDir
+          ? join(runtime.dataDir, 'camera-secrets.json')
+          : null,
+      systemSealer(storage.network?.secrets ?? null)
+    ),
+    // K-51: face vectors and crops are sealed with a key kept by the operating system's key store; without a store (or
+    // without a data folder, a test) the key lives in memory only and a restarted program cannot open old blobs.
+    faceCrypto:
+      storage.camera?.faceCrypto ??
+      createFaceCrypto(
+        runtime.dataDir ? join(runtime.dataDir, 'camera', 'face-key.bin') : null,
+        systemSealer(storage.network?.secrets ?? null)
+      ),
+    telegram: {
+      fetch: storage.network?.fetch,
+      origin: runtime.packaged ? null : (storage.network?.origin ?? null)
+    },
+    ...(storage.camera?.testMessage ? { testMessage: storage.camera.testMessage } : {}),
+    ...(storage.camera?.alertMessage ? { alertMessage: storage.camera.alertMessage } : {}),
+    ...(storage.camera?.onAlert ? { onAlert: storage.camera.onAlert } : {}),
+    ...(storage.camera?.probe ? { probe: storage.camera.probe } : {}),
+    ...(storage.camera?.discover ? { discover: storage.camera.discover } : {}),
+    ...(storage.camera?.hardware ? { hardware: storage.camera.hardware } : {})
+  })
   const setup = createSetupService(deps, {
     settings,
     rooms,
@@ -160,8 +218,10 @@ export function createServices(handle: DatabaseHandle, runtime: RuntimeInfo, sto
     lists,
     currency,
     external,
+    camera,
     reservations,
     payments,
+    fees,
     occupants: createOccupantsService(deps),
     guests: createGuestsService(deps),
     companies: createCompaniesService(deps),

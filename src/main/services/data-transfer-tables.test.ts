@@ -206,6 +206,33 @@ describe('dışa aktarmada eksik tablolar (G-122, S-43; QA2x)', () => {
     expect((await s.text(owner, 'roomBlocks', 'en')).csv).toContain('Not for sale')
   })
 
+  it('G4: güvence bedeli, maaş dönemi, maaş kuralı ve liste tabloları da dosyaya çıkar; başlıklar üç dilde çevrilmiştir', async () => {
+    const s = await setup()
+    const ids: ExportDataset[] = [
+      'damageDeposits',
+      'salaryPeriods',
+      'payPolicies',
+      'paymentMethods',
+      'salesChannels',
+      'extraServices',
+      'statusTags'
+    ]
+    for (const locale of ['tr', 'en', 'ru'] as const) {
+      const t = translator(locale)
+      for (const id of ids) {
+        const file = await s.text(owner, id, locale)
+        const header = file.csv.split('\r\n')[0]!
+        expect(t(`dataTransfer.dataset.${id}`)).not.toBe(`dataTransfer.dataset.${id}`)
+        for (const col of datasetOf(id).columns) {
+          expect(t(col.label), `${id}.${col.key} ${locale}`).not.toBe(col.label)
+          expect(header).toContain(t(col.label))
+        }
+      }
+    }
+    expect((await s.text(owner, 'paymentMethods')).rows).toBeGreaterThan(0)
+    expect((await s.text(owner, 'salesChannels')).csv).toContain('booking')
+  })
+
   it('"Tüm tablolar" XLSX dosyası yeni tabloları da ayrı sayfa olarak içerir; kur sayı olarak yazılır', async () => {
     const s = await setup()
     await fillEverything(s)

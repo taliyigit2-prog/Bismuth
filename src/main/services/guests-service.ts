@@ -58,6 +58,7 @@ import {
   guestTags,
   paymentMethods,
   payments,
+  reservationGroups,
   reservationRooms,
   reservations,
   roomNights,
@@ -439,6 +440,11 @@ export function createGuestsService(deps: ServiceDeps) {
             .update(blacklist)
             .set({ guestId: keep.id, updatedAt: iso })
             .where(eq(blacklist.guestId, merged.id))
+            .run().changes,
+          groupLeaders: tx
+            .update(reservationGroups)
+            .set({ leaderGuestId: keep.id, updatedAt: iso })
+            .where(eq(reservationGroups.leaderGuestId, merged.id))
             .run().changes,
           mergedGuests: tx
             .update(guests)
@@ -1131,7 +1137,7 @@ function historyStays(db: ServiceDeps['db'], ids: readonly string[] | null): Gue
     })
     .from(roomNights)
     .innerJoin(reservationRooms, eq(roomNights.reservationRoomId, reservationRooms.id))
-    .where(byReservation(reservationRooms.reservationId))
+    .where(and(byReservation(reservationRooms.reservationId), eq(roomNights.slot, 'night')))
     .orderBy(asc(roomNights.date), asc(reservationRooms.sort))
     .all()
   const folioRows = db

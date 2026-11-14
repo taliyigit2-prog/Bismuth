@@ -18,7 +18,11 @@ export const LOCAL_ONLY_TABLES: Readonly<Record<string, string>> = {
   devices: 'devices signed in to this computer',
   recovery_codes: 'personal recovery code hashes',
   replica_grants: 'who may pull the change log',
-  change_log: 'the log itself'
+  change_log: 'the log itself',
+  guest_faces: 'biometric: sealed face vectors and crops never leave this computer (K-51)',
+  camera_events: 'biometric: sealed alarm crops never leave this computer (K-51)',
+  staff_faces:
+    'biometric: sealed staff face vectors (alarm exclusion list) never leave this computer (K-51, S-107)'
 }
 
 /** Columns that never leave this computer (personal password and PIN hashes). */

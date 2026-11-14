@@ -12,6 +12,7 @@ import {
   CrownIcon,
   MessageSquareTextIcon,
   ShieldAlertIcon,
+  UsersIcon,
   WrenchIcon
 } from 'lucide-react'
 import type { StatusKey } from '@shared/contract'
@@ -24,7 +25,7 @@ import { cn } from '@/lib/utils'
 import { columnOf, spanOf } from './layout'
 
 export type CellPaint = { kind: 'auto'; code: StatusKey } | { kind: 'custom'; tagId: string } | null
-export type StayIcon = 'note' | 'request' | 'vip' | 'kbs' | 'warn' | 'deposit' | 'child'
+export type StayIcon = 'note' | 'request' | 'vip' | 'kbs' | 'warn' | 'deposit' | 'child' | 'group'
 
 export interface TapeRoom {
   id: string
@@ -97,7 +98,8 @@ const ICON: Record<StayIcon, typeof CrownIcon> = {
   kbs: ShieldAlertIcon,
   warn: AlertTriangleIcon,
   deposit: CoinsIcon,
-  child: BabyIcon
+  child: BabyIcon,
+  group: UsersIcon
 }
 
 const paintFill = (p: CellPaint): string =>

@@ -28,7 +28,8 @@ import {
   requirePermission,
   stamps,
   type ServiceDeps,
-  type Tx
+  type Tx,
+  assertNameFree
 } from './kit'
 import { createReservationsService } from './reservations-service'
 
@@ -134,6 +135,7 @@ export function createStatusTagsService(deps: ServiceDeps) {
       requirePermission(ctx, 'settings.colors', 'edit')
       const data = parseInput(customStatusTagInputSchema, input)
       return inTransaction(deps, ctx, (tx, audit, now) => {
+        assertNameFree(tx.select().from(statusTags).all(), data.name)
         const id = newId(now)
         const last = tx
           .select({ sort: statusTags.sort })

@@ -9,6 +9,8 @@ import {
   laundryDeliveryListSchema,
   laundryPriceInputSchema,
   laundrySettlementInputSchema,
+  laundryReopenInputSchema,
+  type LaundryReopenInput,
   yearMonthSchema,
   type LaundryDeliveryInput,
   type LaundryDeliveryListInput,
@@ -50,7 +52,8 @@ import {
   requirePermission,
   stamps,
   type ServiceDeps,
-  type Tx
+  type Tx,
+  assertNameFree
 } from './kit'
 
 export type LaundryItemTypeRow = typeof laundryItemTypes.$inferSelect
@@ -157,7 +160,8 @@ export function createLaundryService(deps: ServiceDeps) {
     items: tx.select().from(laundryDeliveryItems).where(eq(laundryDeliveryItems.deliveryId, row.id)).all()
   })
 
-  const settlementRow = (tx: Reader, contactId: string, year: number, month: number) =>
+  /** The month's stored row, reopened (settledAt null) or not: the unique index allows one per laundry and month. */
+  const anySettlementRow = (tx: Reader, contactId: string, year: number, month: number) =>
     tx
       .select()
       .from(laundrySettlements)
@@ -169,6 +173,19 @@ export function createLaundryService(deps: ServiceDeps) {
         )
       )
       .get()
+
+  /** The month's settlement while it stands; a reopened month (S-127) has none until it is settled again. */
+  const settlementRow = (tx: Reader, contactId: string, year: number, month: number) => {
+    const row = anySettlementRow(tx, contactId, year, month)
+    return row?.settledAt ? row : undefined
+  }
+
+  /** An incoming slip changes the month's total: not once the month's invoice is entered (the stored comparison would go stale). */
+  const assertMonthOpen = (tx: Reader, contactId: string, direction: string, date: string): void => {
+    if (direction !== 'in') return
+    if (settlementRow(tx, contactId, Number(date.slice(0, 4)), Number(date.slice(5, 7))))
+      throw conflict('errors.laundryMonthSettled')
+  }
 
   const compute = (tx: Reader, contactId: string, year: number, month: number) => {
     const { from, last } = monthBounds(year, month)
@@ -200,7 +217,8 @@ export function createLaundryService(deps: ServiceDeps) {
       if (!label || label.length > 80)
         throw invalid('errors.validation', { fields: { name: ['1–80 characters'] } })
       return inTransaction(deps, ctx, (tx, audit, now) => {
-        const sorts = tx.select({ sort: laundryItemTypes.sort }).from(laundryItemTypes).all()
+        const sorts = tx.select().from(laundryItemTypes).all()
+        assertNameFree(sorts, label)
         const row: LaundryItemTypeRow = {
           id: newId(now),
           code: null,
@@ -295,6 +313,7 @@ export function createLaundryService(deps: ServiceDeps) {
           )
           .all()
         if (known.length !== data.items.length) throw notFound('laundry_item_type')
+        assertMonthOpen(tx, data.contactId, data.direction, data.date)
         const row: LaundryDeliveryRow = {
           id: newId(now),
           date: data.date,
@@ -335,6 +354,7 @@ export function createLaundryService(deps: ServiceDeps) {
         const before = tx.select().from(laundryDeliveries).where(eq(laundryDeliveries.id, id)).get()
         if (!before) throw notFound('laundry_delivery', id)
         if (before.voidedAt) throw conflict('errors.alreadyCancelled')
+        assertMonthOpen(tx, before.laundryContactId, before.direction, before.date)
         tx.update(laundryDeliveries)
           .set({ voidedAt: now.toISOString(), updatedAt: now.toISOString() })
           .where(eq(laundryDeliveries.id, id))
@@ -400,6 +420,7 @@ export function createLaundryService(deps: ServiceDeps) {
         .from(laundrySettlements)
         .where(eq(laundrySettlements.laundryContactId, contactId))
         .all()
+        .filter((i) => i.settledAt)
       return periods.map((p) => {
         const s = laundrySettlement(deliveries, prices, contactId, p.year, p.month, { currency })
         const invoice = invoices.find((i) => i.periodYear === p.year && i.periodMonth === p.month)
@@ -437,7 +458,7 @@ export function createLaundryService(deps: ServiceDeps) {
         const computed = compute(tx, data.contactId, data.year, data.month)
         const check = withInvoice(computed, data.invoicedTotalMinor)
         const currency = computed.currency ?? baseCurrencyOf(tx)
-        const before = settlementRow(tx, data.contactId, data.year, data.month)
+        const before = anySettlementRow(tx, data.contactId, data.year, data.month)
         // Writing or voiding the month's expense is a ledger write (G-71): the expense right and an open day.
         const touchesLedger = data.paid || !!before?.expenseId
         if (touchesLedger) requirePermission(ctx, 'expenses', 'edit')
@@ -511,7 +532,7 @@ export function createLaundryService(deps: ServiceDeps) {
               ...fields
             })
             .run()
-        const settled = settlementRow(tx, data.contactId, data.year, data.month) as LaundrySettlementRow
+        const settled = anySettlementRow(tx, data.contactId, data.year, data.month) as LaundrySettlementRow
         audit({
           entity: 'laundry_settlement',
           entityId: id,
@@ -521,6 +542,64 @@ export function createLaundryService(deps: ServiceDeps) {
           reason
         })
         return { ...check, settled }
+      })
+    },
+
+    /**
+     * Opens a settled month again (S-127): the invoice figures are cleared and the month's expense is voided, so
+     * slips can be added or voided and the month settled anew. Manager / owner only, with a reason; the audit row
+     * keeps the old settlement. The stored row stays (never deleted); `settledAt` null = open.
+     */
+    reopenMonth(ctx: Ctx, input: LaundryReopenInput): LaundryMonth {
+      requirePermission(ctx, 'laundry', 'edit')
+      // S-127 says owner / manager. `business_day.close` is not the right gate: the accountant holds it by default,
+      // so a dedicated key (owner + manager by default) keeps the accountant out; the owner can still hand it out.
+      requirePermission(ctx, 'laundry.reopen', 'edit')
+      const data = parseInput(laundryReopenInputSchema, input)
+      return inTransaction(deps, ctx, (tx, audit, now) => {
+        laundryOf(tx, data.contactId)
+        const before = settlementRow(tx, data.contactId, data.year, data.month)
+        if (!before) throw conflict('errors.laundryMonthNotSettled')
+        const iso = now.toISOString()
+        // Reopening rewrites the month's books: the last day of the month must be writable even when no expense exists.
+        const { last } = monthBounds(data.year, data.month)
+        assertDayWritable(tx, ctx, last, data.reason)
+        if (before.expenseId) {
+          requirePermission(ctx, 'expenses', 'edit')
+          const expenseBefore = tx.select().from(expenses).where(eq(expenses.id, before.expenseId)).get()
+          tx.update(expenses)
+            .set({ voidedAt: iso, voidReason: 'laundry_reopened', updatedAt: iso })
+            .where(and(eq(expenses.id, before.expenseId), isNull(expenses.voidedAt)))
+            .run()
+          audit({
+            entity: 'expense',
+            entityId: before.expenseId,
+            action: 'void',
+            before: expenseBefore,
+            after: { ...expenseBefore, voidedAt: iso, voidReason: 'laundry_reopened' },
+            reason: `laundry_reopened: ${data.reason}`
+          })
+        }
+        tx.update(laundrySettlements)
+          .set({
+            invoicedTotalMinor: null,
+            differenceMinor: null,
+            expenseId: null,
+            settledAt: null,
+            updatedAt: iso
+          })
+          .where(eq(laundrySettlements.id, before.id))
+          .run()
+        audit({
+          entity: 'laundry_settlement',
+          entityId: before.id,
+          action: 'reopen',
+          before,
+          after: anySettlementRow(tx, data.contactId, data.year, data.month),
+          reason: data.reason
+        })
+        const check = withInvoice(compute(tx, data.contactId, data.year, data.month), 0)
+        return { ...check, settled: null }
       })
     }
   }

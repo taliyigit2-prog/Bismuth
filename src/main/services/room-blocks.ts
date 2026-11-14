@@ -44,7 +44,9 @@ export function openAutoBlock(
   const nextSold = tx
     .select({ date: roomNights.date })
     .from(roomNights)
-    .where(and(eq(roomNights.roomId, input.roomId), gte(roomNights.date, today)))
+    .where(
+      and(eq(roomNights.roomId, input.roomId), eq(roomNights.slot, 'night'), gte(roomNights.date, today))
+    )
     .orderBy(asc(roomNights.date))
     .get()?.date as LocalDate | undefined
   const horizon = addDays(today, AUTO_BLOCK_MAX_DAYS)

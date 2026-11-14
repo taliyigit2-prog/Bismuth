@@ -1,6 +1,7 @@
 // Who may use Ayarlar → Uzaktan erişim (faz-13 madde 1; G-23): `remote.settings` view to read, edit to change; the
 // server's way of working changes only from the hotel's own window (IPC), never from a phone (HTTP).
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { remoteHandlers } from '../../src/main/api/handlers/remote'
 import { createServices } from '../../src/main/services'
 import { localOwnerCtx } from '../../src/main/services/context'
 import { createRemoteService, setRemoteRuntime } from '../../src/main/server/remote-service'
@@ -102,6 +103,19 @@ describe('uzaktan erişim ayarları — yetki', () => {
     expect(runtime.discover).toHaveBeenCalledTimes(1)
     expect(() => remote.notClient()).toThrow(expect.objectContaining({ messageKey: 'errors.notClientMode' }))
     expect(remote.clientStatus()).toMatchObject({ mode: 'local', state: 'none' })
+  })
+
+  it('kayıtlı otel listesi yordamları ana bilgisayarda "istemci değil" der (P21b)', async () => {
+    const { services } = await setup()
+    const handlers = remoteHandlers(services)
+    const env = { transport: 'ipc' } as never
+    const ctx = localOwnerCtx()
+    for (const call of [
+      () => handlers['remote.hotels'](ctx, {}, env),
+      () => handlers['remote.hotelUpdate'](ctx, { code: 'pandora', name: 'X' }, env),
+      () => handlers['remote.hotelRemove'](ctx, { code: 'pandora' }, env)
+    ])
+      expect(call).toThrow(expect.objectContaining({ messageKey: 'errors.notClientMode' }))
   })
 
   it('otelin ağını açmak remote.settings düzenleme ister ve yalnız otel bilgisayarından (K-45)', async () => {

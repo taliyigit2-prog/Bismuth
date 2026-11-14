@@ -80,6 +80,22 @@ export const bookingHandlers = (services: Services): HandlersFor<keyof typeof bo
       const created = services.reservations.create(ctx, data, { blacklistConfirmed })
       return view(ctx, created.reservation.id)
     },
+    'booking.createHourlyStay': (ctx, input) => {
+      const { blacklistConfirmed, roomId, date, startTime, endTime, priceMinor, adults, ...rest } = input
+      const created = services.reservations.create(
+        ctx,
+        {
+          ...rest,
+          adults,
+          stays: [
+            { roomId, checkIn: date, checkOut: date, startTime, endTime, nightlyPriceMinor: priceMinor }
+          ]
+        },
+        { blacklistConfirmed }
+      )
+      return view(ctx, created.reservation.id)
+    },
+    'booking.hourlyCheck': (ctx, input) => services.reservations.hourlyCheck(ctx, input),
     'booking.update': (ctx, input) =>
       view(ctx, services.reservations.update(ctx, input.id, input.patch).reservation.id),
     'booking.addRoom': (ctx, input) =>
@@ -103,14 +119,32 @@ export const bookingHandlers = (services: Services): HandlersFor<keyof typeof bo
         ctx,
         services.reservations.checkOut(ctx, input.stayId, {
           kbsCheckoutIds: input.kbsCheckoutIds,
-          dayUsePriceMinor: input.dayUsePriceMinor
+          dayUsePriceMinor: input.dayUsePriceMinor,
+          dayUseFreeConfirmed: input.dayUseFreeConfirmed
         }).reservation.id
       ),
     'booking.cancel': (ctx, input) =>
-      view(ctx, services.reservations.cancel(ctx, input.id, input.reason).reservation.id),
+      view(ctx, services.reservations.cancel(ctx, input.id, input.reason, input.refund).reservation.id),
+    'booking.undoCheckIn': (ctx, input) =>
+      view(
+        ctx,
+        services.reservations.undoCheckIn(ctx, input.stayId, {
+          reason: input.reason,
+          kbsConfirmed: input.kbsConfirmed,
+          then: input.then
+        }).reservation.id
+      ),
     'booking.cancelStay': (ctx, input) =>
       view(ctx, services.reservations.cancelStay(ctx, input.stayId, input.reason).reservation.id),
-    'booking.noShow': (ctx, input) => view(ctx, services.reservations.noShow(ctx, input.id).reservation.id),
+    'booking.noShow': (ctx, input) =>
+      view(ctx, services.reservations.noShow(ctx, input.id, 'no_show', input.feeMinor ?? 0).reservation.id),
+    'booking.feeQuote': (ctx, input) => services.fees.quote(ctx, input),
+    'booking.addLateCheckout': (ctx, input) =>
+      view(ctx, services.fees.addLateCheckout(ctx, input).reservationId),
+    'booking.voidFee': (ctx, input) => view(ctx, services.fees.voidFee(ctx, input).reservationId),
+    'booking.folioLines': (ctx, input) => services.fees.folioLines(ctx, input.id),
+    'booking.takeDeposit': (ctx, input) => view(ctx, services.fees.takeDeposit(ctx, input).reservationId),
+    'booking.settleDeposit': (ctx, input) => view(ctx, services.fees.settleDeposit(ctx, input).reservationId),
     'booking.park': (ctx, input) =>
       view(ctx, services.reservations.park(ctx, input.id, input.park).reservation.id),
     'booking.unpark': (ctx, input) =>
@@ -136,6 +170,15 @@ export const bookingHandlers = (services: Services): HandlersFor<keyof typeof bo
       services.occupants.update(ctx, input.id, input.patch)
       return ok
     },
+    'booking.group': (ctx, input) => services.reservations.group(ctx, input.id),
+    'booking.createGroup': (ctx, input) => services.reservations.createGroup(ctx, input),
+    'booking.checkInMany': (ctx, input) => services.reservations.checkInMany(ctx, input),
+    'booking.checkOutMany': (ctx, input) => services.reservations.checkOutMany(ctx, input),
+    'booking.kbsGaps': (ctx, input) => services.reservations.kbsGaps(ctx, input),
+    'booking.addGroupNote': (ctx, input) => services.reservations.addGroupNote(ctx, input),
+    'booking.cancelGroup': (ctx, input) => services.reservations.cancelGroup(ctx, input),
+    'booking.payGroup': (ctx, input) => services.reservations.payGroup(ctx, input),
+    'booking.attachToGroup': (ctx, input) => services.reservations.attachToGroup(ctx, input),
     'booking.markKbs': (ctx, input) => {
       const o = services.occupants
       if (input.mark === 'reported') o.markKbsReported(ctx, input.occupantId)

@@ -48,10 +48,27 @@ const pKbsSheet = project("kbs-sheet", { git: true, files: { "data/EGM_Konaklaya
 // Built at run time so this file itself never holds a valid identity number (the guard would block it).
 const fakeIdentity = ["123456", "78950"].join("");
 const pKbsNumber = project("kbs-number", { git: true, files: { "src/guest.ts": `export const id = '${fakeIdentity}'\n` } });
+// A valid-checksum number inside a hex checksum (lock files) is not an identity number.
+const pKbsHash = project("kbs-hash", { git: true, files: { "Cargo.lock": `checksum = "ab${fakeIdentity}cd"\n` } });
 const pKbsClean = project("kbs-clean", {
   git: true,
   files: { "src/guest.ts": "export const sample = '10000000146' // public test number\nexport const phone = '05321234567'\n" },
 });
+// Docs-only change in a checkout whose tests fail: the gate must skip the toolchain (nothing it checks changed).
+const failScripts = { ...allScripts, test: "node -e \"console.error('FAILTEST: 1 test failed');process.exit(1)\"" };
+const pDocsOnly = project("docs-only", { scripts: failScripts, git: true, files: { ".gitignore": "node_modules\n", "docs/analiz/not.md": "# belge\n", ".claude/agents/x.md": "---\nname: x\n---\n" } });
+const pDocsCode = project("docs-code", { scripts: failScripts, git: true, files: { ".gitignore": "node_modules\n", "docs/not.md": "# belge\n", "src/a.ts": "export const a = 1\n" } });
+// package.json is already committed in these checkouts; only the docs (and src/a.ts) are new.
+for (const dir of [pDocsOnly, pDocsCode]) {
+  const g = (...args) => execFileSync("git", ["-c", "user.name=t", "-c", "user.email=t@t", ...args], { cwd: dir, env: baseEnv, stdio: "ignore" });
+  g("add", "package.json", ".gitignore");
+  g("commit", "-q", "-m", "init");
+}
+// camera-data-guard fixtures: a face crop, a weight file and a bot token in the tree; a clean tree with a docs image.
+const pCamFace = project("cam-face", { git: true, files: { "otel-kamera/guest_photos/guest_1.jpg": "\xff\xd8" } });
+const pCamWeights = project("cam-weights", { git: true, files: { "otel-kamera/yolo11n.pt": "PK" } });
+const pCamToken = project("cam-token", { git: true, files: { "otel-kamera/config.py": "TOKEN='" + ["1234567890", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"].join(":") + "'\n" } });
+const pCamClean = project("cam-clean", { git: true, files: { "docs/analiz/ekler/ekran.png": "\x89PNG", "otel-kamera/.env.example": "TELEGRAM_BOT_TOKEN=\n", "src/a.ts": "export const a = 1\n" } });
 // A git checkout (a worktree, say) whose tests fail, while the project dir passes.
 const pGitFail = project("git-fail", {
   scripts: { ...allScripts, test: "node -e \"console.error('FAILTEST: 1 test failed');process.exit(1)\"" },
@@ -59,6 +76,18 @@ const pGitFail = project("git-fail", {
 });
 const pStop = project("stop", { scripts: allScripts, git: true, files: { "src/app.ts": "export const a = 1;\n" } });
 const pStopDocs = project("stop-docs", { scripts: allScripts, git: true, files: { "docs/notes.md": "# not code\n" } });
+// Docs-only change: package.json is committed first (it is tracked now that stop-gate watches it).
+const pStopDrizzle = project("stop-drizzle", { scripts: allScripts, git: true, files: { "drizzle/0001_x.sql": "select 1;\n" } });
+const pStopPkg = project("stop-pkg", { scripts: allScripts, git: true, files: { "docs/notes.md": "# not code\n" } });
+for (const dir of [pStopDocs, pStopPkg]) {
+  const g = (...args) => execFileSync("git", ["-c", "user.name=t", "-c", "user.email=t@t", ...args], { cwd: dir, env: baseEnv, stdio: "ignore" });
+  g("add", "package.json");
+  g("commit", "-q", "-m", "init");
+}
+write(join(pStopPkg, "package.json"), JSON.stringify({ name: "stop-pkg", private: true, scripts: { ...allScripts, extra: ok } }, null, 2));
+const pStopLock = project("stop-lock", { scripts: allScripts, git: true, files: { "package-lock.json": "{}\n" } });
+const pStopBuilder = project("stop-builder", { scripts: allScripts, git: true, files: { "electron-builder.yml": "asar: true\n" } });
+const pStopGh = project("stop-gh", { scripts: allScripts, git: true, files: { ".github/workflows/ci.yml": "name: ci\n" } });
 const pNpmrc = project("npmrc", { scripts: allScripts, files: { ".npmrc": "save-exact=true\n" } });
 const pFmt = project("fmt", {
   scripts: allScripts,
@@ -67,7 +96,6 @@ const pFmt = project("fmt", {
     "vitest.config.ts": "export default {}\n",
     "docs/x.ts": "const x = 1\n",
     "drizzle/meta/_journal.json": "{}\n",
-    "prototypes/p.ts": "const p = 1\n",
     "src/readme.md": "# md\n",
     // Fake prettier: records its arguments so the test can see whether (and how) the hook called it.
     "node_modules/.bin/prettier":
@@ -105,11 +133,19 @@ const cases = [
   { hook: "db-migration-guard.mjs", input: { cwd: root, tool_name: "Edit", tool_input: { file_path: "docs/plan/README.md" } }, expect: 0, note: "non-migration passes" },
   { hook: "protect-files.mjs", input: { cwd: root, tool_name: "Edit", tool_input: { file_path: "docs/plan/01-gereksinimler.md" } }, expect: 2, note: "requirements blocked" },
   { hook: "protect-files.mjs", input: { cwd: root, tool_name: "Edit", tool_input: { file_path: "package-lock.json" } }, expect: 2, note: "lockfile blocked" },
+  { hook: "protect-files.mjs", env: { HOTEL_CRM_ALLOW_PROTECTED: "1" }, input: { cwd: root, tool_name: "Edit", tool_input: { file_path: "docs/plan/01-gereksinimler.md" } }, expect: 2, note: "no escape variable" },
   { hook: "protect-files.mjs", input: { cwd: root, tool_name: "Edit", tool_input: { file_path: "docs/plan/03-mimari.md" } }, expect: 0, note: "other doc passes" },
   { hook: "deps-guard.mjs", input: { cwd: root, tool_name: "Bash", tool_input: { command: `${pm} electron-updater` } }, expect: 2, note: "blocked package" },
+  { hook: "deps-guard.mjs", input: { cwd: root, tool_name: "Bash", tool_input: { command: ["npm", "--no-audit", "install", "electron-updater"].join(" ") } }, expect: 2, note: "flag before install blocked" },
+  { hook: "deps-guard.mjs", input: { cwd: root, tool_name: "Bash", tool_input: { command: `${pm} --save-exact 'x@npm:electron-updater'` } }, expect: 2, note: "quoted npm alias blocked" },
+  { hook: "deps-guard.mjs", input: { cwd: root, tool_name: "Bash", tool_input: { command: `${pm} --save-exact update-electron-app` } }, expect: 2, note: "update-electron-app blocked" },
   { hook: "deps-guard.mjs", env: { CLAUDE_PROJECT_DIR: pEmpty }, input: { cwd: pEmpty, tool_name: "Bash", tool_input: { command: `${pm} zod` } }, expect: 2, note: "no save-exact blocked" },
   { hook: "deps-guard.mjs", env: { CLAUDE_PROJECT_DIR: pNpmrc }, input: { cwd: pNpmrc, tool_name: "Bash", tool_input: { command: `${pm} zod` } }, expect: 0, note: ".npmrc save-exact passes" },
   { hook: "deps-guard.mjs", input: { cwd: root, tool_name: "Bash", tool_input: { command: `${pm} --save-exact zod` } }, expect: 0, note: "save-exact passes" },
+  { hook: "deps-guard.mjs", input: { cwd: root, tool_name: "Bash", tool_input: { command: "yarn add electron-updater" } }, expect: 2, note: "yarn add: blocked package" },
+  { hook: "deps-guard.mjs", input: { cwd: root, tool_name: "Bash", tool_input: { command: "yarn global add @sentry/node" } }, expect: 2, note: "yarn global add: blocked package" },
+  { hook: "deps-guard.mjs", env: { CLAUDE_PROJECT_DIR: pEmpty }, input: { cwd: pEmpty, tool_name: "Bash", tool_input: { command: "yarn add zod" } }, expect: 2, note: "yarn add without exact blocked" },
+  { hook: "deps-guard.mjs", input: { cwd: root, tool_name: "Bash", tool_input: { command: "yarn add --exact zod" } }, expect: 0, note: "yarn add --exact passes" },
   { hook: "deps-guard.mjs", input: { cwd: root, tool_name: "Bash", tool_input: { command: pm } }, expect: 0, note: "bare install passes" },
   { hook: "deps-guard.mjs", input: { cwd: "/nonexistent", tool_name: "Bash", tool_input: { command: `sed -i "s/a/b/" x.json && ${pm} --no-audit 2>&1 | tail -3` } }, expect: 0, note: "sed -i is not npm i" },
   { hook: "deps-guard.mjs", input: { cwd: "/nonexistent", tool_name: "Bash", tool_input: { command: `cd app && ${pm} --save-exact -D @sentry/electron` } }, expect: 2, note: "blocked scoped package" },
@@ -120,7 +156,22 @@ const cases = [
   { hook: "no-network-guard.mjs", input: { cwd: root, tool_name: "Write", tool_input: { file_path: "src/main/server/app.ts", content: "serve({ fetch: app.fetch, port })" } }, expect: 0, note: "host-mode server passes" },
   { hook: "no-network-guard.mjs", input: { cwd: root, tool_name: "Write", tool_input: { file_path: "src/renderer/lib/transport/http.ts", content: 'await fetch(`${baseUrl}/api`)' } }, expect: 0, note: "client transport passes" },
   { hook: "no-network-guard.mjs", input: { cwd: root, tool_name: "Write", tool_input: { file_path: "src/renderer/features/today/page.tsx", content: 'await fetch(`${baseUrl}/api`)' } }, expect: 2, note: "fetch in a feature blocked" },
-  { hook: "no-network-guard.mjs", input: { cwd: root, tool_name: "Write", tool_input: { file_path: "prototypes/live-checks/check.mjs", content: 'await fetch("https://open.er-api.com/v6/latest/USD")' } }, expect: 0, note: "prototype spike passes" },
+  { hook: "no-network-guard.mjs", input: { cwd: root, tool_name: "Write", tool_input: { file_path: "src/main/camera/bridge.ts", content: 'await fetch("http://127.0.0.1:47511/api/health", { headers })' } }, expect: 0, note: "camera: fetch to the 127.0.0.1 sidecar passes" },
+  { hook: "no-network-guard.mjs", input: { cwd: root, tool_name: "Write", tool_input: { file_path: "src/main/camera/bridge.ts", content: 'const base = `http://${BRIDGE_HOST}:${port}`; await fetch(`${base}/api/x`)' } }, expect: 0, note: "camera: templated loopback base passes" },
+  { hook: "no-network-guard.mjs", input: { cwd: root, tool_name: "Write", tool_input: { file_path: "src/main/camera/sidecar.ts", content: 'const url = "rtsp:' + '//admin:pw@192.168.1.64:554/Streaming/Channels/101"' } }, expect: 0, note: "camera: rtsp:// target passes" },
+  { hook: "no-network-guard.mjs", input: { cwd: root, tool_name: "Write", tool_input: { file_path: "src/main/camera/bridge.ts", content: 'await fetch("https://api.example.com/upload")' } }, expect: 2, stderr: /127\.0\.0\.1/, note: "camera: outside https blocked" },
+  { hook: "no-network-guard.mjs", input: { cwd: root, tool_name: "Write", tool_input: { file_path: "src/main/camera/bridge.ts", content: 'await fetch("http://127.0.0.1.evil.com/x")' } }, expect: 2, note: "camera: loopback-looking host blocked" },
+  { hook: "no-network-guard.mjs", input: { cwd: root, tool_name: "Write", tool_input: { file_path: "src/main/camera/bridge.ts", content: 'await fetch("http://localhost@evil.com/x")' } }, expect: 2, note: "camera: userinfo trick blocked" },
+  { hook: "no-network-guard.mjs", input: { cwd: root, tool_name: "Write", tool_input: { file_path: "src/main/camera/bridge.ts", content: 'await fetch("http://192.168.1.20/x")' } }, expect: 2, note: "camera: LAN http blocked (the camera is reached by rtsp inside the sidecar)" },
+  { hook: "no-network-guard.mjs", input: { cwd: root, tool_name: "Write", tool_input: { file_path: "src/main/camera/sidecar.ts", content: "server.listen(port, '0.0.0.0')" } }, expect: 2, stderr: /0\.0\.0\.0/, note: "camera: binding 0.0.0.0 blocked" },
+  { hook: "no-network-guard.mjs", input: { cwd: root, tool_name: "Write", tool_input: { file_path: "src/main/camera/bridge.ts", content: 'new WebSocket("ws://127.0.0.1:1/x")' } }, expect: 2, note: "camera: WebSocket blocked" },
+  { hook: "no-network-guard.mjs", input: { cwd: root, tool_name: "Write", tool_input: { file_path: "src/main/network/telegram/index.ts", content: 'await fetch("https://api.telegram.org/bot/x")' } }, expect: 0, note: "telegram client in src/main/network passes" },
+  { hook: "no-network-guard.mjs", input: { cwd: root, tool_name: "Write", tool_input: { file_path: "src/main/camera/discovery.ts", content: "const NS = 'http://schemas.xmlsoap.org/ws/2005/04/discovery'; socket.send(probe, 3702, '239.255.255.250')" } }, expect: 0, note: "camera search: WS-Discovery namespace and multicast group pass" },
+  { hook: "no-network-guard.mjs", input: { cwd: root, tool_name: "Write", tool_input: { file_path: "src/main/camera/discovery.ts", content: "await fetch('https://api.example.com/x')" } }, expect: 2, note: "camera search: an outside URL is still blocked" },
+  { hook: "no-network-guard.mjs", input: { cwd: root, tool_name: "Write", tool_input: { file_path: "src/main/camera/discovery.ts", content: "const NS = 'http://schemas.xmlsoap.org.evil.com/ws/2005/04/discovery'" } }, expect: 2, note: "camera search: look-alike namespace host blocked" },
+  { hook: "no-network-guard.mjs", input: { cwd: root, tool_name: "Write", tool_input: { file_path: "src/main/camera/bridge.ts", content: "const NS = 'http://schemas.xmlsoap.org/ws/2005/04/discovery'" } }, expect: 2, note: "camera: the namespace exception is for discovery.ts alone" },
+  { hook: "no-network-guard.mjs", input: { cwd: root, tool_name: "Write", tool_input: { file_path: "src/main/camera/discovery.ts", content: "socket.bind(37020, '0.0.0.0')" } }, expect: 2, note: "camera search: binding 0.0.0.0 blocked" },
+  { hook: "no-network-guard.mjs", input: { cwd: root, tool_name: "Write", tool_input: { file_path: "src/main/services/camera-service.ts", content: 'await fetch("http://127.0.0.1:1/x")' } }, expect: 2, note: "camera network code outside src/main/camera blocked" },
 
   // ---------- pre-commit-gate ----------
   { hook: "pre-commit-gate.mjs", env: { CLAUDE_PROJECT_DIR: pEmpty }, input: { cwd: pEmpty, tool_name: "Bash", tool_input: { command: `${commit} -m x` } }, expect: 0, stderr: /package\.json yok/, note: "no package.json: fail-open" },
@@ -138,10 +189,41 @@ const cases = [
     after: () => (existsSync(marker(pPass)) && !Number.isNaN(Date.parse(readFileSync(marker(pPass), "utf8").trim())) ? null : ".checks-passed yazılmadı"),
   },
 
+  {
+    hook: "pre-commit-gate.mjs", env: { CLAUDE_PROJECT_DIR: pDocsOnly }, input: { cwd: pDocsOnly, tool_name: "Bash", tool_input: { command: `git add -A && ${commit} -m "docs: x"` } },
+    expect: 0, stderr: /yalnız belge\/ayar/, note: "docs-only commit: toolchain skipped even though tests would fail",
+  },
+  {
+    hook: "pre-commit-gate.mjs", env: { CLAUDE_PROJECT_DIR: pDocsCode }, input: { cwd: pDocsCode, tool_name: "Bash", tool_input: { command: `git add -A && ${commit} -m "feat: x"` } },
+    expect: 2, stderr: /FAILTEST/, note: "docs + code commit: toolchain runs",
+  },
+  {
+    hook: "pre-commit-gate.mjs", env: { CLAUDE_PROJECT_DIR: pDocsOnly }, input: { cwd: pDocsOnly, tool_name: "Bash", tool_input: { command: `${commit} -m "docs: x"` } },
+    expect: 2, stderr: /FAILTEST/, note: "nothing staged and no add: cannot tell, toolchain runs",
+  },
+
+  // ---------- workflow-guard ----------
+  { hook: "workflow-guard.mjs", input: { cwd: root, tool_name: "Bash", tool_input: { command: "gh workflow run ci.yml" } }, expect: 2, stderr: /gh workflow run/, note: "workflow dispatch: blocked" },
+  { hook: "workflow-guard.mjs", input: { cwd: root, tool_name: "Bash", tool_input: { command: "gh run rerun 123" } }, expect: 2, stderr: /gh run rerun/, note: "rerun: blocked" },
+  { hook: "workflow-guard.mjs", input: { cwd: root, tool_name: "Bash", tool_input: { command: "gh release create v1.0.1 dist/*" } }, expect: 2, stderr: /gh release create/, note: "release create: blocked" },
+  { hook: "workflow-guard.mjs", input: { cwd: root, tool_name: "Bash", tool_input: { command: "gh api -X POST repos/o/r/actions/workflows/ci.yml/dispatches" } }, expect: 2, stderr: /POST|dispatches/, note: "REST dispatch: blocked" },
+  { hook: "workflow-guard.mjs", input: { cwd: root, tool_name: "Bash", tool_input: { command: "gh run list --limit 5 && gh run view 123 --log | tail -20" } }, expect: 0, note: "read-only gh: allowed" },
+  { hook: "workflow-guard.mjs", input: { cwd: root, tool_name: "Bash", tool_input: { command: "git tag v1.0.1 -m 'release'" } }, expect: 2, stderr: /v1\.0\.1/, note: "version tag: blocked" },
+  { hook: "workflow-guard.mjs", input: { cwd: root, tool_name: "Bash", tool_input: { command: "git tag -l 'v*' && git tag archive/faz0" } }, expect: 0, note: "listing and non-version tag: allowed" },
+  { hook: "workflow-guard.mjs", input: { cwd: root, tool_name: "Bash", tool_input: { command: "echo 'gh workflow run ci.yml'" } }, expect: 0, note: "text mentioning gh: not a command" },
+
+  // ---------- camera-data-guard ----------
+  { hook: "camera-data-guard.mjs", input: { cwd: pCamFace, tool_name: "Bash", tool_input: { command: "git add -A" } }, expect: 2, stderr: /guest_photos/, note: "face crop in the tree: blocked" },
+  { hook: "camera-data-guard.mjs", input: { cwd: pCamWeights, tool_name: "Bash", tool_input: { command: `${commit} -am x` } }, expect: 2, stderr: /yolo11n\.pt/, note: "model weights: blocked" },
+  { hook: "camera-data-guard.mjs", input: { cwd: pCamToken, tool_name: "Bash", tool_input: { command: "git add otel-kamera" } }, expect: 2, stderr: /Telegram/, note: "bot token text: blocked" },
+  { hook: "camera-data-guard.mjs", input: { cwd: pCamClean, tool_name: "Bash", tool_input: { command: "git add -A" } }, expect: 0, note: "docs image, .env.example and code: allowed" },
+  { hook: "camera-data-guard.mjs", input: { cwd: pCamFace, tool_name: "Bash", tool_input: { command: "git status --short" } }, expect: 0, note: "not add/commit: ignored" },
+
   // ---------- kbs-data-guard ----------
   { hook: "kbs-data-guard.mjs", input: { cwd: pKbsSheet, tool_name: "Bash", tool_input: { command: "git add -A" } }, expect: 2, stderr: /EGM_Konaklayan_Listesi\.xlsx/, note: "spreadsheet in the changes: blocked" },
   { hook: "kbs-data-guard.mjs", input: { cwd: pKbsNumber, tool_name: "Bash", tool_input: { command: `${commit} -am x` } }, expect: 2, stderr: /src\/guest\.ts:1/, note: "valid identity number: blocked" },
   { hook: "kbs-data-guard.mjs", input: { cwd: pKbsClean, tool_name: "Bash", tool_input: { command: "git add -A" } }, expect: 0, note: "public test number and a phone number pass" },
+  { hook: "kbs-data-guard.mjs", input: { cwd: pKbsHash, tool_name: "Bash", tool_input: { command: "git add -A" } }, expect: 0, note: "digits inside a hex checksum pass" },
   { hook: "kbs-data-guard.mjs", input: { cwd: pKbsClean, tool_name: "Bash", tool_input: { command: `cd ${pKbsSheet} && git add -A` } }, expect: 2, stderr: /xlsx/, note: "cd <dir> && git add: that checkout is scanned" },
   { hook: "kbs-data-guard.mjs", input: { cwd: pKbsSheet, tool_name: "Bash", tool_input: { command: "git status --short" } }, expect: 0, note: "not add/commit: ignored" },
 
@@ -171,6 +253,11 @@ const cases = [
   { hook: "stop-gate.mjs", env: { CLAUDE_PROJECT_DIR: pStop }, input: { cwd: pStop, hook_event_name: "Stop", stop_hook_active: true }, expect: 0, stdout: /^$/, note: "stop_hook_active: no loop" },
   { hook: "stop-gate.mjs", env: { CLAUDE_PROJECT_DIR: pStopDocs }, input: { cwd: pStopDocs, hook_event_name: "Stop", stop_hook_active: false }, expect: 0, stdout: /^$/, note: "only docs changed: no block" },
   { hook: "stop-gate.mjs", env: { CLAUDE_PROJECT_DIR: pStop }, input: { cwd: pStop, hook_event_name: "Stop", stop_hook_active: false }, expect: 0, stdout: /"decision":"block".*src\/app\.ts.*npm run check/, note: "untracked src file, no marker: block" },
+  { hook: "stop-gate.mjs", env: { CLAUDE_PROJECT_DIR: pStopDrizzle }, input: { cwd: pStopDrizzle, hook_event_name: "Stop", stop_hook_active: false }, expect: 0, stdout: /"decision":"block".*drizzle\/0001_x\.sql/, note: "drizzle/ change: block" },
+  { hook: "stop-gate.mjs", env: { CLAUDE_PROJECT_DIR: pStopPkg }, input: { cwd: pStopPkg, hook_event_name: "Stop", stop_hook_active: false }, expect: 0, stdout: /"decision":"block".*package\.json/, note: "package.json change: block" },
+  { hook: "stop-gate.mjs", env: { CLAUDE_PROJECT_DIR: pStopLock }, input: { cwd: pStopLock, hook_event_name: "Stop", stop_hook_active: false }, expect: 0, stdout: /"decision":"block".*package-lock\.json/, note: "package-lock.json change: block" },
+  { hook: "stop-gate.mjs", env: { CLAUDE_PROJECT_DIR: pStopBuilder }, input: { cwd: pStopBuilder, hook_event_name: "Stop", stop_hook_active: false }, expect: 0, stdout: /"decision":"block".*electron-builder\.yml/, note: "electron-builder.yml change: block" },
+  { hook: "stop-gate.mjs", env: { CLAUDE_PROJECT_DIR: pStopGh }, input: { cwd: pStopGh, hook_event_name: "Stop", stop_hook_active: false }, expect: 0, stdout: /"decision":"block".*\.github\/workflows\/ci\.yml/, note: ".github/ change: block" },
   {
     hook: "stop-gate.mjs", env: { CLAUDE_PROJECT_DIR: pStop }, input: { cwd: pStop, hook_event_name: "Stop", stop_hook_active: false }, expect: 0, stdout: /^$/, note: "marker newer than changes: pass",
     before: () => {
@@ -191,7 +278,6 @@ const cases = [
   fmtCase("vitest.config.ts", true, "root config formatted"),
   fmtCase("docs/x.ts", false, "docs/ skipped"),
   fmtCase("drizzle/meta/_journal.json", false, "drizzle/ skipped"),
-  fmtCase("prototypes/p.ts", false, "prototypes/ skipped"),
   fmtCase("src/readme.md", false, "non-code extension skipped"),
   { hook: "format-file.mjs", env: { CLAUDE_PROJECT_DIR: pEmpty }, input: { cwd: pEmpty, tool_name: "Write", tool_input: { file_path: join(pEmpty, "src", "missing.ts") } }, expect: 0, note: "no prettier installed: silent" },
   { hook: "format-file.mjs", input: "not json", expect: 0, note: "bad input never blocks" },

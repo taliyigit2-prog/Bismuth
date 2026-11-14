@@ -159,7 +159,9 @@ extra_services      id pk, code unique, name, default_price_minor?, default_curr
 reservations        id pk, code unique, primary_guest_id fk, channel_id fk, channel_ref?, status(tentative|confirmed|checked_in|checked_out|cancelled|no_show|parked),
                     kind(overnight|day_use), parked_reason?, parked_note?, adults?, children? (yalnız kişi listesi yoksa; S-22), notes?, created_by, cancelled_at?, cancel_reason?, sold_by_user_id?
 reservation_rooms   id pk, reservation_id fk*, room_id fk*, check_in*, check_out*, checked_in_at?, checked_out_at?, status
-room_nights         id pk, reservation_room_id fk*, room_id fk, date*, slot(night|day), price_minor, currency   -- UNIQUE(room_id, date, slot)
+room_nights         id pk, reservation_room_id fk*, room_id fk, date*, slot(night|day), start_time?, end_time? ('HH:MM', yalnız saatlik gündüz yuvası; null = tüm gün/gece),
+                    price_minor, currency   -- 0019 (K-48): gece UNIQUE(room_id, date) kısmi (slot=night); gündüz UNIQUE(room_id, date, start_time) kısmi (saatli)
+                    --   + saatsiz gündüz UNIQUE(room_id, date) kısmi; saat çakışması `shared/domain/stays.ts` (hourRangesOverlap) ve serviste engellenir
 reservation_notes   id pk, reservation_id fk, date?, text, created_by
 stay_occupants      id pk, reservation_room_id fk*, guest_id? fk→guests, full_name, descriptor_note? ("kızıl saçlı"; yalnız personel),
                     is_primary(bool), arrived_at?, left_at?, kbs_reported_at?, kbs_reported_by?, kbs_checkout_at?, kbs_checkout_by?,
@@ -422,7 +424,7 @@ Her kural için test dosyası aynı adı taşır (`*.test.ts`). Excel'den doğru
 - Uyruk → `country_map` (K-36): anahtar normalizasyonu (Türkçe büyük harf, aksan ve noktalama yok sayılır: "K.K.T.C." = "KKTC"), takma adlar (TR, KKTC, GKRY…), İngilizce + Türkçe ülke adı dizini; **harf hatalı yazım** (≤ 1–2 harf) tek en yakın ülkeye öneri olarak eşlenir ama **kullanıcı onayı** ister; belirsiz ("KIBRIS") ve hassas ("CYPRUS" → Güney Kıbrıs Rum Kesimi) değerler otomatik eşlenmez; onaylanan eşleme kalıcıdır. Bakanlık panelinde liste yok, yazdıkça çıkan kutu var → Türkçe ülke adı Bismuth'tan (bazı adlar bakanlık kullanımına göre: "Rusya Federasyonu", "Amerika Birleşik Devletleri", "Filistin", "Kuzey Kıbrıs Türk Cumhuriyeti").
 - Karşılaştırma: aynı dönem için programın `stay_occupants` verisinden giriş/geceleme toplamı (uyruk isteğe bağlı olduğundan ülke bazında karşılaştırma yalnız uyruk girilmişse); farklar listelenir.
 - **Doluluk oranı (bakanlık) = geceleme ÷ (yatak sayısı × ayın gün sayısı)**; yatak sayısı o ayın kapasite geçmişinden (K-27) — **gerçek** sayı; bakanlıkta kayıtlı sayı kullanılmaz (S-99). Pandora 38 yatak: Eylül 840 ÷ (38 × 30) = **%73,7**. (Panelin %0,24 değeri bakanlığın kayıtlı 28 yatağıyla hesaplanmıştı.) Otelin kendi oda doluluğu (§6.10) ayrı KPI'dır.
-- Testler: Eylül örneği (607 giriş, 840 geceleme — otelde kalan 5 kişi dosya ayı sonuna kadar —, 248 aynı gün, 23 ülke) sentetik satırlarla yeniden üretilir; yazım hatası örnekleri (`TÜRKYİE`, `KUZY KIBRIS TURK CUMHURIYETI`), belirsiz `KIBRIS`, planlı çıkış senaryosu (prototip: `prototypes/kbs-stats`, 15 test).
+- Testler: Eylül örneği (607 giriş, 840 geceleme — otelde kalan 5 kişi dosya ayı sonuna kadar —, 248 aynı gün, 23 ülke) sentetik satırlarla yeniden üretilir; yazım hatası örnekleri (`TÜRKYİE`, `KUZY KIBRIS TURK CUMHURIYETI`), belirsiz `KIBRIS`, planlı çıkış senaryosu (prototip: `prototypes/kbs-stats` (arşiv etiketi `archive/faz0`), 15 test).
 
 ### 6.12 Misafir fiyat geçmişi (yeni)
 - `guestHistory(guestId)`: konaklamalar (tarih, oda, gece, gecelik fiyat listesi, ödenen toplam, yöntem/kanal) + özet: son konaklama tarihi, son gecelik fiyat, ortalama fiyat, toplam harcama, toplam gece.
@@ -475,7 +477,7 @@ Her kural için test dosyası aynı adı taşır (`*.test.ts`). Excel'den doğru
 ```
 /
 ├─ CLAUDE.md, .claude/                 kurallar, kancalar, ajanlar, beceriler
-├─ docs/plan/                          bu plan · docs/gelistirici.md geliştirici notları
+├─ docs/plan/                          bu plan · docs/gelistirici/README.md geliştirici notları
 ├─ src/main/                           app (yollar, pencere durumu, menü, ana süreç i18n), api (Hono yönlendirici + işleyiciler:
 │                                      IPC ve HTTP'nin ortak kapısı), db, services, ipc, server (Hono statik + güvenlik
 │                                      başlıkları), security, windows, backup, network, discovery, notifications, printing, attachments

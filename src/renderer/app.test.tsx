@@ -78,6 +78,19 @@ describe('uygulama kabuğu', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Denetim kaydı' })).toBeInTheDocument()
     expect(screen.getByTestId('nav-audit')).toBeInTheDocument()
   })
+
+  it('menü grupları tek dokunuşla kapanır; açık ekranın grubu kapanmaz (05 #5)', async () => {
+    await renderApp({ hash: '#/audit' })
+    await screen.findByRole('heading', { level: 1, name: 'Denetim kaydı' })
+    const user = userEvent.setup()
+    await user.click(screen.getByTestId('nav-group-guests'))
+    expect(screen.getByTestId('nav-group-guests')).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.getByTestId('nav-guests').closest('[data-sidebar="group-content"]')).toHaveClass('hidden')
+    await user.click(screen.getByTestId('nav-group-system'))
+    expect(screen.getByTestId('nav-group-system')).toHaveAttribute('aria-expanded', 'true')
+    await user.click(screen.getByTestId('nav-group-guests'))
+    expect(screen.getByTestId('nav-group-guests')).toHaveAttribute('aria-expanded', 'true')
+  })
 })
 
 describe('açılış kapısı (faz-04 madde 2)', () => {

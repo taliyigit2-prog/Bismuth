@@ -133,6 +133,11 @@ describe('tedarik ve çamaşırhane yetkileri', () => {
         needs: [need('laundry', 'edit')]
       },
       {
+        name: 'laundry.reopenMonth',
+        body: () => ({ contactId: ids.laundry.id, year: 2026, month: 9, reason: 'fatura yanlış' }),
+        needs: [need('laundry', 'edit'), need('laundry.reopen', 'edit')]
+      },
+      {
         name: 'laundry.trend',
         body: () => ({ contactId: ids.laundry.id, until: '2026-10-04' }),
         needs: [need('laundry', 'view')]
@@ -169,6 +174,14 @@ describe('tedarik ve çamaşırhane yetkileri', () => {
     )
     expect(settle.status).toBe(200)
     expect(JSON.parse(settle.body).settled.expenseId).toBeTruthy()
+    // S-127: reopening the month is owner / manager only, even though the accountant may close days.
+    expect(defaultPermissions('accountant')).toMatchObject({ 'business_day.close': 'edit', 'laundry.reopen': 'none' })
+    const reopen = await env.call(
+      'laundry.reopenMonth',
+      { contactId: ids.laundry.id, year: 2026, month: 7, reason: 'fatura yanlış' },
+      accountant
+    )
+    expect(reopen.status).toBe(403)
   })
 
   it('alım fişinin fotoğrafı yalnız giderini görebilen role açılır', async () => {

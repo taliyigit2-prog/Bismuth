@@ -13,10 +13,12 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="Bismuth" />
     <!-- Strict CSP (faz-01; .claude/rules/ipc.md). The Vite dev server gets a relaxed copy (electron.vite.config.ts);
-         server mode also sends it as a header, with frame-ancestors (src/main/server/static.ts). -->
+         server mode also sends it as a header, with frame-ancestors (src/main/server/static.ts). The loopback `img-src` is
+         the Kamera screen's live picture (Faz 20 P20b, hotel computer's own window); the request filter in
+         src/main/security/policy.ts lets through only the sidecar's exact port and `/api/stream`. -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: http://127.0.0.1:*; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'"
     />
   </head>
   <body>

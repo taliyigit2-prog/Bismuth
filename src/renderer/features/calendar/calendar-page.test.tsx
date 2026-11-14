@@ -111,6 +111,31 @@ describe('takvim (açılış ekranı, gerçek servis)', () => {
     expect(calls.map((c) => c.from)).toContain('2026-10-01')
   })
 
+  it('gruba bağlı konaklama grup çerçevesi ve simgesiyle çizilir, lejantta grup satırı çıkar; grupsuzlarda çıkmaz', async () => {
+    const hotel = demoHotel(DAY)
+    const grouped = await renderCalendar(hotel, {
+      grid: async ({ from, to }) => {
+        const page = gridFromDemo(hotel, from, to)
+        return { ...page, stays: page.stays.map((s, i) => (i === 0 ? { ...s, groupId: 'grp-1' } : s)) }
+      }
+    })
+    const chart = await screen.findByTestId('tape-chart')
+    await within(chart).findByTestId('tape-row-101')
+    const framed = chart.querySelectorAll('[data-group="grp-1"]')
+    expect(framed).toHaveLength(1)
+    expect(framed[0]!.className).toMatch(/ring-\(--group-[1-6]\)/)
+    expect(framed[0]!.getAttribute('data-icons')).toContain('group')
+    expect(framed[0]).toHaveAccessibleName(/Grup rezervasyonu/)
+    expect(await screen.findByTestId('group-legend')).toHaveTextContent('Aynı renkli çerçeve ve simge')
+    expect(chart.querySelectorAll('[data-group]').length).toBe(1)
+    grouped.unmount()
+    await renderCalendar(demoHotel(DAY))
+    const plain = await screen.findByTestId('tape-chart')
+    await within(plain).findByTestId('tape-row-101')
+    expect(plain.querySelectorAll('[data-group]')).toHaveLength(0)
+    expect(screen.queryByTestId('group-legend')).not.toBeInTheDocument()
+  })
+
   it('yalnız görünen günler çizilir (sanallaştırma): on yıllık ızgarada birkaç hafta', async () => {
     await renderCalendar()
     const chart = await screen.findByTestId('tape-chart')
@@ -261,6 +286,9 @@ describe('takvim (açılış ekranı, gerçek servis)', () => {
     await waitFor(() => expect(screen.queryByTestId('reservation-panel')).not.toBeInTheDocument())
     act(() => chart.focus())
     await user.keyboard('n')
+    // N on a cell opens the quick bar (P17c); "Ayrıntı" hands the cell to the full form.
+    expect(await screen.findByTestId('quick-book')).toBeInTheDocument()
+    await user.click(screen.getByTestId('quick-detail'))
     expect(await screen.findByRole('dialog', { name: 'Yeni rezervasyon' })).toBeInTheDocument()
   })
 
@@ -517,6 +545,7 @@ describe('takvim (açılış ekranı, gerçek servis)', () => {
     await user.keyboard('{Enter}')
     await user.keyboard('n')
     expect(screen.queryByRole('dialog', { name: 'Yeni rezervasyon' })).not.toBeInTheDocument()
+    expect(screen.queryByTestId('quick-book')).not.toBeInTheDocument()
     // Drag-and-drop is off too (faz-15 madde 12): no hint, a dragged bar draws no target.
     expect(screen.queryByTestId('drag-hint')).not.toBeInTheDocument()
     const planned = hotel.reservations.find((r) => r.status === 'confirmed' && r.stays[0]!.checkIn > DAY)!
@@ -524,6 +553,48 @@ describe('takvim (açılış ekranı, gerçek servis)', () => {
     fireEvent.pointerDown(bar, { button: 0, clientX: 100, clientY: 100, pointerId: 1 })
     fireEvent.pointerMove(bar, { clientX: 100, clientY: 140, pointerId: 1 })
     expect(within(chart).queryByTestId('drag-ghost')).not.toBeInTheDocument()
+  })
+})
+
+describe('takvim: aynı günde birden çok saatlik çubuk', () => {
+  it('üç saatlik çubuk üst üste dizilir; metin sığmasa da her çubuk saat aralığını ve adı title ile aria-label olarak taşır', async () => {
+    const hotel = demoHotel(DAY)
+    const names = ['Ayşe Demir', 'Burak Kaya', 'Cem Aksoy']
+    const ranges = [
+      ['09:00', '10:00'],
+      ['11:00', '12:00'],
+      ['14:00', '15:30']
+    ] as const
+    await renderCalendar(hotel, {
+      grid: async ({ from, to }) => {
+        const grid = gridFromDemo(hotel, from, to)
+        const base = grid.stays[0]!
+        const hourly = names.map((guestName, i) => ({
+          ...base,
+          id: `hourly-${i}`,
+          reservationId: `hourly-res-${i}`,
+          roomId: 'room-102',
+          checkIn: DAY,
+          checkOut: DAY,
+          dayUse: true,
+          reservationStatus: 'confirmed' as const,
+          stayStatus: 'planned' as const,
+          guestName,
+          startTime: ranges[i]![0],
+          endTime: ranges[i]![1],
+          nights: [{ date: DAY, pay: 'unpaid' as const, priceMinor: 90_000 }]
+        }))
+        return { ...grid, stays: [...grid.stays.filter((s) => s.roomId !== 'room-102'), ...hourly] }
+      }
+    })
+    const chart = await screen.findByTestId('tape-chart')
+    for (const [i, name] of names.entries()) {
+      const bar = await within(chart).findByTestId('stay-hourly-' + i)
+      const hours = `${ranges[i]![0]}–${ranges[i]![1]}`
+      expect(bar.getAttribute('aria-label')).toContain(name)
+      expect(bar.getAttribute('aria-label')).toContain(hours)
+      expect(bar).toHaveAttribute('title', bar.getAttribute('aria-label')!)
+    }
   })
 })
 
@@ -568,5 +639,57 @@ describe('takvim telefonda (gün listesi)', () => {
       await within(await screen.findByTestId('reservation-panel')).findByText('Maryam Hosseini')
     ).toBeInTheDocument()
     expect(hotel.reservations.some((r) => r.id === 'res-0432')).toBe(true)
+  })
+
+  it('ücret kalemleri okunamazsa panel hata ve "Yeniden dene" gösterir', async () => {
+    phone()
+    const { booking } = await renderCalendar()
+    await aliasView(booking, 'res-0432', 'Maryam', 'Hosseini')
+    const list = await screen.findByTestId('day-list')
+    fireEvent.click(await within(list).findByRole('button', { name: /Maryam Hosseini/ }))
+    const panel = await screen.findByTestId('reservation-panel')
+    await userEvent.setup().click(await within(panel).findByRole('tab', { name: 'Para' }))
+    const error = await within(panel).findByTestId('fees-error')
+    expect(within(error).getByRole('button', { name: 'Yeniden dene' })).toBeInTheDocument()
+  })
+
+  it('telefon listesinde gruba bağlı konaklama grup simgesiyle çıkar, grupsuzlarda çıkmaz (G-194)', async () => {
+    phone()
+    const hotel = demoHotel(DAY)
+    await renderCalendar(hotel, {
+      grid: async ({ from, to }) => {
+        const page = gridFromDemo(hotel, from, to)
+        return {
+          ...page,
+          stays: page.stays.map((s) => (s.reservationId === 'res-0432' ? { ...s, groupId: 'grp-1' } : s))
+        }
+      }
+    })
+    const list = await screen.findByTestId('day-list')
+    await within(list).findByRole('heading', { name: /^Gelenler/ })
+    const marks = within(list).getAllByRole('img', { name: 'Grup rezervasyonu' })
+    expect(marks.length).toBeGreaterThan(0)
+    expect(marks[0]!.className).toMatch(/ring-\(--group-[1-6]\)/)
+    const rows = within(list).getAllByRole('button')
+    expect(marks.length).toBeLessThan(rows.length)
+  })
+
+  it('telefon listesinde çıkışı yapılmış konaklama ödeme rozeti yerine "Çıkış yaptı" gösterir (H-13)', async () => {
+    phone()
+    const hotel = demoHotel(DAY)
+    await renderCalendar(hotel, {
+      grid: async ({ from, to }) => {
+        const page = gridFromDemo(hotel, from, to)
+        return {
+          ...page,
+          stays: page.stays.map((s) =>
+            s.reservationId === 'res-0432' ? { ...s, reservationStatus: 'checked_out' as const } : s
+          )
+        }
+      }
+    })
+    const list = await screen.findByTestId('day-list')
+    await within(list).findByRole('heading', { name: /^Gelenler/ })
+    expect(within(list).getAllByText('Çıkış yaptı').length).toBeGreaterThan(0)
   })
 })

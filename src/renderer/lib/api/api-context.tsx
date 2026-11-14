@@ -7,7 +7,7 @@ export function ApiProvider({ transport, children }: { transport: Transport; chi
   return <TransportContext.Provider value={transport}>{children}</TransportContext.Provider>
 }
 
-/** Components call the API only through these hooks (.claude/rules/ui.md: no direct window.bismuth). */
+/** Components call the API only through these hooks (.claude/rules/ui.md: no direct preload bridge; lib/shell). */
 export function useTransport(): Transport {
   const transport = useContext(TransportContext)
   if (!transport) throw new Error('useTransport outside ApiProvider')

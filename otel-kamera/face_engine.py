@@ -1,17 +1,22 @@
+import logging
+from typing import List, Optional, Tuple
+
 import cv2
 import numpy as np
-from typing import List, Tuple, Optional
-from insightface.app import FaceAnalysis
-from config import config
+
+from config import Config
+from config import config as default_config
+from model_loader import load_insightface
+
+log = logging.getLogger("otel-kamera.face")
+
 
 class FaceEngine:
-    def __init__(self, model_name: Optional[str] = None):
-        model = model_name or config.INSIGHTFACE_MODEL_NAME
-        print(f"[FaceEngine] InsightFace '{model}' CPU sağlayıcısıyla yükleniyor...")
-
-        self.app = FaceAnalysis(name=model, providers=["CPUExecutionProvider"])
-        self.app.prepare(ctx_id=0, det_size=(640, 640))
-        print("[FaceEngine] Model hazır.")
+    def __init__(self, settings: Config = default_config, app=None):
+        """`app`: hazır bir InsightFace uygulaması (testlerde sahtesi). Yoksa model YEREL klasörden yüklenir (indirme
+        yok, dosya eksikse `ModelMissingError`; K-57). insightface yalnız `models.load_insightface` içinde içe aktarılır."""
+        self.settings = settings
+        self.app = app if app is not None else load_insightface(settings)
 
     def detect_faces(
         self,
@@ -23,8 +28,8 @@ class FaceEngine:
         Karedeki yüzleri tespit eder, kalite ve boyut filtresinden geçirir.
         Çok uzaktaki veya bulanık yüzlerin yanlış alarm üretmesini engeller.
         """
-        score_thresh = min_score if min_score is not None else config.MIN_FACE_DET_SCORE
-        size_thresh = min_size if min_size is not None else config.MIN_FACE_SIZE_PX
+        score_thresh = min_score if min_score is not None else self.settings.MIN_FACE_DET_SCORE
+        size_thresh = min_size if min_size is not None else self.settings.MIN_FACE_SIZE_PX
 
         raw_faces = self.app.get(frame)
         valid_faces = []
@@ -55,9 +60,7 @@ class FaceEngine:
         faces = self.detect_faces(frame, min_score=min_score, min_size=min_size)
         if not faces:
             pad = 64
-            padded = cv2.copyMakeBorder(
-                frame, pad, pad, pad, pad, cv2.BORDER_CONSTANT, value=(20, 20, 20)
-            )
+            padded = cv2.copyMakeBorder(frame, pad, pad, pad, pad, cv2.BORDER_CONSTANT, value=(20, 20, 20))
             padded_faces = self.detect_faces(padded, min_score=0.38, min_size=24)
             results = []
             h, w = frame.shape[:2]
@@ -100,27 +103,32 @@ class FaceEngine:
             return 0.0
         return dot / (norm1 * norm2)
 
+    def best_match(
+        self,
+        face_embedding: np.ndarray,
+        active_guests: List[Tuple[str, str, str, np.ndarray]],
+    ) -> Optional[Tuple[str, str, str, float]]:
+        """Eşiğe bakmadan en benzer misafiri döner (misafir yoksa None). "Emin değil" bandı için de kullanılır."""
+        best: Optional[Tuple[str, str, str, float]] = None
+        for gid, name, room, guest_emb in active_guests:
+            score = self.cosine_similarity(face_embedding, guest_emb)
+            if best is None or score > best[3]:
+                best = (gid, name, room, score)
+        return best
+
     def match_face(
         self,
         face_embedding: np.ndarray,
-        active_guests: List[Tuple[int, str, str, np.ndarray]],
+        active_guests: List[Tuple[str, str, str, np.ndarray]],
         threshold: Optional[float] = None,
-    ) -> Optional[Tuple[int, str, str, float]]:
+    ) -> Optional[Tuple[str, str, str, float]]:
         """
         Gelen yüz embedding'ini aktif misafirlerin embedding'leri ile kıyaslar.
         Eşleşirse: (guest_id, name, room_number, similarity_score) döner.
         Eşleşmezse: None döner (Kayıtsız / Yabancı kişi).
         """
-        min_thresh = threshold if threshold is not None else config.FACE_SIMILARITY_THRESHOLD
-        best_match = None
-        best_score = -1.0
-
-        for gid, name, room, guest_emb in active_guests:
-            score = self.cosine_similarity(face_embedding, guest_emb)
-            if score > best_score:
-                best_score = score
-                best_match = (gid, name, room, score)
-
-        if best_match and best_score >= min_thresh:
-            return best_match
+        min_thresh = threshold if threshold is not None else self.settings.FACE_SIMILARITY_THRESHOLD
+        best = self.best_match(face_embedding, active_guests)
+        if best is not None and best[3] >= min_thresh:
+            return best
         return None

@@ -1,17 +1,12 @@
 // Files between the window and the program (faz-14): in the program's own window the main process saves an export
 // with its "Save as" dialog; a phone or browser gets the bytes and downloads them. A chosen CSV/XLSX file goes to the
 // import as base64.
+import { shell } from '@/lib/shell'
 import type { ExportFile } from '@shared/contract/backup'
 
-/** Downloads an exported file in a browser (no network: a data: URL). */
+/** Hands an exported file to the person (the shell: browser download). */
 export function saveExport(file: ExportFile): void {
-  const link = document.createElement('a')
-  link.href = `data:${file.mime};base64,${file.base64}`
-  link.download = file.fileName
-  link.rel = 'noopener'
-  document.body.append(link)
-  link.click()
-  link.remove()
+  shell.saveFile({ fileName: file.fileName, mime: file.mime, base64: file.base64 })
 }
 
 /** A chosen file as base64 (the contract's import input). */

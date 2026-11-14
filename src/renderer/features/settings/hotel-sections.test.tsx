@@ -44,6 +44,18 @@ describe('Vardiyalar', () => {
       ])
     )
   })
+
+  it('aynı adlı ikinci vardiya yazılamaz (H-38)', async () => {
+    const transport = adminTransport()
+    await renderWithProviders(<ShiftsSection />, { transport })
+    const user = userEvent.setup()
+    await screen.findByText('Gece')
+    await user.click(screen.getByTestId('add-shift'))
+    await user.type(await screen.findByTestId('shift-name'), 'gece')
+    await user.click(screen.getByTestId('dialog-save'))
+    expect(await screen.findByText('Bu ad zaten kullanılıyor. Başka bir ad yazın.')).toBeInTheDocument()
+    expect(transport.callsTo('shifts.create')).toEqual([])
+  })
 })
 
 describe('Görev önerileri', () => {
@@ -224,8 +236,16 @@ describe('Personel kuralları', () => {
     await user.clear(holiday)
     await user.type(holiday, 'iki')
     await user.click(screen.getByTestId('policy-save'))
-    expect(await screen.findByText('Oranı 1,5 gibi yazın.')).toBeInTheDocument()
+    expect(await screen.findByText('Oranı 1 ile 5 arasında yazın.')).toBeInTheDocument()
     expect(holiday).toHaveFocus()
+    // H-40: 0 and 99 are out of range too.
+    for (const out of ['0', '99']) {
+      await user.clear(holiday)
+      await user.type(holiday, out)
+      await user.click(screen.getByTestId('policy-save'))
+      expect(await screen.findByText('Oranı 1 ile 5 arasında yazın.')).toBeInTheDocument()
+    }
+    expect(transport.callsTo('staff.setPolicy')).toEqual([])
     await user.clear(holiday)
     await user.type(holiday, '2,5')
     await user.click(screen.getByTestId('policy-save'))
@@ -307,6 +327,20 @@ describe('Takvim', () => {
     expect(within(nights).getByRole('button', { name: 'Pazar' })).toHaveAttribute('data-state', 'off')
     await user.click(within(nights).getByRole('button', { name: 'Cuma' }))
     expect(onSave).toHaveBeenCalledWith({ 'pricing.weekendNights': [6] })
+  })
+})
+
+describe('Takvim: grup hesabı (S-106)', () => {
+  it('varsayılan tek hesap; oda başına hesaba geçilince ayar kaydedilir', async () => {
+    const user = userEvent.setup()
+    const onSave = vi.fn()
+    await renderWithProviders(<CalendarSection values={SETTINGS_DEFAULTS} onSave={onSave} />, {
+      transport: adminTransport()
+    })
+    const mode = await screen.findByTestId('settings-group-folio')
+    expect(within(mode).getByRole('radio', { name: 'Tek hesap' })).toHaveAttribute('data-state', 'on')
+    await user.click(within(mode).getByRole('radio', { name: 'Oda başına hesap' }))
+    expect(onSave).toHaveBeenCalledWith({ 'booking.groupFolioMode': 'per_room' }, true)
   })
 })
 

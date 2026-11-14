@@ -13,7 +13,11 @@ describe('oturum açma (G-22)', () => {
     expect(await screen.findByTestId('user-u-deniz')).toHaveTextContent('Resepsiyon')
     await user.click(screen.getByTestId('user-u-owner'))
     expect(screen.getByRole('radio', { name: 'PIN' })).toBeChecked()
-    expect(screen.getByTestId('sign-in')).toBeDisabled()
+    // An empty submit names the field instead of doing nothing.
+    await user.click(screen.getByTestId('sign-in'))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Bu alanı doldurun.')
+    expect(screen.getByTestId('secret')).toHaveAttribute('aria-invalid', 'true')
+    expect(transport.calls.some((c) => c.name === 'auth.signInWithPin')).toBe(false)
     await user.type(screen.getByTestId('secret'), '24ab68')
     expect(screen.getByTestId('secret')).toHaveValue('2468')
     await user.click(screen.getByTestId('sign-in'))
@@ -156,6 +160,13 @@ describe('şifremi unuttum', () => {
     expect(await screen.findByTestId('recover-error')).toHaveTextContent(
       'Kullanıcı adı ya da kurtarma kodu yanlış.'
     )
+
+    // H-46: the next attempt fails its own checks; the old "wrong code" message goes away.
+    await user.clear(screen.getByLabelText('Yeni şifre (tekrar)'))
+    await user.click(screen.getByTestId('recover-submit'))
+    expect(await screen.findByText('İki şifre aynı değil.')).toBeInTheDocument()
+    expect(screen.queryByTestId('recover-error')).not.toBeInTheDocument()
+    await user.type(screen.getByLabelText('Yeni şifre (tekrar)'), 'yepyeni-sifre')
 
     await user.clear(screen.getByLabelText('Kurtarma kodu'))
     await user.type(screen.getByLabelText('Kurtarma kodu'), FAKE_RECOVERY_CODE.toLowerCase())

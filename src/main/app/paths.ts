@@ -2,9 +2,9 @@ import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { app } from 'electron'
 
-/** Test/support hook: run with a separate data folder (e2e, ui-shot). Must be applied before `ready`. */
+/** Test/support hook: run with a separate data folder (e2e, ui-shot). Must be applied before `ready`. Ignored in a packaged build. */
 export function applyDataDirOverride(): void {
-  const override = process.env['BISMUTH_USER_DATA']
+  const override = app.isPackaged ? undefined : process.env['BISMUTH_USER_DATA']
   if (override) app.setPath('userData', override)
 }
 

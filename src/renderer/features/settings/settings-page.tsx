@@ -13,6 +13,7 @@ import {
   BookOpenIcon,
   Building2Icon,
   CalendarDaysIcon,
+  CctvIcon,
   ClockIcon,
   CoinsIcon,
   DatabaseBackupIcon,
@@ -22,6 +23,7 @@ import {
   ListIcon,
   ShieldCheckIcon,
   SlidersHorizontalIcon,
+  StarIcon,
   TagIcon,
   UsersRoundIcon,
   type LucideIcon
@@ -38,7 +40,10 @@ import { useCan } from '@/lib/view-as'
 import { cn } from '@/lib/utils'
 import { AppearanceSection } from './appearance-section'
 import { CalendarSection } from './calendar-section'
+import { CameraSection } from './camera-section'
 import { GeneralSection, IdleLockCard } from './general-section'
+import { FeesCard } from './fees-card'
+import { FrequentSection } from './frequent-section'
 import { HotelSection } from './hotel-section'
 import { ListsSection } from './lists-section'
 import { AboutNote, CurrencyNote } from './note-sections'
@@ -65,6 +70,7 @@ import { VIEW_ONLY_FIELDS, ViewOnlyNote } from './view-only'
 
 const ICONS: Record<SettingsSection, LucideIcon> = {
   general: SlidersHorizontalIcon,
+  frequent: StarIcon,
   hotel: Building2Icon,
   rooms: BedDoubleIcon,
   lists: ListIcon,
@@ -74,6 +80,7 @@ const ICONS: Record<SettingsSection, LucideIcon> = {
   calendar: CalendarDaysIcon,
   tags: TagIcon,
   currency: CoinsIcon,
+  camera: CctvIcon,
   remote: GlobeIcon,
   backup: DatabaseBackupIcon,
   users: ShieldCheckIcon,
@@ -106,9 +113,11 @@ export function SettingsPage() {
   const update = useUpdateSettings()
   const search: { tab?: SettingsTab } = useSearch({ strict: false })
   const navigate = useNavigate()
-  const section = sectionOf(search.tab)
-  // The open section stays listed even when refused, so the picker never shows an empty value.
-  const sections = SETTINGS_SECTIONS.filter((key) => key === section || canOpenTab(key, can))
+  // H-09: only sections the role may open are listed; an address naming another one (or none we know) opens the
+  // first one it may ("Genel" is open to everyone), so no refused section name ever shows up in the list.
+  const sections = SETTINGS_SECTIONS.filter((key) => canOpenTab(key, can))
+  const asked = sectionOf(search.tab)
+  const section = sections.includes(asked) ? asked : (sections[0] ?? 'general')
   const open = (next: string): void => {
     if (isSettingsTab(next)) void navigate({ to: '.', search: { tab: next }, replace: true })
   }
@@ -138,8 +147,15 @@ export function SettingsPage() {
             <IdleLockCard values={values} onSave={save} />
           </div>
         )
+      case 'frequent':
+        return <FrequentSection sections={sections} icons={ICONS} />
       case 'hotel':
-        return <HotelSection values={values} onSave={save} pending={update.isPending} />
+        return (
+          <div className="grid gap-6">
+            <HotelSection values={values} onSave={save} pending={update.isPending} />
+            <FeesCard values={values} onSave={save} />
+          </div>
+        )
       case 'rooms':
         return <RoomsSection values={values} />
       case 'lists':
@@ -156,6 +172,8 @@ export function SettingsPage() {
         return <StatusTagsSection values={values} onSave={save} />
       case 'currency':
         return <CurrencyNote />
+      case 'camera':
+        return <CameraSection values={values} onSave={save} />
       case 'remote':
         return <RemoteSection />
       case 'backup':

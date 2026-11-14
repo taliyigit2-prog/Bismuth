@@ -17,6 +17,9 @@ import {
   guestCandidateInputSchema,
   guestHitSchema,
   guestSummarySchema,
+  hourlyCheckInputSchema,
+  hourlyCheckSchema,
+  hourlyStaySchema,
   kbsMarkSchema,
   occupantAddSchema,
   parkedViewSchema,
@@ -25,6 +28,28 @@ import {
   reservationUpdateSchema
 } from '../booking'
 import {
+  depositSettleSchema,
+  depositTakeSchema,
+  feeQuoteInputSchema,
+  feeQuoteSchema,
+  feeVoidSchema,
+  folioLinesSchema,
+  lateCheckoutInputSchema
+} from '../fees'
+import {
+  groupAttachSchema,
+  groupCancelSchema,
+  groupCreateSchema,
+  groupNoteSchema,
+  groupPaySchema,
+  groupStaysSchema,
+  kbsGapsInputSchema,
+  kbsGapsSchema,
+  groupViewSchema
+} from '../groups'
+import {
+  cancelRefundSchema,
+  undoThenSchema,
   changeDatesSchema,
   changeRoomSchema,
   moveDatesSchema,
@@ -64,6 +89,9 @@ export const bookingProcedures = {
   'booking.checkBlacklist': proc(guestCandidateInputSchema, z.array(blacklistHitSchema)),
 
   'booking.create': proc(bookingCreateSchema, bookingViewSchema),
+  /** An hourly stay sale (K-48): room, day, hours and the amount typed at the desk. */
+  'booking.createHourlyStay': proc(hourlyStaySchema, bookingViewSchema),
+  'booking.hourlyCheck': proc(hourlyCheckInputSchema, hourlyCheckSchema),
   'booking.update': proc(
     z.object({ id: idSchema, patch: reservationUpdateSchema }).strict(),
     bookingViewSchema
@@ -101,16 +129,50 @@ export const bookingProcedures = {
         stayId: idSchema,
         kbsCheckoutIds: z.array(idSchema).max(50).default([]),
         /** Leaving on the check-in day (K-44): the day-use price instead of the first night's. */
-        dayUsePriceMinor: amountSchema.nonnegative().optional()
+        dayUsePriceMinor: amountSchema.nonnegative().optional(),
+        /** 0 only with this (H-06): the desk said the same-day stay is free. */
+        dayUseFreeConfirmed: z.boolean().optional()
       })
       .strict(),
     bookingViewSchema
   ),
-  'booking.cancel': proc(z.object({ id: idSchema, reason }).strict(), bookingViewSchema),
+  /** Cancel; `refund` settles the money in the same step (K-55): a refund row or "keep the payments" with a note. */
+  'booking.cancel': proc(
+    z.object({ id: idSchema, reason, refund: cancelRefundSchema.optional() }).strict(),
+    bookingViewSchema
+  ),
+  /**
+   * Take a check-in back (K-55): only on the check-in day; the stay is planned again. A person already reported to
+   * KBS needs `kbsConfirmed` (the report itself stays; the KBS check-out is made there). `then` gives up in the same
+   * transaction: cancel (with the money settled), park, or only this room; if it fails the take-back is not written.
+   */
+  'booking.undoCheckIn': proc(
+    z
+      .object({
+        stayId: idSchema,
+        reason,
+        kbsConfirmed: z.boolean().optional(),
+        then: undoThenSchema.optional()
+      })
+      .strict(),
+    bookingViewSchema
+  ),
   /** One room of the reservation that is still to come (G-35, G-42). */
   'booking.cancelStay': proc(z.object({ stayId: idSchema, reason }).strict(), bookingViewSchema),
   /** "Gelmedi" (G-42): the nights are freed, payments stay; also from the park area. */
-  'booking.noShow': proc(z.object({ id: idSchema }).strict(), bookingViewSchema),
+  /** No-show; `feeMinor` writes the no-show fee line on the folio at the same time (P21d). */
+  'booking.noShow': proc(
+    z.object({ id: idSchema, feeMinor: amountSchema.nonnegative().optional() }).strict(),
+    bookingViewSchema
+  ),
+  /** The fee the hotel's rule suggests (late check-out hour or no-show). */
+  'booking.feeQuote': proc(feeQuoteInputSchema, feeQuoteSchema),
+  'booking.addLateCheckout': proc(lateCheckoutInputSchema, bookingViewSchema),
+  'booking.voidFee': proc(feeVoidSchema, bookingViewSchema),
+  /** Fee lines of the folio and the damage deposits of the reservation. */
+  'booking.folioLines': proc(byId, folioLinesSchema),
+  'booking.takeDeposit': proc(depositTakeSchema, bookingViewSchema),
+  'booking.settleDeposit': proc(depositSettleSchema, bookingViewSchema),
   'booking.park': proc(z.object({ id: idSchema, park: parkSchema }).strict(), bookingViewSchema),
   'booking.unpark': proc(
     z
@@ -137,5 +199,20 @@ export const bookingProcedures = {
     z.object({ id: idSchema, patch: occupantInputSchema.partial() }).strict(),
     okSchema
   ),
-  'booking.markKbs': proc(kbsMarkSchema, okSchema)
+  'booking.markKbs': proc(kbsMarkSchema, okSchema),
+
+  // Group reservations (G-194, P17b): each room is its own reservation, linked by the group.
+  'booking.group': proc(byId, groupViewSchema),
+  'booking.createGroup': proc(groupCreateSchema, groupViewSchema),
+  /** Every named room or none: one transaction. */
+  'booking.checkInMany': proc(groupStaysSchema, groupViewSchema),
+  'booking.checkOutMany': proc(groupStaysSchema, groupViewSchema),
+  /** Rooms among `stayIds` with missing KBS information; the bulk check-out dialog lists them (S-124). */
+  'booking.kbsGaps': proc(kbsGapsInputSchema, kbsGapsSchema),
+  'booking.addGroupNote': proc(groupNoteSchema, groupViewSchema),
+  'booking.cancelGroup': proc(groupCancelSchema, groupViewSchema),
+  /** One payment on the group's single account, spread over the rooms' open balances (S-106). */
+  'booking.payGroup': proc(groupPaySchema, groupViewSchema),
+  /** Existing reservations into a group (new or existing). */
+  'booking.attachToGroup': proc(groupAttachSchema, groupViewSchema)
 } as const satisfies Record<string, Procedure>

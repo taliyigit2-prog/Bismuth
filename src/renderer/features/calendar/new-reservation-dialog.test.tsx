@@ -86,6 +86,54 @@ describe('yeni rezervasyon', () => {
     expect(input?.blacklistConfirmed).toBeUndefined()
   })
 
+  it('yeni misafir olarak yazılan ad kayıtlı bir kartla eşleşirse o kart önerilir ve seçilince kullanılır (mükerrer kart)', async () => {
+    const { user, transport, onCreated } = await open({
+      guests: [{ id: 'g-elif', firstName: 'Elif', lastName: 'Kaya', phone: '+90 555 000 11 22' } as never]
+    })
+    await typeGuest(user, 'Elif Kaya')
+    await user.click(await screen.findByText('Yeni misafir: Elif Kaya'))
+    const similar = await screen.findByTestId('similar-guests')
+    expect(similar).toHaveTextContent('Elif Kaya')
+    await user.click(within(similar).getByTestId('use-guest-g-elif'))
+    expect(screen.queryByTestId('new-guest-form')).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /^Çıkış/ }))
+    await user.click(await screen.findByRole('gridcell', { name: /^5 Ekim 2026/ }))
+    await user.click(screen.getByTestId('new-reservation-save'))
+    await waitFor(() => expect(onCreated).toHaveBeenCalled())
+    const [input] = transport.callsTo('booking.create') as { guest: unknown }[]
+    expect(input?.guest).toEqual({ id: 'g-elif' })
+  })
+
+  it('giriş ve çıkış aynı gün seçilince saat aralığı istenir; saatsiz kayıt gitmez, saatlerle gider (S-103)', async () => {
+    const { user, transport, onCreated } = await open()
+    await typeGuest(user, 'Elif Kaya')
+    await user.click(await screen.findByText('Yeni misafir: Elif Kaya'))
+    await user.click(screen.getByRole('button', { name: /^Çıkış/ }))
+    await user.click(await screen.findByRole('gridcell', { name: /^2 Ekim 2026/ }))
+    expect(await screen.findByTestId('new-reservation-start')).toBeInTheDocument()
+    await user.click(screen.getByTestId('new-reservation-save'))
+    expect(await screen.findByText('Bitiş saati başlangıçtan sonra olmalı.')).toBeInTheDocument()
+    expect(transport.callsTo('booking.create')).toHaveLength(0)
+    await user.type(screen.getByTestId('new-reservation-start'), '1000')
+    await user.type(screen.getByTestId('new-reservation-end'), '1300')
+    await user.click(screen.getByTestId('new-reservation-save'))
+    await waitFor(() => expect(onCreated).toHaveBeenCalled())
+    const [input] = transport.callsTo('booking.create') as {
+      stays: { checkIn: string; checkOut: string; startTime?: string; endTime?: string }[]
+    }[]
+    expect(input?.stays[0]).toMatchObject({
+      checkIn: '2026-10-02',
+      checkOut: '2026-10-02',
+      startTime: '10:00',
+      endTime: '13:00'
+    })
+    // The room list is asked for rooms free in those hours, not for the whole day.
+    expect(transport.callsTo('booking.availability').at(-1)).toMatchObject({
+      startTime: '10:00',
+      endTime: '13:00'
+    })
+  })
+
   it('gecelik fiyata "abc" ya da "-500" yazılınca alan hata gösterir, öneri fiyatına dönülüp kaydedilmez (QA3c1 #9)', async () => {
     const { user, transport, onCreated } = await open()
     await typeGuest(user, 'Elif Kaya')
@@ -106,6 +154,70 @@ describe('yeni rezervasyon', () => {
     await waitFor(() => expect(onCreated).toHaveBeenCalled())
     const [input] = transport.callsTo('booking.create') as { stays: { prices: { priceMinor: number }[] }[] }[]
     expect(input?.stays[0]?.prices.map((p) => p.priceMinor)).toEqual([125_050])
+  })
+
+  it('300 harflik ad alanın altında hata verir, kayıt gitmez; kara liste ve kopya sorguları 160 karakterde kalır (H-07)', async () => {
+    const { user, transport, onCreated } = await open()
+    await typeGuest(user, 'Elif Kaya')
+    await user.click(await screen.findByText('Yeni misafir: Elif Kaya'))
+    const first = screen.getByTestId('new-guest-first')
+    // A long paste cannot get past the field's own limit; the field says so.
+    await user.clear(first)
+    await user.click(first)
+    await user.paste('A'.repeat(300))
+    expect((first as HTMLInputElement).value).toHaveLength(80)
+    expect(await screen.findByText('En çok 80 karakter yazabilirsiniz.')).toBeInTheDocument()
+    await waitFor(() => {
+      const calls = transport.callsTo('booking.checkBlacklist') as { name: string }[]
+      expect(calls.every((c) => c.name.length <= 160)).toBe(true)
+    })
+    expect(transport.callsTo('booking.create')).toHaveLength(0)
+    expect(onCreated).not.toHaveBeenCalled()
+  })
+
+  it('aramaya yapıştırılan 300 harflik ad "Yeni misafir" olunca alan altı hata verir, sorgu 400 almaz (H-07)', async () => {
+    const { user, transport } = await open()
+    await user.click(screen.getByRole('combobox', { name: 'Misafir' }))
+    const box = await screen.findByPlaceholderText('Ad ya da telefon…')
+    await user.click(box)
+    await user.paste('Bora '.repeat(60).trim())
+    await user.click(await screen.findByText(/^Yeni misafir: Bora/))
+    await user.click(screen.getByTestId('new-reservation-save'))
+    expect(await screen.findAllByText('En çok 80 karakter yazabilirsiniz.')).not.toHaveLength(0)
+    const calls = transport.callsTo('booking.checkBlacklist') as { name: string }[]
+    expect(calls.every((c) => c.name.length <= 160)).toBe(true)
+    expect(transport.callsTo('booking.create')).toHaveLength(0)
+  })
+
+  it('telefon yerine "telefon" yazılınca alan altı hata çıkar, kayıt gitmez (H-05/H-21)', async () => {
+    const { user, transport } = await open()
+    await typeGuest(user, 'Elif Kaya')
+    await user.click(await screen.findByText('Yeni misafir: Elif Kaya'))
+    await user.type(screen.getByTestId('new-guest-phone'), 'telefon')
+    await user.click(screen.getByTestId('new-reservation-save'))
+    expect(await screen.findByText(/Telefonu rakamlarla yazın/)).toBeInTheDocument()
+    expect(transport.callsTo('booking.create')).toHaveLength(0)
+  })
+
+  it('gecelik fiyat 0 ise bir kez sorulur; "Yine de kaydet" kaydeder, "Vazgeç" kaydetmez (H-08)', async () => {
+    const { user, transport, onCreated } = await open()
+    await typeGuest(user, 'Elif Kaya')
+    await user.click(await screen.findByText('Yeni misafir: Elif Kaya'))
+    const price = screen.getByLabelText('Gecelik fiyat (tüm geceler)')
+    await user.clear(price)
+    await user.type(price, '0')
+    await user.click(screen.getByTestId('new-reservation-save'))
+    const dialog = await screen.findByRole('alertdialog', { name: 'Fiyat 0 olarak kaydedilsin mi?' })
+    await user.click(within(dialog).getByRole('button', { name: 'Vazgeç' }))
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument())
+    expect(transport.callsTo('booking.create')).toHaveLength(0)
+    await user.click(screen.getByTestId('new-reservation-save'))
+    await user.click(
+      within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Yine de kaydet' })
+    )
+    await waitFor(() => expect(onCreated).toHaveBeenCalled())
+    const [input] = transport.callsTo('booking.create') as { stays: { prices: { priceMinor: number }[] }[] }[]
+    expect(input?.stays[0]?.prices.map((p) => p.priceMinor)).toEqual([0])
   })
 
   it('kara listedeki ad kırmızı uyarı verir; işaretlenmeden kaydedilmez, işaretlenince onayla kaydedilir', async () => {

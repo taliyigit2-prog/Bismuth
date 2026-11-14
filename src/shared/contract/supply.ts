@@ -3,6 +3,7 @@
 // Update schemas are built from default-free fields (zod keeps `.default()` inside `.partial()`).
 import * as z from 'zod'
 import { optionalEmail, optionalText } from './guests'
+import { phoneTextSchema } from './text'
 import { amountSchema, idSchema, localDateSchema } from './rooms'
 
 // --- Phone book (G-160) ----------------------------------------------------------------------------------
@@ -23,7 +24,7 @@ export type ContactCategory = z.infer<typeof contactCategorySchema>
 export const contactPhoneSchema = z.object({
   /** "cep", "iş", "WhatsApp"… free label. */
   label: z.string().trim().max(40).default(''),
-  number: z.string().trim().min(1).max(40)
+  number: phoneTextSchema.min(1)
 })
 
 const contactFields = z.object({
@@ -154,6 +155,13 @@ export const laundrySettlementInputSchema = yearMonthSchema.extend({
   dayClosedReason: z.string().trim().min(3).max(200).optional()
 })
 export type LaundrySettlementInput = z.input<typeof laundrySettlementInputSchema>
+
+/** Opens a settled month again (S-127): manager / owner, with the reason the audit row keeps. */
+export const laundryReopenInputSchema = yearMonthSchema.extend({
+  contactId: idSchema,
+  reason: z.string().trim().min(3).max(300)
+})
+export type LaundryReopenInput = z.input<typeof laundryReopenInputSchema>
 
 /** Pieces already at the laundry before tracking started, per item type id. */
 export const laundryOpeningSchema = z.record(idSchema, z.number().int().min(-100_000).max(100_000))

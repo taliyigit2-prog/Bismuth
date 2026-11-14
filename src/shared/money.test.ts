@@ -128,3 +128,14 @@ describe('Money', () => {
     expect(() => roundToUnit(money(1, 'TRY'), 2.5)).toThrow(RangeError)
   })
 })
+
+describe('rateDeviates (S-125)', () => {
+  it('son bilinen kurdan eşik yüzde ve üzeri sapma true, altı false, kur yoksa false', async () => {
+    const { rateDeviates } = await import('./money')
+    expect(rateDeviates(60_000_000, 50_000_000, 20)).toBe(true)
+    expect(rateDeviates(40_000_000, 50_000_000, 20)).toBe(true)
+    expect(rateDeviates(59_999_999, 50_000_000, 20)).toBe(false)
+    expect(rateDeviates(3_450_000_000, 34_500_000, 20)).toBe(true)
+    expect(rateDeviates(3_450_000_000, null, 20)).toBe(false)
+  })
+})

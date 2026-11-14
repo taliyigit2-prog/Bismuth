@@ -73,3 +73,17 @@ export function folioTotals(
   const creditedMinor = creditedTotal(credits)
   return { chargesMinor, creditedMinor, balanceMinor: chargesMinor - creditedMinor }
 }
+
+/** Group account (S-106): rooms that can still be owed money. Cancelled / no-show rooms are out of the account. */
+export function isGroupPayableStatus(status: string): boolean {
+  return (
+    status === 'tentative' || status === 'confirmed' || status === 'checked_in' || status === 'checked_out'
+  )
+}
+
+/** What one payment on the group account may cover: Σ max(0, balance) of the payable rooms. */
+export function groupPayableMinor(rooms: readonly { status: string; balanceMinor: number }[]): number {
+  let total = 0
+  for (const r of rooms) if (isGroupPayableStatus(r.status)) total += Math.max(0, r.balanceMinor)
+  return total
+}

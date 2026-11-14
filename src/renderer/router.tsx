@@ -33,8 +33,10 @@ import { IssuesPage } from './features/issues/issues-page'
 import { MaintenancePage } from './features/maintenance/maintenance-page'
 import { SupplyPage } from './features/supply/supply-page'
 import { LaundryPage } from './features/laundry/laundry-page'
+import { CameraPage } from './features/camera/camera-page'
 import { ContactsPage } from './features/contacts/contacts-page'
 import { StaffPage } from './features/staff/staff-page'
+import { PortfolioPage } from './features/portfolio/portfolio-page'
 import { ReportsPage } from './features/reports/reports-page'
 import { TourismPage } from './features/tourism/tourism-page'
 import { SetupPage } from './features/setup/setup-page'
@@ -81,6 +83,7 @@ const routeTree = rootRoute.addChildren([
   createRoute({ getParentRoute: () => rootRoute, path: '/maintenance', component: MaintenancePage }),
   createRoute({ getParentRoute: () => rootRoute, path: '/supply', component: SupplyPage }),
   createRoute({ getParentRoute: () => rootRoute, path: '/laundry', component: LaundryPage }),
+  createRoute({ getParentRoute: () => rootRoute, path: '/camera', component: CameraPage }),
   createRoute({
     getParentRoute: () => rootRoute,
     path: '/contacts',
@@ -91,6 +94,7 @@ const routeTree = rootRoute.addChildren([
   }),
   createRoute({ getParentRoute: () => rootRoute, path: '/staff', component: StaffPage }),
   createRoute({ getParentRoute: () => rootRoute, path: '/reports', component: ReportsPage }),
+  createRoute({ getParentRoute: () => rootRoute, path: '/portfolio', component: PortfolioPage }),
   createRoute({ getParentRoute: () => rootRoute, path: '/tourism', component: TourismPage }),
   createRoute({
     getParentRoute: () => rootRoute,

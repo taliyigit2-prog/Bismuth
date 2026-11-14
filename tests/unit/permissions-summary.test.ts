@@ -278,6 +278,7 @@ const NOT_ROUTER_PROBED: Record<string, string> = {
   'remote.acceptHostIdentity':
     'anyone by design (connection screen, before sign-in): client-app.ts answers it locally; the main computer → notClient',
   'backup.pickDriveFolder': 'permissions-backup.test.ts: pickDriveFolder(manager; owner over http) → denied',
+  'backup.findDriveFolder': 'permissions-backup.test.ts: findDriveFolder(manager; owner over http) → denied',
   'dataImport.batches': 'permissions-data-import.test.ts: batches(manager) → PERMISSION_DENIED',
   'dataImport.voidBatch': 'permissions-data-import.test.ts: voidBatch(manager, viewer, backup-only) → denied',
   'dataImport.sample': 'permissions-data-import.test.ts: sample(manager) → PERMISSION_DENIED'
@@ -327,9 +328,11 @@ const SCREEN_READS: Record<NavPath, { name: string; body: unknown } | null> = {
   '/maintenance': { name: 'tasks.templates', body: {} },
   '/supply': { name: 'supply.overview', body: { year: 2026, month: 10 } },
   '/laundry': { name: 'laundry.month', body: { year: 2026, month: 10, contactId: '' } },
+  '/camera': { name: 'camera.status', body: {} },
   '/contacts': { name: 'contacts.list', body: { includeInactive: false } },
   '/staff': { name: 'staff.employees', body: {} },
   '/reports': { name: 'reports.summary', body: { from: '2026-10-01', to: '2026-10-31' } },
+  '/portfolio': { name: 'portfolio.overview', body: { from: '2026-10-01', to: '2026-10-31' } },
   '/tourism': { name: 'tourism.listImports', body: {} },
   '/audit': { name: 'audit.list', body: {} },
   // Settings (each section checks its own key), the colour preview, the guide and About read nothing of their own.

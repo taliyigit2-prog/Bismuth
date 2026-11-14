@@ -5,6 +5,10 @@ node_modules/
 /out/
 /dist/
 /release/
+# Tauri prototype (P22c): build output and generated files stay out; Cargo.lock is committed
+shell-tauri/src-tauri/target/
+shell-tauri/src-tauri/gen/
+shell-tauri/sidecar/dist/
 .vite/
 
 # local data — never commit a database or backups
@@ -18,6 +22,8 @@ backups/
 # secrets and per-developer overrides
 .env
 .env.*
+# sır içermeyen örnek ayar dosyası depoya girer
+!otel-kamera/.env.example
 .claude/settings.local.json
 CLAUDE.local.md
 
@@ -32,10 +38,6 @@ Thumbs.db
 coverage/
 playwright-report/
 test-results/
-
-# prototype build output
-prototypes/**/release/
-prototypes/**/node_modules/
 
 # Claude hook marker (last successful npm run check)
 .claude/.checks-passed
@@ -58,3 +60,14 @@ otel-kamera/*.db
 otel-kamera/guest_photos/
 otel-kamera/alerts/
 otel-kamera/*.pt
+# Kamera model agirliklari (K-57, yasak 14): resources/camera/models icine yalniz README.md ve SHA256SUMS girer
+resources/camera/models/*
+!resources/camera/models/README.md
+!resources/camera/models/SHA256SUMS
+otel-kamera/models/
+
+# agent runner logs and session state
+tools/ajan/kayit/
+
+# Kamera eki uretim ciktisi (scripts/camera-bundle.mjs): agirliklar ve tekerlekler depoya girmez
+camera-addon-out/

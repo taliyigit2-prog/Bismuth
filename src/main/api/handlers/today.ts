@@ -105,9 +105,18 @@ function todaySummary(services: Services, ctx: Ctx): TodaySummaryDto {
     // Without the tasks right the template cannot be read: the seed (on, from the 1st) applies.
     const template = templates?.find((t) => t.code === TOURISM_TEMPLATE_CODE)
     const active = templates ? !!template?.active : true
-    const reported = services.tourism
-      .listImports(ctx, previousPeriod(day.today))
-      .some((i) => i.reportedAt !== null)
+    // Tek giriş: ticking the reminder task counts as reported too (it also marks the table when there is one).
+    const taskDone =
+      !!template &&
+      ctx.can('tasks', 'view') &&
+      services.tasks.listTasks(ctx, {
+        status: ['done'],
+        templateId: template.id,
+        dueFrom: `${day.today.slice(0, 7)}-01`
+      }).length > 0
+    const reported =
+      taskDone ||
+      services.tourism.listImports(ctx, previousPeriod(day.today)).some((i) => i.reportedAt !== null)
     const reminder = tourismReminder(day.today, {
       active,
       startDay: template ? tourismStartDay(template.recurrence, template.remindMinutesBefore) : 1,
@@ -116,8 +125,11 @@ function todaySummary(services: Services, ctx: Ctx): TodaySummaryDto {
     if (reminder) reminders.push(reminder)
   }
 
+  const camera = ctx.can('camera', 'view') ? services.camera.todayNotice(ctx) : null
+
   return {
     ...day,
+    camera,
     inHouse,
     kbsMissing: kbs,
     dirtyRooms,

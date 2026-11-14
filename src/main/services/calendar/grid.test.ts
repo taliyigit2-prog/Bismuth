@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm'
 import { depsOf, roleCtx, testClock } from '../../../../tests/factories/ctx'
 import { seededDatabase } from '../../../../tests/factories/db'
 import type { DatabaseHandle } from '../../db/client'
-import { paymentMethods, roomTypes, salesChannels } from '../../db/schema'
+import { paymentMethods, reservationGroups, reservations, roomTypes, salesChannels } from '../../db/schema'
 import { createCalendarService } from '../calendar-service'
 import { createOccupantsService } from '../occupants-service'
 import { createPaymentsService } from '../payments-service'
@@ -49,7 +49,15 @@ async function setup() {
     res.create(reception, {
       guest,
       channelId: direct,
-      stays: [{ roomId, checkIn, checkOut, nightlyPriceMinor: price }]
+      stays: [
+        {
+          roomId,
+          checkIn,
+          checkOut,
+          nightlyPriceMinor: price,
+          ...(checkIn === checkOut ? { startTime: '10:00', endTime: '11:00' } : {})
+        }
+      ]
     })
   const payFor = (reservationId: string, amountMinor: number) =>
     pay.create(reception, {
@@ -89,6 +97,29 @@ describe('takvim ızgarası (reservations.grid)', () => {
       ['2026-10-01', 'unpaid'],
       ['2026-10-02', 'unpaid']
     ])
+  })
+
+  it('gruba bağlı rezervasyonun konaklaması groupId taşır; grupsuz olan null gelir (P17b, G-194)', async () => {
+    const { cal, book, r101, r102 } = await setup()
+    const a = book(r101.id, '2026-10-10', '2026-10-12')
+    book(r102.id, '2026-10-10', '2026-10-12')
+    const now = '2026-10-05T09:00:00.000Z'
+    handle.db
+      .insert(reservationGroups)
+      .values({ id: 'group-1', name: 'Örnek Grup', createdAt: now, updatedAt: now })
+      .run()
+    handle.db
+      .update(reservations)
+      .set({ groupId: 'group-1' })
+      .where(eq(reservations.id, a.reservation.id))
+      .run()
+    const g = cal.grid(owner, { from: '2026-10-01', to: '2026-11-01' })
+    expect(g.stays.map((x) => [x.roomId, x.groupId])).toEqual(
+      expect.arrayContaining([
+        [r101.id, 'group-1'],
+        [r102.id, null]
+      ])
+    )
   })
 
   it('kısmi ödeme ikinci geceyi "kısmen" yapar; aynı gün iki misafir (gündüz + gece) ayrı konaklama olarak gelir', async () => {

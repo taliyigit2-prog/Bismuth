@@ -296,7 +296,7 @@ export function ImportWizard({
     onSuccess: (file) => {
       if (file.delivery === 'canceled') return
       if (file.delivery === 'download') saveExport(file)
-      toast.success(t('dataTransfer.import.sampleDone', { name: file.savedPath ?? file.fileName }))
+      toast.success(t('dataTransfer.import.sampleDone', { name: file.fileName }))
     },
     onError: failed
   })

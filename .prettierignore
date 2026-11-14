@@ -5,12 +5,18 @@ node_modules
 coverage
 drizzle
 docs
-prototypes
+tools
 package-lock.json
 .claude
 src/renderer/components/ui
 THIRD_PARTY_NOTICES.md
 build
-# Faz 0 prototype workflows: left as committed (editing them re-triggers the prototype runs)
-.github/workflows/faz0-*.yml
 i18n-spec
+
+# Python camera project (separate toolchain; ruff/black if any)
+otel-kamera
+
+# Tauri prototype (Faz 22 P22c): Rust has cargo fmt; generated output stays out
+shell-tauri/src-tauri/target
+shell-tauri/src-tauri/gen
+shell-tauri/sidecar/dist

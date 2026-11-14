@@ -104,6 +104,15 @@ describe('Ayarlar → Uzaktan erişim', () => {
     expect(screen.getByText(/bağlantı ekranında listede görür/)).toBeInTheDocument()
   })
 
+  it('hafif mod anahtarı varsayılan kapalıdır ve ayarı yazar', async () => {
+    const transport = remoteTransport()
+    await renderWithProviders(<RemoteSection />, { transport })
+    const toggle = await screen.findByRole('switch', { name: 'Pencere kapanınca tepside çalışsın' })
+    expect(toggle).not.toBeChecked()
+    await userEvent.setup().click(toggle)
+    await waitFor(() => expect(transport.settings['app.lightMode']).toBe(true))
+  })
+
   it('tek bilgisayardan ana bilgisayara geçer; açılışta başlatma anahtarı çalışır; oturum süresi kaydedilir', async () => {
     const transport = remoteTransport({
       ...RUNNING,

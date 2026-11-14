@@ -4,12 +4,14 @@
 // rare foreign-currency ones are converted row by row with the rate of their writing minute (revenue-base.ts rule).
 import { and, asc, eq, gte, inArray, isNotNull, isNull, lt, ne, sql, type SQL } from 'drizzle-orm'
 import { alias, type AnySQLiteColumn } from 'drizzle-orm/sqlite-core'
+import type { StayKind } from '@shared/contract/procedures/reports'
 import type { LocalDate } from '@shared/date'
 import type { MethodGroup } from '@shared/domain/cash'
 import type { ExpenseForTop } from '@shared/domain/reports'
 import type { BlockSpan, CapacityChange, Period, RoomCapacity } from '@shared/domain/reports-period'
 import { money, multiplyRatio } from '@shared/money'
 import {
+  auditLog,
   charges,
   expenseItems,
   expenses,
@@ -420,18 +422,30 @@ export interface NightFact {
   month: string
   weekday: number
   slot: 'night' | 'day'
+  /** Slots counted (nights, or day-use / hourly sales). */
   n: number
+  /** Distinct room-days the slots sit on: several hourly sales of one room and day fill the day once; a day slot's room-day under a night of the same day is left out. */
+  days: number
 }
 
-/** Sold room-nights of live reservations grouped by room × month × weekday × slot. */
-export function nightFacts(db: Reader, p: Period): NightFact[] {
-  const month = sql<string>`substr(${roomNights.date}, 1, 7)`
-  const wd = sql<number>`cast(strftime('%w', ${roomNights.date}) as integer)`
-  return db
+/** The slot rows a stay kind keeps: overnight = nights, hourly = day slots (same-day and hourly stays, K-48). */
+const kindFilter = (kind: StayKind | undefined) =>
+  kind === 'overnight'
+    ? eq(roomNights.slot, 'night')
+    : kind === 'hourly'
+      ? eq(roomNights.slot, 'day')
+      : undefined
+
+/**
+ * Sold room-nights of live reservations grouped by room x month x weekday x slot. `days` of a day slot only counts the
+ * room-days no night sits on: a morning hourly sale and the evening night of the same room-day fill that day once
+ * (S-105), so occupancy never passes 100%.
+ */
+export function nightFacts(db: Reader, p: Period, kind?: StayKind): NightFact[] {
+  const rows = db
     .select({
       roomId: roomNights.roomId,
-      month,
-      weekday: wd,
+      date: roomNights.date,
       slot: roomNights.slot,
       n: sql<number>`count(*)`
     })
@@ -442,15 +456,31 @@ export function nightFacts(db: Reader, p: Period): NightFact[] {
       and(
         inPeriod(roomNights.date, p),
         inArray(reservations.status, [...LIVE_STATUSES]),
-        ne(reservationRooms.status, 'cancelled')
+        ne(reservationRooms.status, 'cancelled'),
+        kindFilter(kind)
       )
     )
-    .groupBy(roomNights.roomId, month, wd, roomNights.slot)
+    .groupBy(roomNights.roomId, roomNights.date, roomNights.slot)
     .all()
+  const nightDays = new Set(rows.filter((r) => r.slot === 'night').map((r) => `${r.roomId}|${r.date}`))
+  const facts = new Map<string, NightFact>()
+  for (const r of rows) {
+    const month = r.date.slice(0, 7)
+    const weekday = new Date(`${r.date}T00:00:00Z`).getUTCDay()
+    const key = `${r.roomId}|${month}|${weekday}|${r.slot}`
+    let f = facts.get(key)
+    if (!f) facts.set(key, (f = { roomId: r.roomId, month, weekday, slot: r.slot, n: 0, days: 0 }))
+    f.n += r.n
+    // One row per room-day and slot here, so a night day counts 1 and a day slot counts 1 unless a night shares it.
+    if (r.slot === 'night' || !nightDays.has(`${r.roomId}|${r.date}`)) f.days += 1
+  }
+  return [...facts.values()]
 }
 
 /** Overnight stays checking in in the period: count and Σ nights (average length of stay). */
-export function stayLengths(db: Reader, p: Period): { stays: number; nights: number } {
+export function stayLengths(db: Reader, p: Period, kind?: StayKind): { stays: number; nights: number } {
+  // Hourly (same-day) sales have no length of stay: the "hourly" filter shows none.
+  if (kind === 'hourly') return { stays: 0, nights: 0 }
   const row = db
     .select({
       stays: sql<number>`count(*)`,
@@ -471,8 +501,19 @@ export function stayLengths(db: Reader, p: Period): { stays: number; nights: num
 }
 
 /** Guests with a stay checking in in the period, and how many of them had stayed before or twice in it. */
-export function repeatGuests(db: Reader, p: Period): { total: number; repeat: number } {
-  const live = and(ne(reservationRooms.status, 'cancelled'), inArray(reservations.status, [...LIVE_STATUSES]))
+export function repeatGuests(db: Reader, p: Period, kind?: StayKind): { total: number; repeat: number } {
+  // The stay kind narrows the stays counted (overnight = out after in, hourly = same-day), before or inside the period.
+  const stayKindWhere =
+    kind === 'overnight'
+      ? sql`${reservationRooms.checkOut} > ${reservationRooms.checkIn}`
+      : kind === 'hourly'
+        ? sql`${reservationRooms.checkOut} = ${reservationRooms.checkIn}`
+        : undefined
+  const live = and(
+    ne(reservationRooms.status, 'cancelled'),
+    inArray(reservations.status, [...LIVE_STATUSES]),
+    stayKindWhere
+  )
   const inside = db
     .select({ guestId: reservations.primaryGuestId, n: sql<number>`count(distinct ${reservations.id})` })
     .from(reservationRooms)
@@ -502,27 +543,39 @@ export function repeatGuests(db: Reader, p: Period): { total: number; repeat: nu
 export function roomRevenueByRoom(
   db: Reader,
   p: Period,
-  base: string
-): { byRoom: Map<string, number>; missing: number } {
-  const where = and(eq(charges.kind, 'room_night'), isNull(charges.voidedAt), inPeriod(charges.date, p))
+  base: string,
+  kind?: StayKind
+): { byRoom: Map<string, number>; hourlyMinor: number; missing: number } {
+  const where = and(
+    eq(charges.kind, 'room_night'),
+    isNull(charges.voidedAt),
+    inPeriod(charges.date, p),
+    kindFilter(kind)
+  )
   const known = sql<
     number | null
   >`coalesce(${charges.amountBaseMinor}, case when ${charges.currency} = ${base} then ${charges.amountMinor} end)`
   const out = new Map<string, number>()
-  const add = (roomId: string, v: number): void => void out.set(roomId, (out.get(roomId) ?? 0) + v)
+  // Charges of day slots (same-day and hourly sales) are kept apart: ADR is the nightly rate only.
+  let hourlyMinor = 0
+  const add = (roomId: string, v: number, slot: string): void => {
+    out.set(roomId, (out.get(roomId) ?? 0) + v)
+    if (slot === 'day') hourlyMinor += v
+  }
   for (const r of db
-    .select({ roomId: roomNights.roomId, total: sql<number>`sum(${known})` })
+    .select({ roomId: roomNights.roomId, slot: roomNights.slot, total: sql<number>`sum(${known})` })
     .from(charges)
     .innerJoin(roomNights, eq(roomNights.id, charges.roomNightId))
     .where(and(where, sql`${known} is not null`))
-    .groupBy(roomNights.roomId)
+    .groupBy(roomNights.roomId, roomNights.slot)
     .all())
-    add(r.roomId, r.total)
+    add(r.roomId, r.total, r.slot)
   let missing = 0
   const rates = new Map<string, number | null>()
   for (const r of db
     .select({
       roomId: roomNights.roomId,
+      slot: roomNights.slot,
       date: charges.date,
       amountMinor: charges.amountMinor,
       currency: charges.currency,
@@ -542,9 +595,9 @@ export function roomRevenueByRoom(
       rates.set(key, v)
     }
     if (v === null) missing++
-    else add(r.roomId, v)
+    else add(r.roomId, v, r.slot)
   }
-  return { byRoom: out, missing }
+  return { byRoom: out, hourlyMinor, missing }
 }
 
 /** Rooms (active or not: history counts), their capacity history and the live blocks overlapping the period. */
@@ -615,4 +668,70 @@ export function firstDataDay(db: Reader): LocalDate | null {
       .get()?.d
   ].filter((d): d is string => !!d)
   return days.length ? (days.sort()[0] as LocalDate) : null
+}
+
+export interface OutcomeFacts {
+  /** Reservations cancelled in the period (the reservation's own cancellation time, hotel-local day). */
+  cancelled: number
+  /** Reservations marked "gelmedi" in the period (audit log; the reservation row keeps no time for it). */
+  noShow: number
+  /** Live refund rows of the period and their base-currency total (positive); rows without a rate count 0. */
+  refundRows: number
+  refundBaseMinor: number
+}
+
+/** `YYYY-MM-DDT00:00:00` moved by whole days (a padded bound for UTC instants). */
+function wideDay(iso: string, days: number): string {
+  const d = new Date(`${iso}Z`)
+  d.setUTCDate(d.getUTCDate() + days)
+  return d.toISOString().slice(0, 19)
+}
+
+/**
+ * Cancelled, no-show and refunded as their own figures (K-55): a refund is already inside the revenue as a minus,
+ * so these rows show how much went back and how many bookings did not happen. The instants are UTC and the period
+ * is in hotel days: they are read a day wide on both sides, then `localDayOf` decides.
+ */
+export function outcomeFacts(db: Reader, p: Period, localDayOf: (iso: string) => string): OutcomeFacts {
+  const from = `${p.from}T00:00:00`
+  const to = `${p.to}T00:00:00`
+  const inRange = (iso: string | null): boolean => {
+    if (!iso) return false
+    const day = localDayOf(iso)
+    return day >= p.from && day < p.to
+  }
+  const wide = (column: AnySQLiteColumn): SQL | undefined =>
+    and(gte(column, wideDay(from, -1)), lt(column, wideDay(to, 1)))
+  const cancelled = db
+    .select({ at: reservations.cancelledAt })
+    .from(reservations)
+    .where(and(eq(reservations.status, 'cancelled'), wide(reservations.cancelledAt)))
+    .all()
+    .filter((r) => inRange(r.at)).length
+  const noShow = new Set(
+    db
+      .select({ id: auditLog.entityId, ts: auditLog.ts })
+      .from(auditLog)
+      .where(and(eq(auditLog.entity, 'reservation'), eq(auditLog.action, 'no_show'), wide(auditLog.ts)))
+      .all()
+      .filter((r) => inRange(r.ts))
+      .map((r) => r.id)
+  ).size
+  // The count and the sum come from the same rows: a refund without a known rate has no base amount and is in neither.
+  const refunds = db
+    .select({
+      rows: sql<number>`count(*)`,
+      base: sql<number>`coalesce(sum(${payments.amountBaseMinor}), 0)`
+    })
+    .from(payments)
+    .where(
+      and(
+        isNull(payments.voidedAt),
+        eq(payments.kind, 'refund'),
+        isNotNull(payments.amountBaseMinor),
+        inPeriod(payments.date, p)
+      )
+    )
+    .get()
+  return { cancelled, noShow, refundRows: refunds?.rows ?? 0, refundBaseMinor: refunds?.base ?? 0 }
 }

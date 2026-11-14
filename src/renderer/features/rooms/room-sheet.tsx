@@ -2,7 +2,7 @@
 // and when, who is in the room and today's movement, open issues (report a new one from here) and the block.
 // Maintenance and out of order close the room for sale — a block on the calendar — so they need the block right.
 // Right sheet on the desktop, bottom sheet on the phone.
-import { useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import {
@@ -100,6 +100,24 @@ function NoteEditor({ info }: { info: RoomInfo }) {
   const [note, setNote] = useState(info.hkNote ?? '')
   const save = useApiMutation('housekeeping.setNote', { invalidates: ['housekeeping.board'] })
   const changed = note.trim() !== (info.hkNote ?? '')
+  // H-42: closing the sheet with an unsaved note saves it (nothing typed is lost silently).
+  const pending = useRef<string | null>(null)
+  const { mutate } = save
+  const saved = useRef<string | null>(null)
+  useEffect(() => {
+    pending.current = changed && saved.current !== note.trim() ? note.trim() : null
+  })
+  useEffect(
+    () => () => {
+      if (pending.current !== null)
+        mutate(
+          { roomId: info.id, note: pending.current || null },
+          { onSuccess: () => toast.success(t('rooms.sheet.noteSaved')) }
+        )
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  )
   return (
     <div className="grid gap-1.5">
       <Label htmlFor={`hk-note-${info.id}`}>{t('rooms.sheet.note')}</Label>
@@ -122,7 +140,11 @@ function NoteEditor({ info }: { info: RoomInfo }) {
             save.mutate(
               { roomId: info.id, note: note.trim() || null },
               {
-                onSuccess: () => toast.success(t('rooms.sheet.noteSaved')),
+                onSuccess: () => {
+                  saved.current = note.trim()
+                  pending.current = null
+                  toast.success(t('rooms.sheet.noteSaved'))
+                },
                 onError: (e) => void toast.error(errorText(e))
               }
             )

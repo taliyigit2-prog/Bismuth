@@ -51,7 +51,8 @@ import {
   requirePermission,
   stamps,
   type ServiceDeps,
-  type Tx
+  type Tx,
+  assertNameFree
 } from './kit'
 import { readSetting } from './settings-service'
 import { canSeeTask, createTasksService, taskViewer, type TaskView } from './tasks-service'
@@ -414,6 +415,7 @@ export function createShiftService(deps: ServiceDeps) {
       requirePermission(ctx, 'settings', 'edit')
       const data = parseInput(shiftInputSchema, input)
       return inTransaction(deps, ctx, (tx, audit, now) => {
+        assertNameFree(tx.select().from(shiftDefinitions).all(), data.name)
         const row: ShiftRow = {
           id: newId(now),
           code: null,

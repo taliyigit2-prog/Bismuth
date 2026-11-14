@@ -128,6 +128,15 @@ describe('Görevler ekranı', () => {
     expect(await screen.findByTestId('task-t-call')).toHaveAttribute('data-status', 'done')
   })
 
+  it('başlığa tıklamak görevi tamamlamaz; yalnız onay kutusu tamamlar (H-37)', async () => {
+    const user = userEvent.setup()
+    const { transport } = await render()
+    const row = await screen.findByTestId('task-t-call')
+    await user.click(within(row).getByText(/Çıkış yapmayan/))
+    expect(transport.calls.find((c) => c.name === 'tasks.done')).toBeUndefined()
+    expect(row).toHaveAttribute('data-status', 'open')
+  })
+
   it('oda süzgeci yalnız o odanın görevlerini bırakır; temizlenince hepsi döner', async () => {
     const user = userEvent.setup()
     await render()

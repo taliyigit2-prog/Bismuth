@@ -117,9 +117,11 @@ export function WorkDialog({
   const timesGiven = Boolean(start || end)
   const timesBad = timesGiven && !(CLOCK.test(start) && CLOCK.test(end))
   const overtimeMinutes = hoursToMinutes(overtime)
+  // H-39: a day with no hours and no overtime says nothing; the hours (or some overtime) are required.
+  const empty = !timesGiven && (own || (overtimeMinutes ?? 0) === 0)
   const submit = (): void => {
     setTried(true)
-    if (timesBad || (!own && overtimeMinutes === null) || (own && !timesGiven)) return
+    if (timesBad || (!own && overtimeMinutes === null) || empty) return
     if (earliest && day < earliest) return
     const times = timesGiven ? { startTime: start, endTime: end } : {}
     save.mutate(
@@ -182,7 +184,7 @@ export function WorkDialog({
             invalid={tried && timesBad}
           />
         </div>
-        {tried && (timesBad || (own && !timesGiven)) ? (
+        {tried && (timesBad || empty) ? (
           <FieldError>{t('staff.work.timesInvalid')}</FieldError>
         ) : overnight ? (
           <p className="text-muted-foreground -mt-2 text-xs" data-testid="work-overnight-day">

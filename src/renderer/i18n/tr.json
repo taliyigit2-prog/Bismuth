@@ -50,7 +50,9 @@
     "audit": "Denetim kaydı",
     "companies": "Firmalar",
     "calendarNotes": "Takvim notları",
-    "guide": "Kılavuz"
+    "guide": "Kılavuz",
+    "camera": "Kamera",
+    "portfolio": "Portföy"
   },
   "topbar": {
     "search": "Ara ya da git…",
@@ -190,7 +192,9 @@
       "vip": "VIP",
       "standing": "Misafir notu: {{text}}",
       "openIssues_one": "Açık arıza: {{count}}",
-      "openIssues_other": "Açık arıza: {{count}}"
+      "openIssues_other": "Açık arıza: {{count}}",
+      "group": "Grup rezervasyonu",
+      "groupNamed": "Grup: {{name}}"
     },
     "nav": {
       "month": "Ay",
@@ -316,6 +320,108 @@
       "datesBody": "{{guest}}, Oda {{room}}: {{from}} → {{to}}. Gece sayısı aynı kalır; her gece kendi fiyatıyla taşınır, toplam tutar değişmez.",
       "confirm": "Taşı",
       "hint": "Rezervasyonu başka bir odaya ya da tarihe taşımak için çubuğu sürükleyin; bırakınca onay sorulur. Klavyeyle: rezervasyonu açın, Geceler sekmesini kullanın."
+    },
+    "groupLegend": "Aynı renkli çerçeve ve simge aynı gruba aittir",
+    "quick": {
+      "menu": {
+        "checkIn": "Giriş yap",
+        "checkOut": "Çıkış yap",
+        "pay": "Ödeme al",
+        "move": "Taşı",
+        "extend": "Uzat ya da kısalt",
+        "note": "Not ekle",
+        "park": "Park et",
+        "noShow": "Gelmedi olarak işaretle",
+        "giveUp": "Vazgeçme ve iade",
+        "guest": "Misafir kartı",
+        "cellTitle": "Oda {{room}} · {{date}}",
+        "quick": "Hızlı rezervasyon",
+        "detail": "Ayrıntılı rezervasyon",
+        "hourly": "Saatlik satış",
+        "block": "Odayı kapat"
+      },
+      "title": "Hızlı rezervasyon · Oda {{room}} · {{date}}",
+      "name": "Misafir adı",
+      "people": "Kişi",
+      "nights": "Gece",
+      "price": "Gecelik fiyat",
+      "detail": "Ayrıntılı rezervasyon",
+      "errors": {
+        "name": "Misafir adını yazın.",
+        "nights": "Gece sayısı 1 ile {{max}} arasında olmalı.",
+        "price": "Gecelik fiyatı yazın.",
+        "people": "Kişi sayısı 1 ile {{max}} arasında olmalı.",
+        "nameLong": "Ad ve soyad en çok {{max}} karakter olabilir."
+      },
+      "today": {
+        "label": "Bugünün özeti",
+        "arrivals": "Bugün gelecekler: {{count}}",
+        "departures": "Bugün gidecekler: {{count}}",
+        "done": "Yapıldı",
+        "failed": "Bugünün özeti yüklenemedi.",
+        "inHouse_one": "Otelde: {{count}} oda",
+        "inHouse_other": "Otelde: {{count}} oda"
+      },
+      "recent": {
+        "button": "Son iptaller",
+        "title": "Son {{days}} günün iptalleri",
+        "empty": "Son günlerde iptal ya da gelmedi kaydı yok.",
+        "failed": "Liste yüklenemedi.",
+        "note": "İptal ve gelmedi kayıtları Misafir kartı → Geçmiş bölümünde de durur.",
+        "status": {
+          "cancelled": "İptal edildi",
+          "no_show": "Gelmedi"
+        },
+        "rooms": "Oda {{rooms}}",
+        "meta": "{{place}} · {{ended}}",
+        "metaDates": "{{place}} · {{from}} – {{to}} · {{ended}}"
+      },
+      "legendNote": "İptal ve gelmedi kayıtları takvimde görünmez; Misafir kartı → Geçmiş bölümünde durur.",
+      "bulk": {
+        "label": "Toplu işlemler",
+        "count": "Seçilen: {{count}}",
+        "checkIn": "Toplu giriş",
+        "checkOut": "Toplu çıkış",
+        "note": "Toplu not",
+        "pay": "Toplu ödeme",
+        "attach": "Gruba bağla",
+        "clear": "Seçimi temizle",
+        "partial": "{{ok}} işlem tamam, {{failed}} işlem yapılamadı. {{reason}}",
+        "noteTitle": "Seçilen rezervasyonlara not",
+        "noteLabel": "Not",
+        "payTitle": "Toplu ödeme",
+        "payBody": "Her rezervasyon kendi açık bakiyesini öder. Tutarlar aşağıda.",
+        "paySave": "Ödemeleri kaydet",
+        "payNone": "Seçilen rezervasyonlarda açık bakiye yok.",
+        "payTotal": "Toplam",
+        "method": "Ödeme yöntemi",
+        "attachTitle": "Gruba bağla",
+        "attachSave": "Gruba bağla",
+        "groupName": "Grup adı",
+        "checkInCount": "Toplu giriş ({{count}})",
+        "checkOutCount": "Toplu çıkış ({{count}})",
+        "checkInDone_one": "Giriş yapılan oda: {{count}}",
+        "checkInDone_other": "Giriş yapılan oda: {{count}}",
+        "checkOutDone_one": "Çıkış yapılan oda: {{count}}",
+        "checkOutDone_other": "Çıkış yapılan oda: {{count}}",
+        "noteDone_one": "Not eklenen rezervasyon: {{count}}",
+        "noteDone_other": "Not eklenen rezervasyon: {{count}}",
+        "payDone_one": "Ödeme alınan rezervasyon: {{count}}",
+        "payDone_other": "Ödeme alınan rezervasyon: {{count}}",
+        "attachDone_one": "Gruba bağlanan rezervasyon: {{count}}",
+        "attachDone_other": "Gruba bağlanan rezervasyon: {{count}}",
+        "noteBody_one": "Not, seçilen {{count}} rezervasyonun hepsine eklenir.",
+        "noteBody_other": "Not, seçilen {{count}} rezervasyonun hepsine eklenir.",
+        "attachBodyJoin_one": "Seçilen {{count}} rezervasyon gruba eklenir. Konaklama ve tutarlar değişmez.",
+        "attachBodyJoin_other": "Seçilen {{count}} rezervasyon gruba eklenir. Konaklama ve tutarlar değişmez.",
+        "attachBodyNew_one": "Seçilen {{count}} rezervasyon yeni bir grupta birleşir. Konaklama ve tutarlar değişmez.",
+        "attachBodyNew_other": "Seçilen {{count}} rezervasyon yeni bir grupta birleşir. Konaklama ve tutarlar değişmez."
+      }
+    },
+    "kbsGaps": {
+      "title": "Bazı odalarda KBS bildirimi eksik",
+      "body": "Şu odalarda KBS bildirimi eksik: {{rooms}}. Çıkış yine de yapılabilir; KBS işlemlerini sonra tamamlayın.",
+      "go": "Yine de çıkış yap"
     }
   },
   "today": {
@@ -397,7 +503,14 @@
     "inHouseRooms_one": "Otelde {{count}} oda",
     "inHouseRooms_other": "Otelde {{count}} oda",
     "inHousePeople_one": "{{count}} kişi",
-    "inHousePeople_other": "{{count}} kişi"
+    "inHousePeople_other": "{{count}} kişi",
+    "camera": {
+      "title": "Kamera",
+      "newAlerts_one": "{{count}} yeni kamera alarmı bakılmayı bekliyor.",
+      "newAlerts_other": "{{count}} yeni kamera alarmı bakılmayı bekliyor.",
+      "problem": "Kamera programı çalışmıyor; Kamera sekmesinden kontrol edin.",
+      "open": "Kamerayı aç"
+    }
   },
   "settings": {
     "title": "Ayarlar",
@@ -444,7 +557,9 @@
       "backup": "Yedek",
       "users": "Kullanıcılar ve roller",
       "about": "Hakkında",
-      "guide": "Kılavuz"
+      "guide": "Kılavuz",
+      "camera": "Kamera",
+      "frequent": "Sık kullanılan"
     },
     "tags": {
       "autoTitle": "Otomatik durumlar",
@@ -826,7 +941,8 @@
         "summaryFailed": "Yazılamadı",
         "never": "Henüz yok",
         "term": "Ana bilgisayar dönemi",
-        "summaryPlace": "Özet Drive'ım/Bismuth/ozet.pdf dosyasıdır; telefonda Drive uygulamasıyla açılır."
+        "summaryPlace": "Özet Drive'ım/Bismuth/ozet.pdf dosyasıdır; telefonda Drive uygulamasıyla açılır.",
+        "runBlocked": "Önce Drive klasörünü seçin ve anahtarı oluşturun."
       },
       "replaced": {
         "title": "Bu bilgisayar artık ana bilgisayar değil",
@@ -929,6 +1045,10 @@
         "acceptTitle": "Yeni kimlik kabul edilsin mi?",
         "acceptBody": "Yalnız otelin ana bilgisayarı değiştiyse (devralındı ya da yeniden kuruldu) kabul edin. Yeni kimliği ana bilgisayarın Ayarlar → Uzaktan erişim ekranındakiyle karşılaştırın; emin değilseniz otel sahibine haber verin.",
         "accept": "Yeni kimliği kabul et"
+      },
+      "lightMode": {
+        "label": "Pencere kapanınca tepside çalışsın",
+        "help": "Pencereyi kapatınca program durmaz, tepside kalır; ekranlar bu bilgisayarın tarayıcısında açılır. Bilgisayar daha az bellek kullanır. Programı tamamen kapatmak için tepsi simgesinden \"Çık\" deyin."
       }
     },
     "timeInvalid": "Saati 14:00 gibi yazın.",
@@ -1068,7 +1188,9 @@
         "withdrawn": "Planlı değişiklik geri alındı",
         "help": "Yeni bir değişiklik için yukarıda yatak, satış ya da kullanım durumunu değiştirip geçerlilik tarihini seçin."
       },
-      "typeOff": "Kapalı"
+      "typeOff": "Kapalı",
+      "typeNameOnly": "Tipin bir adı olmalı (en çok 80 karakter).",
+      "typePriceNegative": "Fiyat sıfırdan küçük olamaz."
     },
     "shifts": {
       "title": "Vardiyalar",
@@ -1191,7 +1313,8 @@
       "ownHoursToday": "Yalnız bugün",
       "ownHoursDays_one": "{{count}} gün geriye",
       "ownHoursDays_other": "{{count}} gün geriye",
-      "numberRange": "{{min}} ile {{max}} arasında bir tam sayı yazın."
+      "numberRange": "{{min}} ile {{max}} arasında bir tam sayı yazın.",
+      "rateRange": "Oranı {{min}} ile {{max}} arasında yazın."
     },
     "calendar": {
       "highlight": "Vurgulu günler",
@@ -1210,7 +1333,11 @@
       "startYear": "Takvim başlangıç yılı",
       "startYearHelp": "Takvim bu yıldan başlar; daha eski bir konaklama varsa onun yılından. Boş bırakırsanız en eski konaklamanın yılından başlar.",
       "startYearEmpty": "Örn. 2020",
-      "startYearInvalid": "Yıl {{min}} ile {{max}} arasında olmalı."
+      "startYearInvalid": "Yıl {{min}} ile {{max}} arasında olmalı.",
+      "groupFolio": "Grup rezervasyonunda hesap",
+      "groupFolioHelp": "Yeni açılan gruplar bu seçimle başlar; açılmış gruplar değişmez.",
+      "groupFolioSingle": "Tek hesap",
+      "groupFolioPerRoom": "Oda başına hesap"
     },
     "currencyNote": {
       "body": "Döviz kurları Döviz ekranında girilir ve izlenir. Kabul ettiğiniz para birimlerini “Otel” bölümünden seçin.",
@@ -1243,7 +1370,132 @@
     "fontSizeLarger": "Daha büyük",
     "colorsTitle": "Otelin renkleri",
     "colorsHelp": "Vurgu rengi ve durum renkleri herkes için aynıdır. Tema önizlemesinde değiştirip sonucu hemen görebilirsiniz.",
-    "openThemePreview": "Tema önizlemesini aç"
+    "openThemePreview": "Tema önizlemesini aç",
+    "hourly": {
+      "price": "Saat ücreti",
+      "col": "Saat ücreti",
+      "priceHelp": "İsteğe bağlı. Saatlik satışta tutar için öneri olarak gösterilir; tutarı satışta siz yazarsınız.",
+      "turnover": "Satışlar arası temizlik süresi (dk)",
+      "turnoverHelp": "Önceki satıştan sonra bu süre dolmadan yeni saatlik satışta uyarı çıkar; satışı engellemez.",
+      "turnoverInvalid": "0 ile 240 arasında bir sayı yazın.",
+      "turnoverSaved": "Temizlik süresi kaydedildi",
+      "title": "Saatlik satış"
+    },
+    "zoom": "Yakınlaştırma",
+    "zoomValue": "%{{percent}}",
+    "zoomHelp": "Ctrl ve + ya da - tuşlarıyla da değiştirebilirsiniz (Mac'te ⌘). Yalnız sizin için geçerlidir.",
+    "camera": {
+      "systemTitle": "Kamera sistemi",
+      "systemHelp": "Kamera görüntüsünü izleyip kayıtsız kişileri bulan program. Değişiklik kaydedilince kamera sistemi kendiliğinden yeniden başlar.",
+      "enabled": "Kamera sistemini aç",
+      "enabledHelp": "Kapalıyken kamera sistemi hiç çalışmaz.",
+      "location": "Kamera yeri",
+      "locationHelp": "Canlı görüntünün üstünde yazar. Örnek: Merdiven, kat girişi.",
+      "source": "Kamera adresi",
+      "sourceHelp": "Kameranın rtsp:// ile başlayan adresi ya da web kamerası numarası (0). Kullanıcı adı ve şifre adresin başında yer alır; kaydedildikten sonra bir daha gösterilmez.",
+      "sourcePlaceholder": "rtsp://192.168.1.64:554/…",
+      "secretSet": "Kayıtlı",
+      "secretMissing": "Girilmedi",
+      "secretRemove": "Kaldır",
+      "secretsHostOnly": "Kamera adresi ve Telegram bilgileri yalnızca otelin ana bilgisayarında değiştirilir.",
+      "telegramTitle": "Telegram bildirimi",
+      "telegramHelp": "Alarm her zaman programın bildirimlerine düşer. İsterseniz aynı alarm Telegram'a da gönderilir.",
+      "telegramEnabled": "Alarmı Telegram'a da gönder",
+      "telegramEnabledHelp": "Yalnızca internet bağlıyken çalışır; gönderilemezse sessizce atlanır.",
+      "networkOff": "Çevrimiçi veri kapalı olduğu için Telegram'a hiçbir şey gönderilmez. Döviz ekranından açılır.",
+      "telegramPhoto": "Alarm fotoğrafını da gönder",
+      "telegramPhotoHelp": "Kayıtsız kişinin fotoğrafı yurt dışındaki Telegram sunucularına gider. Kapatırsanız yalnızca metin gönderilir.",
+      "telegramToken": "Bot belirteci",
+      "telegramTokenHelp": "Telegram'da BotFather'dan alınan kod. Kaydedildikten sonra bir daha gösterilmez.",
+      "telegramTokenPlaceholder": "123456:ABC…",
+      "telegramChats": "Sohbet numaraları",
+      "telegramChatsHelp": "Alarmın gideceği kişi ya da grup numaraları; birden fazlaysa virgülle ayırın.",
+      "telegramChatsPlaceholder": "-1001234567890, 42",
+      "telegramTestButton": "Telegram'ı dene",
+      "telegramTest": {
+        "ok": "Deneme mesajı gönderildi",
+        "off": "Telegram kapalı. Önce alarmı Telegram'a gönderme seçeneğini ve çevrimiçi veriyi açın.",
+        "noCredentials": "Bot belirteci ve sohbet numarası girilmemiş.",
+        "invalidCredentials": "Telegram bilgileri kabul edilmedi. Belirteci ve numaraları kontrol edin.",
+        "network": "Telegram'a ulaşılamadı. İnternet bağlantısını kontrol edin.",
+        "timeout": "Telegram yanıt vermedi. Biraz sonra yeniden deneyin.",
+        "none": "Mesaj gönderilemedi. Sohbet numaralarını kontrol edin.",
+        "failed": "Deneme yapılamadı"
+      },
+      "alarmTitle": "Alarm ve saklama",
+      "alarmHelp": "Aynı kişi için alarmın ne sıklıkla tekrarlanacağı ve görüntülerin ne kadar saklanacağı.",
+      "numberInvalid": "{{min}} ile {{max}} arasında bir sayı girin.",
+      "field": {
+        "cooldown": "Alarm arası bekleme (saniye)",
+        "cooldownHelp": "Aynı kişi için iki alarm arasında en az bu kadar saniye geçer.",
+        "alertRetention": "Alarm görüntüsü saklama (gün)",
+        "alertRetentionHelp": "Alarm görüntüleri kaç gün sonra silinir.",
+        "faceRetention": "Yüz verisi saklama (gün)",
+        "faceRetentionHelp": "Misafir çıkış yaptıktan sonra yüz verisinin kaç gün saklanacağı. 0 = çıkışta silinir.",
+        "similarity": "Tanıma eşiği",
+        "similarityHelp": "Yüzün kayıtlı bir misafire ne kadar benzemesi gerektiği. Yükseltirseniz yanlış tanıma azalır ama tanıma zorlaşır.",
+        "confirmSimilarity": "Onay eşiği",
+        "confirmSimilarityHelp": "Kamera bir kişinin kim olduğunu sorguladığında kullanılan daha sıkı oran.",
+        "minFaceScore": "En düşük yüz puanı",
+        "minFaceScoreHelp": "Bundan net olmayan yüzler yok sayılır.",
+        "minFacePx": "En küçük yüz boyu (piksel)",
+        "minFacePxHelp": "Bundan küçük yüzler yok sayılır.",
+        "confirmationFrames": "Doğrulama için görüntü sayısı",
+        "confirmationFramesHelp": "Alarm için kişinin üst üste kaç görüntüde görülmesi gerektiği.",
+        "processEveryN": "Her kaç görüntüde bir inceleme",
+        "processEveryNHelp": "Yükseltirseniz bilgisayar rahatlar ama tepki yavaşlar.",
+        "verifiedTtl": "Tanınan kişi için bekleme (saniye)",
+        "verifiedTtlHelp": "Tanınan bir kişi bu süre boyunca yeniden sorgulanmaz.",
+        "uncertainMargin": "Kararsız kalan tanıma payı",
+        "uncertainMarginHelp": "Eşiğe bu kadar yakın çıkan eşleşmeler kesin sayılmaz, tekrar sorgulanır. 0 = kapalı.",
+        "idleFaceScanEvery": "Boşta yüz taraması (görüntü)",
+        "idleFaceScanEveryHelp": "Hareket yokken kaç görüntüde bir yüz aranacağı. Yükseltirseniz bilgisayar rahatlar. 0 = hareket yokken aranmaz.",
+        "streamMaxWidth": "Canlı görüntü genişliği (piksel)",
+        "streamMaxWidthHelp": "Canlı görüntünün en büyük genişliği. Küçültürseniz yerel ağ ve telefon rahatlar."
+      },
+      "advancedTitle": "Tanıma ayarları",
+      "advancedHelp": "Ne yaptığınızı bilmiyorsanız değiştirmeyin; varsayılanlar çoğu otel için uygundur.",
+      "zone": "İzleme bölgesi",
+      "zoneHelp": "Boş bırakırsanız tüm görüntü izlenir. Biçim: x1,y1;x2,y2;… (0 ile 1 arası oran ya da piksel).",
+      "rescan": {
+        "button": "Yeniden tara",
+        "title": "Kamera kurulumu",
+        "description": "Ağdaki kameraları yeniden arayın, yeni bilgileri deneyin ve kaydedin. Kayıtlı şifre gösterilmez."
+      }
+    },
+    "fees": {
+      "title": "Ücretler",
+      "help": "Geç çıkış, gelmeme ve hasar depozitosu için önerilen tutarlar. Resepsiyon her kalemde tutarı değiştirebilir.",
+      "late": "Geç çıkış ücreti",
+      "mode": "Kural",
+      "lateNone": "Öneri yok",
+      "lateFixed": "Sabit tutar",
+      "latePercent": "Gecelik fiyatın yüzdesi",
+      "afterTime": "Bu saatten sonra",
+      "amount": "Tutar",
+      "percent": "Yüzde",
+      "percentInvalid": "0 ile 1000 arasında bir tam sayı yazın.",
+      "noShow": "Gelmeme bedeli",
+      "noShowNone": "Bedel yok",
+      "noShowFirstNight": "İlk gecenin fiyatı",
+      "noShowFixed": "Sabit tutar",
+      "deposit": "Hasar depozitosu",
+      "depositAmount": "Varsayılan tutar",
+      "depositHelp": "Boş ya da sıfır bırakırsanız tutarı her seferinde siz yazarsınız.",
+      "save": "Ücretleri kaydet"
+    },
+    "frequent": {
+      "title": "Sık kullanılan ayarlar",
+      "help": "Zamanla değişen ayarlara buradan geçin. Gerisi soldaki listede.",
+      "hint": {
+        "hotel": "Otel adı, saatler, vergiler ve ücret kalemleri",
+        "rooms": "Odalar, oda tipleri ve gecelik fiyatlar",
+        "lists": "Ödeme yöntemleri, satış kanalları ve ek hizmetler",
+        "staff": "İzin, ücret ve ek mesai kuralları",
+        "users": "Kullanıcılar, roller ve yetkiler",
+        "backup": "Yedek alma, geri yükleme ve dışa aktarma"
+      }
+    }
   },
   "status": {
     "paid": "Ödendi",
@@ -1518,7 +1770,46 @@
     "expenseSectionInvalid": "Bu gider bölümü yok ya da kullanımda değil. Ayarlar → Listeler'den açık bir bölüm seçin.",
     "ownHoursDay": "Kendi saatinizi yalnız bugün ve son birkaç gün için yazabilirsiniz; gelecek güne yazılmaz. Daha eski bir gün için müdüre ya da otel sahibine başvurun.",
     "nameTaken": "Bu ad zaten kullanılıyor. Başka bir ad yazın.",
-    "noShowTooEarly": "Varış gününden önce \"Gelmedi\" işaretlenemez. Rezervasyondan vazgeçildiyse iptal edin."
+    "noShowTooEarly": "Varış gününden önce \"Gelmedi\" işaretlenemez. Rezervasyondan vazgeçildiyse iptal edin.",
+    "undoCheckInNotToday": "Giriş yalnız giriş yapılan gün geri alınır. Çıkış yaptırın ya da otel sahibine başvurun.",
+    "undoCheckInMoved": "Bu oda, oda değişikliği günü girişle açıldı; geri alınamaz. Önce çıkış yaptırın.",
+    "undoCheckInKbs": "{{names}} KBS'ye bildirilmiş. Onaylayarak geri alabilirsiniz.",
+    "dayUseFreeNeedsConfirm": "Ücret 0 yazıldı. Ücretsiz çıkışı onaylayın ya da bir tutar yazın.",
+    "hoursRequired": "Aynı gün giriş‑çıkış için saat aralığını yazın.",
+    "groupStayMismatch": "Seçilen oda bu gruba ait değil. Grup panelini kapatıp yeniden açın.",
+    "groupClosed": "Bu grup iptal edilmiş. Gerekirse yeni bir grup oluşturun.",
+    "groupPayCurrency": "Grubun odaları bu para biriminde değil. Ödemeyi odaların kendi hesabından alın.",
+    "groupPayExceeds": "Tutar grubun açık bakiyesinden fazla. Tutarı azaltın.",
+    "groupAttachTaken": "Seçilen rezervasyonlardan biri zaten bir grupta.",
+    "groupAttachClosed": "Kapanmış ya da iptal edilmiş rezervasyon gruba bağlanamaz.",
+    "groupTooLarge": "Bir grupta en çok 30 oda olabilir.",
+    "groupAttachTooFew": "Yeni grup için en az iki rezervasyon seçin.",
+    "groupPayPerRoom": "Bu grupta her oda kendi hesabını öder. Ödemeyi odanın rezervasyonundan alın.",
+    "cameraSourceInvalid": "Kamera adresi rtsp:// ile başlamalı (kamera kullanıcı adı ve şifresi adresin başında yer alır) ya da bir web kamerası numarası olmalı.",
+    "cameraTelegramInvalid": "Telegram bilgisi geçersiz. Bot belirtecini ve sohbet numaralarını kontrol edin.",
+    "cameraUnavailable": "Kamera sistemi bu bilgisayarda çalışmıyor. Otelin ana bilgisayarını kullanın.",
+    "cameraGuestNotInHouse": "Bu misafir şu an otelde değil. Yüz kaydı yalnız otelde kalan misafir için alınır.",
+    "cameraNoKeyStore": "Bu bilgisayar yüz bilgisini güvenle saklayamıyor (sistemin anahtar deposu yok). Yüz kaydı alınamaz.",
+    "cameraNoFace": "Kamerada net bir yüz görünmüyor. Misafiri kameraya doğru çevirip yeniden deneyin.",
+    "cameraFaceLimit": "Bu misafirin yüz kayıtları dolu. Önce eski kaydı silin.",
+    "cameraCropGone": "Bu alarmın resmi, saklama süresi dolduğu için silindi.",
+    "cameraStaffLeft": "Bu çalışan işten ayrılmış; listeye eklenemez.",
+    "hostTimeout": "Ana bilgisayar zamanında yanıt vermedi. Bağlantınızı (NetBird açık mı?) ve ana bilgisayarın açık olduğunu kontrol edip yeniden deneyin.",
+    "hostDenied": "Ana bilgisayar bu bilgisayarın bağlanmasını kabul etmedi. Otel sahibine haber verin.",
+    "hotelInUse": "Kullanımdaki otelin adresi değiştirilemez. Önce başka otele geçin.",
+    "hotelExists": "Bu adres listede başka bir otel için kayıtlı.",
+    "feeStayNotStarted": "Bu oda için henüz giriş yapılmadı. Önce odaya yerleştirin.",
+    "feeNotVoidable": "Bu kalem buradan iptal edilemez.",
+    "depositSettled": "Bu depozito zaten iade edilmiş ya da gelire çevrilmiş.",
+    "portfolioNoCopy": "Bu otelin kopyası bu bilgisayarda yok. Otele bir kez bağlanıp oturum açın.",
+    "depositNotConverted": "Bu depozito gelire çevrilmemiş.",
+    "dayInFuture": "Henüz başlamamış bir gün kapatılamaz.",
+    "dateTooFar": "Gider tarihi en fazla bir yıl sonrası olabilir.",
+    "notEmployedOn": "{{date}} tarihinde çalışan işte değil; bu güne kayıt girilemez.",
+    "notEmployedInPeriod": "Çalışan {{month}}/{{year}} döneminde işte değil; bu döneme tutar yazılamaz.",
+    "laundryMonthSettled": "Bu ayın faturası girilmiş; gelen fiş eklenemez ya da iptal edilemez.",
+    "roomTypeInactive": "Bu oda tipi kapalı. Önce oda tipini etkinleştirin, sonra odayı ekleyin ya da taşıyın.",
+    "laundryMonthNotSettled": "Bu ayın faturası girilmemiş; açılacak bir şey yok."
   },
   "common": {
     "close": "Kapat",
@@ -1614,14 +1905,34 @@
       "selectAll": "Tümünü seç",
       "view": "Görünüm",
       "resetZoom": "Gerçek boyut",
-      "zoomIn": "Büyüt",
-      "zoomOut": "Küçült",
+      "zoomIn": "Yakınlaştır",
+      "zoomOut": "Uzaklaştır",
       "fullScreen": "Tam ekran",
       "window": "Pencere",
       "minimize": "Simge durumuna küçült",
       "hide": "Bismuth'u gizle",
       "hideOthers": "Diğerlerini gizle",
       "quit": "Bismuth'tan çık"
+    },
+    "camera": {
+      "crashedTitle": "Kamera sistemi durdu",
+      "crashedBody": "Kamera sistemi {{count}} kez durdu; kendiliğinden yeniden başlatılıyor.",
+      "gaveUpTitle": "Kamera sistemi kapalı",
+      "gaveUpBody": "Kamera sistemi tekrar tekrar durdu ve artık yeniden başlatılmıyor. Kamera ekranından yeniden başlatın.",
+      "telegramTest": "Bismuth: Telegram bağlantısı çalışıyor",
+      "alertTitle": "Kayıtsız kişi girdi",
+      "alertBody": "Saat {{time}}. Kamera ekranına bakın.",
+      "alertBodyAt": "Saat {{time}}, {{location}}. Kamera ekranına bakın.",
+      "alertTelegram": "Bismuth: kayıtsız biri kameraya girdi. Saat {{time}}.",
+      "alertTelegramAt": "Bismuth: kayıtsız biri kameraya girdi. Saat {{time}}, {{location}}.",
+      "crashedBody_one": "Kamera sistemi {{count}} kez durdu; kendiliğinden yeniden başlatılıyor.",
+      "crashedBody_other": "Kamera sistemi {{count}} kez durdu; kendiliğinden yeniden başlatılıyor."
+    },
+    "tray": {
+      "open": "Bismuth'u aç",
+      "openBrowser": "Tarayıcıda aç",
+      "quit": "Çık",
+      "tooltip": "Bismuth çalışıyor"
     }
   },
   "companies": {
@@ -1645,7 +1956,8 @@
       "editTitle": "Firmayı düzenle",
       "ibanInvalid": "IBAN geçersiz görünüyor. Ülke koduyla yazın; kontrol rakamları tutmuyor olabilir, örn. TR33 0006 1005 1978 6457 8413 26.",
       "taxNumberInvalid": "Vergi numarası 10 haneli olmalı (şahıs ise geçerli 11 haneli T.C. kimlik no).",
-      "sameTitle": "Aynı ünvanla kayıtlı bir firma var: {{title}}. Yine de kaydedebilirsiniz."
+      "sameTitle": "Aynı ünvanla kayıtlı bir firma var: {{title}}. Yine de kaydedebilirsiniz.",
+      "sameTax": "Bu vergi numarasıyla kayıtlı bir firma var: {{title}}. Yine de kaydedebilirsiniz."
     },
     "toast": {
       "created": "Firma kaydedildi",
@@ -1709,8 +2021,8 @@
     "left": "Ayrıldı",
     "kbsMissingIn": "KBS girişi eksik",
     "kbsMissingOut": "KBS çıkışı eksik",
-    "markIn": "KBS'ye bildirdim",
-    "markOut": "KBS çıkışını yaptım"
+    "markIn": "KBS'ye bildirildi olarak işaretle",
+    "markOut": "KBS çıkışı yapıldı olarak işaretle"
   },
   "attachments": {
     "hint": "Fotoğraf ya da PDF sürükleyin — en çok {{maxMb}} MB, kayıt başına {{max}} dosya.",
@@ -2079,7 +2391,11 @@
       "settings_backup": "Yedek",
       "remote_settings": "Uzaktan erişim",
       "devices": "Cihazlar",
-      "audit_log": "Denetim kaydı"
+      "audit_log": "Denetim kaydı",
+      "booking_undoCheckIn": "Girişi geri alma",
+      "camera": "Kamera",
+      "camera_enroll": "Kameradan yüz alma",
+      "laundry_reopen": "Çamaşırhane ayını yeniden açma"
     }
   },
   "setup": {
@@ -2139,6 +2455,14 @@
       "summary": {
         "title": "Özet",
         "body": "Bilgileri kontrol edin. Çoğunu sonra Ayarlar'dan değiştirebilirsiniz."
+      },
+      "hourly": {
+        "title": "Saatlik satış",
+        "body": "Odaları saatle de satıyorsanız oda tipi başına bir saat ücreti yazın. Boş bırakabilirsiniz."
+      },
+      "camera": {
+        "title": "Kamera",
+        "body": "Otelde güvenlik kamerası varsa burada bağlayın. Bu adım isteğe bağlıdır; atlayıp sonra Ayarlar → Kamera'dan da ekleyebilirsiniz."
       }
     },
     "hotel": {
@@ -2399,13 +2723,28 @@
     },
     "recovery": {
       "ready": "Oteliniz hazır.",
-      "title": "Kurtarma kodlarınız",
-      "body": "Şifrenizi unutursanız bu kodlardan biriyle yeni şifre belirlersiniz. Her kod bir kez kullanılır.",
-      "once": "Bu kodlar bir daha gösterilmez. Kâğıda yazın ya da kopyalayıp güvenli bir yerde saklayın.",
+      "title": "Kâğıda yazın",
+      "body": "Aşağıdaki iki bilgi bir daha gösterilmez. Hepsini kâğıda yazın ya da yazdırın ve kasada saklayın.",
+      "once": "Bu bilgiler bir daha gösterilmez. Kâğıda yazın, yazdırın ya da kopyalayıp güvenli bir yerde saklayın.",
       "list": "Kurtarma kodları",
       "copy": "Kodları kopyala",
-      "written": "Kodları sakladım",
-      "continue": "Programa geç"
+      "written": "Kâğıda yazdım",
+      "continue": "Programa geç",
+      "codesTitle": "Kurtarma kodları",
+      "codesHelp": "Şifrenizi unutursanız bu kodlardan biriyle yeni şifre belirlersiniz. Her kod bir kez kullanılır.",
+      "keyTitle": "Bismuth anahtarı",
+      "keyHelp": "Drive'a giden yedekler bu anahtarla şifrelenir. Bilgisayar bozulursa yedeği yeni bilgisayarda açmak için gerekir; kaybolursa şifreli yedekler açılamaz.",
+      "keyLoading": "Anahtar hazırlanıyor…",
+      "keyFailed": "Anahtar şimdi gösterilemedi. Program açıldıktan sonra Ayarlar → Yedek bölümünden “Anahtarı göster” ile alıp kâğıda yazın.",
+      "keyCopy": "Anahtarı kopyala",
+      "keyQr": "Bismuth anahtarının QR kodu",
+      "print": "Yazdır",
+      "sheet": {
+        "title": "Bismuth kurulum bilgileri",
+        "keep": "Bu kâğıdı kasada ya da güvenli bir yerde saklayın; fotoğrafını çekip paylaşmayın.",
+        "codes": "Kurtarma kodları şifre içindir; her kod bir kez kullanılır.",
+        "key": "Bismuth anahtarı yedekler içindir; kaybolursa Drive'daki şifreli yedekler açılamaz."
+      }
     },
     "errors": {
       "required": "Bu alanı doldurun.",
@@ -2430,7 +2769,92 @@
       "role": "Bir rol seçin."
     },
     "stepComplete": "tamamlandı",
-    "skipToStep": "Adım içeriğine geç"
+    "skipToStep": "Adım içeriğine geç",
+    "hourly": {
+      "title": "Saat ücreti (isteğe bağlı)",
+      "help": "Saatlik satışta tutarı her zaman siz yazarsınız; buradaki ücret yalnızca öneri olarak çıkar.",
+      "noTypes": "Önce oda tiplerini seçin.",
+      "price": "Saat ücreti",
+      "optional": "Saatlik satış yapmıyorsanız bu adımı boş geçin. Ücretleri sonra Ayarlar → Odalar ve tipler bölümünden de yazabilirsiniz."
+    },
+    "camera": {
+      "computer": {
+        "title": "Bu bilgisayar",
+        "summary": "Bilgisayarınız: {{cpu}}, {{cores}} çekirdek, {{ram}} GB bellek, {{os}}.",
+        "unknownCpu": "işlemci",
+        "failed": "Bilgisayar bilgileri okunamadı. Profili aşağıdan kendiniz seçebilirsiniz.",
+        "profile": "Performans profili",
+        "recommended": "Önerilen",
+        "apply": "Profili uygula",
+        "applied": "Profil uygulandı"
+      },
+      "profile": {
+        "light": "Hafif",
+        "lightHelp": "Görüntüyü daha seyrek çözümler, canlı görüntüyü küçültür. Yavaş ya da az belleği olan bilgisayarlar için.",
+        "standard": "Standart",
+        "standardHelp": "Çoğu otel bilgisayarı için dengeli ayar.",
+        "high": "Yüksek",
+        "highHelp": "Görüntüyü sık çözümler, canlı görüntü daha büyük olur. Güçlü bilgisayarlar için."
+      },
+      "find": {
+        "title": "Kamerayı bul",
+        "help": "Aynı ağdaki kameraları arar; yaklaşık 5 saniye sürer. Bulunamazsa IP adresini kendiniz yazabilirsiniz.",
+        "scan": "Ağı tara",
+        "rescan": "Yeniden tara",
+        "scanning": "Aranıyor…",
+        "empty": "Kamera bulunamadı. Kameranın açık ve aynı ağa bağlı olduğunu kontrol edin ya da IP adresini aşağıya yazın.",
+        "noNetwork": "Bu bilgisayar bir yerel ağa bağlı görünmüyor. Ağ bağlantısını kontrol edin.",
+        "failed": "Arama yapılamadı. Yeniden deneyin.",
+        "found_one": "{{count}} kamera bulundu",
+        "found_other": "{{count}} kamera bulundu",
+        "use": "Bunu kullan",
+        "notActivated": "Etkinleştirilmemiş",
+        "onvif": "ONVIF",
+        "sadp": "SADP"
+      },
+      "form": {
+        "title": "Kamera bilgileri",
+        "help": "Hikvision kameralarda adres hazır kalıpla kurulur: yalnızca aşağıdaki bilgileri yazın, adresi Bismuth oluşturur.",
+        "ip": "IP adresi",
+        "ipHint": "Örnek: 192.168.1.64",
+        "ipInvalid": "Geçerli bir IP adresi yazın (örneğin 192.168.1.64).",
+        "port": "Port",
+        "portInvalid": "Port 1 ile 65535 arasında olmalı.",
+        "user": "Kullanıcı adı",
+        "userRequired": "Kullanıcı adını yazın.",
+        "password": "Şifre",
+        "passwordHint": "Şifre bu bilgisayarda şifreli saklanır, ayarlarda görünmez.",
+        "channels": "Kanal sayısı",
+        "channelsHint": "Tek kamerada 1 yazın. Kamera bir kayıt cihazına (NVR) bağlıysa kamera sayısını yazın.",
+        "channelsInvalid": "Kanal sayısı 1 ile 32 arasında olmalı.",
+        "channel": "Kullanılacak kanal",
+        "channelN": "Kanal {{n}}",
+        "address": "Bağlantı adresi"
+      },
+      "test": {
+        "title": "Bağlantı ve görüntü denemesi",
+        "run": "Bağlantıyı dene",
+        "running": "Deneniyor…",
+        "ok": "Bağlantı kuruldu, kameradan görüntü alındı ({{width}}×{{height}}).",
+        "preview": "Kameradan alınan deneme görüntüsü",
+        "failed": "Deneme yapılamadı. Yeniden deneyin.",
+        "timeout": "Kamera zamanında yanıt vermedi. Kameranın açık ve aynı ağda olduğunu kontrol edin.",
+        "unreachable": "Bu adreste kamera bulunamadı. IP adresini ve portu kontrol edin.",
+        "auth": "Kullanıcı adı ya da şifre yanlış. Kameranın etkinleştirildiğinden ve şifrenin doğru olduğundan emin olun.",
+        "path": "Kamera bu kanalı tanımıyor. Kanal numarasını kontrol edin.",
+        "noFrame": "Kameraya bağlanıldı ama görüntü alınamadı. Birkaç saniye sonra yeniden deneyin.",
+        "badAddress": "Bu adres otelin kendi ağındaki bir kamera gibi görünmüyor.",
+        "unavailable": "Kamera bölümü bu bilgisayarda çalışmıyor. Kurulum kılavuzundaki kamera bölümüne bakın.",
+        "noAddon": "Kamera eki kurulu değil, bu yüzden görüntü denemesi yapılamıyor. Kamera ekini kurduktan sonra Bismuth'u yeniden açıp tekrar deneyin."
+      },
+      "save": {
+        "run": "Kamerayı kaydet",
+        "saving": "Kaydediliyor…",
+        "done": "Kamera kaydedildi ve açıldı.",
+        "failed": "Kamera kaydedilemedi. Yeniden deneyin.",
+        "note": "Kaydetmeden devam ederseniz kamera eklenmez. Sonradan Ayarlar → Kamera'dan ekleyebilirsiniz."
+      }
+    }
   },
   "auth": {
     "title": "Oturum aç",
@@ -3403,7 +3827,9 @@
       "voidTitle": "Alım iptal edilsin mi?",
       "voidBody": "{{date}} tarihli {{amount}} tutarındaki gider iptal edilir; defterde iptal olarak kalır, ürünler fiyat geçmişinden düşer.",
       "reason": "İptal nedeni",
-      "voided": "Alım iptal edildi"
+      "voided": "Alım iptal edildi",
+      "emptyBodyPhone": "Alımlar bilgisayardan girilir; girilenler burada listelenir.",
+      "emptyBodyViewOnly": "Henüz alım yok. Alımları yetkili bir kullanıcı girer."
     },
     "summary": {
       "month": "Ay",
@@ -3414,7 +3840,9 @@
       "bySupplier": "Tedarikçi bazında",
       "slips": "Fiş",
       "note": "Tutarlar alım giderlerinden gelir; ürün satırı toplamı, fişteki taşıma gibi kalemler nedeniyle gider toplamından az olabilir."
-    }
+    },
+    "emptyBodyPhone": "Ürünler ve alımlar bilgisayardan girilir; telefonda yalnız görüntülenir.",
+    "emptyBodyViewOnly": "Henüz ürün yok. Ürünleri yetkili bir kullanıcı ekler."
   },
   "laundry": {
     "description": "Temiz fişi ve kirli teslim kayıtları; tür bazında bekleyen, eksik ve lekeli parçalar; ay sonu fatura kontrolü.",
@@ -3580,7 +4008,15 @@
       "confirm": "Kaydı iptal et",
       "saved": "Teslim kaydı iptal edildi"
     },
-    "closedType": "{{name}} (listeden kaldırıldı)"
+    "closedType": "{{name}} (listeden kaldırıldı)",
+    "reopen": {
+      "open": "Ayı yeniden aç",
+      "title": "{{month}} ayı yeniden açılsın mı?",
+      "body": "Faturası girilmiş ay açılır: fatura bilgisi silinir, ödendiyse gideri iptal edilir. Fişleri düzelttikten sonra faturayı yeniden girin. Gerekçe kayda geçer.",
+      "reason": "Gerekçe",
+      "confirm": "Yeniden aç",
+      "saved": "{{month}} yeniden açıldı"
+    }
   },
   "contacts": {
     "description": "Tedarikçi, çamaşırhane, usta, taksi ve acil numaralar. Numaraya tıklayınca kopyalanır; telefonda dokununca aranır.",
@@ -3644,7 +4080,7 @@
     "phoneLabel": "{{n}}. numaranın etiketi",
     "phoneNumber": "{{n}}. numara",
     "removePhone": "{{n}}. numarayı çıkar",
-    "phoneInvalid": "Numara en az 3 rakam olmalı.",
+    "phoneInvalid": "Numarayı rakamlarla yazın (6 ile 17 rakam arası).",
     "addPhone": "Numara ekle",
     "emailInvalid": "E-posta adresi ad@ornek.com gibi olmalı.",
     "import": {
@@ -3852,7 +4288,8 @@
       "voided": "Ödeme iptal edildi",
       "overTitle": "Bakiyeden fazla ödeme alınsın mı?",
       "overBody": "Bakiye {{balance}}, alınan {{amount}}. Fazlası ({{over}}) misafire borç olarak kalır.",
-      "overConfirm": "Yine de kaydet"
+      "overConfirm": "Yine de kaydet",
+      "futureDay": "Bu gün henüz başlamadı. Ödeme yine de bu güne yazılır."
     },
     "sale": {
       "service": "Hizmet",
@@ -3890,9 +4327,9 @@
       "body": "Kapatılan güne yalnız yetkili kişi gerekçe yazarak değişiklik yapabilir; her değişiklik denetim kaydına girer.",
       "done": "Gün kapatıldı",
       "closedBadge": "Kapalı gün",
-      "reopen": "Günü aç",
+      "reopen": "Günü yeniden aç",
       "reopenTitle": "{{date}} yeniden açılsın mı?",
-      "reopenBody": "Gün yeniden değiştirilebilir olur. Neden denetim kaydına yazılır.",
+      "reopenBody": "Gün yeniden değiştirilebilir olur. Gerekçe denetim kaydına yazılır.",
       "reopened": "Gün yeniden açıldı"
     },
     "month": {
@@ -4027,7 +4464,7 @@
       "expenses": "Gider",
       "occupancy": "Doluluk",
       "adr": "Ortalama gecelik fiyat",
-      "adrHint": "oda geliri ÷ satılan gece",
+      "adrHint": "gecelik oda geliri ÷ satılan gece",
       "revpar": "Oda başına gelir",
       "revparHint": "oda geliri ÷ satılabilir gece",
       "margin": "Kâr oranı {{value}}",
@@ -4098,7 +4535,8 @@
       "occupancy": "Doluluk ve göstergeler",
       "cash": "Kasa ve ödemeler",
       "expenses": "Giderler",
-      "staff": "Personel"
+      "staff": "Personel",
+      "night": "Gece raporu"
     },
     "compare": {
       "label": "Karşılaştır",
@@ -4147,11 +4585,9 @@
       "roomTypes": "Oda tipine göre",
       "rooms": "Odaya göre",
       "topGuests": "En çok gelir getiren misafirler",
-      "dayUseOut_one": "Aynı gün giriş‑çıkış ({{count}}) satılan gecelere katılmıyor, ayrı gösteriliyor.",
-      "dayUseOut_other": "Aynı gün giriş‑çıkışlar ({{count}}) satılan gecelere katılmıyor, ayrı gösteriliyor.",
-      "dayUseIn_one": "Aynı gün giriş‑çıkış ({{count}}) satılan gecelere katılıyor.",
-      "dayUseIn_other": "Aynı gün giriş‑çıkışlar ({{count}}) satılan gecelere katılıyor.",
-      "dayUseSwitch": "Dolulukta say"
+      "hourlyCount_one": "Bu dönemde {{count}} saatlik ya da aynı gün satış",
+      "hourlyCount_other": "Bu dönemde {{count}} saatlik ya da aynı gün satış",
+      "hourlyRevenue": "Saatlik ve aynı gün geliri: {{amount}}"
     },
     "cash": {
       "methods": "Ödeme yöntemine göre",
@@ -4268,7 +4704,50 @@
       "missing_one": "Kuru bilinmeyen {{count}} alım toplama katılmadı.",
       "missing_other": "Kuru bilinmeyen {{count}} alım toplama katılmadı."
     },
-    "emptyAction": "Deftere git"
+    "emptyAction": "Deftere git",
+    "outcomes": {
+      "cancelled": "İptal edilen",
+      "cancelledHint": "Dönemde iptal edilen rezervasyon",
+      "noShow": "Gelmedi",
+      "noShowHint": "Dönemde gelmedi işaretlenen rezervasyon",
+      "refund": "İade edilen",
+      "refundHint_one": "{{count}} iade kaydı; gelirden düşülmüştür",
+      "refundHint_other": "{{count}} iade kaydı; gelirden düşülmüştür"
+    },
+    "stayKind": {
+      "label": "Konaklama türü",
+      "all": "Tümü",
+      "overnight": "Gecelik",
+      "hourly": "Saatlik"
+    },
+    "night": {
+      "date": "Gün",
+      "arrivals": "Gelenler",
+      "departures": "Gidenler",
+      "staying": "Kalanlar",
+      "noShows": "Gelmeyenler",
+      "none": "Kayıt yok.",
+      "room": "Oda",
+      "guest": "Misafir",
+      "dates": "Tarihler",
+      "balance": "Bakiye",
+      "rooms": {
+        "total": "Toplam oda",
+        "occupied": "Dolu",
+        "clean": "Temiz",
+        "dirty": "Kirli",
+        "inspected": "Kontrol edildi",
+        "outOfService": "Bakımda / kullanım dışı"
+      },
+      "cash": "Kasa özeti",
+      "cashNone": "Bu gün için kasa hareketi yok.",
+      "currency": "Para birimi",
+      "income": "Gelir",
+      "refunds": "İadeler",
+      "expenses": "Gider",
+      "depositHeld": "Emanetteki depozito",
+      "depositNote": "Emanetteki depozito gelir değildir; misafire iade edilecek paradır."
+    }
   },
   "currency": {
     "description": "Piyasa orta kuru, otel kuru, çevirici, hava durumu ve bayram tarihleri.",
@@ -4347,7 +4826,8 @@
       "saved": "{{currency}} için otel kuru kaydedildi",
       "cleared": "{{currency}} için piyasa kuruna dönüldü",
       "quote": "Misafire bu kurdan söyle",
-      "quoteHelp": "Açıkken çevirici, misafir ekranı ve yeni ödeme ve gider kayıtları otel kurunu kullanır."
+      "quoteHelp": "Açıkken çevirici, misafir ekranı ve yeni ödeme ve gider kayıtları otel kurunu kullanır.",
+      "deviates": "Yazdığınız kur, son bilinen kurdan {{percent}}% ve üzeri farklı: {{rate}}. Doğruysa kaydedebilirsiniz."
     },
     "tabs": {
       "fx": "Döviz",
@@ -4375,6 +4855,12 @@
       "keyRemove": "Anahtarı kaldır",
       "keySaved": "Anahtar kaydedildi",
       "keyRemoved": "Anahtar kaldırıldı"
+    },
+    "warnPercent": {
+      "label": "Elle kur uyarı eşiği (%)",
+      "hint": "Yazılan kur son bilinen kurdan bu kadar yüzde uzaksa uyarı çıkar; kayıt yine yapılabilir.",
+      "invalid": "1 ile 1000 arasında bir tam sayı yazın.",
+      "saved": "Uyarı eşiği kaydedildi"
     }
   },
   "monthEnd": {
@@ -4415,7 +4901,7 @@
       "revenue": "Ciro",
       "expenses": "Gider",
       "profit": "Kâr",
-      "occupancy": "Doluluk",
+      "occupancy": "Doluluk (ayın tamamı)",
       "vsPrevious": "önceki aya göre",
       "margin": "Kâr oranı {{value}}",
       "nights": "{{sold}}/{{sellable}} oda-gece"
@@ -4958,7 +5444,8 @@
       "placeholder": "Özete eklemek istedikleriniz: örn. 503 geç gelecek, kapıyı açık bırakın.",
       "save": "Devri kaydet",
       "saved": "Devir kaydedildi",
-      "noShift": "Vardiya tanımlı değil. Saatleri Ayarlar → Vardiyalar bölümünden girin."
+      "noShift": "Vardiya tanımlı değil. Saatleri Ayarlar → Vardiyalar bölümünden girin.",
+      "emptyHint": "Not yazmazsanız yalnız otomatik özet kaydedilir."
     },
     "auto": {
       "title": "Otomatik özet",
@@ -5175,7 +5662,9 @@
       "changed": "Son değişiklik: {{name}} · {{when}}",
       "system": "Program",
       "occupied": "Odada misafir var.",
-      "closedNoBlock": "Oda bu gece dolu olduğu için takvimde blok yok."
+      "closedNoBlock": "Oda bu gece dolu olduğu için takvimde blok yok.",
+      "reminderTitle": "Oda {{room}}: misafir çıkınca durumu yeniden seçin",
+      "reminderBody": "“{{state}}” seçildi ama oda dolu olduğu için takvimde blok açılmadı. Misafir çıkınca durumu yeniden seçin."
     },
     "noMatchBody": "Başka bir durum seçin.",
     "statusSaved": "Oda {{room}} “{{state}}” olarak işaretlendi",
@@ -5200,7 +5689,7 @@
     "standaloneTitle": "Bu bilgisayar tek başına mı çalışacak?",
     "standaloneBody": "Otelin bütün kayıtları bu bilgisayarda tutulur; kurulum adımları açılır.",
     "standalone": "Bu bilgisayarı tek başına kur",
-    "addressHelp": "Adres, ana bilgisayarda Ayarlar → Uzaktan erişim bölümünde yazar (örn. 192.168.1.20:7373).",
+    "addressHelp": "Adres, ana bilgisayarda Ayarlar → Uzaktan erişim bölümünde görünür (örn. 192.168.1.20:7373).",
     "unreachableTitle": "Ana bilgisayara ulaşılamadı",
     "unreachableBody": "{{url}} yanıt vermiyor. Ana bilgisayarın açık olduğunu ve bu bilgisayarın aynı ağda olduğunu (ya da NetBird'ün açık olduğunu) kontrol edin. Ekran birkaç saniyede bir yeniden dener.",
     "otherAddress": "Başka adres gir",
@@ -5212,7 +5701,30 @@
     "foundTitle": "Yerel ağda bulunanlar",
     "searchAgain": "Yeniden ara",
     "searching": "Yerel ağda aranıyor…",
-    "noneFound": "Yerel ağda Bismuth ana bilgisayarı bulunamadı. Adresi aşağıya yazın."
+    "noneFound": "Yerel ağda Bismuth ana bilgisayarı bulunamadı. Adresi aşağıya yazın.",
+    "hotels": {
+      "title": "Kayıtlı oteller",
+      "empty": "Henüz kayıtlı otel yok. Aşağıdan bir ana bilgisayar adresi yazın; bağlanınca otel buraya eklenir.",
+      "active": "Kullanımda",
+      "noFingerprint": "Kimlik henüz alınmadı",
+      "lastUsed": "Son kullanım: {{date}} {{time}}",
+      "neverUsed": "Henüz bağlanılmadı",
+      "editLabel": "Düzenle: {{name}}",
+      "removeLabel": "Listeden kaldır: {{name}}",
+      "editTitle": "Oteli düzenle",
+      "name": "Otelin adı",
+      "addressHelp": "Başka bir adres yazarsanız, oradaki ana bilgisayarın kimliği bağlanırken yeniden denetlenir.",
+      "addressInUse": "Kullanımdaki otelin adresi değiştirilemez. Önce başka otele geçin.",
+      "removeTitle": "{{name}} listeden kaldırılsın mı?",
+      "removeBody": "Otelin kendi kayıtları ana bilgisayarında kalır. Bu bilgisayardaki yedek kopyası silinir; sonra yeniden bağlanabilirsiniz.",
+      "remove": "Listeden kaldır"
+    },
+    "problem": {
+      "empty": "Adres yazın.",
+      "scheme": "Adres http ile başlamalı ya da yalnız adres yazılmalı (örn. 192.168.1.20:7373). https desteklenmez.",
+      "port": "Bağlantı noktası 1 ile 65535 arasında olmalı (örn. 7373).",
+      "invalid": "Bu bir adres gibi görünmüyor. 192.168.1.20 ya da 192.168.1.20:7373 gibi yazın."
+    }
   },
   "userMenu": {
     "open": "Hesap menüsü",
@@ -5283,7 +5795,7 @@
     "action": {
       "create": "Ekledi",
       "update": "Değiştirdi",
-      "void": "İptal etti",
+      "void": "Geçersiz kıldı",
       "cancel": "İptal etti",
       "restore": "Geri aldı",
       "delete": "Kaldırdı",
@@ -5306,7 +5818,8 @@
       "export": "Dışa aktardı",
       "park": "Park etti",
       "no_show": "Gelmedi olarak işaretledi",
-      "reauth_failed": "Şifreyi yanlış girdi"
+      "reauth_failed": "Şifreyi yanlış girdi",
+      "check_in_undo": "Girişi geri aldı"
     },
     "entity": {
       "attachment": "Dosya eki",
@@ -5371,7 +5884,14 @@
       "takeover": "Ana bilgisayarı devralma",
       "import_batch": "İçe aktarma",
       "guest_tag": "Misafir etiketi",
-      "room_capacity_change": "Oda kapasitesi"
+      "room_capacity_change": "Oda kapasitesi",
+      "reservation_groups": "Grup rezervasyonu",
+      "camera": "Kamera sistemi",
+      "camera_alert": "Kamera alarmı",
+      "guest_face": "Yüz kaydı",
+      "camera_event": "Kamera olayı",
+      "staff_face": "Personel yüz kaydı",
+      "damage_deposit": "Hasar depozitosu"
     },
     "fieldName": {
       "name": "Ad",
@@ -5425,7 +5945,18 @@
       "startTime": "Başlangıç saati",
       "endTime": "Bitiş saati",
       "status": "Durum",
-      "remoteAccess": "Uzaktan oturum açma"
+      "remoteAccess": "Uzaktan oturum açma",
+      "method": "Yöntem",
+      "password": "Şifre",
+      "expiresAt": "Bitiş zamanı",
+      "folioId": "Hesap",
+      "titleI18n": "Başlık",
+      "reservationId": "Rezervasyon",
+      "guestId": "Misafir",
+      "roomId": "Oda",
+      "date": "Tarih",
+      "phone": "Telefon",
+      "email": "E-posta"
     },
     "importReason": "İçe aktarma",
     "setting": {
@@ -5437,7 +5968,8 @@
   "booking": {
     "conflict": {
       "occupied": "Oda {{room}} {{dates}} tarihinde dolu ({{codes}}). Başka bir oda ya da tarih seçin.",
-      "blocked": "Oda {{room}} {{dates}} tarihinde satışa kapalı. Başka bir oda ya da tarih seçin."
+      "blocked": "Oda {{room}} {{dates}} tarihinde satışa kapalı. Başka bir oda ya da tarih seçin.",
+      "occupiedHours": "Oda {{room}} {{dates}} günü şu saatlerde dolu: {{hours}}. Başka bir saat ya da oda seçin."
     },
     "standing": {
       "infoTitle": "Misafirin sürekli notu",
@@ -5469,7 +6001,8 @@
       "openIssue": "Açık arıza: {{title}}",
       "blocked": "Satışa kapalı",
       "takenChosen": "Seçilen tarihlerde dolu: oda {{rooms}}. Başka bir oda ya da tarih seçin.",
-      "notForSale": "Satılmaz"
+      "notForSale": "Satılmaz",
+      "remove": "Oda {{room}} seçimini kaldır"
     },
     "price": {
       "reason": {
@@ -5487,7 +6020,10 @@
       "byNight_one": "Gece gece fiyat ({{count}} gece)",
       "byNight_other": "Gece gece fiyat ({{count}} gece)",
       "listOf": "Oda {{room}}: gece gece fiyat ve ödeme",
-      "save": "Fiyatları kaydet ({{count}})"
+      "save": "Fiyatları kaydet ({{count}})",
+      "zeroTitle": "Fiyat 0 olarak kaydedilsin mi?",
+      "zeroBody": "Bu rezervasyonda en az bir gecenin fiyatı 0. Ücretsiz bir konaklama ise devam edin.",
+      "zeroAction": "Yine de kaydet"
     },
     "toast": {
       "created": "Rezervasyon kaydedildi",
@@ -5507,14 +6043,16 @@
       "roomChanged": "Oda değiştirildi",
       "roomAdded": "Oda eklendi",
       "noShow": "Rezervasyon gelmedi olarak işaretlendi",
-      "stayCancelled": "Oda {{room}} iptal edildi"
+      "stayCancelled": "Oda {{room}} iptal edildi",
+      "checkInUndone": "Oda {{room}}: giriş geri alındı",
+      "refundPending": "Rezervasyon iade bekliyor olarak park edildi"
     },
     "form": {
       "needGuest": "Bir misafir seçin ya da yeni misafirin adını yazın.",
       "badDates": "Çıkış tarihi girişten önce olamaz.",
       "needRoom": "En az bir oda seçin.",
       "needChannel": "Satış kanalını seçin.",
-      "dayUse": "Giriş ve çıkış aynı gün: aynı gün giriş‑çıkış olarak kaydedilir.",
+      "dayUse": "Giriş ve çıkış aynı gün: saat aralığını yazın. Odanın o günkü diğer saatleri satılabilir.",
       "channelRef": "Kanaldaki rezervasyon no",
       "status": "Durum",
       "dayUseTotal": "Aynı gün giriş‑çıkış, toplam <m>{{total}}</m>",
@@ -5539,7 +6077,9 @@
       "firstName": "Ad",
       "lastName": "Soyad",
       "phone": "Telefon",
-      "email": "E-posta"
+      "email": "E-posta",
+      "similar": "Bu ada benzer kayıtlı misafir var. Aynı kişiyse kartını kullanın; yeni kart açılmaz.",
+      "useCard": "Bu kartı kullan"
     },
     "issues": {
       "title": "Oda {{room}}: açık arıza var",
@@ -5584,7 +6124,11 @@
       "release_one": "{{count}} gece boşalacak; oda o gece yeniden satılabilir.",
       "release_other": "{{count}} gece boşalacak; oda o geceler yeniden satılabilir.",
       "sameDay": "Misafir giriş günü ayrılıyor: ilk gece aynı gün giriş‑çıkış olarak kalır.",
-      "dayUsePrice": "Aynı gün giriş‑çıkış ücreti"
+      "dayUsePrice": "Aynı gün giriş‑çıkış ücreti",
+      "dayUseHours": "Kullanılan saatler: {{start}}–{{end}}",
+      "dayUseSuggested": "Önerilen: {{amount}} (oda tipinin saat ücreti × kullanılan süre)",
+      "freeConfirm": "Ücretsiz çıkış: tutar 0 olarak kaydedilsin",
+      "freeNeeded": "Tutar 0: ücretsiz çıkışı onaylayın ya da bir tutar yazın."
     },
     "park": {
       "title": "Rezervasyon park edilsin mi?",
@@ -5614,7 +6158,8 @@
       "parkedLine": "Park edilmiş: {{reason}}",
       "cancelledLine": "İptal nedeni: {{reason}}",
       "noContact": "İletişim bilgisi yok.",
-      "noStays": "Bu rezervasyonun takvimde odası yok (park edilmiş ya da iptal edilmiş)."
+      "noStays": "Bu rezervasyonun takvimde odası yok (park edilmiş ya da iptal edilmiş).",
+      "history": "Geçmiş"
     },
     "kbs": {
       "badge": "KBS eksik: {{count}}",
@@ -5659,13 +6204,166 @@
     "noShow": {
       "title": "Rezervasyon \"gelmedi\" olarak işaretlensin mi?",
       "description": "Geceler boşalır, ödemeler kayıtta kalır.",
-      "confirm": "Gelmedi olarak işaretle"
+      "confirm": "Gelmedi olarak işaretle",
+      "fee": "Gelmeme bedeli",
+      "feeHelp": "Boş bırakırsanız bedel yazılmaz. Bedel misafirin hesabına eklenir."
     },
     "cancelStay": {
       "menu": "Oda {{room}}: iptal et",
       "title": "Oda {{room}} iptal edilsin mi?",
       "description": "Bu odanın geceleri boşalır. Rezervasyonun diğer odaları, kalınmış geceler ve ödemeler kayıtta kalır.",
       "confirm": "Odayı iptal et"
+    },
+    "giveup": {
+      "menu": "Vazgeçme ve iade",
+      "menuRoom": "Oda {{room}}: vazgeçme ve iade",
+      "title": "Oda {{room}}: misafir vazgeçti",
+      "description": "Misafir odadayken vazgeçtiyse nasıl devam edeceğinizi seçin. Hiçbir kayıt silinmez.",
+      "sameDay": "Aynı gün çıkış yap",
+      "sameDayHint": "İlk gece aynı gün giriş‑çıkış olarak kalır; ücreti çıkışta düzeltir, fazlasını iade edersiniz.",
+      "sameDayNo": "Misafir bugün girmediği için seçilemez.",
+      "undo": "Girişi geri al ve iptal et",
+      "undoHint": "Konaklama hiç olmamış sayılır; tahsilatı iade edersiniz.",
+      "undoNoRight": "Bunun için yetkiniz yok. Otel sahibine başvurun.",
+      "undoNotToday": "Giriş yapılan günden sonra geri alınamaz.",
+      "early": "Erken çıkış yap",
+      "earlyHint": "Kalan geceler boşalır, kalınan geceler kalır.",
+      "earlyNo": "Kalan gece yok.",
+      "undoConfirm": "Girişi geri al",
+      "checkoutConfirm": "Çıkış yap",
+      "otherRooms": "Rezervasyonda başka odalar var; yalnız bu oda iptal edilir. İade için ödeme penceresini kullanın.",
+      "kbsTitle": "KBS'ye bildirilmiş kişi var",
+      "kbsBody": "{{names}} KBS'ye bildirildi. Bildirim kayıtta kalır; çıkışı KBS tarafında ayrıca yapmanız gerekir.",
+      "kbsConfirm": "Anladım, girişi yine de geri al",
+      "refundAfter": "Çıkış kaydedilince tahsilatı iade etmeniz için iade penceresi açılır.",
+      "refundNeedsManager": "İade için otel sahibine ya da müdüre başvurun.",
+      "choose": "Nasıl devam edilsin"
+    },
+    "refund": {
+      "collected": "Bu rezervasyonda {{amount}} tahsilat var",
+      "choose": "Tahsilat ne olsun",
+      "enter": "İade gir",
+      "needManager": "İade yetkiniz yok. Otel sahibine ya da müdüre başvurun.",
+      "amount": "İade tutarı",
+      "needAmount": "İade tutarını yazın.",
+      "tooMuch": "İade, alınan tutarı geçemez.",
+      "park": "İade bekliyor olarak park et",
+      "parkHint": "Rezervasyon takvimin altında bekler; iadeyi müdür ya da sahip girer.",
+      "keep": "Tahsilat kalsın",
+      "keepHint": "Örneğin iptal bedeli; nedeni yazılır ve kayda geçer.",
+      "keepReason": "Neden (örn. iptal bedeli)",
+      "needNote": "Nedeni yazın.",
+      "parkConfirm": "İade bekliyor olarak park et",
+      "menu": "İade gir"
+    },
+    "hourly": {
+      "button": "Saatlik satış",
+      "title": "Saatlik satış",
+      "description": "Bir odayı aynı gün içinde belirli saatler için satışa çıkarın. Tutarı siz yazarsınız.",
+      "room": "Oda",
+      "roomPlaceholder": "Oda seçin",
+      "date": "Tarih",
+      "start": "Başlangıç saati",
+      "end": "Bitiş saati",
+      "amount": "Tutar",
+      "channel": "Satış kanalı",
+      "suggested": "Önerilen: {{amount}} (oda tipinin saat ücreti × süre)",
+      "noSuggestion": "Bu oda tipi için saat ücreti yok. Tutarı siz yazın.",
+      "needGuest": "Misafirin adını yazın.",
+      "needRoom": "Bir oda seçin.",
+      "needAmount": "Tutarı yazın.",
+      "badRange": "Bitiş saati başlangıçtan sonra olmalı.",
+      "taken": "Oda {{room}} bu saatlerde dolu: {{hours}}. Başka bir saat ya da oda seçin.",
+      "takenDay": "Oda {{room}} bu gün dolu. Başka bir gün ya da oda seçin.",
+      "blocked": "Oda {{room}} bu gün satışa kapalı.",
+      "turnover": "{{start}}–{{end}} satışıyla arada {{gap}} dk var; temizlik için {{min}} dk önerilir. Yine de kaydedebilirsiniz.",
+      "toast": {
+        "created": "Saatlik satış kaydedildi"
+      },
+      "hoursLabel": "Saatler",
+      "kind": "Saatlik"
+    },
+    "group": {
+      "title": "Grup rezervasyonu",
+      "option": "Grup rezervasyonu olarak kaydet",
+      "optionHelp": "Her oda ayrı rezervasyon olur; odalar tek grupta toplanır, giriş ve çıkış topluca yapılabilir.",
+      "name": "Grup adı",
+      "namePlaceholder": "Örn. tur grubu",
+      "needName": "Grubun adını yazın.",
+      "needRooms": "Grup için en az iki oda seçin.",
+      "leaderHelp": "Yukarıdaki misafir grup lideri olur; adı yazılmayan odalara o yazılır.",
+      "roomGuest": "Oda {{room}} misafir adı",
+      "roomGuestPlaceholder": "Grup lideri",
+      "created": "Grup kaydedildi",
+      "badge": "Grup: {{name}}",
+      "open": "Grup panelini aç",
+      "panel": {
+        "title": "Grup",
+        "description": "Grubun odaları, misafirleri ve toplu işlemleri",
+        "loading": "Grup yükleniyor",
+        "leader": "Grup lideri: {{name}}",
+        "rooms_one": "{{count}} oda",
+        "rooms_other": "{{count}} oda",
+        "folio": {
+          "single": "Tek hesap (grup lideri öder)",
+          "per_room": "Oda başına hesap"
+        },
+        "voided": "Grup iptal edildi",
+        "roomsHeading": "Odalar",
+        "selectAll": "Tümünü seç",
+        "selectRoom": "Oda {{room}} seç",
+        "openReservation": "Rezervasyonu aç",
+        "notDue": "Giriş günü henüz değil",
+        "checkIn": "Toplu giriş",
+        "checkOut": "Toplu çıkış",
+        "note": "Toplu not",
+        "cancel": "Grubu iptal et",
+        "atomic": "Seçilen odaların hepsi birlikte yapılır; biri olmazsa hiçbiri yapılmaz.",
+        "total": "Grup toplamı",
+        "balance": "Bakiye",
+        "mixedCurrency": "Odalar farklı para birimlerinde; toplam gösterilmiyor.",
+        "notes": "Grup notları",
+        "noNotes": "Henüz grup notu yok. İlk notu eklemek için \"Toplu not\"a basın.",
+        "charges": "Konaklama tutarı",
+        "pay": "Grup ödemesi al",
+        "roomPay": "Ödeme al",
+        "roomBalance": "Bakiye: {{amount}}",
+        "stayRange": "{{from}} – {{to}}",
+        "stayRangeNotDue": "{{from}} – {{to}} · Giriş günü henüz değil"
+      },
+      "noteDialog": {
+        "title": "Tüm odalara not",
+        "description": "Yazdığınız not grubun her odasının rezervasyonuna eklenir.",
+        "label": "Not"
+      },
+      "cancelDialog": {
+        "title": "Grup iptal edilsin mi?",
+        "body": "Henüz gelmemiş odaların geceleri boşalır. Ödemeler kayıtta kalır; iade için ilgili odanın rezervasyonunu açın.",
+        "reason": "İptal nedeni"
+      },
+      "toast": {
+        "checkedIn": "Seçilen odalar giriş yaptı",
+        "checkedOut": "Seçilen odalar çıkış yaptı",
+        "noteAdded": "Not tüm odalara eklendi",
+        "cancelled": "Grup iptal edildi",
+        "paid": "Grup ödemesi kaydedildi"
+      },
+      "payDialog": {
+        "title": "Grup ödemesi",
+        "body": "Grubun açık bakiyesi {{amount}}.",
+        "amount": "Tutar",
+        "method": "Ödeme yöntemi",
+        "note": "Not",
+        "needAmount": "Tutarı yazın.",
+        "tooMuch": "Tutar açık bakiyeyi ({{amount}}) aşıyor.",
+        "spread": "Tutar odaların açık bakiyelerine rezervasyon sırasıyla dağıtılır; her oda için ayrı ödeme satırı yazılır."
+      }
+    },
+    "lateCheckout": {
+      "added": "Geç çıkış ücreti eklendi",
+      "failed": "Çıkış yapıldı ama geç çıkış ücreti eklenemedi. Para sekmesinden ekleyin.",
+      "offer": "Geç çıkış ücreti ekle ({{time}})",
+      "amount": "Geç çıkış ücreti"
     }
   },
   "holidayCheck": {
@@ -5836,7 +6534,11 @@
     "driveFolderDesktopOnly": "Klasör yalnız ana bilgisayardaki program penceresinde seçilir.",
     "driveFolderFailed": "Klasör kaydedilmedi",
     "foldersDesktopOnly": "Klasörlerin yeri yalnız ana bilgisayarda gösterilir.",
-    "restoreDesktopOnly": "Geri yükleme ana bilgisayarda yönetilir."
+    "restoreDesktopOnly": "Geri yükleme ana bilgisayarda yönetilir.",
+    "timeInvalid": "Saati 04:00 gibi yazın.",
+    "driveFolderFind": "Drive klasörünü bul",
+    "driveFound": "Drive klasörü bulundu ve kaydedildi",
+    "driveNotFound": "Bu bilgisayarda Google Drive klasörü bulunamadı. Drive uygulamasının kurulu ve açık olduğundan emin olun ya da “Klasör seç”i kullanın."
   },
   "dataTransfer": {
     "title": "Dışa ve içe aktarma",
@@ -5905,7 +6607,14 @@
       "laundryPrices": "Çamaşırhane fiyatları",
       "laundrySettlements": "Çamaşırhane ay hesapları",
       "productCategories": "Ürün kategorileri",
-      "importBatches": "İçe aktarmalar"
+      "importBatches": "İçe aktarmalar",
+      "damageDeposits": "Hasar güvence bedelleri",
+      "salaryPeriods": "Maaş dönemleri",
+      "payPolicies": "Maaş kuralları",
+      "paymentMethods": "Ödeme yöntemleri",
+      "salesChannels": "Satış kanalları",
+      "extraServices": "Ek hizmetler",
+      "statusTags": "Durum etiketleri"
     },
     "col": {
       "date": "Tarih",
@@ -6083,7 +6792,14 @@
       "importedExpenses": "Gider",
       "importedSalaries": "Maaş tutarı",
       "importedSalaryPayments": "Maaş ödemesi",
-      "voidedAt": "İptal zamanı"
+      "voidedAt": "İptal zamanı",
+      "takenDate": "Alındığı tarih",
+      "settledDate": "Sonuçlandığı tarih",
+      "settleNote": "Sonuç notu",
+      "depositStatus": "Durum",
+      "lockedAt": "Kilitlendiği an",
+      "policyKey": "Kural",
+      "policyValue": "Değer"
     },
     "value": {
       "yes": "Evet",
@@ -6197,6 +6913,11 @@
         "tcmb": "TCMB",
         "manual": "Elle girildi",
         "hotel": "Otel kuru"
+      },
+      "depositStatus": {
+        "held": "Tutuluyor",
+        "refunded": "İade edildi",
+        "converted": "Hasara çevrildi"
       }
     },
     "import": {
@@ -6648,14 +7369,19 @@
       "search": "Hızlı arama",
       "list": "Kısayol listesini aç",
       "lock": "Ekranı kilitle",
-      "sidebar": "Kenar menüyü daralt ya da aç"
+      "sidebar": "Kenar menüyü daralt ya da aç",
+      "fullscreen": "Tam ekrana geç ya da çık",
+      "zoom": "Yakınlaştır ya da uzaklaştır",
+      "zoomReset": "Yakınlaştırmayı sıfırla"
     },
     "calendar": {
       "move": "Hücreden hücreye geç",
       "week": "Bir hafta ileri ya da geri",
       "today": "Bugüne dön",
       "open": "Seçili hücreyi aç",
-      "new": "Seçili hücrede yeni rezervasyon"
+      "new": "Seçili hücrede yeni rezervasyon",
+      "select": "Çubuğu seç ya da seçimden çıkar (Ctrl veya Shift + tık)",
+      "menu": "Çubuğun ya da hücrenin işlem menüsü (sağ tık)"
     },
     "forms": {
       "save": "Kaydet",
@@ -6691,6 +7417,340 @@
     "wholeNumber": "Tam sayı yazın.",
     "range": "{{min}} ile {{max}} arasında bir sayı yazın.",
     "rangeWhole": "{{min}} ile {{max}} arasında bir tam sayı yazın.",
-    "minWhole": "{{min}} ya da daha büyük bir tam sayı yazın."
+    "minWhole": "{{min}} ya da daha büyük bir tam sayı yazın.",
+    "limitReached": "En çok {{max}} karakter yazabilirsiniz.",
+    "phone": "Telefonu rakamlarla yazın (örn. +90 532 123 45 67)."
+  },
+  "camera": {
+    "title": "Kamera",
+    "description": "Kamera sisteminin durumu, canlı görüntü ve alarmlar.",
+    "restart": "Yeniden başlat",
+    "restarted": "Kamera sistemi yeniden başlatıldı",
+    "restartFailed": "Kamera sistemi yeniden başlatılamadı",
+    "pauseFailed": "Alarm durumu değiştirilemedi",
+    "openSettings": "Kamera ayarları",
+    "status": {
+      "title": "Kamera sistemi",
+      "crashes_one": "Program açıldığından beri {{count}} kez durdu.",
+      "crashes_other": "Program açıldığından beri {{count}} kez durdu."
+    },
+    "state": {
+      "running": "Çalışıyor",
+      "slow": "Yavaş çalışıyor",
+      "starting": "Başlıyor",
+      "restarting": "Yeniden başlıyor",
+      "gaveUp": "Hata: durdu",
+      "stopped": "Durdu",
+      "noSource": "Kamera adresi yok",
+      "disabled": "Kapalı",
+      "unavailable": "Bu bilgisayarda yok",
+      "noAddon": "Kamera eki kurulu değil"
+    },
+    "stateHelp": {
+      "running": "Kamera görüntüsü izleniyor. Kayıtsız biri girerse alarm verilir.",
+      "slow": "Kamera sistemi geç yanıt veriyor. Birkaç dakika içinde düzelmezse Yeniden başlat'a basın.",
+      "starting": "Kamera sistemi açılıyor; bu bir dakika kadar sürebilir.",
+      "restarting": "Kamera sistemi durdu ve kendiliğinden yeniden başlatılıyor.",
+      "gaveUp": "Kamera sistemi tekrar tekrar durdu ve artık yeniden başlatılmıyor. Yeniden başlat'a basın; olmazsa otel sahibine haber verin.",
+      "stopped": "Kamera sistemi şu an çalışmıyor. Yeniden başlat'a basın.",
+      "noSource": "Kamera adresi girilmedi. Ayarlar'da Kamera bölümünden girin; yetkiniz yoksa otel sahibine başvurun.",
+      "disabled": "Kamera sistemi kapalı. Açmak için Ayarlar'da Kamera bölümüne gidin; yetkiniz yoksa otel sahibine başvurun.",
+      "unavailable": "Kamera sistemi bu bilgisayarda çalışmıyor. Otelin ana bilgisayarını kullanın.",
+      "noAddon": "Kamera eki ayrı bir indirmedir: Bismuth'un sürüm sayfasından Bismuth-Kamera-Windows.zip (Mac: Bismuth-Kamera-Mac.zip) dosyasını indirip açın, çıkan camera-addon klasörünü ana bilgisayarda Bismuth'un veri klasörüne koyun (Windows: %APPDATA%\\Bismuth, Mac: ~/Library/Application Support/Bismuth) ve Bismuth'u yeniden açın."
+    },
+    "pause": {
+      "label": "Alarmları duraklat",
+      "help": "Açıkken kayıtsız kişi için alarm verilmez; görüntü izlenmeye devam eder."
+    },
+    "live": {
+      "title": "Canlı görüntü",
+      "help": "Yalnızca bu bilgisayarda görünür ve kaydedilmez.",
+      "defaultLocation": "Kamera",
+      "guests_one": "{{count}} kayıtlı misafir",
+      "guests_other": "{{count}} kayıtlı misafir",
+      "alarmsPaused": "Alarmlar duraklatıldı",
+      "disconnected": "Kamera bağlı değil",
+      "covered": "Kamera kapalı ya da karanlık",
+      "alt": "Kameranın canlı görüntüsü",
+      "failed": "Görüntü alınamadı.",
+      "retry": "Yeniden dene",
+      "noPicture": "Görüntü adresi alınamadı. Kamera sistemi çalışıyorsa birkaç saniye sonra kendiliğinden gelir.",
+      "staff": "Personel"
+    },
+    "alerts": {
+      "title": "Alarmlar",
+      "help": "Kayıtsız biri kameraya girince burada görünür. Baktığınızı ve hallettiğinizi işaretleyin.",
+      "unknownPerson": "Kayıtsız kişi girdi",
+      "today": "Bugün",
+      "yesterday": "Dün",
+      "noTime": "Saati bilinmeyenler",
+      "state": {
+        "new": "Yeni",
+        "seen": "Görüldü",
+        "handled": "Halledildi"
+      },
+      "markSeen": "Görüldü olarak işaretle",
+      "markHandled": "Halledildi olarak işaretle",
+      "reopen": "Yeniden aç",
+      "markFailed": "Alarm işaretlenemedi",
+      "emptyTitle": "Alarm yok",
+      "emptyBody": "Kayıtsız biri kameraya girdiğinde burada görünür.",
+      "unavailableTitle": "Alarm listesi alınamıyor",
+      "unavailableBody": "Kamera sistemi çalışmıyor. Durum kartına bakın.",
+      "filterEmptyTitle": "Bu durumda alarm yok",
+      "filterEmptyBody": "Başka bir seçenek deneyin.",
+      "filter": {
+        "label": "Alarm durumu",
+        "all": "Hepsi · {{count}}",
+        "new": "Yeni · {{count}}",
+        "seen": "Görüldü · {{count}}",
+        "handled": "Halledildi · {{count}}"
+      },
+      "saveAsGuest": "Misafir olarak kaydet",
+      "linked": "Misafire bağlandı",
+      "saveDialog": {
+        "title": "Alarmdaki kişiyi misafire bağla",
+        "body": "Bu yüz, seçtiğiniz misafirin yüz kaydına eklenir. Misafir çıkış yapınca silinir.",
+        "crop": "Alarmdaki yüz",
+        "guest": "Misafir",
+        "pick": "Misafir seçin",
+        "none": "Şu an otelde kalan misafir yok.",
+        "cropGone": "Bu alarmın resmi artık yok; yüz kaydedilemez.",
+        "loading": "Resim açılıyor",
+        "save": "Yüzü kaydet",
+        "saved": "Yüz kaydı eklendi",
+        "failed": "Yüz kaydı eklenemedi",
+        "faces_one": "{{count}} yüz kaydı",
+        "faces_other": "{{count}} yüz kaydı"
+      }
+    },
+    "face": {
+      "title": "Yüz kaydı (kamera)",
+      "help": "Kamera misafiri tanısın diye yüzü alınır. Yalnız bu bilgisayarda, şifreli saklanır; misafir çıkış yapınca silinir.",
+      "none": "Yüz kaydı yok",
+      "has_one": "{{count}} yüz kaydı var",
+      "has_other": "{{count}} yüz kaydı var",
+      "since": "Son kayıt: {{when}}",
+      "cropAlt": "Kayıtlı yüz",
+      "enroll": "Kameradan yüz al",
+      "delete": "Yüz kaydını sil",
+      "notInHouse": "Misafir otelde değil. Yüz kaydı yalnız otelde kalan misafir için alınır.",
+      "noKeyStore": "Bu bilgisayar yüz bilgisini güvenle saklayamıyor; yüz kaydı alınamaz.",
+      "hostOnly": "Yüz kaydı yalnız otelin ana bilgisayarından alınır.",
+      "enrolled": "Yüz kaydı eklendi",
+      "enrollFailed": "Yüz kaydı alınamadı",
+      "deleted": "Yüz kaydı silindi",
+      "deleteFailed": "Yüz kaydı silinemedi",
+      "confirmTitle": "Yüz kaydı silinsin mi?",
+      "confirmBody": "Bu misafirin tüm yüz kayıtları kalıcı olarak silinir. Kamera onu bir daha tanımaz."
+    },
+    "notice": {
+      "entry": "Aydınlatma metni",
+      "title": "Kamera ile kayıt ve yüz tanıma aydınlatma metni",
+      "sign": "Bu otelde kamera ile kayıt alınmaktadır",
+      "help": "Misafirlere göstermek ya da girişe asmak için yazdırın. Metin bir şablondur; kullanmadan önce avukatınıza gösterin.",
+      "language": "Metnin dili",
+      "print": "Yazdır",
+      "controller": {
+        "title": "Veri sorumlusu",
+        "body": "{{hotel}}. İletişim: {{contact}}"
+      },
+      "data": {
+        "title": "İşlenen veriler",
+        "body": "Kameraların gördüğü alandaki görüntünüz. Otelde konaklıyorsanız ayrıca yüzünüzün küçük bir fotoğrafı ve sayısal bir şablonu (biyometrik veri) tutulur. Otelde konaklamayan biri algılanırsa o anın yüz görüntüsü alarm kaydı olarak tutulur."
+      },
+      "purpose": {
+        "title": "Amaç",
+        "body": "Otelin, misafirlerin ve çalışanların güvenliği; kayıtlı olmayan kişilerin girişini fark etmek."
+      },
+      "basis": {
+        "title": "Hukuki sebep",
+        "body": "6698 sayılı Kişisel Verilerin Korunması Kanunu m.5/2-f: veri sorumlusunun meşru menfaati (otel ve misafir güvenliği)."
+      },
+      "transfer": {
+        "title": "Aktarım",
+        "local": "Veriler otelin kendi bilgisayarında kalır; üçüncü kişilere verilmez.",
+        "telegram": "Kayıtsız biri algılandığında otel yetkililerine Telegram ile kısa bir bildirim gider. Bildirim yurt dışındaki Telegram sunucularından geçer.",
+        "telegramPhoto": "Bildirime algılanan kişinin yüz görüntüsü de eklenir."
+      },
+      "retention": {
+        "title": "Saklama süresi",
+        "faceNow": "Konaklayan misafirin yüz bilgisi, çıkış yapınca silinir.",
+        "faceDays_one": "Konaklayan misafirin yüz bilgisi, çıkıştan {{count}} gün sonra silinir.",
+        "faceDays_other": "Konaklayan misafirin yüz bilgisi, çıkıştan {{count}} gün sonra silinir.",
+        "alerts_one": "Alarm anında alınan görüntüler {{count}} gün sonra silinir.",
+        "alerts_other": "Alarm anında alınan görüntüler {{count}} gün sonra silinir.",
+        "final": "Silinen veri geri getirilemez."
+      },
+      "staff": {
+        "title": "Çalışanlar",
+        "body": "Çalışanların yüzü mesai takibi için kullanılmaz. Alarm verilmemesi için yüzü tanıtılan çalışanın şablonu yalnızca bu amaçla tutulur ve işten ayrılınca silinir."
+      },
+      "rights": {
+        "title": "Haklarınız",
+        "body": "6698 sayılı Kanun'un 11. maddesi uyarınca; verilerinizin işlenip işlenmediğini öğrenme, işlenmişse bilgi isteme, amacına uygun kullanılıp kullanılmadığını öğrenme, yanlış ya da eksikse düzeltilmesini ve silinmesini isteme, itiraz etme ve zararın giderilmesini isteme haklarına sahipsiniz. Başvurunuzu şuraya iletebilirsiniz: {{contact}}"
+      }
+    },
+    "privacy": {
+      "title": "Gizlilik ve saklama",
+      "help": "Aydınlatma metni, silme kuralları ve alarm vermeyen personel (KVKK).",
+      "contact": "Başvuru adresi ve telefonu",
+      "contactHelp": "Aydınlatma metninde iletişim bilgisi olarak yazılır. Boş bırakırsanız e-posta adresi, o da yoksa elle doldurulacak bir boşluk yazılır.",
+      "contactPlaceholder": "Adres ve telefon",
+      "retentionHint": "Yüzlerin ve alarm görüntülerinin kaç gün saklanacağını yukarıdaki Alarm ve saklama bölümünden ayarlayın."
+    },
+    "report": {
+      "title": "İmha raporu",
+      "help": "Seçilen günlerde silinen yüz ve alarm görüntülerinin sayısı. Ad ya da görüntü içermez.",
+      "from": "Başlangıç",
+      "to": "Bitiş",
+      "invalidRange": "Bitiş tarihi başlangıçtan önce olamaz.",
+      "column": {
+        "what": "Silinen",
+        "count": "Adet"
+      },
+      "rows": {
+        "checkout": "Çıkışta silinen misafir yüzü",
+        "retention": "Süresi dolduğu için silinen misafir yüzü",
+        "manual": "Elle silinen misafir yüzü",
+        "staffRemoved": "Listeden çıkarılan personelin yüzü",
+        "staffLeft": "İşten ayrılan personelin yüzü",
+        "crops": "Süresi dolan alarm görüntüsü"
+      },
+      "total": "Toplam",
+      "none": "Bu aralıkta silinen bir şey yok.",
+      "held": {
+        "title": "Şu anda saklanan",
+        "guestFaces": "Misafir yüzü",
+        "waiting": "Silinmeyi bekleyen misafir yüzü",
+        "staffFaces": "Personel yüzü",
+        "alarmCrops": "Alarm görüntüsü"
+      },
+      "policy": "Geçerli kurallar",
+      "print": "Yazdır",
+      "printTitle": "Kamera verisi imha raporu",
+      "printRange": "{{from}} – {{to}}"
+    },
+    "staff": {
+      "title": "Alarm vermeyen personel",
+      "help": "Kamera personeli de görür. Buraya eklediğiniz çalışan için alarm verilmez. Yüzü kameradan alınır ve şifreli saklanır; fotoğrafı tutulmaz, adı kamera sistemine gönderilmez. Çalışan işten ayrılınca ya da listeden çıkarılınca silinir.",
+      "emptyTitle": "Listede kimse yok",
+      "emptyBody": "Alarm verilmesini istemediğiniz bir çalışanı eklemek için aşağıdan seçin.",
+      "faces_one": "{{count}} yüz",
+      "faces_other": "{{count}} yüz",
+      "pick": "Çalışan seçin",
+      "pickLabel": "Eklenecek çalışan",
+      "pickEmpty": "Eklenecek başka çalışan yok.",
+      "take": "Kameradan yüz al",
+      "takeAnother": "Bir yüz daha al",
+      "takeHint": "Çalışan kameraya baksın, sonra düğmeye basın.",
+      "hostOnly": "Yüz yalnızca otelin ana bilgisayarındaki pencereden alınır.",
+      "noKeyStore": "Bu bilgisayarda anahtar deposu yok; yüz saklanamaz.",
+      "remove": "Listeden çıkar",
+      "removeTitle": "{{name}} listeden çıkarılsın mı?",
+      "removeBody": "Yüz bilgisi silinir ve geri getirilemez. Bu kişi kameraya girince yeniden alarm verilir.",
+      "added": "Yüz alındı",
+      "addFailed": "Yüz alınamadı",
+      "removed": "Listeden çıkarıldı",
+      "removeFailed": "Listeden çıkarılamadı"
+    }
+  },
+  "feesPanel": {
+    "title": "Ücret kalemleri ve emanet",
+    "error": "Kalemler yüklenemedi. Ekranı yenileyip tekrar deneyin.",
+    "empty": "Henüz ücret kalemi ya da depozito yok.",
+    "addLate": "Geç çıkış ekle",
+    "takeDeposit": "Depozito al",
+    "voided": "İptal edildi",
+    "void": "Kalemi iptal et",
+    "deposit": "Hasar depozitosu",
+    "status": {
+      "held": "Emanette",
+      "refunded": "İade edildi",
+      "converted": "Gelire çevrildi"
+    },
+    "refund": "İade et",
+    "convert": "Gelire çevir",
+    "heldHint": "Emanetteki depozito gelir sayılmaz; çıkışta iade edin ya da gerekçeyle gelire çevirin.",
+    "lateTitle": "Geç çıkış ücreti",
+    "lateHelp": "Çıkış saatini ve tutarı yazın; tutar otelin kuralına göre önerilir.",
+    "lateSave": "Kalemi ekle",
+    "room": "Oda",
+    "lateTime": "Çıkış saati",
+    "amount": "Tutar",
+    "note": "Not (isteğe bağlı)",
+    "takeTitle": "Hasar depozitosu al",
+    "takeHelp": "Depozito gelir sayılmaz ve hesabın bakiyesini değiştirmez.",
+    "takeSave": "Depozitoyu kaydet",
+    "method": "Ödeme yöntemi",
+    "taken": "Depozito kaydedildi",
+    "refunded": "Depozito iade edildi",
+    "converted": "Depozito gelire çevrildi",
+    "refundTitle": "Depozito iade edilsin mi?",
+    "convertTitle": "Depozito gelire çevrilsin mi?",
+    "settleHelp": "Bu işlem geri alınamaz; kayıt denetim günlüğünde kalır.",
+    "refundBody": "{{amount}} misafire iade edilir ({{method}}).",
+    "convertBody": "{{amount}} hasar bedeli olarak hesaba yazılır ve tahsil edilmiş sayılır.",
+    "convertReason": "Hasar açıklaması (zorunlu)",
+    "voidTitle": "Kalem iptal edilsin mi?",
+    "voidHelp": "Kalem hesaptan düşer; kayıt silinmez.",
+    "voidReason": "İptal nedeni",
+    "voidedToast": "Kalem iptal edildi",
+    "undo": "Geri al",
+    "undoTitle": "Gelire çevirme geri alınsın mı?",
+    "undoBody": "{{amount}} tutarındaki hasar bedeli ve ödemesi iptal edilir; depozito yeniden tutulur.",
+    "undoneToast": "Gelire çevirme geri alındı",
+    "noIdHint": "Kimlik numarası yazmayın."
+  },
+  "portfolio": {
+    "title": "Portföy",
+    "description": "Otellerinizin bugünkü doluluğu, kasası, gelir-gideri ve takvimi tek ekranda.",
+    "source": {
+      "live": "Canlı · ana bilgisayardan",
+      "copy": "Yedek kopya · son eşitleme {{date}} {{time}}",
+      "copyNoTime": "Yedek kopya"
+    },
+    "hotel": {
+      "active": "Kullanımda"
+    },
+    "noCopy": {
+      "title": "Bu otelin kopyası yok",
+      "body": "Bu bilgisayarda bu otelin yedek kopyası henüz yok. Otele bir kez bağlanıp sahip olarak oturum açın; kopya kendiliğinden hazırlanır."
+    },
+    "failed": "Bu otelin kopyası okunamadı. Otele bağlanıp kopyanın yenilenmesini bekleyin.",
+    "kpi": {
+      "tonight": "Bu gece doluluk",
+      "tonightHint": "{{count}}/{{rooms}} oda",
+      "drawer": "Kasada olması gereken",
+      "drawerHint": "Sahibin henüz teslim almadığı",
+      "periodOccupancy": "Dönem doluluğu",
+      "periodOccupancyHint": "Satılan geceler",
+      "revenue": "Gelir",
+      "expenses": "Gider",
+      "profit": "Kâr",
+      "partial": "Bazı gider bölümleri gizli"
+    },
+    "currencyNote": "Tutarlar {{currency}} cinsindendir.",
+    "noHotels": {
+      "title": "Kayıtlı otel yok",
+      "body": "Bağlan ekranından bir otelin ana bilgisayarına bağlanın; otel buraya eklenir."
+    },
+    "hostNote": {
+      "title": "Diğer otel burada görünmez",
+      "body": "Bu bilgisayar otelin ana bilgisayarı; yalnız kendi oteliniz gösterilir. Diğer otelin rakamları için kendi cihazınızdan her iki otele bağlanıp bu ekranı açın."
+    },
+    "totals": {
+      "title": "Toplam (aynı para birimi)",
+      "line_one": "{{currency}} · {{count}} otel",
+      "line_other": "{{currency}} · {{count}} otel",
+      "figures": "Gelir {{revenue}} · Gider {{expenses}} · Kâr {{profit}}",
+      "mixed": "Oteller farklı para birimi kullandığı için toplam alınmadı; kur çevirisi yapılmaz."
+    },
+    "calendar": {
+      "title": "Takvim",
+      "hotel": "Otel",
+      "noRooms": "Bu otelde henüz oda yok.",
+      "readOnlyHint": "Yalnız görüntülenir; değişiklik için otele bağlanın."
+    }
   }
 }

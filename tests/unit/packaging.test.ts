@@ -124,7 +124,7 @@ describe('dosya adları (G-03)', () => {
   })
 
   it('belgeler aynı adları kullanır', () => {
-    for (const doc of ['README.md', 'docs/kurulum.md']) {
+    for (const doc of ['README.md', 'docs/otel/kurulum.md']) {
       const text = read(doc)
       for (const name of ['Bismuth-Setup.exe', 'Bismuth.dmg', 'Bismuth-Intel.dmg', 'SHA256SUMS.txt']) {
         expect(text, `${doc}: ${name}`).toContain(name)
@@ -140,7 +140,11 @@ describe('iş akışları', () => {
   const steps = (job: { steps: { run?: string }[] }) => job.steps.map((s) => s.run ?? '').join('\n')
 
   it('paketler hiçbir yere yayımlanmaz (G-07) ve sabit adlarını alır', () => {
-    for (const job of [ci.jobs.package, release.jobs.package]) {
+    // Only release.yml packages; ci.yml is Linux verification and is reused through workflow_call.
+    expect(ci.jobs.package).toBeUndefined()
+    expect(ci.on).toHaveProperty('workflow_call')
+    expect(release.jobs.verify.uses).toBe('./.github/workflows/ci.yml')
+    for (const job of [release.jobs.windows, release.jobs.macos]) {
       const run = steps(job)
       expect(run).toMatch(/electron-builder .*--publish never/)
       expect(run).not.toMatch(/--publish (always|onTag|onTagOrDraft)/)
@@ -150,10 +154,13 @@ describe('iş akışları', () => {
   })
 
   it('sürüm etiketi package.json sürümüyle aynı olmalı; sürüm notu belgeden okunur', () => {
-    const run = steps(release.jobs.package)
+    const run = steps(release.jobs.version)
     expect(run).toContain("require('./package.json').version")
+    expect(release.jobs.publish.if).toContain('refs/tags/v')
     const publish = steps(release.jobs.publish)
-    expect(publish).toContain('docs/surum-notlari/${{ github.ref_name }}.md')
+    // The tag reaches scripts through env (TAG), never interpolated into the shell text.
+    expect(publish).toContain('docs/surum-notlari/$TAG.md')
+    expect(publish).not.toContain('${{')
     expect(publish).toContain('--notes-file')
     for (const name of ['Bismuth-Setup.exe', 'Bismuth-Setup-arm64.exe', 'Bismuth.dmg', 'Bismuth-Intel.dmg']) {
       expect(publish).toContain(name)

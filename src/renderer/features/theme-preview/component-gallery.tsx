@@ -1,4 +1,4 @@
-// Design-system gallery (faz-03 madde 2 "Tema önizleme: tüm bileşenler, üç dilde örnek metin"; docs/tasarim.md):
+// Design-system gallery (faz-03 madde 2 "Tema önizleme: tüm bileşenler, üç dilde örnek metin"; docs/gelistirici/tasarim.md):
 // every building block of the screens in one place, so a theme or density change can be judged at a glance.
 import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'

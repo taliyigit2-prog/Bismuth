@@ -30,7 +30,7 @@ export function moneyToText(
   return /[1-9]/.test(fraction) ? `${grouped}${sep}${fraction}` : grouped
 }
 
-/** "2.800,50" / "2800.50" → minor units; null when empty, NaN when not a number. */
+/** "2.800,50" / "2800.50" → minor units; null when empty, NaN when not a number, Infinity when beyond any amount. */
 export function textToMoney(text: string, currency: string, locale: 'tr' | 'en' | 'ru'): number | null {
   const trimmed = text.trim().replace(/\s/g, '')
   if (!trimmed) return null
@@ -38,8 +38,11 @@ export function textToMoney(text: string, currency: string, locale: 'tr' | 'en' 
   try {
     // parseMoney reads the other mark itself: "1.250" thousands, "1250.5" decimal, "1,250.50" in tr an error.
     return parseMoney(trimmed, currency, decimal).amountMinor
-  } catch {
-    return Number.NaN
+  } catch (error) {
+    // H-24: a well-formed amount too big for a safe integer is "too large", not "not a number".
+    return error instanceof RangeError && error.message === 'money: overflow'
+      ? Number.POSITIVE_INFINITY
+      : Number.NaN
   }
 }
 

@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm'
 import { index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
 import { bool, day, i18nJson, id, minor, timestamps } from './columns'
 import { guests } from './guests'
@@ -73,6 +74,22 @@ export const RESERVATION_STATUSES = [
   'parked'
 ] as const
 
+/**
+ * A group booking (G-194, S-101, S-106): several reservations made together (one per room, each with its own guest
+ * name). `folio_mode` 'single' = one folio on the leader's reservation; 'per_room' = a folio per room. Existing
+ * multi-room reservations stay without a group. Void with `voided_at`, never delete.
+ */
+export const reservationGroups = sqliteTable('reservation_groups', {
+  id: id(),
+  name: text('name').notNull(),
+  leaderGuestId: text('leader_guest_id').references(() => guests.id),
+  folioMode: text('folio_mode', { enum: ['single', 'per_room'] })
+    .notNull()
+    .default('single'),
+  voidedAt: text('voided_at'),
+  ...timestamps
+})
+
 export const reservations = sqliteTable(
   'reservations',
   {
@@ -99,10 +116,13 @@ export const reservations = sqliteTable(
     cancelledAt: text('cancelled_at'),
     cancelReason: text('cancel_reason'),
     soldByUserId: text('sold_by_user_id'),
+    /** The group booking this reservation belongs to (G-194); null = a booking of its own. */
+    groupId: text('group_id').references(() => reservationGroups.id),
     ...timestamps
   },
   (t) => [
     uniqueIndex('reservations_code_unique').on(t.code),
+    index('reservations_group_idx').on(t.groupId),
     index('reservations_guest_idx').on(t.primaryGuestId),
     index('reservations_status_idx').on(t.status)
   ]
@@ -141,8 +161,11 @@ export const reservationRooms = sqliteTable(
 )
 
 /**
- * One row per occupied slot. UNIQUE(room_id, date, slot) makes a double booking impossible (§4.8-1). Rows are
- * derived schedule: cancelling a stay removes them (the charges are voided and the audit log keeps the past).
+ * One row per occupied slot (§4.8-1). A night is unique per room and date; a day slot is unique per room, date
+ * and start time (K-48: several hourly stays in one room on one day), or once per day when it has no times (a
+ * whole-day use, the pre-0019 shape). Hour overlaps are the domain's job (`stays.ts` `hourRangesOverlap`); the
+ * indexes only stop the identical row. Rows are derived schedule: cancelling a stay removes them (the charges
+ * are voided and the audit log keeps the past).
  */
 export const roomNights = sqliteTable(
   'room_nights',
@@ -156,12 +179,25 @@ export const roomNights = sqliteTable(
       .references(() => rooms.id),
     date: day('date').notNull(),
     slot: text('slot', { enum: ['night', 'day'] }).notNull(),
+    /** 'HH:MM' start of an hourly day slot (K-48); null = the whole day / the night (all rows before 0019). */
+    startTime: text('start_time'),
+    /** 'HH:MM' end of an hourly day slot; null together with `startTime`. */
+    endTime: text('end_time'),
     priceMinor: minor('price_minor').notNull(),
     currency: text('currency').notNull(),
     ...timestamps
   },
   (t) => [
-    uniqueIndex('room_nights_room_date_slot_unique').on(t.roomId, t.date, t.slot),
+    uniqueIndex('room_nights_night_unique')
+      .on(t.roomId, t.date)
+      .where(sql`${t.slot} = 'night'`),
+    uniqueIndex('room_nights_day_start_unique')
+      .on(t.roomId, t.date, t.startTime)
+      .where(sql`${t.slot} = 'day' and ${t.startTime} is not null`),
+    uniqueIndex('room_nights_day_whole_unique')
+      .on(t.roomId, t.date)
+      .where(sql`${t.slot} = 'day' and ${t.startTime} is null`),
+    index('room_nights_room_date_idx').on(t.roomId, t.date, t.slot, t.startTime),
     index('room_nights_stay_idx').on(t.reservationRoomId),
     index('room_nights_date_idx').on(t.date)
   ]
@@ -313,3 +349,38 @@ export const reservationCodeSequences = sqliteTable('reservation_code_sequences'
   year: integer('year').primaryKey(),
   lastNumber: integer('last_number').notNull()
 })
+
+/**
+ * Damage deposit (P21d, Ö-22): money held for the stay's damages. It is not income and not a folio payment: it is
+ * either given back (`refunded`) or, with a reason, turned into a damage charge + payment (`converted`) on the folio.
+ */
+export const damageDeposits = sqliteTable(
+  'damage_deposits',
+  {
+    id: id(),
+    reservationId: text('reservation_id')
+      .notNull()
+      .references(() => reservations.id),
+    amountMinor: minor('amount_minor').notNull(),
+    currency: text('currency').notNull(),
+    methodId: text('method_id')
+      .notNull()
+      .references(() => paymentMethods.id),
+    takenDate: day('taken_date').notNull(),
+    status: text('status', { enum: ['held', 'refunded', 'converted'] })
+      .notNull()
+      .default('held'),
+    settledDate: day('settled_date'),
+    settledAt: text('settled_at'),
+    settledBy: text('settled_by'),
+    settleNote: text('settle_note'),
+    convertedChargeId: text('converted_charge_id'),
+    note: text('note'),
+    createdBy: text('created_by'),
+    ...timestamps
+  },
+  (t) => [
+    index('damage_deposits_reservation_idx').on(t.reservationId),
+    index('damage_deposits_status_idx').on(t.status)
+  ]
+)

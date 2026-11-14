@@ -1,5 +1,6 @@
 // Tourism statistics helpers (G-150, 03-mimari.md §6.11): the reportable months and the ministry's window, the
 // occupancy precision the panel shows, the text copied into the panel, and the file in and out of the screen.
+import { shell } from '@/lib/shell'
 import { addDays, localDate, nextMonthStart, previousMonth, type LocalDate } from '@shared/date'
 import {
   KBS_MAX_BASE64,
@@ -72,20 +73,9 @@ export function toBase64(bytes: Uint8Array): string {
   return btoa(binary)
 }
 
-/** Saves a base64 file through the browser's download (Electron asks where to save it). */
+/** Saves a base64 file (the shell: Electron asks where to save it, a browser downloads it). */
 export function saveBase64(fileName: string, mime: string, dataBase64: string): void {
-  const binary = atob(dataBase64)
-  const bytes = new Uint8Array(binary.length)
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
-  const url = URL.createObjectURL(new Blob([bytes], { type: mime }))
-  const a = document.createElement('a')
-  a.href = url
-  a.download = fileName
-  a.rel = 'noopener'
-  document.body.append(a)
-  a.click()
-  a.remove()
-  setTimeout(() => URL.revokeObjectURL(url), 10_000)
+  shell.saveFile({ fileName, mime, base64: dataBase64 })
 }
 
 /** Turkish-aware search key: "kıbrıs", "KIBRIS" and "Kibris" find the same country. */

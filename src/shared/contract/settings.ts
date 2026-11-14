@@ -4,11 +4,26 @@ import * as z from 'zod'
 import { APP_LOCALES } from '../format'
 import { DEFAULT_FX_SOURCES, FX_PROVIDERS } from '../domain/external'
 import { CALENDAR_MIN_START_YEAR } from '../domain/calendar-range'
+import { cameraProfileSchema, DEFAULT_PROFILE_TABLE_JSON, parseProfileTable } from '../domain/camera-profile'
+import { MAX_ZOOM, MIN_ZOOM } from '../window-zoom'
 
 export const currencyCode = z.string().regex(/^[A-Z]{3}$/, 'ISO 4217 code')
 /** Most currencies a hotel can accept at once (the setup draft and `hotel.currencies` share it). */
 export const MAX_ACCEPTED_CURRENCIES = 20
 export const clockTime = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'HH:MM')
+
+export const lateCheckoutRuleSchema = z.object({
+  mode: z.enum(['none', 'fixed', 'percent']),
+  afterTime: clockTime,
+  amountMinor: z.number().int().min(0).max(100_000_000_000),
+  percentBp: z.number().int().min(0).max(100_000)
+})
+export type LateCheckoutRule = z.infer<typeof lateCheckoutRuleSchema>
+export const noShowRuleSchema = z.object({
+  mode: z.enum(['none', 'first_night', 'fixed']),
+  amountMinor: z.number().int().min(0).max(100_000_000_000)
+})
+export type NoShowRule = z.infer<typeof noShowRuleSchema>
 
 export const hexColor = z.string().regex(/^#[0-9a-fA-F]{6}$/, 'hex color #rrggbb')
 
@@ -76,6 +91,8 @@ export const settingsShape = {
   'ui.accentColorDark': hexColor.nullable(),
   /** Larger text for everyone who wants it (faz-15 madde 5, "büyük yazı modu"): the whole interface scales. */
   'ui.fontSize': z.enum(['normal', 'large', 'larger']),
+  /** Page zoom of this computer's window in percent (Ctrl +/-/0, Ayarlar → Görünüm); each person's own choice. */
+  'ui.zoom': z.number().int().min(MIN_ZOOM).max(MAX_ZOOM),
   /** The person has seen (or skipped) the first-run tour (G-18); "Tanıtım turunu yeniden başlat" shows it again. */
   'ui.tourDone': z.boolean(),
   /** The desktop menu is folded to its icons (each person's own choice, kept across restarts; faz-15 madde 7). */
@@ -100,6 +117,11 @@ export const settingsShape = {
   'hotel.timezone': timeZoneSchema,
   /** standalone: this computer alone; host: the hotel's main computer others connect to; client: uses a host. */
   'app.mode': z.enum(['standalone', 'host', 'client']),
+  /**
+   * Light mode (Faz 22 P22a): on the main computer closing the window keeps the program in the tray with the server
+   * running; the screens open in the computer's own browser. Frees the window, graphics and page processes.
+   */
+  'app.lightMode': z.boolean(),
   /** Minutes without a key or mouse before the window locks (G-22); 0 = never. */
   'security.idleLockMinutes': z.number().int().min(0).max(240),
   /** Base currency of all totals and reports; rates are frozen to it (K-15). */
@@ -121,6 +143,11 @@ export const settingsShape = {
     .min(CALENDAR_MIN_START_YEAR)
     .refine((year) => year <= new Date().getFullYear(), { message: 'start year in the future' })
     .nullable(),
+  /**
+   * How a group reservation (G-194, S-106) keeps its money: one folio on the group leader ('single', default) or
+   * one folio per room ('per_room'). A group's own `folio_mode` starts from this value.
+   */
+  'booking.groupFolioMode': z.enum(['single', 'per_room']),
   /** Nights (by the weekday they start, 0 = Sunday) that take the weekend price (K-44: Friday and Saturday). */
   'pricing.weekendNights': z.array(z.number().int().min(0).max(6)).max(7),
   /** KBS warnings for occupants (G-53). */
@@ -129,8 +156,20 @@ export const settingsShape = {
   'tasks.everyNStays': z.number().int().min(1).max(500),
   /** Day closing (G-72): off by default, many hotels switch it on. */
   'businessDay.closingEnabled': z.boolean(),
-  /** Same-day (day-use) stays count as sold nights in occupancy reports (§6.10); off = shown apart. */
-  'reports.dayUseInOccupancy': z.boolean(),
+  /**
+   * Minutes the desk wants between two hourly stays in one room for cleaning (K-48, S-103): selling inside the gap is
+   * only warned about, never blocked. 0 = no gap.
+   */
+  'dayUse.turnoverMinutes': z.number().int().min(0).max(240),
+  /**
+   * Late check-out fee rule (P21d, Ö-22): after `afterTime` the desk's suggestion is a fixed amount or a share of the
+   * nightly price (basis points, 50 % = 5000); the desk can change the amount. 'none' = no suggestion.
+   */
+  'fees.lateCheckout': lateCheckoutRuleSchema,
+  /** No-show fee rule: none, the first night's price or a fixed amount (the desk can still change it). */
+  'fees.noShow': noShowRuleSchema,
+  /** Default damage deposit (minor units of the folio currency); 0 = the desk types it each time. */
+  'fees.damageDepositMinor': z.number().int().min(0).max(100_000_000_000),
   /** Photos of resolved issues are deleted after N days; the text stays (K-25). */
   'attachments.resolvedIssueRetentionDays': z.number().int().min(1).max(3650),
   /** Staff may take an advance from the reception drawer (G-69, S-38). */
@@ -151,6 +190,8 @@ export const settingsShape = {
   'fx.hotelRates': z.partialRecord(currencyCode, z.number().int().positive().safe()),
   /** "Misafire bu kurdan söyle": hotel rates are used by the converter, the guest view and new records. */
   'fx.quoteHotelRate': z.boolean(),
+  /** A typed rate this many % or more away from the last known one gets a warning, never a block (S-125). */
+  'fx.manualRateWarnPercent': z.number().int().min(1).max(1000),
   /** Rounding of the converter's answer (the stored records always keep minor units). */
   'fx.rounding': z.enum(['minor', 'unit', 'ten']),
   'weather.enabled': z.boolean(),
@@ -199,7 +240,52 @@ export const settingsShape = {
   /** Identity numbers stay out of the box (KVKK; the owner's copy still gets them live when allowed). */
   'relay.excludeIdentity': z.boolean(),
   /** Hourly PDF summary without personal data in Drive's Bismuth folder (G-145, S-62). */
-  'summary.enabled': z.boolean()
+  'summary.enabled': z.boolean(),
+  // Camera (Faz 20, K-49…K-53, K-57): thresholds and retention are settings, never code (G-09); they go to the Python
+  // sidecar as JSON at start. Secrets (camera address with password, Telegram token) are NOT settings: every signed-in
+  // user reads settings, so they live sealed in src/main/camera/secrets.ts.
+  /** The sidecar runs only on the hotel's own computer and only while this is on. */
+  'camera.enabled': z.boolean(),
+  /** Where the camera is ("Merdiven / Kat girişi"); '' = the sidecar's own default. */
+  'camera.location': z.string().trim().max(80),
+  /** Cosine similarity at which a face counts as a registered guest. */
+  'camera.similarityThreshold': z.number().min(0.1).max(0.95),
+  /** Stricter limit for "who is this" by camera (identify before check-out). */
+  'camera.confirmSimilarity': z.number().min(0.1).max(0.95),
+  'camera.minFaceScore': z.number().min(0.1).max(0.99),
+  'camera.minFacePx': z.number().int().min(20).max(400),
+  /** "Not sure" band below the threshold: a face this close to a guest is neither registered nor alarmed (0 = off). */
+  'camera.uncertainMargin': z.number().min(0).max(0.5),
+  /** With no person box in the picture, look for faces on every Nth analysis (0 = only when a person is seen). */
+  'camera.idleFaceScanEvery': z.number().int().min(0).max(30),
+  /** Live picture width in pixels (smaller = lighter on the computer; the boxes follow the picture). */
+  'camera.streamMaxWidth': z.number().int().min(320).max(1920),
+  /** Consecutive unregistered sightings before an alarm. */
+  'camera.confirmationFrames': z.number().int().min(1).max(20),
+  /** Analyse every Nth frame. */
+  'camera.processEveryN': z.number().int().min(1).max(30),
+  'camera.alarmCooldownSeconds': z.number().int().min(5).max(3600),
+  /** Seconds a recognised person stays "registered" without a fresh match. */
+  'camera.verifiedTtlSeconds': z.number().int().min(5).max(300),
+  /** Crossing zone "x1,y1;x2,y2;…" in pixels or 0…1 fractions; '' = the whole picture. */
+  'camera.zonePolygon': z.string().trim().max(300),
+  /** Days alarm crops are kept (K-52: 3). */
+  'camera.alertRetentionDays': z.number().int().min(1).max(365),
+  /** Days a face is kept after check-out (K-52: 0 = deleted at check-out). */
+  'camera.faceRetentionDays': z.number().int().min(0).max(365),
+  /** Alarms also go to Telegram (K-50, the one outside service; needs `network.enabled`). */
+  'camera.telegram.enabled': z.boolean(),
+  /** The Telegram message carries the alarm photo (otherwise text only). */
+  'camera.telegram.photo': z.boolean(),
+  /** The data controller's address and phone for the notice (K-58, KVKK m.10); '' = the notice shows a blank line to fill in. */
+  'camera.privacyContact': z.string().trim().max(200),
+  /** The performance profile the setup wizard chose for this computer (K-59); it fills the three settings it governs. */
+  'camera.profile': cameraProfileSchema,
+  /** JSON: the memory/thread limits that pick a profile and each profile's values (`domain/camera-profile.ts`). */
+  'camera.profiles': z
+    .string()
+    .max(1500)
+    .refine((v) => parseProfileTable(v) !== null, 'camera profile table')
 } as const
 
 export type SettingsKey = keyof typeof settingsShape
@@ -232,6 +318,7 @@ export const SETTINGS_DEFAULTS: SettingsValues = {
   'ui.accentColor': null,
   'ui.accentColorDark': null,
   'ui.fontSize': 'normal',
+  'ui.zoom': 100,
   'ui.tourDone': false,
   'ui.sidebarCollapsed': false,
   'guide.tourForNewUsers': true,
@@ -241,6 +328,7 @@ export const SETTINGS_DEFAULTS: SettingsValues = {
   'hotel.email': '',
   'hotel.timezone': 'Europe/Istanbul',
   'app.mode': 'standalone',
+  'app.lightMode': false,
   'security.idleLockMinutes': 15,
   'hotel.baseCurrency': 'TRY',
   'hotel.currencies': ['TRY', 'EUR', 'USD', 'GBP', 'RUB'],
@@ -248,11 +336,15 @@ export const SETTINGS_DEFAULTS: SettingsValues = {
   'hotel.checkoutTime': '12:00',
   'calendar.highlightWeekdays': [6, 0],
   'calendar.startYear': null,
+  'booking.groupFolioMode': 'single',
   'pricing.weekendNights': [5, 6],
   'kbs.checksEnabled': true,
   'tasks.everyNStays': 10,
   'businessDay.closingEnabled': false,
-  'reports.dayUseInOccupancy': false,
+  'dayUse.turnoverMinutes': 60,
+  'fees.lateCheckout': { mode: 'none', afterTime: '12:00', amountMinor: 0, percentBp: 5000 },
+  'fees.noShow': { mode: 'none', amountMinor: 0 },
+  'fees.damageDepositMinor': 0,
   'attachments.resolvedIssueRetentionDays': 30,
   'staff.advanceFromDrawer': false,
   'staff.expenseSection': 'general',
@@ -263,6 +355,7 @@ export const SETTINGS_DEFAULTS: SettingsValues = {
   'fx.showTcmb': true,
   'fx.hotelRates': {},
   'fx.quoteHotelRate': true,
+  'fx.manualRateWarnPercent': 20,
   'fx.rounding': 'minor',
   'weather.enabled': true,
   'weather.location': null,
@@ -278,7 +371,28 @@ export const SETTINGS_DEFAULTS: SettingsValues = {
   'host.epoch': 1,
   'relay.enabled': true,
   'relay.excludeIdentity': true,
-  'summary.enabled': true
+  'summary.enabled': true,
+  'camera.enabled': false,
+  'camera.location': '',
+  'camera.similarityThreshold': 0.36,
+  'camera.confirmSimilarity': 0.45,
+  'camera.uncertainMargin': 0.06,
+  'camera.idleFaceScanEvery': 3,
+  'camera.streamMaxWidth': 960,
+  'camera.minFaceScore': 0.62,
+  'camera.minFacePx': 55,
+  'camera.confirmationFrames': 3,
+  'camera.processEveryN': 3,
+  'camera.alarmCooldownSeconds': 60,
+  'camera.verifiedTtlSeconds': 20,
+  'camera.zonePolygon': '',
+  'camera.alertRetentionDays': 3,
+  'camera.faceRetentionDays': 0,
+  'camera.telegram.enabled': false,
+  'camera.telegram.photo': true,
+  'camera.privacyContact': '',
+  'camera.profile': 'standard',
+  'camera.profiles': DEFAULT_PROFILE_TABLE_JSON
 }
 
 /** The hotel's status and accent colours (G-33): shared by everyone, so they need the colour right, not just a session. */
@@ -313,9 +427,11 @@ export const PUBLIC_SETTING_KEYS: readonly SettingsKey[] = [
  */
 export const isDesktopOnlySettingKey = (key: SettingsKey): boolean =>
   key === 'app.mode' ||
+  key === 'app.lightMode' ||
   key.startsWith('host.') ||
   key.startsWith('relay.') ||
   key.startsWith('summary.') ||
+  key.startsWith('camera.') ||
   key === 'backup.driveFolder'
 
 /**
@@ -348,17 +464,24 @@ export const settingPermission = (
   | 'expenses.owner'
   | 'currency'
   | 'settings.backup'
-  | 'remote.settings' =>
-  key.startsWith('host.') || key.startsWith('relay.') || key.startsWith('summary.') || key === 'app.mode'
-    ? 'remote.settings'
-    : key === 'staff.expenseSection'
-      ? 'expenses.owner'
-      : key.startsWith('staff.')
-        ? 'staff.policy'
-        : key.startsWith('fx.')
-          ? 'currency'
-          : key.startsWith('backup.')
-            ? 'settings.backup'
-            : COLOUR_KEYS.includes(key)
-              ? 'settings.colors'
-              : 'settings'
+  | 'remote.settings'
+  | 'camera' =>
+  key.startsWith('camera.')
+    ? 'camera'
+    : key.startsWith('host.') ||
+        key.startsWith('relay.') ||
+        key.startsWith('summary.') ||
+        key === 'app.mode' ||
+        key === 'app.lightMode'
+      ? 'remote.settings'
+      : key === 'staff.expenseSection'
+        ? 'expenses.owner'
+        : key.startsWith('staff.')
+          ? 'staff.policy'
+          : key.startsWith('fx.')
+            ? 'currency'
+            : key.startsWith('backup.')
+              ? 'settings.backup'
+              : COLOUR_KEYS.includes(key)
+                ? 'settings.colors'
+                : 'settings'

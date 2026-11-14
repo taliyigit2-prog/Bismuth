@@ -11,10 +11,16 @@ import { setMainLocale, tMain } from './app/i18n'
 import { chromiumLangSwitch, uiLocaleFile, writeUiLocale } from './app/chromium-lang'
 import { installCrashHandlers, offerRecoveryRestore, setUpErrorLog } from './app/crash-wiring'
 import { displayFollows } from './app/display-follow'
+import { setDrivePackaged } from './backup/drive'
 import { isDamagedDatabaseError } from './backup/startup-recovery'
 import { buildMenu } from './app/menu'
+import { browserUrl, keepRunningWithoutWindow, lightModeWanted } from './app/light-mode'
+import { createAppTray, type AppTray } from './app/tray'
+import { parsePerfArgs, runPerfProbe } from './app/perf-probe'
 import { applySecurityPolicy, enforceSingleInstance, isAppUrl } from './security/policy'
 import { createMainWindow } from './windows/main-window'
+import { applyZoom, setZoomHandler } from './windows/window-actions'
+import { nextZoom } from '@shared/window-zoom'
 import { MigrationError, openDatabase, type DatabaseHandle } from './db/client'
 import { applyPendingRestore, createServices, localOwnerCtx, systemCtx } from './services'
 import { guardedCtx } from './services/context'
@@ -29,6 +35,16 @@ import { closingBackupNeeded, createBackupScheduler } from './backup/scheduler'
 import { readSetting } from './services/settings-service'
 import { processImage, startAttachmentRetention } from './attachments'
 import { createTaskScheduler, showOsNotice } from './notifications'
+import {
+  createCameraRuntime,
+  createDiscoverer,
+  createFaceCrypto,
+  createProbeRunner,
+  findCameraAddon,
+  SIDECAR_SETTING_KEYS,
+  type CameraRuntime
+} from './camera'
+import { removeLegacyCameraFiles } from './camera/legacy'
 import { LOCAL_CONFIG, readConnectionConfig, writeConnectionConfig } from './server/connection-config'
 import {
   bundledSchemaVersion,
@@ -40,26 +56,50 @@ import { Hono } from 'hono'
 import type { ApiEnv } from './api/app'
 
 applyDataDirOverride()
+setDrivePackaged(app.isPackaged)
 // Built-in controls follow the program's language, not the computer's (faz-15 madde 11; read before `ready`).
 const chromiumLang = chromiumLangSwitch(uiLocaleFile(app.getPath('userData')))
 if (chromiumLang) app.commandLine.appendSwitch('lang', chromiumLang)
 
 const smokeOut = process.argv.find((a) => a.startsWith('--smoke-out='))?.slice('--smoke-out='.length) ?? null
 const smoke = process.argv.includes('--smoke') || smokeOut !== null
+// Measuring on a real computer (docs/otel/kurulum.md): sample the program's own processes, write a JSON, quit.
+const perfProbe = parsePerfArgs(process.argv)
 const devUrl = !app.isPackaged ? (process.env['ELECTRON_RENDERER_URL'] ?? null) : null
 const devOrigin = devUrl ? new URL(devUrl).origin : null
 const startedAt = Date.now()
 
 let mainWindow: BrowserWindow | null = null
+/** Light mode (P22a): whether the program outlives its last window, and the way back to a window (tray, second start). */
+let keepInTray: () => boolean = () => false
+let reopenWindow: () => void = () => undefined
+let quitting = false
+/** How often alarms are taken from the sidecar and the face list is sent to it, and how often the retention job runs. */
+const CAMERA_ROUND_MS = 3_000
+const CAMERA_PURGE_MS = 3_600_000
+
+/** The camera add-on (P20f): Python, libraries, files and models unpacked into `<userData>/camera-addon`; packaged only. */
+const cameraAddon = () => (app.isPackaged ? findCameraAddon(app.getPath('userData')) : null)
+
+/** The folder with the camera's Python files: `<app>/otel-kamera` in development, the add-on's `app` once packaged. */
+const cameraScriptDir = (): string =>
+  app.isPackaged
+    ? (cameraAddon()?.scriptDir ?? join(app.getPath('userData'), 'camera-addon', 'app'))
+    : join(app.getAppPath(), 'otel-kamera')
+
+/** The camera sidecar's runtime once built (Faz 20): the request filter reads its address for the live picture. */
+let cameraRuntime: ReturnType<typeof createCameraRuntime> | null = null
 let database: DatabaseHandle | null = null
 const blockedRequests: string[] = []
 /** Last call from a window: the step-by-step backup rests while someone is working (K-32). */
 let lastActivity = 0
 /** Set once the closing backup ran (or is not wanted: a restart for a restore, a smoke run). */
 let closingBackupDone = false
+let perfReported = false
 
 function focusMainWindow(): void {
-  if (!mainWindow || mainWindow.isDestroyed()) return
+  // In the tray (light mode) there is no window: a second start of the program opens one.
+  if (!mainWindow || mainWindow.isDestroyed()) return reopenWindow()
   // Started again because the window's page died: open the page again, not only the dead window (QA2c #1).
   if (mainWindow.webContents.isCrashed()) mainWindow.webContents.reload()
   if (mainWindow.isMinimized()) mainWindow.restore()
@@ -102,6 +142,7 @@ async function start(): Promise<void> {
 
   applySecurityPolicy({
     devOrigin,
+    cameraOrigin: () => cameraRuntime?.bridge()?.baseUrl ?? null,
     onBlockedRequest: (url) => {
       blockedRequests.push(url)
       log.warn('blocked renderer request', url)
@@ -192,6 +233,29 @@ async function start(): Promise<void> {
       writeGate: () => (replacedNow() ? 'replaced' : null),
       // Development and e2e only (ignored in a packaged build): optional online data goes to a local fake server.
       network: { origin: process.env['BISMUTH_EXTERNAL_ORIGIN'] ?? null, secrets: safeStorage },
+      camera: {
+        // Development and e2e only (ignored in a packaged build): a headless machine has no system key store, so the
+        // face key lives in memory for that run (K-51: a packaged program never keeps a face without the key store).
+        ...(!app.isPackaged && process.env['BISMUTH_FACE_KEY'] === 'memory'
+          ? { faceCrypto: createFaceCrypto(null, null) }
+          : {}),
+        // P20g: the wizard's one-picture test and its search of the local network (both only on request).
+        probe: createProbeRunner({
+          scriptDir: cameraScriptDir(),
+          packaged: app.isPackaged,
+          addon: cameraAddon()
+        }),
+        discover: createDiscoverer({ packaged: app.isPackaged }),
+        testMessage: () => tMain('main.camera.telegramTest'),
+        // K-50: the Telegram text and the window notice of an alarm carry the time and the camera's place, never a name.
+        alertMessage: ({ time, location }) =>
+          tMain(location ? 'main.camera.alertTelegramAt' : 'main.camera.alertTelegram', { time, location }),
+        onAlert: ({ time, location }) =>
+          showOsNotice({
+            title: tMain('main.camera.alertTitle'),
+            body: tMain(location ? 'main.camera.alertBodyAt' : 'main.camera.alertBody', { time, location })
+          })
+      },
       // Exported tables: the usual "Save as" dialog, starting in Documents with the suggested name.
       saveExport: saveAs,
       backup: {
@@ -241,6 +305,7 @@ async function start(): Promise<void> {
     }
   }
   nativeTheme.themeSource = initial['ui.theme']
+  applyZoom(initial['ui.zoom'])
   buildMenu()
   // Menu language and native theme follow the person at the window (their own choices, K-37), else the hotel's.
   let menuLocale = initial['ui.language']
@@ -250,6 +315,7 @@ async function start(): Promise<void> {
     values: {
       'ui.language': typeof menuLocale
       'ui.theme': typeof nativeTheme.themeSource
+      'ui.zoom': number
     },
     remember = true
   ) => {
@@ -260,9 +326,24 @@ async function start(): Promise<void> {
       buildMenu()
     }
     nativeTheme.themeSource = values['ui.theme']
+    applyZoom(values['ui.zoom'])
   }
   // Only the person signed in at this window (or the setup wizard) changes it: another device's choice stays there.
   let windowUserId: string | null = null
+  // Ctrl +/-/0 and the View menu: the next step is saved as the person's own `ui.zoom` and then applied to every
+  // window like any other display setting. Nobody signed in (sign-in screen): applied only, nothing to save for.
+  setZoomHandler((direction, win) => {
+    const next = nextZoom(Math.round(win.webContents.getZoomFactor() * 100), direction)
+    if (client) return applyZoom(next)
+    const ctx = desktop.ctxFor(win.webContents.id)
+    if (ctx.userId === null) return applyZoom(next)
+    try {
+      services.settings.set(ctx, { 'ui.zoom': next })
+    } catch (error) {
+      log.warn('zoom could not be saved', error)
+      applyZoom(next)
+    }
+  })
   services.settings.onChange((values, changed, by) => {
     if (displayFollows(changed, by, windowUserId)) applyDisplay(values)
   })
@@ -340,6 +421,130 @@ async function start(): Promise<void> {
       t: tMain,
       onError: (error) => log.warn('task round failed', error)
     }).start()
+
+  // Camera (Faz 20 P20a, K-49): the Python sidecar runs only on the hotel's own computer and only while
+  // `camera.enabled` is on; Bismuth closing (even by a crash) ends it. Smoke runs and client devices never start it.
+  if (!smoke && initial['app.mode'] !== 'client') {
+    const camera = createCameraRuntime({
+      packaged: app.isPackaged,
+      scriptDir: cameraScriptDir(),
+      dataDir: paths.root,
+      addon: cameraAddon(),
+      modelsDir: app.isPackaged
+        ? (cameraAddon()?.modelsDir ?? join(app.getPath('userData'), 'camera-addon', 'models'))
+        : join(app.getAppPath(), 'resources', 'camera', 'models'),
+      settings: () => services.settings.get(localOwnerCtx()),
+      source: () => services.camera.sidecarSource(),
+      log: { info: (...a) => log.info(...a), warn: (...a) => log.warn(...a) },
+      onNotice: (notice) => {
+        try {
+          services.camera.noticeProblem(systemCtx(), notice)
+        } catch (error) {
+          log.warn('camera notice not saved', error)
+        }
+        showOsNotice(
+          notice.kind === 'gaveUp'
+            ? { title: tMain('main.camera.gaveUpTitle'), body: tMain('main.camera.gaveUpBody') }
+            : {
+                title: tMain('main.camera.crashedTitle'),
+                body: tMain('main.camera.crashedBody', { count: String(notice.crashes) })
+              }
+        )
+      }
+    })
+    services.camera.attach({ ...camera, apply: (o) => coalesced(o) })
+    cameraRuntime = camera
+    // P20c: the first versions kept plain face files; Bismuth's own database is the only keeper now (K-51, K-53).
+    removeLegacyCameraFiles(paths.root)
+    // Alarms in and the face list out every few seconds while the sidecar runs; one round at a time. A round that
+    // fails (database busy, sidecar gone) is tried again at the next one.
+    let camBusy = false
+    const camRound = (): void => {
+      if (camBusy || !services.setup.isDone() || hostRuntime.guard.replaced() !== null) return
+      // P20g: the setup wizard's camera step switches the camera on while the hotel is still being set up, when the
+      // sidecar is not started yet (a settings change then starts nothing); the first round after setup does it.
+      const snap = camera.snapshot()
+      if (
+        snap.state === 'stopped' &&
+        snap.blocked === null &&
+        services.settings.get(localOwnerCtx())['camera.enabled']
+      )
+        void camera.apply({ restart: false }).catch((error: unknown) => log.warn('camera sidecar', error))
+      camBusy = true
+      services.camera
+        .tick(systemCtx())
+        .catch((error: unknown) => log.warn('camera round failed', error))
+        .finally(() => {
+          camBusy = false
+        })
+    }
+    const camTimer = setInterval(camRound, CAMERA_ROUND_MS)
+    // K-52: faces past their date or of guests who left, sealed alarm pictures past `camera.alertRetentionDays`.
+    const camPurge = (): void => {
+      if (!services.setup.isDone() || hostRuntime.guard.replaced() !== null) return
+      try {
+        services.camera.purge(systemCtx())
+      } catch (error) {
+        log.warn('camera retention failed', error)
+      }
+    }
+    camPurge()
+    const purgeTimer = setInterval(camPurge, CAMERA_PURGE_MS)
+    app.on('will-quit', () => {
+      clearInterval(camTimer)
+      clearInterval(purgeTimer)
+    })
+    // Starts and restarts are gathered for a moment: the wizard's save (address + settings) restarts the sidecar
+    // once, and when it is up the face list goes out at once instead of waiting for the next round (no window in
+    // which every guest looks like a stranger).
+    let pending: {
+      restart: boolean
+      waiters: { resolve: () => void; reject: (e: unknown) => void }[]
+    } | null = null
+    const flush = (): void => {
+      const batch = pending
+      pending = null
+      if (!batch) return
+      camera.apply({ restart: batch.restart }).then(
+        () => {
+          batch.waiters.forEach((w) => w.resolve())
+          void pushFacesWhenUp()
+        },
+        (error: unknown) => batch.waiters.forEach((w) => w.reject(error))
+      )
+    }
+    const pushFacesWhenUp = async (): Promise<void> => {
+      for (let i = 0; i < 240; i++) {
+        const state = camera.snapshot().state
+        if (state === 'running') {
+          await services.camera.tick(systemCtx(), { force: true }).catch(() => null)
+          return
+        }
+        if (state === 'stopped' || state === 'gaveUp') return
+        await new Promise((r) => setTimeout(r, 500))
+      }
+    }
+    const coalesced: CameraRuntime['apply'] = (o) =>
+      new Promise<void>((resolve, reject) => {
+        if (!pending) {
+          pending = { restart: false, waiters: [] }
+          setTimeout(flush, 300)
+        }
+        pending.restart ||= o?.restart === true
+        pending.waiters.push({ resolve, reject })
+      })
+    const apply = (restart: boolean): void =>
+      void coalesced({ restart }).catch((error: unknown) => log.warn('camera sidecar', error))
+    services.settings.onChange((_values, changed) => {
+      // Not while the hotel is being set up (the wizard's camera step): the first round after setup starts it.
+      // Only what the sidecar reads restarts it; on/off is a start or a stop.
+      if (!services.setup.isDone()) return
+      if (changed.some((key) => SIDECAR_SETTING_KEYS.includes(key))) apply(true)
+      else if (changed.includes('camera.enabled')) apply(false)
+    })
+    app.on('will-quit', () => void camera.stop())
+    if (services.setup.isDone() && hostRuntime.guard.replaced() === null) apply(false)
+  }
 
   const api = createApiApp({
     handlers: createHandlers(services),
@@ -422,6 +627,24 @@ async function start(): Promise<void> {
     sessionFor: (sender) => (client ? client.sessionFor(sender) : desktop.binding(sender.id)),
     isTrustedUrl: (url) => isAppUrl(url, devOrigin),
     onReady: (sender) => {
+      if (perfProbe && !perfReported) {
+        perfReported = true
+        void runPerfProbe({
+          ...perfProbe,
+          startedAt,
+          platform: `${process.platform}-${process.arch}`,
+          versions: {
+            app: app.getVersion(),
+            electron: process.versions.electron,
+            chrome: process.versions.chrome
+          },
+          metrics: () => app.getAppMetrics(),
+          done: () => app.quit()
+        }).catch((error: unknown) => {
+          log.error('perf probe failed', error)
+          app.quit()
+        })
+      }
       if (!smoke) return
       writeSmokeResult({
         ok: true,
@@ -457,6 +680,35 @@ async function start(): Promise<void> {
     return win
   }
   mainWindow = openWindow(!smoke)
+  reopenWindow = () => {
+    if (!mainWindow || mainWindow.isDestroyed()) mainWindow = openWindow(true)
+    focusMainWindow()
+  }
+  // Light mode: the tray icon exists while the setting is on at the main computer; the program stays alive without a
+  // window only while the server answers. The screens then open in the browser at the server's own address.
+  const wantedNow = (): boolean => lightModeWanted(services.settings.get(systemCtx()))
+  keepInTray = () =>
+    keepRunningWithoutWindow({ wanted: wantedNow(), serverRunning: host.state().running, quitting, smoke })
+  let tray: AppTray | null = null
+  const syncTray = (): void => {
+    if (wantedNow() && !smoke) {
+      tray ??= createAppTray({
+        openWindow: reopenWindow,
+        openBrowser: () =>
+          void shell.openExternal(browserUrl(services.settings.get(systemCtx())['host.port'])),
+        quit: () => app.quit()
+      })
+    } else if (tray) {
+      tray.destroy()
+      tray = null
+    }
+  }
+  syncTray()
+  services.settings.onChange((_values, changed) => {
+    if (changed.includes('app.lightMode') || changed.includes('app.mode')) syncTray()
+    if (changed.includes('ui.language')) tray?.refresh()
+  })
+  app.on('will-quit', () => tray?.destroy())
   // The computer locked or went to sleep: the program locks too (G-22).
   powerMonitor.on('lock-screen', () => desktop.lockAll())
   powerMonitor.on('suspend', () => desktop.lockAll())
@@ -534,7 +786,12 @@ function startClientMode(windowStateFile: string): void {
 }
 
 if (enforceSingleInstance(focusMainWindow)) {
+  app.on('before-quit', () => {
+    quitting = true
+  })
   app.on('window-all-closed', () => {
+    // Light mode: the server keeps running in the tray; "Çık" in the tray menu quits.
+    if (keepInTray()) return
     if (process.platform !== 'darwin' || smoke) app.quit()
   })
   app.on('will-quit', () => database?.close())

@@ -11,6 +11,7 @@ import {
   contactUpdateSchema,
   type ContactCategory
 } from '@shared/contract/supply'
+import { isPlausiblePhone } from '@shared/phone'
 import { limitsOf } from '@shared/contract/limits'
 import type { ContactView } from '@shared/contract/procedures/contacts'
 import { Button } from '@/components/ui/button'
@@ -76,7 +77,7 @@ export function ContactDialog({
     name: !name.trim(),
     custom: category === 'custom' && !custom.trim(),
     email: !!email.trim() && !EMAIL.test(email.trim()),
-    phones: phones.map((p) => !!p.number.trim() && p.number.replace(/\D/g, '').length < 3)
+    phones: phones.map((p) => !!p.number.trim() && !isPlausiblePhone(p.number))
   }
   const invalid = problems.name || problems.custom || problems.email || problems.phones.some(Boolean)
 
@@ -206,6 +207,7 @@ export function ContactDialog({
                   onChange={(e) => setPhone(p.key, { label: e.target.value })}
                   placeholder={t('contacts.phoneLabelPlaceholder')}
                   maxLength={PHONE_LIMIT.label.maxLength}
+                  counter={false}
                   aria-label={t('contacts.phoneLabel', { n: i + 1 })}
                   autoComplete="off"
                 />
@@ -217,6 +219,7 @@ export function ContactDialog({
                   onChange={(e) => setPhone(p.key, { number: e.target.value })}
                   placeholder={t('phone.placeholder')}
                   maxLength={PHONE_LIMIT.number.maxLength}
+                  counter={false}
                   aria-label={t('contacts.phoneNumber', { n: i + 1 })}
                   aria-invalid={(tried && problems.phones[i]) || undefined}
                   className="tabular-nums"

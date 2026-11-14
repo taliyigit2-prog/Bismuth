@@ -34,6 +34,7 @@ import { EmptyState } from '@/components/states'
 import { useFormat } from '@/hooks/use-format'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { useApiMutation, useApiQuery } from '@/lib/api/hooks'
+import { shell } from '@/lib/shell'
 import { useCan } from '@/lib/view-as'
 import { cn } from '@/lib/utils'
 import { AddPersonDialog } from './add-person-dialog'
@@ -433,7 +434,7 @@ export function InHousePage() {
           {hasRooms ? (
             <Button
               variant="outline"
-              onClick={() => window.print()}
+              onClick={() => shell.print()}
               className="max-md:hidden"
               data-testid="in-house-print"
             >

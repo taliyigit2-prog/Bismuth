@@ -27,16 +27,21 @@ function lookup(dict: unknown, key: string): string | undefined {
 
 /** Main-process translation with ru/en → tr fallback, like the renderer; {{name}} placeholders. */
 export function tMain(key: string, vars: Record<string, string> = {}): string {
-  const text =
-    lookup(dictionaries[current], key) ?? lookup(dictionaries.en, key) ?? lookup(dictionaries.tr, key) ?? key
-  return text.replace(/\{\{(\w+)\}\}/g, (_, name: string) => vars[name] ?? '')
+  return tFor(current)(key, vars)
 }
 
 /** The same lookup in a given language (the PDF summary is written in the hotel's language, not the window's). */
 export function tFor(locale: AppLocale): (key: string, vars?: Record<string, string>) => string {
   return (key, vars = {}) => {
+    // A numeric `count` picks the plural form (`key_one`, `key_few`…) of the language, as in the renderer.
+    const count = vars['count'] !== undefined ? Number(vars['count']) : NaN
+    const forms = Number.isFinite(count)
+      ? [`${key}_${new Intl.PluralRules(locale).select(count)}`, key]
+      : [key]
     const text =
-      lookup(dictionaries[locale], key) ?? lookup(dictionaries.en, key) ?? lookup(dictionaries.tr, key) ?? key
+      [dictionaries[locale], dictionaries.en, dictionaries.tr]
+        .flatMap((dict) => forms.map((k) => lookup(dict, k)))
+        .find((v) => v !== undefined) ?? key
     return text.replace(/\{\{(\w+)\}\}/g, (_, name: string) => vars[name] ?? '')
   }
 }

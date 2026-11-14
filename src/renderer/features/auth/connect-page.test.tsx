@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { ProcedureName } from '@shared/contract'
-import type { ClientStatus, FoundHost } from '@shared/contract/remote'
+import type { ClientStatus, FoundHost, SavedHotel } from '@shared/contract/remote'
 import { ApiError } from '@/lib/transport'
 import { fakeTransport, type FakeTransport } from '@/test/render'
 import { currentHref, renderApp } from '@/test/render-app'
@@ -16,8 +16,14 @@ const mine = { version: '0.1.0', schemaVersion: 11 }
 const noIdentity = { known: null, offered: null }
 
 function clientTransport(
-  opts: { found?: FoundHost[]; answer?: 'ok' | 'down' | 'other' | 'stranger'; status?: ClientStatus } = {}
+  opts: {
+    found?: FoundHost[]
+    answer?: 'ok' | 'down' | 'other' | 'stranger' | 'timeout' | 'denied'
+    status?: ClientStatus
+    hotels?: SavedHotel[]
+  } = {}
 ) {
+  let hotels = opts.hotels ?? []
   const base = fakeTransport(undefined, { setup: 'needed', mode: 'client', signedIn: null })
   let status: ClientStatus = opts.status ?? {
     mode: 'client',
@@ -40,7 +46,21 @@ function clientTransport(
             return status as never
           case 'remote.discover':
             return (opts.found ?? []) as never
+          case 'remote.hotels':
+            return hotels as never
+          case 'remote.hotelRemove':
+            hotels = hotels.filter((h) => h.code !== (input as { code: string }).code)
+            return hotels as never
+          case 'remote.hotelUpdate': {
+            const patch = input as { code: string; name?: string; url?: string }
+            hotels = hotels.map((h) =>
+              h.code === patch.code ? { ...h, name: patch.name ?? h.name, url: patch.url ?? h.url } : h
+            )
+            return hotels as never
+          }
           case 'remote.connect': {
+            if (opts.answer === 'timeout') throw new ApiError('UNAVAILABLE', 503, 'errors.hostTimeout')
+            if (opts.answer === 'denied') throw new ApiError('UNAVAILABLE', 503, 'errors.hostDenied')
             if (opts.answer === 'down') throw new ApiError('UNAVAILABLE', 503, 'errors.hostUnreachable')
             if (opts.answer === 'stranger' && !(input as { acceptIdentity?: string }).acceptIdentity)
               throw new ApiError('CONFLICT', 409, 'errors.hostIdentityChanged', {
@@ -198,5 +218,115 @@ describe('bağlantı ekranı (istemci modu)', () => {
         fingerprint: '9999-8888-7777-6666'
       })
     )
+  })
+
+  const pandora: SavedHotel = {
+    code: 'pandora',
+    name: 'Pandora',
+    url: URL_,
+    fingerprint: 'AB12-CD34-EF56-7890',
+    lastUsedAt: '2026-11-10T09:30:00.000Z',
+    active: false
+  }
+  const bosphorus: SavedHotel = {
+    code: 'bosphorus',
+    name: 'Bosphorus Inn',
+    url: 'http://100.64.0.20:7373',
+    fingerprint: null,
+    lastUsedAt: null,
+    active: false
+  }
+
+  it('kayıtlı oteller listelenir (ad, adres, parmak izi); dokununca o adrese bağlanır', async () => {
+    const transport = clientTransport({ hotels: [pandora, bosphorus] })
+    await renderApp({ setup: 'needed', mode: 'client', signedIn: null, transport })
+    const rows = await screen.findAllByTestId('hotel-row')
+    expect(rows).toHaveLength(2)
+    expect(rows[0]).toHaveTextContent('Pandora')
+    expect(rows[0]).toHaveTextContent('AB12-CD34-EF56-7890')
+    expect(rows[1]).toHaveTextContent('Henüz bağlanılmadı')
+    const user = userEvent.setup()
+    await user.click(rows[1]!.querySelector('[data-testid="hotel-connect"]') as HTMLElement)
+    await waitFor(() =>
+      expect(transport.calls.find((c) => c.name === 'remote.connect')?.input).toEqual({
+        url: 'http://100.64.0.20:7373'
+      })
+    )
+  })
+
+  it('kayıtlı otel yokken boş durum yazar', async () => {
+    await renderApp({ setup: 'needed', mode: 'client', signedIn: null, transport: clientTransport() })
+    expect(await screen.findByTestId('hotel-list-empty')).toHaveTextContent('Henüz kayıtlı otel yok.')
+  })
+
+  it('otelin adı ve adresi düzenlenir; adres hatalıysa kaydedilmez ve nedeni yazar', async () => {
+    const transport = clientTransport({ hotels: [pandora] })
+    await renderApp({ setup: 'needed', mode: 'client', signedIn: null, transport })
+    const user = userEvent.setup()
+    await user.click(await screen.findByTestId('hotel-edit'))
+    const name = await screen.findByTestId('hotel-name')
+    await user.clear(name)
+    await user.type(name, 'Pandora Kadıköy')
+    const url = screen.getByTestId('hotel-url')
+    await user.clear(url)
+    await user.type(url, '192.168.1.20:99999')
+    expect(await screen.findByText(/Bağlantı noktası 1 ile 65535/)).toBeInTheDocument()
+    expect(screen.getByTestId('hotel-save')).toBeDisabled()
+    await user.clear(url)
+    await user.type(url, '192.168.1.30')
+    await user.click(screen.getByTestId('hotel-save'))
+    await waitFor(() => expect(screen.getByTestId('hotel-row')).toHaveTextContent('Pandora Kadıköy'))
+    expect(transport.calls.find((c) => c.name === 'remote.hotelUpdate')?.input).toEqual({
+      code: 'pandora',
+      name: 'Pandora Kadıköy',
+      url: '192.168.1.30'
+    })
+  })
+
+  it('kullanımdaki otelin adresi düzenlenemez', async () => {
+    await renderApp({
+      setup: 'needed',
+      mode: 'client',
+      signedIn: null,
+      transport: clientTransport({ hotels: [{ ...pandora, active: true }] })
+    })
+    const user = userEvent.setup()
+    await user.click(await screen.findByTestId('hotel-edit'))
+    expect(await screen.findByTestId('hotel-url')).toBeDisabled()
+  })
+
+  it('otel listeden kaldırılırken onay ister', async () => {
+    const transport = clientTransport({ hotels: [pandora, bosphorus] })
+    await renderApp({ setup: 'needed', mode: 'client', signedIn: null, transport })
+    const user = userEvent.setup()
+    await user.click((await screen.findAllByTestId('hotel-remove'))[0]!)
+    expect(await screen.findByText('Pandora listeden kaldırılsın mı?')).toBeInTheDocument()
+    await user.click(screen.getByTestId('hotel-remove-confirm'))
+    await waitFor(() => expect(screen.getAllByTestId('hotel-row')).toHaveLength(1))
+    expect(screen.getByTestId('hotel-row')).toHaveTextContent('Bosphorus Inn')
+  })
+
+  it('geçersiz adres sorulmadan, nedeniyle reddedilir (H-33)', async () => {
+    const transport = clientTransport()
+    await renderApp({ setup: 'needed', mode: 'client', signedIn: null, transport })
+    const user = userEvent.setup()
+    const input = await screen.findByLabelText('Ana bilgisayarın adresi')
+    await user.type(input, 'https://192.168.1.20{Enter}')
+    expect(await screen.findByText(/https desteklenmez/)).toBeInTheDocument()
+    expect(transport.calls.some((c) => c.name === 'remote.connect')).toBe(false)
+  })
+
+  it.each([
+    ['timeout', 'Ana bilgisayar zamanında yanıt vermedi.'],
+    ['denied', 'Ana bilgisayar bu bilgisayarın bağlanmasını kabul etmedi.'],
+    ['down', 'Ana bilgisayara ulaşılamadı.']
+  ] as const)('bağlantı hatası nedenini ve adresi söyler: %s', async (answer, text) => {
+    const transport = clientTransport({ answer, hotels: [pandora] })
+    await renderApp({ setup: 'needed', mode: 'client', signedIn: null, transport })
+    const user = userEvent.setup()
+    await user.click(await screen.findByTestId('hotel-connect'))
+    const error = await screen.findByTestId('connect-error')
+    expect(error).toHaveTextContent(text)
+    expect(error).toHaveTextContent(URL_)
   })
 })

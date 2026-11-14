@@ -142,6 +142,8 @@ function backupTransport(
           if (r.recoveryText && !r.replace) throw new ApiError('CONFLICT', 409, 'errors.backupKeyExists')
           return { id: r.id, requestedAt: '2026-10-04T09:00:00.000Z' } as never
         }
+        case 'backup.findDriveFolder':
+          return { folder: "G:\\Drive'ım\\Bismuth\\yedekler" } as never
         case 'backup.pickDriveFolder':
           return { folder: "G:\\Drive'ım\\Bismuth\\yedekler" } as never
         case 'lists.list':
@@ -323,6 +325,30 @@ describe('Ayarlar → Yedek', () => {
     await waitFor(() => expect(t.callsTo('backup.pickDriveFolder')).toEqual([{}]))
     await user.click(screen.getByTestId('backup-drive-auto'))
     expect(saved).toEqual([{ 'backup.driveFolder': '' }])
+  })
+
+  it('"Drive klasörünü bul" düğmesi yerel taramayı başlatır', async () => {
+    const t = backupTransport()
+    await render(t)
+    await userEvent.setup().click(await screen.findByTestId('backup-drive-find'))
+    await waitFor(() => expect(t.callsTo('backup.findDriveFolder')).toEqual([{}]))
+  })
+
+  it("geçersiz saklama günü Kaydet'e basınca alan altında söylenir, kaydedilmez (H-36)", async () => {
+    const saved: unknown[] = []
+    await render(backupTransport(), SETTINGS_DEFAULTS, (p) => saved.push(p))
+    const user = userEvent.setup()
+    const keep = await screen.findByLabelText('Saklama süresi (gün)')
+    await user.clear(keep)
+    await user.type(keep, '0')
+    await user.click(screen.getByRole('button', { name: 'Kaydet' }))
+    expect(keep).toHaveAttribute('aria-invalid', 'true')
+    expect(screen.getByText('1 ile 365 arasında bir tam sayı yazın.')).toBeInTheDocument()
+    expect(saved).toEqual([])
+    await user.clear(keep)
+    await user.type(keep, '20')
+    await user.click(screen.getByRole('button', { name: 'Kaydet' }))
+    expect(saved).toHaveLength(1)
   })
 
   it('telefondan anahtar gösterilmez/girilmez, geri yükleme ve klasör seçimi yoktur (K-45)', async () => {

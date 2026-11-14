@@ -73,6 +73,11 @@ export interface ResponsiveDialogProps {
   children: ReactNode
   /** Desktop width class (default `sm:max-w-lg`). */
   className?: string
+  /**
+   * False: on the phone the bottom sheet does not move the focus into its first field when it opens, so the keyboard
+   * does not cover the choices below it (P17d: the cancel dialog's refund options). Desktop keeps the focus.
+   */
+  focusFirstOnPhone?: boolean
 }
 
 export function ResponsiveDialog({
@@ -82,7 +87,8 @@ export function ResponsiveDialog({
   description,
   footer,
   children,
-  className
+  className,
+  focusFirstOnPhone = true
 }: ResponsiveDialogProps) {
   const isMobile = useIsMobile()
   if (isMobile)
@@ -91,6 +97,7 @@ export function ResponsiveDialog({
         <SheetContent
           side="bottom"
           className="max-h-[92dvh] gap-0 rounded-t-xl pb-[env(safe-area-inset-bottom)]"
+          onOpenAutoFocus={focusFirstOnPhone ? undefined : (e) => e.preventDefault()}
         >
           {/* The end padding keeps a long title clear of the 44 px close button. */}
           <SheetHeader className="pe-14 text-start">

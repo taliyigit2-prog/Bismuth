@@ -35,6 +35,7 @@ export const supplyHandlers = (services: Services): HandlersFor<keyof typeof sup
     'laundry.outstanding': (ctx, { contactId, until }) => services.laundry.outstanding(ctx, contactId, until),
     'laundry.month': (ctx, { contactId, year, month }) => services.laundry.month(ctx, contactId, year, month),
     'laundry.settle': (ctx, input) => services.laundry.settle(ctx, input),
+    'laundry.reopenMonth': (ctx, input) => services.laundry.reopenMonth(ctx, input),
     'laundry.trend': (ctx, { contactId, until, months }) =>
       services.laundry.trend(ctx, contactId, until, months)
   }

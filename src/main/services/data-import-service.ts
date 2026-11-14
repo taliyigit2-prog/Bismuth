@@ -330,7 +330,7 @@ export function createDataImportService(deps: DataImportDeps) {
     code: ImportErrorCode,
     value: string
   ): void => {
-    list.push({ row, column, code, value: value.slice(0, 120) })
+    list.push({ row, column, code, value: value.slice(0, code === 'badDate' ? 40 : 120) })
   }
 
   // ------------------------------------------------------------------------------------------- reservation grid
@@ -581,10 +581,17 @@ export function createDataImportService(deps: DataImportDeps) {
     const channel = listMatcher(db.select().from(salesChannels).all())
     const lines: LedgerLine[] = []
     let current: LocalDate | null = null
+    const sidesFilled = (r: number): boolean => at(r, 'incomeAmount') !== '' || at(r, 'expenseAmount') !== ''
     for (let r = headerRow; r < t.rows.length; r++) {
       const dateText = col('date') !== null ? at(r, 'date') : cell(t, r, 0)
       const d = parseDayCell(dateText, month)
       if (d) current = d
+      else if (dateText.trim() !== '') {
+        // A filled but unreadable date never lets the row (or the empty-dated rows after it) fall on the previous day.
+        current = null
+        if (sidesFilled(r)) err(errors, r + 1, title('date'), 'badDate', dateText)
+        continue
+      }
       const sides = [
         {
           kind: 'income' as const,

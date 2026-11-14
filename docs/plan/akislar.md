@@ -40,3 +40,17 @@ arıza Bismuth'ta tutulur; resepsiyon WhatsApp'tan gelen bilgiyi işler (S-97: s
 - **Çıkış saati** (12:00), **çamaşırhane saatleri**, **örnek görevler**: ilk kurulumda öneri, otel değiştirir/siler.
 - **Gün kapatma**: Pandora'da az kullanılır, başka otellerde gece kapanışı yaygın → ayar (G-72).
 - **Kasadan avans**, **ek mesai ücreti**: Pandora'da avans var, ek mesai ücreti yok → ayar (G-69, G-84).
+
+## 4. Rezervasyonun yaşamı: giriş, çıkış, iptal, iade (programdaki karşılığı)
+
+Sahibin anlatımında "giriş yapılır", "aynı gün çıkarsa mavi" geçer; iptal ve iade ise günlük akışta ayrı satır değildi. Programdaki
+karşılıkları (kılavuz: Rezervasyon nasıl yazılır; Faz 17):
+
+| Olay | Bismuth'ta karşılığı |
+|---|---|
+| Misafir gelir, **giriş yapılır** | Takvimde rezervasyon → **Giriş yap**: odaya yerleştirme, odadaki kişiler (G-54) ve KBS işareti; durum "Giriş yaptı". Bugün ekranında "bugün gelecekler" satırı "Giriş yaptı" olur. |
+| Misafir **çıkış yapar** | Rezervasyon → **Çıkış yap**: bakiye ve ödeme kontrolü, oda **otomatik kirli** (G-90), kat planında görünür. Çıkışı geçmiş ama çıkmamış odalar Bugün'de vurgulanır. |
+| Erken çıkış / aynı gün ayrılış | Çıkış penceresi "N gece boşalacak" der; o geceler ve masraflar iptal edilir, oda yeniden satılabilir. Giriş günü ayrılırsa **aynı gün giriş‑çıkış** (gündüz kullanımı, mavi; K-44) ve ücreti çıkışta değiştirilebilir. |
+| Misafir **gelmedi** | **Gelmedi olarak işaretle**: geceler boşalır, ödemeler kayıtta kalır; para iade edilecekse ya da tarih ertelenecekse önce **Park et** (park alanı, G-39). |
+| **İptal** | **Rezervasyonu iptal et**: neden yazılır; tahsilat için **İade gir** / **İade bekliyor olarak park et** / **Tahsilat kalsın** seçilir. Rezervasyon silinmez, "İptal edildi" olarak kalır (G-24). |
+| **İade** | Ödeme penceresinde tür **İade** ya da park alanında **İade gir**; iade defterin o gününe ve kasaya yazılır, tahsilatı geçemez (G-131). Misafir girdikten sonra vazgeçerse **Vazgeçme ve iade** (aynı gün çıkış, girişi geri al ya da erken çıkış). |

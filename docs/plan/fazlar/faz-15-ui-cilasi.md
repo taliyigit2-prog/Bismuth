@@ -13,13 +13,13 @@ Türkçe metin kalitesi, erişilebilirlik, küçük ekran, yazdırma, tema edit�
 1. **Tutarlılık**: aynı işlem her ekranda aynı düğme/konum; başlık, boşluk, yazı ölçeği; simge seti tek (lucide); tablo yoğunluğu (resepsiyon ekranı yoğun olmalı — Excel alışkanlığı).
 2. **Boş/yükleniyor/hata durumları**: her liste ve grafik için; ilk kurulumda boş takvim "ilk rezervasyonunuzu ekleyin" yönlendirmesi.
 3. **Klavye** (G-19): global kısayollar (yeni rezervasyon, ara, bugüne git, ödeme gir), odak halkaları, Esc ile kapanış, Enter ile kaydet; takvimde ok tuşları; kısayol listesi `?` ile.
-4. **Üç dil gözden geçirme**: tüm anahtarlar `tr.json`'da ve `en/ru` eşit; terim sözlüğü üç dilde (`docs/sozluk.md`); Türkçe imla; Rusça çeviri kalite turu (S-77: sahip Rusça biliyor, ayrıca ana dili konuşan kontrolü gerekmiyor — `turkish-ui-copy` + Rusça terim sözlüğü); uzun Rusça metinlerde taşma kontrolü; **mobil QA**: S-66 ekranları iPhone/Android boyutlarında.
+4. **Üç dil gözden geçirme**: tüm anahtarlar `tr.json`'da ve `en/ru` eşit; terim sözlüğü üç dilde (`docs/gelistirici/sozluk.md`); Türkçe imla; Rusça çeviri kalite turu (S-77: sahip Rusça biliyor, ayrıca ana dili konuşan kontrolü gerekmiyor — `turkish-ui-copy` + Rusça terim sözlüğü); uzun Rusça metinlerde taşma kontrolü; **mobil QA**: S-66 ekranları iPhone/Android boyutlarında.
 5. **Erişilebilirlik**: kontrast ≥ 4.5:1, renk tek bilgi taşıyıcı olmasın (takvim simgeleri), ekran okuyucu etiketleri, büyük yazı modu (ayar).
 6. **Tema**: açık/koyu (S-50) + sahibin renk ayarları (durum renkleri + vurgu rengi); "tema önizleme" ekranı; sistemle senkron.
 7. **Küçük ekran**: 1366×768 dizüstü ve 1280×720'de kaydırmasız kullanım; yan menü daraltılabilir.
 8. **Yazdırma**: raporlar ve günlük defter için yazdırma stili.
 9. **Performans**: takvim, aylık defter (1.000+ satır), raporlar; ölçümler dokümante; gereksiz yeniden çizimler giderilir.
-10. **Program içi kılavuz** (G-18): **Ayarlar → Kılavuz** her zaman açılır + her ekranda "?" ile o ekranın bölümü; **çok ayrıntılı**, **basit kelimelerle**, teknik terim yok, ekran görüntülü, adım adım ("Rezervasyon nasıl yazılır", "Ödeme alınca ne yapılır", "Vardiya devri", "Otelde kalanlar ve KBS", "Kat görevlisi için", "Ay sonu kontrolü", "Bakanlık istatistiği", "Yedek ve uzaktan erişim"); bölümler rolüne göre (resepsiyon, kat görevlisi, muhasebe, sahip); üç dilde; ilk açılış turu (atlanabilir). Kaynak `docs/kullanim-kilavuzu.md` ile aynı içerik (Faz 16).
+10. **Program içi kılavuz** (G-18): **Ayarlar → Kılavuz** her zaman açılır + her ekranda "?" ile o ekranın bölümü; **çok ayrıntılı**, **basit kelimelerle**, teknik terim yok, ekran görüntülü, adım adım ("Rezervasyon nasıl yazılır", "Ödeme alınca ne yapılır", "Vardiya devri", "Otelde kalanlar ve KBS", "Kat görevlisi için", "Ay sonu kontrolü", "Bakanlık istatistiği", "Yedek ve uzaktan erişim"); bölümler rolüne göre (resepsiyon, kat görevlisi, muhasebe, sahip); üç dilde; ilk açılış turu (atlanabilir). Kaynak `docs/otel/kullanim-kilavuzu.md` ile aynı içerik (Faz 16).
 11. **Saat alanları ve sistem dili** (Faz 4 notu): `<input type="time">` Chromium'un yerel ayarını izler; İngilizce (ABD)
     sistemde "02:00 PM" görünür. Ana süreç `ui.language`'ı bir sonraki açılışta Chromium diline (`--lang`, EN için
     `en-GB`) uygulasın ya da saat alanı 24 saatlik kendi bileşenimizle değişsin; macOS'ta davranış doğrulanır.
@@ -37,7 +37,7 @@ Türkçe metin kalitesi, erişilebilirlik, küçük ekran, yazdırma, tema edit�
 
 **Yapılanlar**
 
-- `docs/sozluk.md`: Türkçe · İngilizce · Rusça terim sözlüğü, 260'tan fazla terim (rezervasyon, oda ve oda durumu, para ve kasa,
+- `docs/gelistirici/sozluk.md`: Türkçe · İngilizce · Rusça terim sözlüğü, 260'tan fazla terim (rezervasyon, oda ve oda durumu, para ve kasa,
   döviz, personel, vardiya, misafir/firma/kara liste, arıza, çamaşırhane, tedarik, rapor ve turizm, rol ve güvenlik, yedek ve
   çok cihazlı çalışma). Her satırın üç dildeki karşılığı `tr/en/ru.json`'daki gerçek kullanımla betikle karşılaştırıldı;
   yalnız Faz 13b'de gelecek üç terim (yedek kopya, kutu, devral) ve birkaç çekimli biçim dışında hepsi dosyada var. Sözlüğün
@@ -60,7 +60,7 @@ Türkçe metin kalitesi, erişilebilirlik, küçük ekran, yazdırma, tema edit�
 
 **Uygulanmayan öneriler (anlam ya da ürün adı değişeceği için):** Rehber/Contacts/phone book birleştirmesi, Rusça
 "платёж" ↔ "оплата", "Void" ↔ "Cancel", "Fixed" ↔ "Resolved", "Misafir notu" ↔ "Sürekli not" (takvimde), "Account" ↔ "Session"
-(komut menüsü), tırnak biçimi, Rusça «Забыли пароль?» — hepsi `docs/sozluk.md` §12'de.
+(komut menüsü), tırnak biçimi, Rusça «Забыли пароль?» — hepsi `docs/gelistirici/sozluk.md` §12'de.
 
 **Sahip onay paketine:** yok (S-77: Rusça için bizim kontrolümüz yeterli — sahip Rusça biliyor, sözlük ona okunabilir).
 
@@ -98,7 +98,7 @@ Türkçe metin kalitesi, erişilebilirlik, küçük ekran, yazdırma, tema edit�
   `seed/demo`, uydurma adlar): 34 görüntü × 3 dil = 102 JPEG (masaüstü 1366×768 → 1100 px, telefon 390×844, kalite
   78), toplam **6,4 MB** (sınır 8 MB, betik denetler). Cila sonrası yeniden koşulacak; ay sonu/raporlar ve uzaktan erişim
   ekranlarının görüntüleri o turda eklenecek.
-- **`docs/kullanim-kilavuzu.md`** Türkçe içerikten `npm run guide:docs` ile üretilir (`scripts/guide-docs-lib.ts`).
+- **`docs/otel/kullanim-kilavuzu.md`** Türkçe içerikten `npm run guide:docs` ile üretilir (`scripts/guide-docs-lib.ts`).
 - **Testler**: `guide/markdown.test.ts` (her öğe türü, HTML/dış bağlantı/yol enjeksiyonu yok),
   `guide/markdown-view.test.tsx` (React öğeleri, bağlantı adresleri, betik/resim/dış bağlantı yok),
   `guide/content.test.ts` (üç dilde aynı dosyalar, aynı çapa ve resim sırası, tek çapalar, bütün bağlantılar ve "?"
@@ -141,11 +141,11 @@ Türkçe metin kalitesi, erişilebilirlik, küçük ekran, yazdırma, tema edit�
 - Kılavuz: `01-getting-started.md` (üç dil) yeni "Klavye kısayolları" `{#keyboard}` bölümü; `<!-- doğrula: P15a -->`
   kaldırıldı. Kılavuz metninde kendi satırında `[[shortcuts]]` programın kısayol tablosunu çizer (markdown.ts yeni öğe,
   `markdown-view` → `ShortcutTable`); `npm run guide:docs` bunu `tr.json` metinleriyle Markdown tabloya çevirir
-  (`docs/kullanim-kilavuzu.md` yeniden üretildi). "?" listesinin "Kılavuzda aç" düğmesi bu bölüme gider.
+  (`docs/otel/kullanim-kilavuzu.md` yeniden üretildi). "?" listesinin "Kılavuzda aç" düğmesi bu bölüme gider.
 
 **Tutarlılık (madde 1)** — bütün ekranların masaüstü görüntüsü alındı (27 ekran, açık/koyu), farklar:
 
-1. Aynı iş iki ad: rezervasyon panelinde "Ödeme al", her yerde "Ödeme ekle" (`docs/sozluk.md`) → "Ödeme ekle / Add
+1. Aynı iş iki ad: rezervasyon panelinde "Ödeme al", her yerde "Ödeme ekle" (`docs/gelistirici/sozluk.md`) → "Ödeme ekle / Add
    payment / Добавить оплату" (panel düğmesi, tanıtım turu, kılavuz 03 ve 04 üç dilde).
 2. Tablo yoğunluğu: `.claude/rules/ui.md` `density="compact"` diyor ama `Table` desteklemiyordu → `Table` `density`
    alır; kişinin "Sıkışık" seçimi (`<html data-density>`) bütün tabloları sıklaştırır. Resepsiyon/para tabloları
@@ -156,7 +156,7 @@ Türkçe metin kalitesi, erişilebilirlik, küçük ekran, yazdırma, tema edit�
 5. Değişmeyenler (bilerek): her ekran `Page` + h1 + tek cümle açıklama, birincil düğme sağ üstte; simgeler yalnız
    lucide (başka simge paketi yok); Defter ve kasa'nın "Gider ekle / Ödeme ekle" düğmeleri gün görünümüne bağlı
    olduğu için sekme satırında, Ay sonu'nun "Excel'e aktar / Yazdır" düğmeleri ay seçicinin yanında kaldı. Boş
-   durumlara üstteki birincil düğmenin ikincisi eklenmedi (ekranda tek birincil düğme, `docs/tasarim.md` §1); boş durum
+   durumlara üstteki birincil düğmenin ikincisi eklenmedi (ekranda tek birincil düğme, `docs/gelistirici/tasarim.md` §1); boş durum
    metinleri hangi düğmeye basılacağını zaten söylüyor.
 
 **Boş / yükleniyor / hata / yetkisiz (madde 2)**: listeler ve grafikler `QueryView` / `EmptyState` / `ErrorState` (yetkisiz

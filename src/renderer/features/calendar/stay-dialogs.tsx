@@ -3,6 +3,7 @@
 // the check-in day turns the first night into that day's day-use), park with a reason (G-39), restore a parked
 // reservation onto a room and dates, cancel with a reason, cancel one room, no-show (G-42). Nothing is deleted: the
 // service keeps history.
+import { clockOf } from '@shared/domain/stays'
 import { useId, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AlertTriangleIcon } from 'lucide-react'
@@ -19,9 +20,14 @@ import { DateInput } from '@/components/date-input'
 import { MoneyInput, type MoneyValue } from '@/components/money-input'
 import { ResponsiveDialog } from '@/components/responsive-dialog'
 import { deferForPendingAmount } from '@/features/settings/use-admin'
+import { useFormat } from '@/hooks/use-format'
+import { toast } from 'sonner'
 import { useApiQuery } from '@/lib/api/hooks'
+import { useTransport } from '@/lib/api/api-context'
 import { useCan } from '@/lib/view-as'
 import { useBookingMutation, useBookingOptions, type BookingStay } from './booking-api'
+import { MoneyChoiceFields } from './giveup-dialog'
+import { cancelRefundOf, initialMoneyChoice, moneyChoiceProblem, type MoneyChoice } from './money-choice'
 import { useBlockOverride } from './override'
 import { OverrideDialog } from './override-dialog'
 import { RoomMultiPicker } from './room-multi-picker'
@@ -62,27 +68,65 @@ export function CheckoutDialog({
   stay,
   open,
   onOpenChange,
-  currency
+  currency,
+  onCheckedOut
 }: {
   stay: BookingStay
   open: boolean
   onOpenChange: (open: boolean) => void
   /** The folio's currency (the day-use price of a same-day departure). */
   currency: string
+  /** After the check-out is saved (the panel then offers the refund of a guest who gave up, K-55). */
+  onCheckedOut?: () => void
 }) {
   const { t } = useTranslation()
+  const f = useFormat()
   const people = stay.occupants.filter((o) => !o.kbsCheckoutAt)
   const [ticked, setTicked] = useState<Set<string>>(new Set())
   const gaps = checkoutKbsGaps(stay.occupants, ticked)
   const plan = checkoutPlan(stay, localDateOf(new Date()))
   const firstNight = stay.nights.find((n) => n.date === stay.checkIn)
+  // H-06: the same-day price starts from the room type's hour price × the hours used (else the first night's price);
+  // the field is hidden when the day slot has no free range (the service then keeps the night as it was).
+  const sameDay = stay.sameDay ?? null
   const [dayUse, setDayUse] = useState<MoneyValue>({
-    amountMinor: firstNight?.priceMinor ?? null,
+    amountMinor: sameDay?.suggestedMinor ?? firstNight?.priceMinor ?? null,
     currency
   })
+  const [freeOk, setFreeOk] = useState(false)
+  const [freeError, setFreeError] = useState(false)
+  const showDayUse = plan.kind === 'sameDay' && sameDay !== null
+  // P21d: leaving after the hotel's late check-out hour offers the fee line (the desk can change or untick it).
+  const can = useCan()
+  const [nowTime] = useState(() => clockOf(new Date()))
+  const lateQuote = useApiQuery(
+    'booking.feeQuote',
+    { kind: 'lateCheckout', stayId: stay.id, time: nowTime },
+    { enabled: open && can('extras', 'edit') && plan.kind === 'onTime' }
+  )
+  const [lateOn, setLateOn] = useState(true)
+  const [lateFee, setLateFee] = useState<MoneyValue | null>(null)
+  const lateShown: MoneyValue = lateFee ?? {
+    amountMinor: lateQuote.data?.suggestedMinor ?? null,
+    currency
+  }
+  const offerLate = !!lateQuote.data && lateQuote.data.suggestedMinor > 0
+  const transport = useTransport()
   const checkOut = useBookingMutation('booking.checkOut', {
     success: t('booking.toast.checkedOut', { room: stay.roomNumber }),
-    onSuccess: () => onOpenChange(false)
+    onSuccess: () => {
+      if (offerLate && lateOn && lateShown.amountMinor && lateShown.amountMinor > 0)
+        void transport
+          .call('booking.addLateCheckout', {
+            stayId: stay.id,
+            time: nowTime,
+            amountMinor: lateShown.amountMinor
+          })
+          .then(() => toast.success(t('booking.lateCheckout.added')))
+          .catch(() => toast.error(t('booking.lateCheckout.failed')))
+      onOpenChange(false)
+      onCheckedOut?.()
+    }
   })
   const toggle = (id: string, on: boolean): void => {
     const next = new Set(ticked)
@@ -111,11 +155,16 @@ export function CheckoutDialog({
         onSubmit={(e) => {
           e.preventDefault()
           if (deferForPendingAmount(e.currentTarget)) return
+          // H-06: a free same-day stay is a decision (ticked), not an empty or zero field left by mistake.
+          if (showDayUse && dayUse.amountMinor === 0 && !freeOk) return setFreeError(true)
           checkOut.mutate({
             stayId: stay.id,
             kbsCheckoutIds: [...ticked],
-            ...(plan.kind === 'sameDay' && dayUse.amountMinor !== null
-              ? { dayUsePriceMinor: dayUse.amountMinor }
+            ...(showDayUse && dayUse.amountMinor !== null
+              ? {
+                  dayUsePriceMinor: dayUse.amountMinor,
+                  ...(dayUse.amountMinor === 0 ? { dayUseFreeConfirmed: true } : {})
+                }
               : {})
           })
         }}
@@ -135,13 +184,49 @@ export function CheckoutDialog({
             </AlertDescription>
           </Alert>
         ) : null}
-        {plan.kind === 'sameDay' ? (
-          <MoneyInput
-            label={t('booking.checkout.dayUsePrice')}
-            value={dayUse}
-            onChange={(v) => setDayUse({ ...v, currency })}
-            currencies={[currency]}
-          />
+        {showDayUse ? (
+          <div className="grid gap-2" data-testid="checkout-dayuse">
+            <MoneyInput
+              label={t('booking.checkout.dayUsePrice')}
+              value={dayUse}
+              onChange={(v) => {
+                setDayUse({ ...v, currency })
+                setFreeError(false)
+                if (v.amountMinor !== 0) setFreeOk(false)
+              }}
+              currencies={[currency]}
+            />
+            {sameDay.startTime && sameDay.endTime ? (
+              <p className="text-muted-foreground text-xs tabular-nums">
+                {t('booking.checkout.dayUseHours', { start: sameDay.startTime, end: sameDay.endTime })}
+              </p>
+            ) : null}
+            {sameDay.suggestedMinor !== null ? (
+              <p className="text-muted-foreground text-xs" data-testid="checkout-dayuse-suggested">
+                {t('booking.checkout.dayUseSuggested', {
+                  amount: f.money(sameDay.suggestedMinor, currency)
+                })}
+              </p>
+            ) : null}
+            {dayUse.amountMinor === 0 ? (
+              <label className="flex min-h-8 items-center gap-2 text-sm max-md:min-h-11">
+                <Checkbox
+                  checked={freeOk}
+                  onCheckedChange={(c) => {
+                    setFreeOk(c === true)
+                    setFreeError(false)
+                  }}
+                  data-testid="checkout-free-confirm"
+                />
+                {t('booking.checkout.freeConfirm')}
+              </label>
+            ) : null}
+            {freeError ? (
+              <p role="alert" className="text-destructive text-sm" data-testid="checkout-free-error">
+                {t('booking.checkout.freeNeeded')}
+              </p>
+            ) : null}
+          </div>
         ) : null}
         {people.length ? (
           <fieldset className="grid gap-2">
@@ -179,6 +264,22 @@ export function CheckoutDialog({
                 .join(' ')}
             </AlertDescription>
           </Alert>
+        ) : null}
+        {offerLate ? (
+          <div className="grid gap-2 rounded-md border p-3" data-testid="checkout-late">
+            <label className="flex min-h-8 items-center gap-2 text-sm font-medium max-md:min-h-11">
+              <Checkbox checked={lateOn} onCheckedChange={(c) => setLateOn(c === true)} />
+              {t('booking.lateCheckout.offer', { time: nowTime })}
+            </label>
+            {lateOn ? (
+              <MoneyInput
+                label={t('booking.lateCheckout.amount')}
+                value={lateShown}
+                onChange={(v) => setLateFee({ ...v, currency })}
+                currencies={[currency]}
+              />
+            ) : null}
+          </div>
         ) : null}
         <p className="text-muted-foreground text-sm">{t('booking.checkout.dirty')}</p>
       </form>
@@ -255,63 +356,110 @@ export function ParkDialog({
   )
 }
 
-/** Cancel (no delete): the nights are freed, payments stay in the record; a reason is required. */
+/**
+ * Cancel (no delete): the nights are freed, a reason is required. When money was collected the dialog says how
+ * much and asks what happens to it (K-55): enter the refund (needs `payments.refund`), park the reservation as
+ * "refund pending" (for whoever may not refund) or keep it with a reason.
+ */
 export function CancelDialog({
   reservationId,
   open,
-  onOpenChange
+  onOpenChange,
+  collectedMinor = null,
+  currency = 'TRY',
+  allowPark = true
 }: {
   reservationId: string
   open: boolean
   onOpenChange: (open: boolean) => void
+  /** Net collected on the folio; null/0 = nothing to settle (or the user may not see payments). */
+  collectedMinor?: number | null
+  currency?: string
+  /** False for a parked reservation and one somebody stayed in. */
+  allowPark?: boolean
 }) {
   const { t } = useTranslation()
+  const can = useCan()
+  const options = useBookingOptions()
   const id = useId()
+  const collected = collectedMinor ?? 0
   const [reason, setReason] = useState('')
   const [error, setError] = useState(false)
+  const [tried, setTried] = useState(false)
+  const [money, setMoney] = useState<MoneyChoice>(() =>
+    initialMoneyChoice(collected, currency, { canRefund: can('payments.refund', 'edit'), allowPark })
+  )
   const cancel = useBookingMutation('booking.cancel', {
     success: t('booking.toast.cancelled'),
     onSuccess: () => onOpenChange(false)
   })
+  const park = useBookingMutation('booking.park', {
+    success: t('booking.toast.refundPending'),
+    onSuccess: () => onOpenChange(false)
+  })
+  const parking = collected > 0 && money.mode === 'park'
   return (
     <ResponsiveDialog
       open={open}
       onOpenChange={onOpenChange}
       title={t('booking.cancel.title')}
       description={t('booking.cancel.description')}
+      focusFirstOnPhone={false}
       footer={
         <DialogButtons
           form="cancel-form"
-          label={t('booking.cancel.confirm')}
+          label={parking ? t('booking.refund.parkConfirm') : t('booking.cancel.confirm')}
           onCancel={() => onOpenChange(false)}
-          destructive
+          destructive={!parking}
+          testId="cancel-confirm"
         />
       }
     >
       <form
         id="cancel-form"
-        className="grid gap-1.5"
+        className="grid gap-4"
+        noValidate
         onSubmit={(e) => {
           e.preventDefault()
-          if (reason.trim().length < 3) return setError(true)
-          cancel.mutate({ id: reservationId, reason: reason.trim() })
+          if (deferForPendingAmount(e.currentTarget)) return
+          setTried(true)
+          const bad = reason.trim().length < 3
+          setError(bad)
+          if (bad || (collected > 0 && moneyChoiceProblem(money, collected, currency))) return
+          if (parking)
+            return park.mutate({ id: reservationId, park: { reason: 'refund_pending', note: reason.trim() } })
+          const refund = collected > 0 ? cancelRefundOf(money, options.data?.methods ?? []) : undefined
+          cancel.mutate({ id: reservationId, reason: reason.trim(), ...(refund ? { refund } : {}) })
         }}
       >
-        <Label htmlFor={id}>{t('booking.cancel.reason')}</Label>
-        <Textarea
-          id={id}
-          rows={2}
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-          aria-invalid={error || undefined}
+        <div className="grid gap-1.5">
+          <Label htmlFor={id}>{t('booking.cancel.reason')}</Label>
+          <Textarea
+            id={id}
+            rows={2}
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            aria-invalid={error || undefined}
+          />
+          {error ? <p className="text-destructive text-xs">{t('errors.reasonRequired')}</p> : null}
+        </div>
+        <MoneyChoiceFields
+          value={money}
+          onChange={setMoney}
+          collectedMinor={collected}
+          currency={currency}
+          allowPark={allowPark}
+          tried={tried}
         />
-        {error ? <p className="text-destructive text-xs">{t('errors.reasonRequired')}</p> : null}
       </form>
     </ResponsiveDialog>
   )
 }
 
-/** "Gelmedi" (G-42): the nights are freed, payments stay; from the panel or the park area. */
+/**
+ * "Gelmedi" (G-42): the nights are freed, payments stay; from the panel or the park area. The hotel's no-show fee rule
+ * (`fees.noShow`) offers an amount that the desk can change or empty (P21d, Ö-22); it lands on the folio.
+ */
 export function NoShowDialog({
   reservationId,
   open,
@@ -322,6 +470,20 @@ export function NoShowDialog({
   onOpenChange: (open: boolean) => void
 }) {
   const { t } = useTranslation()
+  const can = useCan()
+  const mayFee = can('extras', 'edit')
+  const quote = useApiQuery(
+    'booking.feeQuote',
+    { kind: 'noShow', reservationId },
+    { enabled: open && mayFee }
+  )
+  const [fee, setFee] = useState<MoneyValue | null>(null)
+  const currency = quote.data?.currency ?? ''
+  // Until the desk types something the field shows the rule's suggestion (0 = no fee, an empty field).
+  const shown: MoneyValue = fee ?? {
+    amountMinor: quote.data && quote.data.suggestedMinor > 0 ? quote.data.suggestedMinor : null,
+    currency
+  }
   const noShow = useBookingMutation('booking.noShow', {
     success: t('booking.toast.noShow'),
     onSuccess: () => onOpenChange(false)
@@ -344,11 +506,26 @@ export function NoShowDialog({
     >
       <form
         id="no-show-form"
+        className="grid gap-3"
         onSubmit={(e) => {
           e.preventDefault()
-          noShow.mutate({ id: reservationId })
+          if (deferForPendingAmount(e.currentTarget)) return
+          const amount = mayFee ? shown.amountMinor : null
+          noShow.mutate({ id: reservationId, ...(amount && amount > 0 ? { feeMinor: amount } : {}) })
         }}
-      />
+      >
+        {mayFee && quote.data ? (
+          <div className="grid gap-1.5" data-testid="no-show-fee">
+            <MoneyInput
+              label={t('booking.noShow.fee')}
+              value={shown}
+              onChange={(v) => setFee({ ...v, currency })}
+              currencies={[currency]}
+            />
+            <p className="text-muted-foreground text-xs">{t('booking.noShow.feeHelp')}</p>
+          </div>
+        ) : null}
+      </form>
     </ResponsiveDialog>
   )
 }

@@ -90,7 +90,7 @@ describe('kabuk bileşenleri', () => {
     )
   })
 
-  it('telefonun üst çubuğu tarihi kısa yazar; tam tarih başlıkta ve ekran okuyucuda', async () => {
+  it('dar ekranda (1024 px altı) üst çubuk tarihi kısa yazar; tam tarih başlıkta ve ekran okuyucuda', async () => {
     phone()
     await renderWithProviders(<TopBar onOpenCommand={() => {}} withSidebarTrigger={false} />, {
       settings: { 'ui.language': 'ru' }
@@ -99,6 +99,6 @@ describe('kabuk bileşenleri', () => {
     const full = `Сегодня ${formatDate(today(), 'ru', 'full')}`
     expect(label).toHaveAttribute('title', full)
     expect(label.querySelector('[aria-hidden]')?.textContent).not.toContain(today().slice(0, 4))
-    expect(label.querySelector('.sr-only')).toHaveTextContent(full)
+    expect(label.querySelector('span:not([aria-hidden])')).toHaveTextContent(full)
   })
 })

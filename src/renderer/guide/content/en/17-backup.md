@@ -19,7 +19,7 @@ To make a backup at once, press **Back up now**. For example before a big change
 
 Bismuth does not connect to any cloud account; it only writes files into the Google Drive folder on the computer, and the Google Drive app does the syncing. For this, the **Google Drive desktop** app must be installed on the main computer and signed in with the hotel's account.
 
-The default folder is "My Drive/Bismuth/yedekler"; for another folder, type it in the **Google Drive folder** box under **Backup settings**.
+The default folder is "My Drive/Bismuth/yedekler"; to see or change the folder, press **Find the Drive folder** under **Backup settings**: Bismuth looks at the known Drive folders on this computer (the **G:** drive on Windows, Google Drive in Finder on a Mac) and saves the one it finds; it does not connect to any network. If it finds none, or you want another folder, pick it with **Choose folder**.
 
 ## The Bismuth key {#backup-key}
 

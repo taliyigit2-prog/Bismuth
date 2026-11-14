@@ -56,14 +56,14 @@ export function useLedgerMutation<K extends ProcedureName>(name: K, options: Led
   return useMutation<ProcedureOutput<K>, ApiError, ProcedureInput<K>>({
     mutationFn: (input) => transport.call(name, input),
     onSuccess: async (data) => {
-      if (options.success) toast.success(options.success)
+      if (options.success) toast.success(options.success, { id: 'ledger-ok' })
       options.onSuccess?.(data)
       await client.invalidateQueries({ predicate: isLedgerTouched })
     },
     onError: (error) => {
       if (isSessionError(error)) return
       if (options.onError?.(error)) return
-      toast.error(errorText(t, error))
+      toast.error(errorText(t, error), { id: 'ledger-error' })
     }
   })
 }

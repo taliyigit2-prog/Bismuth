@@ -5,25 +5,28 @@ import { useTranslation } from 'react-i18next'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
-export const DIAL_CODES = ['90', '7', '49', '44', '1', '33', '31', '98', '966', '994', '380', '971'] as const
+import { DIAL_CODES, splitPhoneInput } from '@shared/phone'
+
+export { DIAL_CODES }
+
+/** The code select's value for a number written with a country code the list does not have. */
+const INTL = 'intl'
 
 export interface PhoneValue {
   code: string
   number: string
 }
 
-/** "+90 532 000 00 00" → { code: '90', number: '5320000000' } (unknown codes stay in the number). */
+/** "+90 532 000 00 00" → { code: '90', number: '5320000000' } (the one reading of a phone: `@shared/phone`). */
 export function parsePhone(text: string | null | undefined): PhoneValue {
-  const digits = (text ?? '').replace(/[^\d+]/g, '')
-  if (!digits.startsWith('+')) return { code: '90', number: digits.replace(/^0/, '') }
-  const rest = digits.slice(1)
-  const code = [...DIAL_CODES].sort((a, b) => b.length - a.length).find((c) => rest.startsWith(c)) ?? '90'
-  return { code, number: rest.slice(code.length) }
+  return splitPhoneInput(text, '90')
 }
 
 /** Grouping for display: TR 3-3-2-2, others 3-3-4. */
 export function formatPhone({ code, number }: PhoneValue): string {
   const n = number.replace(/\D/g, '')
+  // A country code the list does not have: the digits as typed, "+" in front (E.164).
+  if (!code) return n ? `+${n}` : ''
   const groups = code === '90' ? [3, 3, 2, 2] : [3, 3, 4]
   const parts: string[] = []
   let i = 0
@@ -55,11 +58,15 @@ export function PhoneField({
         {label}
       </label>
       <div className="flex gap-2" dir="ltr">
-        <Select value={value.code} onValueChange={(code) => onChange({ ...value, code })}>
+        <Select
+          value={value.code || INTL}
+          onValueChange={(code) => onChange({ ...value, code: code === INTL ? '' : code })}
+        >
           <SelectTrigger className="w-24 shrink-0" aria-label={t('phone.countryCode')}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
+            {value.code === '' ? <SelectItem value={INTL}>+</SelectItem> : null}
             {DIAL_CODES.map((c) => (
               <SelectItem key={c} value={c}>
                 +{c}
@@ -74,8 +81,12 @@ export function PhoneField({
           autoComplete="tel-national"
           aria-invalid={invalid || undefined}
           placeholder={t('phone.placeholder')}
-          value={formatPhone(value).replace(`+${value.code} `, '').replace(`+${value.code}`, '')}
-          onChange={(e) => onChange({ ...value, number: e.target.value.replace(/\D/g, '').slice(0, 14) })}
+          value={
+            value.code
+              ? formatPhone(value).replace(`+${value.code} `, '').replace(`+${value.code}`, '')
+              : formatPhone(value)
+          }
+          onChange={(e) => onChange(splitPhoneInput(e.target.value, value.code))}
           className="tabular-nums"
         />
       </div>

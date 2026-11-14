@@ -1,6 +1,7 @@
 // The calendar on the phone (G-143, faz-05 "mobilde gün/oda listesi"): no ten-year grid, a day list — arrivals,
 // departures, staying, free rooms — read from the same `reservations.grid` service as the desktop grid, with the
 // night's payment status on each card. Arrows move a day; the date goes back to today. Faz 13 completes it.
+import { useCan } from '@/lib/view-as'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -10,10 +11,12 @@ import {
   ChevronRightIcon,
   DoorOpenIcon,
   LogInIcon,
-  LogOutIcon
+  LogOutIcon,
+  UsersIcon
 } from 'lucide-react'
 import { addDays, today as todayOf, type LocalDate } from '@shared/date'
 import { useShortcutAction } from '@/lib/shortcuts/actions'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState, ErrorState } from '@/components/states'
@@ -21,7 +24,8 @@ import { StatusTagBadge } from '@/components/status-tag-badge'
 import { useFormat } from '@/hooks/use-format'
 import { useApiQuery } from '@/lib/api/hooks'
 import { cn } from '@/lib/utils'
-import { dayActivity, nightStatusOn, type GridStayView } from './grid-model'
+import { StayContextMenu } from './context-menu'
+import { dayActivity, groupRing, nightStatusOn, type GridStayView } from './grid-model'
 
 type Section = 'arrivals' | 'departures' | 'staying'
 
@@ -33,6 +37,7 @@ const SECTIONS = [
 
 export function DayList({ onOpen }: { onOpen: (reservationId: string) => void }) {
   const { t } = useTranslation()
+  const can = useCan()
   const f = useFormat()
   const [picked, setPicked] = useState<LocalDate | null>(null)
   const [clientToday] = useState(todayOf)
@@ -43,7 +48,11 @@ export function DayList({ onOpen }: { onOpen: (reservationId: string) => void })
   // T (lib/shortcuts): a phone with a keyboard goes back to today as well.
   useShortcutAction('goToday', () => setPicked(null))
   // The day before as well: a departure's last night is the day before it.
-  const query = useApiQuery('reservations.grid', { from: addDays(day, -1), to: addDays(day, 1) })
+  const query = useApiQuery(
+    'reservations.grid',
+    { from: addDays(day, -1), to: addDays(day, 1) },
+    { enabled: can('calendar') }
+  )
   const page = query.data
   if (page && !hotelToday && page.today !== clientToday) setHotelToday(page.today)
   const activity = useMemo(() => (page ? dayActivity(page, day) : null), [page, day])
@@ -95,35 +104,67 @@ export function DayList({ onOpen }: { onOpen: (reservationId: string) => void })
             const status = nightStatusOn(s, day, today)
             return (
               <li key={s.id}>
-                <button
-                  type="button"
-                  onClick={() => onOpen(s.reservationId)}
-                  className="bg-card focus-visible:ring-ring flex min-h-14 w-full items-center gap-3 rounded-xl border px-3 py-2 text-start outline-none focus-visible:ring-[3px]"
-                >
-                  <span className="bg-muted grid size-10 shrink-0 place-items-center rounded-lg text-sm font-semibold tabular-nums">
-                    {room?.number}
-                  </span>
-                  {/* The name wraps (two lines at most) instead of being cut; the guest's request sits under it. */}
-                  <span className="min-w-0 flex-1">
-                    <span className="line-clamp-2 text-sm font-medium break-words">{s.guestName}</span>
-                    <span className="text-muted-foreground block text-xs whitespace-nowrap">
-                      {f.dayMonth(s.checkIn)} – {f.dayMonth(s.checkOut)}
+                {/* A long press opens the same menu as a right click on the desktop grid (P17c). */}
+                <StayContextMenu stay={s} today={today}>
+                  <button
+                    type="button"
+                    onClick={() => onOpen(s.reservationId)}
+                    className="bg-card focus-visible:ring-ring flex min-h-14 w-full items-center gap-3 rounded-xl border px-3 py-2 text-start outline-none focus-visible:ring-[3px]"
+                  >
+                    <span className="bg-muted grid size-10 shrink-0 place-items-center rounded-lg text-sm font-semibold tabular-nums">
+                      {room?.number}
                     </span>
-                    {key === 'arrivals' && s.standingNote ? (
+                    {/* The name wraps (two lines at most) instead of being cut; the guest's request sits under it. */}
+                    <span className="min-w-0 flex-1">
+                      <span className="line-clamp-2 text-sm font-medium break-words">{s.guestName}</span>
+                      <span className="text-muted-foreground block text-xs whitespace-nowrap">
+                        {s.startTime && s.endTime ? (
+                          <bdi className="tabular-nums" data-testid={`day-hours-${s.id}`}>
+                            {f.dayMonth(s.checkIn)} · {s.startTime}–{s.endTime}
+                          </bdi>
+                        ) : (
+                          <>
+                            {f.dayMonth(s.checkIn)} – {f.dayMonth(s.checkOut)}
+                          </>
+                        )}
+                      </span>
+                      {key === 'arrivals' && s.standingNote ? (
+                        <span
+                          className={cn(
+                            'block text-xs break-words',
+                            s.standingNote.level === 'warn' ? 'text-destructive' : 'text-info'
+                          )}
+                        >
+                          {s.standingNote.text}
+                        </span>
+                      ) : null}
+                    </span>
+                    {s.groupId ? (
                       <span
+                        role="img"
+                        aria-label={t('calendar.grid.group')}
+                        title={t('calendar.grid.group')}
+                        data-testid={`day-group-${s.id}`}
                         className={cn(
-                          'block text-xs break-words',
-                          s.standingNote.level === 'warn' ? 'text-destructive' : 'text-info'
+                          'grid size-7 shrink-0 place-items-center rounded-md ring-2',
+                          groupRing(s.groupId)
                         )}
                       >
-                        {s.standingNote.text}
+                        <UsersIcon className="size-3.5" aria-hidden />
                       </span>
                     ) : null}
-                  </span>
-                  {status ? (
-                    <StatusTagBadge subject={{ kind: 'auto', code: status }} label={t(`status.${status}`)} />
-                  ) : null}
-                </button>
+                    {s.reservationStatus === 'checked_out' ? (
+                      <Badge variant="outline" data-testid={`day-checked-out-${s.id}`}>
+                        {t('calendar.resStatus.checked_out')}
+                      </Badge>
+                    ) : status ? (
+                      <StatusTagBadge
+                        subject={{ kind: 'auto', code: status }}
+                        label={t(`status.${status}`)}
+                      />
+                    ) : null}
+                  </button>
+                </StayContextMenu>
               </li>
             )
           })}

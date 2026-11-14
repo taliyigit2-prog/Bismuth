@@ -32,10 +32,5 @@ const browser = await chromium.launch(
 const page = await browser.newPage({ viewport: { width: 1024, height: 1024 } })
 await page.setContent(`<html><body style="margin:0;background:transparent">${svg}</body></html>`)
 await page.locator('svg').screenshot({ path: resolve(root, 'build/icon.png'), omitBackground: true })
-await page.setViewportSize({ width: 256, height: 256 })
-await page.setContent(
-  `<html><body style="margin:0;background:transparent"><div style="width:256px;height:256px">${svg}</div></body></html>`
-)
-await page.locator('div').screenshot({ path: resolve(root, 'resources/icon.png'), omitBackground: true })
 await browser.close()
-console.log('build/icon.png, resources/icon.png')
+console.log('build/icon.png')

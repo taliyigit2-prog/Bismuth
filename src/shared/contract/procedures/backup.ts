@@ -42,6 +42,8 @@ export const backupProcedures = {
   'backup.openFolder': proc(openFolderInputSchema, ok),
   /** "Klasör seç" for the Drive copies: the system's folder dialog of the program's own window (K-45 (3)). */
   'backup.pickDriveFolder': proc(empty, z.object({ folder: z.string() })),
+  /** "Drive klasörünü bul": scans this computer's known Drive for desktop folders (no network); folder null = not found. */
+  'backup.findDriveFolder': proc(empty, z.object({ folder: z.string().nullable() })),
   /** The Bismuth key on paper (K-05): shown to the owner, written to the audit log. */
   'backup.recoveryText': proc(empty, recoveryTextOutputSchema),
   /** A new computer learns the hotel's key (to read the Drive copies). */

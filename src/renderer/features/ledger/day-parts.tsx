@@ -192,7 +192,7 @@ export function DayBar({
               {t('ledger.close.reopen')}
             </Button>
           ) : (
-            <span className="flex items-center gap-2">
+            <span className="flex flex-wrap items-center gap-2">
               <Button
                 variant="outline"
                 size="sm"

@@ -1,9 +1,11 @@
 // Reservations: stays, nights, folio charges, room changes, cancel/park, check-in/out (03-mimari.md §4.4, §6.1,
 // §6.2, §6.3; G-35…G-44, G-48, G-60, G-90, K-09). One reservation = one folio; every night has exactly one live
 // room-night charge (§4.8-2); a price change voids the old charge and writes a new one (never edits history).
-import { and, asc, eq, gte, inArray, isNull, lt, ne } from 'drizzle-orm'
+import { and, asc, eq, gte, inArray, isNotNull, isNull, lt, ne } from 'drizzle-orm'
 import {
   cancelReasonSchema,
+  cancelRefundSchema,
+  undoThenSchema,
   changeDatesSchema,
   changeRoomSchema,
   dateRangeSchema,
@@ -14,39 +16,71 @@ import {
   reservationStatusSchema,
   type stayInputSchema,
   unparkSchema,
+  type CancelRefundInput,
+  type UndoThenInput,
+  type PaymentCreateInput,
   type ChangeDatesInput,
   type ChangeRoomInput,
   type MoveDatesInput,
   type ReservationCreateInput,
   MAX_STAY_NIGHTS
 } from '@shared/contract/reservations'
+import {
+  MAX_GROUP_ROOMS,
+  groupAttachSchema,
+  groupCancelSchema,
+  groupCreateSchema,
+  groupNoteSchema,
+  groupPaySchema,
+  groupStaysSchema,
+  kbsGapsInputSchema,
+  type KbsGapsInput,
+  type GroupAttachInput,
+  type GroupCancelInput,
+  type GroupCreateInput,
+  type GroupNoteInput,
+  type GroupPayInput,
+  type GroupStaysInput,
+  type GroupViewDto
+} from '@shared/contract/groups'
 import { localDateSchema } from '@shared/contract/rooms'
 import {
   addRoomSchema,
   availabilityInputSchema,
   guestCandidateInputSchema,
+  hourlyCheckInputSchema,
+  type HourlyCheck,
+  type HourlyCheckInput,
   priceSuggestionInputSchema,
   reservationUpdateSchema,
   type ReservationUpdateInput
 } from '@shared/contract/booking'
+import { insertFeeCharge } from './fees-service'
+import { assertDayWritable } from './expenses-service'
 import { checkoutPlan, suggestStayPrices } from '@shared/domain/booking'
 import { addDays, diffDays, localDate, localDateOf, weekday, type LocalDate } from '@shared/date'
 import {
   allocatePayments,
   creditedTotal,
   folioTotals,
+  groupPayableMinor,
+  isGroupPayableStatus,
   type NightPayStatus
 } from '@shared/domain/payment-allocation'
 import { normalizeName, normalizePhone } from '@shared/domain/normalize'
 import { isCountedStay } from '@shared/domain/reports'
 import {
   findConflicts,
+  hourlyAmountMinor,
   occupancyFrom,
   splitForRoomChange,
   staySlots,
+  turnoverWarnings,
+  type HourRange,
   type Slot,
   type StaySlot
 } from '@shared/domain/stays'
+import { kbsMissing } from '@shared/domain/occupants'
 import { standingNoteAlert } from '@shared/domain/cell-status'
 import type * as z from 'zod'
 import {
@@ -55,6 +89,7 @@ import {
   guests,
   payments,
   reservationCodeSequences,
+  reservationGroups,
   reservationNotes,
   reservationRooms,
   reservations,
@@ -69,6 +104,7 @@ import {
 } from '../db/schema'
 import type { AuditEntry } from './audit'
 import type { Ctx } from './context'
+import { releaseFaces } from './camera-faces'
 import { baseCurrencyOf, chargeBaseMinor } from './currency-service'
 import {
   conflict,
@@ -89,8 +125,10 @@ import {
   blacklistMatches,
   bookingView,
   formOptions,
+  occupiedSlots,
   parkedList,
   roomsTaken,
+  sameDayRange,
   type BookingView,
   type ParkedView
 } from './reservation-view'
@@ -101,12 +139,31 @@ export type StayRow = typeof reservationRooms.$inferSelect
 export interface ReservationHooks {
   /** After a check-out: opens "every N stays" tasks (tasks service, §6.8). */
   onCheckout?: (ctx: Ctx, roomId: string, date: LocalDate) => void
+  /** A refund row written inside the caller's transaction (the cancellation that gives the money back, K-55). */
+  recordRefund?: (
+    ctx: Ctx,
+    tx: Tx,
+    audit: (entry: AuditEntry) => void,
+    now: Date,
+    input: PaymentCreateInput
+  ) => void
+  /** A payment row written inside the caller's transaction (a group's single-account payment, S-106). */
+  recordPayment?: (
+    ctx: Ctx,
+    tx: Tx,
+    audit: (entry: AuditEntry) => void,
+    now: Date,
+    input: PaymentCreateInput
+  ) => void
 }
 
 export interface NightView {
   id: string
   date: LocalDate
   slot: Slot
+  /** 'HH:MM' of an hourly day slot (K-48); null = no hours. */
+  startTime: string | null
+  endTime: string | null
   priceMinor: number
   currency: string
   payStatus: NightPayStatus
@@ -133,6 +190,14 @@ type StayInput = z.output<typeof stayInputSchema>
 const ACTIVE_STAY = ['planned', 'in_house'] as const
 
 type AuditFn = (entry: AuditEntry) => void
+
+/** A slot's identity within its room: date, slot and (for an hourly day slot) its hours. */
+const slotKey = (s: {
+  date: string
+  slot: string
+  startTime?: string | null
+  endTime?: string | null
+}): string => `${s.date}|${s.slot}|${s.startTime ?? ''}|${s.endTime ?? ''}`
 
 export function createReservationsService(deps: ServiceDeps & { hooks?: ReservationHooks }) {
   const { db } = deps
@@ -163,9 +228,24 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
     audit: AuditFn
   ): string {
     if ('id' in guest) {
-      if (!tx.select({ id: guests.id }).from(guests).where(eq(guests.id, guest.id)).get())
-        throw notFound('guest', guest.id)
-      return guest.id
+      const found = tx
+        .select({ id: guests.id, mergedIntoId: guests.mergedIntoId })
+        .from(guests)
+        .where(eq(guests.id, guest.id))
+        .get()
+      if (!found) throw notFound('guest', guest.id)
+      // A merged card is gone: the reservation goes to the card it was merged into.
+      let target = found
+      for (let i = 0; i < 10 && target.mergedIntoId; i += 1) {
+        const next = tx
+          .select({ id: guests.id, mergedIntoId: guests.mergedIntoId })
+          .from(guests)
+          .where(eq(guests.id, target.mergedIntoId))
+          .get()
+        if (!next) break
+        target = next
+      }
+      return target.id
     }
     const id = newId(now)
     const row = {
@@ -253,6 +333,8 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
       .select({
         date: roomNights.date,
         slot: roomNights.slot,
+        startTime: roomNights.startTime,
+        endTime: roomNights.endTime,
         reservationId: reservationRooms.reservationId,
         stayId: roomNights.reservationRoomId
       })
@@ -284,11 +366,20 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
             .all()
             .map((r) => r.code)
         : []
+      // An hourly clash names the hours in the way ("10:00–12:00"), not only the day (K-48, S-103).
+      const hours = [
+        ...new Set(
+          taken
+            .filter((c) => c.slot === 'day' && c.startTime && c.endTime)
+            .map((c) => `${c.startTime}–${c.endTime}`)
+        )
+      ].sort()
       throw conflict('errors.roomOccupied', {
         roomId,
         room: number(),
         dates: [...new Set(taken.map((c) => c.date))].sort(),
-        codes
+        codes,
+        ...(hours.length ? { hours } : {})
       })
     }
     const blocked = conflicts.filter((c) => c.reason === 'blocked')
@@ -341,6 +432,8 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
         roomId: stay.roomId,
         date: slot.date,
         slot: slot.slot,
+        startTime: slot.startTime ?? null,
+        endTime: slot.endTime ?? null,
         priceMinor,
         currency: folio.currency,
         ...stamps(now)
@@ -401,7 +494,17 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
   ): string {
     const checkIn = localDate(stay.checkIn)
     const checkOut = localDate(stay.checkOut)
-    const slots = staySlots(checkIn, checkOut)
+    // S-103: a same-day sale names its hours; a whole-day slot would lock the room's every other hourly sale
+    // that day (rows written before 0019 stay as they are).
+    if (checkIn === checkOut && (stay.startTime === undefined || stay.endTime === undefined))
+      throw invalid('errors.hoursRequired')
+    const slots = staySlots(
+      checkIn,
+      checkOut,
+      stay.startTime !== undefined && stay.endTime !== undefined
+        ? { start: stay.startTime, end: stay.endTime }
+        : undefined
+    )
     const room = roomOn(tx, roomOf(tx, stay.roomId), slots)
     assertSellable(ctx, room, overrideReason, audit)
     checkSlots(tx, ctx, room.id, slots, overrideReason, audit)
@@ -662,6 +765,8 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
               id: n.id,
               date: n.date as LocalDate,
               slot: n.slot,
+              startTime: n.startTime,
+              endTime: n.endTime,
               priceMinor: n.priceMinor,
               currency: n.currency,
               payStatus: a?.status ?? 'unpaid',
@@ -716,56 +821,507 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
       .run()
   }
 
+  type SettleFn = (
+    tx: Tx,
+    audit: AuditFn,
+    now: Date,
+    before: ReservationDetail
+  ) => Record<string, unknown> | void
+
   function endReservation(
     ctx: Ctx,
     id: string,
     status: 'cancelled' | 'no_show' | 'parked',
     extra: Partial<typeof reservations.$inferInsert>,
-    reason: string
+    reason: string,
+    /** Runs in the same transaction after the status change (cancel: the refund; a failure undoes everything). */
+    settle?: SettleFn
   ): ReservationDetail {
     requirePermission(ctx, 'calendar', 'edit')
-    return inTransaction(deps, ctx, (tx, audit, now) => {
-      const before = detail(tx, id)
-      const was = before.reservation.status
-      if (
-        was === 'checked_out' ||
-        was === 'cancelled' ||
-        was === 'no_show' ||
-        (was === 'parked' && status === 'parked')
-      )
-        throw invalid('errors.reservationClosed', { status: was })
-      if (before.stays.some((s) => s.status === 'in_house')) throw invalid('errors.guestInHouse')
-      const stayed = before.stays.some((s) => s.status === 'done')
-      // A room already stayed in cannot be parked or be a no-show; its nights and charges stay (cancel: the rest).
-      if (stayed && status !== 'cancelled') throw invalid('errors.reservationStarted')
-      // QA3c1 #3: nobody can fail to arrive before the arrival day (cancelling is the way out of a future booking).
-      if (status === 'no_show') {
-        const planned = before.stays.filter((s) => s.status === 'planned').map((s) => localDate(s.checkIn))
-        const first = planned.sort((a, b) => diffDays(a, b))[0]
-        if (first && diffDays(today(now), first) > 0)
-          throw invalid('errors.noShowTooEarly', { checkIn: first })
-      }
-      for (const s of before.stays) if (s.status === 'planned') releaseStay(tx, now, s, status)
-      tx.update(reservations)
-        .set({
-          status: stayed ? 'checked_out' : status,
-          ...extra,
-          ...(status === 'parked' ? { parkedFromStatus: was } : {}),
-          updatedAt: now.toISOString()
-        })
-        .where(eq(reservations.id, id))
-        .run()
-      const after = detail(tx, id)
-      audit({
-        entity: 'reservation',
-        entityId: id,
-        action: status === 'parked' ? 'park' : status === 'no_show' ? 'no_show' : 'cancel',
-        before,
-        after: after.reservation,
-        reason
+    return inTransaction(deps, ctx, (tx, audit, now) =>
+      endReservationIn(tx, audit, now, id, status, extra, reason, settle)
+    )
+  }
+
+  /** The body of `endReservation` inside a transaction the caller owns (`undoCheckIn` ends the reservation in the same one). */
+  function endReservationIn(
+    tx: Tx,
+    audit: AuditFn,
+    now: Date,
+    id: string,
+    status: 'cancelled' | 'no_show' | 'parked',
+    extra: Partial<typeof reservations.$inferInsert>,
+    reason: string,
+    settle?: SettleFn
+  ): ReservationDetail {
+    const before = detail(tx, id)
+    const was = before.reservation.status
+    if (
+      was === 'checked_out' ||
+      was === 'cancelled' ||
+      was === 'no_show' ||
+      (was === 'parked' && status === 'parked')
+    )
+      throw invalid('errors.reservationClosed', { status: was })
+    if (before.stays.some((s) => s.status === 'in_house')) throw invalid('errors.guestInHouse')
+    const stayed = before.stays.some((s) => s.status === 'done')
+    // A room already stayed in cannot be parked or be a no-show; its nights and charges stay (cancel: the rest).
+    if (stayed && status !== 'cancelled') throw invalid('errors.reservationStarted')
+    // QA3c1 #3: nobody can fail to arrive before the arrival day (cancelling is the way out of a future booking).
+    if (status === 'no_show') {
+      const planned = before.stays.filter((s) => s.status === 'planned').map((s) => localDate(s.checkIn))
+      const first = planned.sort((a, b) => diffDays(a, b))[0]
+      if (first && diffDays(today(now), first) > 0) throw invalid('errors.noShowTooEarly', { checkIn: first })
+    }
+    for (const s of before.stays) if (s.status === 'planned') releaseStay(tx, now, s, status)
+    tx.update(reservations)
+      .set({
+        status: stayed ? 'checked_out' : status,
+        ...extra,
+        ...(status === 'parked' ? { parkedFromStatus: was } : {}),
+        updatedAt: now.toISOString()
       })
-      return after
+      .where(eq(reservations.id, id))
+      .run()
+    const money = settle?.(tx, audit, now, before)
+    const after = detail(tx, id)
+    audit({
+      entity: 'reservation',
+      entityId: id,
+      action: status === 'parked' ? 'park' : status === 'no_show' ? 'no_show' : 'cancel',
+      before,
+      after: money ? { ...after.reservation, ...money } : after.reservation,
+      reason
     })
+    return after
+  }
+
+  /** G-23: a refund needs `payments.refund`; asked before anything is read or written. */
+  function requireRefundRight(ctx: Ctx, money: z.output<typeof cancelRefundSchema> | undefined): void {
+    if (money?.mode === 'refund') requirePermission(ctx, 'payments.refund', 'edit')
+  }
+
+  /** The money step of a cancellation (K-55): a refund row on the folio or "the payments stay" with a note. */
+  function settleOf(
+    ctx: Ctx,
+    id: string,
+    money: z.output<typeof cancelRefundSchema> | undefined
+  ): SettleFn | undefined {
+    if (!money) return undefined
+    return (tx, audit, now, before) => {
+      if (money.mode === 'keep') return { paymentsKept: money.note }
+      if (!deps.hooks?.recordRefund) throw invalid('errors.internal')
+      deps.hooks.recordRefund(ctx, tx, audit, now, {
+        reservationId: id,
+        date: today(now),
+        kind: 'refund',
+        methodId: money.methodId,
+        amountMinor: money.amountMinor,
+        currency: money.currency ?? before.folio.currency,
+        note: money.note ?? null,
+        ...(money.dayClosedReason ? { dayClosedReason: money.dayClosedReason } : {})
+      })
+      return { refundedMinor: money.amountMinor }
+    }
+  }
+
+  /** One room still to come is given up (the body of `cancelStay`, inside a transaction the caller owns). */
+  function cancelStayIn(tx: Tx, audit: AuditFn, now: Date, stayId: string, why: string): ReservationDetail {
+    const stay = stayOf(tx, stayId)
+    if (stay.status !== 'planned') throw invalid('errors.invalidStayState', { status: stay.status })
+    const r = reservationOf(tx, stay.reservationId)
+    if (!['tentative', 'confirmed', 'checked_in'].includes(r.status))
+      throw invalid('errors.reservationClosed', { status: r.status })
+    releaseStay(tx, now, stay, 'stay_cancelled')
+    settleStatus(tx, stay.reservationId, now, 'cancelled', {
+      cancelledAt: now.toISOString(),
+      cancelReason: why
+    })
+    refreshKind(tx, stay.reservationId, now)
+    const after = detail(tx, stay.reservationId)
+    audit({
+      entity: 'reservation_room',
+      entityId: stayId,
+      action: 'cancel',
+      before: stay,
+      after: { ...after.stays.find((x) => x.id === stayId), reservationStatus: after.reservation.status },
+      reason: why
+    })
+    return after
+  }
+
+  /**
+   * The blacklist check of a new reservation (§6.9, G-45): a match is refused with the hits until the user confirms;
+   * an "engelle" entry is overridden only by whoever may remove entries. Returns the matches (kept in the audit row).
+   */
+  function blacklistGate(
+    tx: Tx,
+    ctx: Ctx,
+    guest: z.output<typeof reservationCreateSchema>['guest'],
+    confirmed: boolean | undefined
+  ) {
+    const known = 'id' in guest ? tx.select().from(guests).where(eq(guests.id, guest.id)).get() : null
+    const candidate =
+      'id' in guest
+        ? {
+            name: known ? `${known.firstName} ${known.lastName}` : '',
+            phone: known?.phone ?? null,
+            idDocNumber: known?.idDocNumber ?? null,
+            guestId: known?.id ?? null
+          }
+        : { name: `${guest.firstName} ${guest.lastName}`, phone: guest.phone ?? null }
+    const hits = blacklistMatches(tx, candidate, ctx.can('blacklist', 'view'))
+    if (hits.length && !confirmed) throw conflict('errors.blacklistMatch', { hits })
+    // Faz 6: an entry of "engelle" severity is overridden only by whoever may remove entries (Sahip, Müdür).
+    if (hits.some((h) => h.severity === 'block') && !ctx.can('blacklist.remove', 'edit'))
+      throw conflict('errors.blacklistBlocked', { hits })
+    return hits
+  }
+
+  /**
+   * The body of `create` inside a transaction the caller owns (a group books each of its rooms with it, P17b).
+   * `groupId` links the reservation to its group.
+   */
+  function createIn(
+    tx: Tx,
+    audit: AuditFn,
+    now: Date,
+    ctx: Ctx,
+    data: z.output<typeof reservationCreateSchema>,
+    opts: { blacklistConfirmed?: boolean },
+    groupId: string | null
+  ): ReservationDetail {
+    const channel = tx.select().from(salesChannels).where(eq(salesChannels.id, data.channelId)).get()
+    if (!channel) throw notFound('sales_channel', data.channelId)
+    const hits = blacklistGate(tx, ctx, data.guest, opts.blacklistConfirmed)
+    assertCustomTags(tx, data.tagIds ?? [])
+    const guestId = resolveGuest(tx, ctx, data.guest, now, audit)
+    const id = newId(now)
+    const allDayUse = data.stays.every((s) => s.checkIn === s.checkOut)
+    tx.insert(reservations)
+      .values({
+        id,
+        code: nextCode(tx, now),
+        primaryGuestId: guestId,
+        channelId: channel.id,
+        channelRef: data.channelRef ?? null,
+        status: data.status,
+        kind: allDayUse ? 'day_use' : 'overnight',
+        adults: data.adults ?? null,
+        children: data.children ?? null,
+        notes: data.notes ?? null,
+        createdBy: ctx.userId,
+        soldByUserId: data.soldByUserId ?? ctx.userId,
+        groupId,
+        ...stamps(now)
+      })
+      .run()
+    const folio = { id: newId(now), currency: data.currency ?? baseCurrencyOf(tx) }
+    tx.insert(folios)
+      .values({
+        id: folio.id,
+        kind: 'reservation',
+        reservationId: id,
+        currency: folio.currency,
+        createdBy: ctx.userId,
+        ...stamps(now)
+      })
+      .run()
+    const stayIds = data.stays.map((s, i) =>
+      addStay(tx, ctx, now, id, folio, s, i, data.overrideBlockReason, audit)
+    )
+    const guest = tx.select().from(guests).where(eq(guests.id, guestId)).get()
+    if (guest && stayIds[0]) {
+      const occupant = {
+        id: newId(now),
+        reservationRoomId: stayIds[0],
+        guestId,
+        fullName: `${guest.firstName} ${guest.lastName}`.trim(),
+        isPrimary: true,
+        createdBy: ctx.userId,
+        ...stamps(now)
+      }
+      tx.insert(stayOccupants).values(occupant).run()
+      audit({ entity: 'stay_occupant', entityId: occupant.id, action: 'create', after: occupant })
+    }
+    for (const tagId of data.tagIds ?? [])
+      tx.insert(reservationTags).values({ reservationId: id, tagId }).run()
+    const after = detail(tx, id)
+    audit({
+      entity: 'reservation',
+      entityId: id,
+      action: 'create',
+      after,
+      reason: hits.length ? `blacklist: ${hits.map((h) => h.entryId).join(', ')}` : undefined
+    })
+    return after
+  }
+
+  /** The body of `checkIn` inside a transaction the caller owns (a group checks its rooms in together, P17b). */
+  function checkInIn(
+    tx: Tx,
+    audit: AuditFn,
+    now: Date,
+    ctx: Ctx,
+    stayId: string
+  ): { detail: ReservationDetail; movedFromRoomId: string | null } {
+    const stay = stayOf(tx, stayId)
+    if (stay.status !== 'planned') throw invalid('errors.invalidStayState', { status: stay.status })
+    if (diffDays(today(now), localDate(stay.checkIn)) > 0)
+      throw invalid('errors.checkInTooEarly', { checkIn: stay.checkIn })
+    const previous = predecessorOf(tx, stay)
+    if (previous) {
+      moveGuests(tx, audit, ctx, now, previous, stay)
+      return { detail: detail(tx, stay.reservationId), movedFromRoomId: previous.roomId as string | null }
+    }
+    const iso = now.toISOString()
+    tx.update(reservationRooms)
+      .set({ status: 'in_house', checkedInAt: iso, updatedAt: iso })
+      .where(eq(reservationRooms.id, stayId))
+      .run()
+    stampOccupants(tx, audit, stayId, 'arrivedAt', iso)
+    tx.update(reservations)
+      .set({ status: 'checked_in', updatedAt: iso })
+      .where(eq(reservations.id, stay.reservationId))
+      .run()
+    audit({ entity: 'reservation_room', entityId: stayId, action: 'check_in', after: { at: iso } })
+    return { detail: detail(tx, stay.reservationId), movedFromRoomId: null as string | null }
+  }
+
+  interface CheckOutOpts {
+    dayUsePriceMinor?: number | undefined
+    dayUseFreeConfirmed?: boolean | undefined
+  }
+
+  /** The body of `checkOut` inside a transaction the caller owns (a group checks its rooms out together, P17b). */
+  function checkOutIn(
+    tx: Tx,
+    audit: AuditFn,
+    now: Date,
+    ctx: Ctx,
+    stayId: string,
+    opts: CheckOutOpts,
+    kbsIds: readonly string[]
+  ): { detail: ReservationDetail; roomId: string; day: LocalDate } {
+    const stay = stayOf(tx, stayId)
+    if (stay.status !== 'in_house') throw invalid('errors.invalidStayState', { status: stay.status })
+    const iso = now.toISOString()
+    const day = today(now)
+    // The room-move day: the guests go to their next room, they do not leave the hotel.
+    const next = diffDays(localDate(stay.checkOut), day) >= 0 ? successorOf(tx, stay) : undefined
+    if (next) {
+      moveGuests(tx, audit, ctx, now, stay, next)
+      return { detail: detail(tx, stay.reservationId), roomId: stay.roomId, day }
+    }
+    let early: {
+      checkOut: string
+      nights: { date: string; slot: string; priceMinor: number }[]
+      dayUse?: { date: string; priceMinor: number }
+    } | null = null
+    const plan = checkoutPlan({ checkIn: localDate(stay.checkIn), checkOut: localDate(stay.checkOut) }, day)
+    if (plan.kind !== 'onTime') {
+      const nights = tx.select().from(roomNights).where(eq(roomNights.reservationRoomId, stayId)).all()
+      const freed = new Set<string>(plan.released)
+      const unused = nights.filter((n) => freed.has(n.date))
+      removeNights(
+        tx,
+        now,
+        unused.map((n) => n.id),
+        'early_departure'
+      )
+      const first = nights.find((n) => n.date === stay.checkIn && n.slot === 'night')
+      // K-44: left on the check-in day — the first night becomes that day's day-use and its price may be changed
+      // here. The day slot carries the hours the guest really used (check-in minute to now), or the free part of
+      // them, so a second round in the same room and day fits beside it. The night is released either way (hata
+      // C): when even no day slot fits (a whole-day record of another stay holds the day) it goes with no slot.
+      const range: HourRange | null = plan.kind === 'sameDay' && first ? sameDayRange(tx, stay, now) : null
+      let dayUse: { date: string; priceMinor: number } | undefined
+      if (first && range) {
+        // H-06: a free same-day stay is a decision, not a slip of the keyboard.
+        if (opts.dayUsePriceMinor === 0 && !opts.dayUseFreeConfirmed)
+          throw invalid('errors.dayUseFreeNeedsConfirm')
+        tx.update(roomNights)
+          .set({ slot: 'day', startTime: range.start, endTime: range.end, updatedAt: iso })
+          .where(eq(roomNights.id, first.id))
+          .run()
+        if (opts.dayUsePriceMinor !== undefined && opts.dayUsePriceMinor !== first.priceMinor)
+          repriceNight(tx, ctx, now, stay.reservationId, first, opts.dayUsePriceMinor)
+        dayUse = { date: first.date, priceMinor: opts.dayUsePriceMinor ?? first.priceMinor }
+      } else if (first && plan.kind === 'sameDay') {
+        removeNights(tx, now, [first.id], 'early_departure')
+        unused.push(first)
+      }
+      const end = plan.kind === 'sameDay' ? (first ? stay.checkIn : addDays(localDate(stay.checkIn), 1)) : day
+      tx.update(reservationRooms)
+        .set({ checkOut: end, updatedAt: iso })
+        .where(eq(reservationRooms.id, stayId))
+        .run()
+      early = {
+        checkOut: stay.checkOut,
+        nights: unused.map((n) => ({ date: n.date, slot: n.slot, priceMinor: n.priceMinor })),
+        ...(dayUse ? { dayUse } : {})
+      }
+    }
+    for (const occupantId of kbsIds) {
+      const o = tx.select().from(stayOccupants).where(eq(stayOccupants.id, occupantId)).get()
+      if (!o || o.reservationRoomId !== stayId) throw notFound('stay_occupant', occupantId)
+      if (o.kbsCheckoutAt) continue
+      if (!o.kbsReportedAt) throw invalid('errors.kbsNotReported', { name: o.fullName })
+      tx.update(stayOccupants)
+        .set({ kbsCheckoutAt: iso, kbsCheckoutBy: ctx.userId, updatedAt: iso })
+        .where(eq(stayOccupants.id, occupantId))
+        .run()
+      audit({
+        entity: 'stay_occupant',
+        entityId: occupantId,
+        action: 'update',
+        before: { kbsCheckoutAt: null },
+        after: { kbsCheckoutAt: iso, kbsCheckoutBy: ctx.userId }
+      })
+    }
+    tx.update(reservationRooms)
+      .set({ status: 'done', checkedOutAt: iso, updatedAt: iso })
+      .where(eq(reservationRooms.id, stayId))
+      .run()
+    stampOccupants(tx, audit, stayId, 'leftAt', iso)
+    // K-52: the camera's face rows of the guests who left go in the same transaction (or get their keep-until date).
+    releaseFaces(
+      tx,
+      audit,
+      now,
+      tx
+        .select({ guestId: stayOccupants.guestId })
+        .from(stayOccupants)
+        .where(and(eq(stayOccupants.reservationRoomId, stayId), isNotNull(stayOccupants.guestId)))
+        .all()
+        .map((o) => o.guestId as string)
+    )
+    refreshKind(tx, stay.reservationId, now)
+    markRoomDirtyAfterCheckout(tx, audit, ctx, stay.roomId, now)
+    const open = tx
+      .select({ id: reservationRooms.id })
+      .from(reservationRooms)
+      .where(
+        and(
+          eq(reservationRooms.reservationId, stay.reservationId),
+          inArray(reservationRooms.status, [...ACTIVE_STAY])
+        )
+      )
+      .all()
+    if (!open.length)
+      tx.update(reservations)
+        .set({ status: 'checked_out', updatedAt: iso })
+        .where(eq(reservations.id, stay.reservationId))
+        .run()
+    // An early departure keeps the released nights (dates and prices) in the log (G-24).
+    audit({
+      entity: 'reservation_room',
+      entityId: stayId,
+      action: 'check_out',
+      before: early,
+      after: {
+        at: iso,
+        ...(early ? { checkOut: stayOf(tx, stayId).checkOut } : {}),
+        ...(early?.dayUse ? { dayUse: early.dayUse } : {})
+      }
+    })
+    return { detail: detail(tx, stay.reservationId), roomId: stay.roomId, day }
+  }
+
+  // ---- Group reservations (P17b, G-194, S-101, S-106) ----
+
+  /** The follow-up of a committed check-out (tasks): its failure never turns the committed write into an error. */
+  function afterCheckout(ctx: Ctx, roomId: string, day: LocalDate): void {
+    try {
+      deps.hooks?.onCheckout?.(ctx, roomId, day)
+    } catch {
+      // Nothing to undo: the follow-up is opened again by the next check-out or by hand.
+    }
+  }
+
+  function groupOf(tx: Pick<Tx, 'select'>, groupId: string) {
+    const group = tx.select().from(reservationGroups).where(eq(reservationGroups.id, groupId)).get()
+    if (!group) throw notFound('reservation_group', groupId)
+    return group
+  }
+
+  /** The reservations of a group in booking order (the code grows with every booking). */
+  function groupMembers(tx: Pick<Tx, 'select'>, groupId: string): ReservationRow[] {
+    return tx
+      .select()
+      .from(reservations)
+      .where(eq(reservations.groupId, groupId))
+      .orderBy(asc(reservations.code))
+      .all()
+  }
+
+  /** Every stay named must be a room of this group (a stay of another booking is never touched through it). */
+  function assertGroupStays(tx: Pick<Tx, 'select'>, groupId: string, stayIds: readonly string[]): void {
+    const found = tx
+      .select({ id: reservationRooms.id, groupId: reservations.groupId })
+      .from(reservationRooms)
+      .innerJoin(reservations, eq(reservations.id, reservationRooms.reservationId))
+      .where(inArray(reservationRooms.id, [...stayIds]))
+      .all()
+    if (found.length !== stayIds.length || found.some((f) => f.groupId !== groupId))
+      throw invalid('errors.groupStayMismatch')
+  }
+
+  function groupView(tx: Pick<Tx, 'select'>, groupId: string, showPayments: boolean): GroupViewDto {
+    const group = groupOf(tx, groupId)
+    const details = groupMembers(tx, groupId).map((m) => detail(tx, m.id))
+    const leader = group.leaderGuestId
+      ? tx.select().from(guests).where(eq(guests.id, group.leaderGuestId)).get()
+      : undefined
+    const currencies = new Set(details.map((d) => d.folio.currency))
+    const currency = details[0]?.folio.currency
+    return {
+      id: group.id,
+      name: group.name,
+      folioMode: group.folioMode,
+      voided: group.voidedAt !== null,
+      leader: leader ? { id: leader.id, name: `${leader.firstName} ${leader.lastName}`.trim() } : null,
+      rooms: details.map((d) => ({
+        reservationId: d.reservation.id,
+        code: d.reservation.code,
+        status: d.reservation.status,
+        guestId: d.guest.id,
+        guestName: `${d.guest.firstName} ${d.guest.lastName}`.trim(),
+        stays: d.stays.map((s) => ({
+          stayId: s.id,
+          roomId: s.roomId,
+          roomNumber: s.roomNumber,
+          checkIn: s.checkIn as LocalDate,
+          checkOut: s.checkOut as LocalDate,
+          status: s.status
+        })),
+        currency: d.folio.currency,
+        chargesMinor: d.folio.chargesMinor,
+        balanceMinor: showPayments ? d.folio.balanceMinor : null
+      })),
+      totals:
+        currency && currencies.size === 1
+          ? {
+              currency,
+              chargesMinor: details.reduce((sum, d) => sum + d.folio.chargesMinor, 0),
+              balanceMinor: showPayments
+                ? details
+                    .filter((d) => isGroupPayableStatus(d.reservation.status))
+                    .reduce((sum, d) => sum + d.folio.balanceMinor, 0)
+                : null,
+              payableMinor: showPayments
+                ? groupPayableMinor(
+                    details.map((d) => ({ status: d.reservation.status, balanceMinor: d.folio.balanceMinor }))
+                  )
+                : null
+            }
+          : null,
+      notes: details
+        .flatMap((d) => d.notes)
+        .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
+        .slice(0, 50)
+        .map((n) => ({ id: n.id, reservationId: n.reservationId, text: n.text, createdAt: n.createdAt }))
+    }
   }
 
   return {
@@ -785,86 +1341,7 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
     ): ReservationDetail {
       requirePermission(ctx, 'calendar', 'edit')
       const data = parseInput(reservationCreateSchema, input)
-      return inTransaction(deps, ctx, (tx, audit, now) => {
-        const channel = tx.select().from(salesChannels).where(eq(salesChannels.id, data.channelId)).get()
-        if (!channel) throw notFound('sales_channel', data.channelId)
-        const known =
-          'id' in data.guest ? tx.select().from(guests).where(eq(guests.id, data.guest.id)).get() : null
-        const candidate =
-          'id' in data.guest
-            ? {
-                name: known ? `${known.firstName} ${known.lastName}` : '',
-                phone: known?.phone ?? null,
-                idDocNumber: known?.idDocNumber ?? null,
-                guestId: known?.id ?? null
-              }
-            : { name: `${data.guest.firstName} ${data.guest.lastName}`, phone: data.guest.phone ?? null }
-        const hits = blacklistMatches(tx, candidate, ctx.can('blacklist', 'view'))
-        if (hits.length && !opts.blacklistConfirmed) throw conflict('errors.blacklistMatch', { hits })
-        // Faz 6: an entry of "engelle" severity is overridden only by whoever may remove entries (Sahip, Müdür).
-        if (hits.some((h) => h.severity === 'block') && !ctx.can('blacklist.remove', 'edit'))
-          throw conflict('errors.blacklistBlocked', { hits })
-        assertCustomTags(tx, data.tagIds ?? [])
-        const guestId = resolveGuest(tx, ctx, data.guest, now, audit)
-        const id = newId(now)
-        const allDayUse = data.stays.every((s) => s.checkIn === s.checkOut)
-        tx.insert(reservations)
-          .values({
-            id,
-            code: nextCode(tx, now),
-            primaryGuestId: guestId,
-            channelId: channel.id,
-            channelRef: data.channelRef ?? null,
-            status: data.status,
-            kind: allDayUse ? 'day_use' : 'overnight',
-            adults: data.adults ?? null,
-            children: data.children ?? null,
-            notes: data.notes ?? null,
-            createdBy: ctx.userId,
-            soldByUserId: data.soldByUserId ?? ctx.userId,
-            ...stamps(now)
-          })
-          .run()
-        const folio = { id: newId(now), currency: data.currency ?? baseCurrencyOf(tx) }
-        tx.insert(folios)
-          .values({
-            id: folio.id,
-            kind: 'reservation',
-            reservationId: id,
-            currency: folio.currency,
-            createdBy: ctx.userId,
-            ...stamps(now)
-          })
-          .run()
-        const stayIds = data.stays.map((s, i) =>
-          addStay(tx, ctx, now, id, folio, s, i, data.overrideBlockReason, audit)
-        )
-        const guest = tx.select().from(guests).where(eq(guests.id, guestId)).get()
-        if (guest && stayIds[0]) {
-          const occupant = {
-            id: newId(now),
-            reservationRoomId: stayIds[0],
-            guestId,
-            fullName: `${guest.firstName} ${guest.lastName}`.trim(),
-            isPrimary: true,
-            createdBy: ctx.userId,
-            ...stamps(now)
-          }
-          tx.insert(stayOccupants).values(occupant).run()
-          audit({ entity: 'stay_occupant', entityId: occupant.id, action: 'create', after: occupant })
-        }
-        for (const tagId of data.tagIds ?? [])
-          tx.insert(reservationTags).values({ reservationId: id, tagId }).run()
-        const after = detail(tx, id)
-        audit({
-          entity: 'reservation',
-          entityId: id,
-          action: 'create',
-          after,
-          reason: hits.length ? `blacklist: ${hits.map((h) => h.entryId).join(', ')}` : undefined
-        })
-        return after
-      })
+      return inTransaction(deps, ctx, (tx, audit, now) => createIn(tx, audit, now, ctx, data, opts, null))
     },
 
     /** Extend / shorten a stay (G-44); new nights get the given price or the stay's last price. */
@@ -887,9 +1364,20 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
         const before = detail(tx, stay.reservationId)
         const folio = folioOfReservation(tx, stay.reservationId)
         const room = roomOf(tx, stay.roomId)
-        const wanted = staySlots(localDate(data.checkIn), localDate(data.checkOut))
-        const key = (s: { date: string; slot: string }) => `${s.date}|${s.slot}`
         const existing = tx.select().from(roomNights).where(eq(roomNights.reservationRoomId, stayId)).all()
+        // An hourly stay that stays a day-use keeps its hours on the new date (K-48).
+        const hourly = existing.find((n) => n.slot === 'day' && n.startTime && n.endTime)
+        // A stay cut down to a same-day one keeps hours only if it already had them; a whole-day slot is not new.
+        if (data.checkIn === data.checkOut && !hourly && !existing.some((n) => n.slot === 'day'))
+          throw invalid('errors.hoursRequired')
+        const wanted = staySlots(
+          localDate(data.checkIn),
+          localDate(data.checkOut),
+          hourly && data.checkIn === data.checkOut
+            ? { start: hourly.startTime!, end: hourly.endTime! }
+            : undefined
+        )
+        const key = slotKey
         const wantedKeys = new Set(wanted.map(key))
         const existingKeys = new Set(existing.map(key))
         const toAdd = wanted.filter((s) => !existingKeys.has(key(s)))
@@ -955,11 +1443,16 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
         const folio = folioOfReservation(tx, stay.reservationId)
         const room = roomOf(tx, stay.roomId)
         const checkOut = addDays(localDate(stay.checkOut), shift)
-        const key = (s: { date: string; slot: string }) => `${s.date}|${s.slot}`
+        const key = slotKey
         const existing = tx.select().from(roomNights).where(eq(roomNights.reservationRoomId, stayId)).all()
         const moved = existing.map((n) => ({
           night: n,
-          slot: { date: addDays(localDate(n.date), shift), slot: n.slot } as StaySlot
+          slot: {
+            date: addDays(localDate(n.date), shift),
+            slot: n.slot,
+            startTime: n.startTime,
+            endTime: n.endTime
+          } as StaySlot
         }))
         const wanted = moved.map((m) => m.slot)
         const existingKeys = new Set(existing.map(key))
@@ -1145,18 +1638,43 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
       })
     },
 
-    cancel(ctx: Ctx, id: string, reason: string): ReservationDetail {
+    /**
+     * Cancel (nothing is deleted). `refund` settles the money in the same transaction (K-55): "refund" writes a
+     * refund row dated today on the folio (needs `payments.refund`; never more than the net collected amount),
+     * "keep" records why the payments stay (a cancellation fee). A guest in the house is refused: take the
+     * check-in back first (`undoCheckIn`) or check out.
+     */
+    cancel(ctx: Ctx, id: string, reason: string, refund?: CancelRefundInput): ReservationDetail {
+      const money = refund ? parseInput(cancelRefundSchema, refund) : undefined
+      requireRefundRight(ctx, money)
       return endReservation(
         ctx,
         id,
         'cancelled',
         { cancelledAt: deps.clock().toISOString(), cancelReason: reason },
-        reason
+        reason,
+        settleOf(ctx, id, money)
       )
     },
 
-    noShow(ctx: Ctx, id: string, reason = 'no_show'): ReservationDetail {
-      return endReservation(ctx, id, 'no_show', {}, reason)
+    /** `feeMinor` > 0: the no-show fee line lands on the folio in the same transaction (P21d, Ö-22). */
+    noShow(ctx: Ctx, id: string, reason = 'no_show', feeMinor = 0): ReservationDetail {
+      if (!Number.isSafeInteger(feeMinor) || feeMinor < 0) throw invalid('errors.validation')
+      if (feeMinor > 0) requirePermission(ctx, 'extras', 'edit')
+      const settle: SettleFn | undefined =
+        feeMinor > 0
+          ? (tx, audit, now) => {
+              assertDayWritable(tx, ctx, today(now), undefined)
+              insertFeeCharge(tx, audit, ctx, now, {
+                reservationId: id,
+                code: 'no_show_fee',
+                date: today(now),
+                amountMinor: feeMinor
+              })
+              return { noShowFeeMinor: feeMinor }
+            }
+          : undefined
+      return endReservation(ctx, id, 'no_show', {}, reason, settle)
     },
 
     /**
@@ -1167,29 +1685,7 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
     cancelStay(ctx: Ctx, stayId: string, reason: string): ReservationDetail {
       requirePermission(ctx, 'calendar', 'edit')
       const why = parseInput(cancelReasonSchema, reason)
-      return inTransaction(deps, ctx, (tx, audit, now) => {
-        const stay = stayOf(tx, stayId)
-        if (stay.status !== 'planned') throw invalid('errors.invalidStayState', { status: stay.status })
-        const r = reservationOf(tx, stay.reservationId)
-        if (!['tentative', 'confirmed', 'checked_in'].includes(r.status))
-          throw invalid('errors.reservationClosed', { status: r.status })
-        releaseStay(tx, now, stay, 'stay_cancelled')
-        settleStatus(tx, stay.reservationId, now, 'cancelled', {
-          cancelledAt: now.toISOString(),
-          cancelReason: why
-        })
-        refreshKind(tx, stay.reservationId, now)
-        const after = detail(tx, stay.reservationId)
-        audit({
-          entity: 'reservation_room',
-          entityId: stayId,
-          action: 'cancel',
-          before: stay,
-          after: { ...after.stays.find((x) => x.id === stayId), reservationStatus: after.reservation.status },
-          reason: why
-        })
-        return after
-      })
+      return inTransaction(deps, ctx, (tx, audit, now) => cancelStayIn(tx, audit, now, stayId, why))
     },
 
     /** Below the grid (G-39): nights released, payments kept (refund pending, postponed…). */
@@ -1313,31 +1809,134 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
     /** Check-in; on the day of a room move it moves the people from the previous room instead (§6.1). */
     checkIn(ctx: Ctx, stayId: string): ReservationDetail {
       requirePermission(ctx, 'calendar', 'edit')
-      const result = inTransaction(deps, ctx, (tx, audit, now) => {
-        const stay = stayOf(tx, stayId)
-        if (stay.status !== 'planned') throw invalid('errors.invalidStayState', { status: stay.status })
-        if (diffDays(today(now), localDate(stay.checkIn)) > 0)
-          throw invalid('errors.checkInTooEarly', { checkIn: stay.checkIn })
-        const previous = predecessorOf(tx, stay)
-        if (previous) {
-          moveGuests(tx, audit, ctx, now, previous, stay)
-          return { detail: detail(tx, stay.reservationId), movedFromRoomId: previous.roomId }
-        }
-        const iso = now.toISOString()
-        tx.update(reservationRooms)
-          .set({ status: 'in_house', checkedInAt: iso, updatedAt: iso })
-          .where(eq(reservationRooms.id, stayId))
-          .run()
-        stampOccupants(tx, audit, stayId, 'arrivedAt', iso)
-        tx.update(reservations)
-          .set({ status: 'checked_in', updatedAt: iso })
-          .where(eq(reservations.id, stay.reservationId))
-          .run()
-        audit({ entity: 'reservation_room', entityId: stayId, action: 'check_in', after: { at: iso } })
-        return { detail: detail(tx, stay.reservationId), movedFromRoomId: null as string | null }
-      })
+      const result = inTransaction(deps, ctx, (tx, audit, now) => checkInIn(tx, audit, now, ctx, stayId))
       if (result.movedFromRoomId) deps.hooks?.onCheckout?.(ctx, result.movedFromRoomId, today(deps.clock()))
       return result.detail
+    },
+
+    /**
+     * Take a check-in back (K-55: "girişi geri al"): the guest changed their mind on the check-in day. The stay is
+     * planned again (the nights and charges were never touched), the people lose their arrival time, the
+     * reservation goes back to "confirmed" unless another room is in the house or was stayed in. A person already
+     * reported to KBS needs `kbsConfirmed`: the report stays on record, the KBS check-out is made on the KBS side.
+     * Nothing is deleted; the audit row is `check_in_undo` (and the reservation's own status change).
+     * `then` gives the stay or the reservation up in the same transaction (cancel with the money settled, park as
+     * "refund pending", or only this room): when the second step fails nothing of the first is written either.
+     */
+    undoCheckIn(
+      ctx: Ctx,
+      stayId: string,
+      opts: { reason: string; kbsConfirmed?: boolean | undefined; then?: UndoThenInput | undefined }
+    ): ReservationDetail {
+      requirePermission(ctx, 'calendar', 'edit')
+      requirePermission(ctx, 'booking.undoCheckIn', 'edit')
+      const why = parseInput(cancelReasonSchema, opts.reason)
+      const next = opts.then ? parseInput(undoThenSchema, opts.then) : undefined
+      // G-23: the right to refund is asked before anything is read or written.
+      if (next?.do === 'cancel') requireRefundRight(ctx, next.refund)
+      return inTransaction(deps, ctx, (tx, audit, now) => {
+        const stay = stayOf(tx, stayId)
+        if (stay.status !== 'in_house') throw invalid('errors.invalidStayState', { status: stay.status })
+        const checkedInDay = stay.checkedInAt ? localDateOf(new Date(stay.checkedInAt)) : null
+        if (checkedInDay !== today(now))
+          throw invalid('errors.undoCheckInNotToday', { checkedInAt: stay.checkedInAt ?? '' })
+        // A room-move day: the people came from another room, so there is nothing to give back to "planned".
+        const movedFrom = tx
+          .select({ id: reservationRooms.id })
+          .from(reservationRooms)
+          .where(
+            and(
+              eq(reservationRooms.reservationId, stay.reservationId),
+              eq(reservationRooms.status, 'done'),
+              eq(reservationRooms.checkOut, stay.checkIn),
+              ne(reservationRooms.roomId, stay.roomId)
+            )
+          )
+          .get()
+        if (movedFrom) throw invalid('errors.undoCheckInMoved')
+        const people = tx
+          .select()
+          .from(stayOccupants)
+          .where(eq(stayOccupants.reservationRoomId, stayId))
+          .all()
+        const reported = people.filter((o) => o.kbsReportedAt && !o.kbsCheckoutAt)
+        if (reported.length && !opts.kbsConfirmed)
+          throw invalid('errors.undoCheckInKbs', { names: reported.map((o) => o.fullName).join(', ') })
+        const iso = now.toISOString()
+        tx.update(reservationRooms)
+          .set({ status: 'planned', checkedInAt: null, updatedAt: iso })
+          .where(eq(reservationRooms.id, stayId))
+          .run()
+        for (const o of people) {
+          if (!o.arrivedAt) continue
+          tx.update(stayOccupants)
+            .set({ arrivedAt: null, updatedAt: iso })
+            .where(eq(stayOccupants.id, o.id))
+            .run()
+          audit({
+            entity: 'stay_occupant',
+            entityId: o.id,
+            action: 'update',
+            before: { arrivedAt: o.arrivedAt },
+            after: { arrivedAt: null }
+          })
+        }
+        const others = tx
+          .select({ status: reservationRooms.status })
+          .from(reservationRooms)
+          .where(and(eq(reservationRooms.reservationId, stay.reservationId), ne(reservationRooms.id, stayId)))
+          .all()
+        const started = others.some((x) => x.status === 'in_house' || x.status === 'done')
+        const reservationBefore = reservationOf(tx, stay.reservationId).status
+        const reservationAfter = started ? 'checked_in' : 'confirmed'
+        tx.update(reservations)
+          .set({ status: reservationAfter, updatedAt: iso })
+          .where(eq(reservations.id, stay.reservationId))
+          .run()
+        audit({
+          entity: 'reservation',
+          entityId: stay.reservationId,
+          action: 'update',
+          before: { status: reservationBefore },
+          after: { status: reservationAfter },
+          reason: why
+        })
+        audit({
+          entity: 'reservation_room',
+          entityId: stayId,
+          action: 'check_in_undo',
+          before: { status: 'in_house', checkedInAt: stay.checkedInAt },
+          after: {
+            status: 'planned',
+            ...(reported.length ? { kbsReportedPeople: reported.map((o) => o.fullName) } : {})
+          },
+          reason: why
+        })
+        // The give-up goes on in the same transaction (a failure undoes the take-back too).
+        if (!next) return detail(tx, stay.reservationId)
+        const id = stay.reservationId
+        if (next.do === 'cancelStay') return cancelStayIn(tx, audit, now, stayId, why)
+        if (next.do === 'park')
+          return endReservationIn(
+            tx,
+            audit,
+            now,
+            id,
+            'parked',
+            { parkedReason: next.park.reason, parkedNote: next.park.note ?? null },
+            next.park.reason
+          )
+        return endReservationIn(
+          tx,
+          audit,
+          now,
+          id,
+          'cancelled',
+          { cancelledAt: now.toISOString(), cancelReason: why },
+          why,
+          settleOf(ctx, id, next.refund)
+        )
+      })
     },
 
     /**
@@ -1347,136 +1946,19 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
     checkOut(
       ctx: Ctx,
       stayId: string,
-      opts: { kbsCheckoutIds?: readonly string[]; dayUsePriceMinor?: number } = {}
+      opts: {
+        kbsCheckoutIds?: readonly string[]
+        dayUsePriceMinor?: number
+        /** The desk confirmed a free same-day stay (price 0, H-06). */
+        dayUseFreeConfirmed?: boolean
+      } = {}
     ): ReservationDetail {
       requirePermission(ctx, 'calendar', 'edit')
       const kbsIds = [...new Set(opts.kbsCheckoutIds ?? [])]
       if (kbsIds.length) requirePermission(ctx, 'in_house', 'edit')
-      const result = inTransaction(deps, ctx, (tx, audit, now) => {
-        const stay = stayOf(tx, stayId)
-        if (stay.status !== 'in_house') throw invalid('errors.invalidStayState', { status: stay.status })
-        const iso = now.toISOString()
-        const day = today(now)
-        // The room-move day: the guests go to their next room, they do not leave the hotel.
-        const next = diffDays(localDate(stay.checkOut), day) >= 0 ? successorOf(tx, stay) : undefined
-        if (next) {
-          moveGuests(tx, audit, ctx, now, stay, next)
-          return { detail: detail(tx, stay.reservationId), roomId: stay.roomId, day }
-        }
-        let early: {
-          checkOut: string
-          nights: { date: string; slot: string; priceMinor: number }[]
-          dayUse?: { date: string; priceMinor: number }
-        } | null = null
-        const plan = checkoutPlan(
-          { checkIn: localDate(stay.checkIn), checkOut: localDate(stay.checkOut) },
-          day
-        )
-        if (plan.kind !== 'onTime') {
-          const nights = tx.select().from(roomNights).where(eq(roomNights.reservationRoomId, stayId)).all()
-          const freed = new Set<string>(plan.released)
-          const unused = nights.filter((n) => freed.has(n.date))
-          removeNights(
-            tx,
-            now,
-            unused.map((n) => n.id),
-            'early_departure'
-          )
-          const first = nights.find((n) => n.date === stay.checkIn && n.slot === 'night')
-          // K-44: left on the check-in day — the first night becomes that day's day-use (unless the day slot is
-          // taken by another booking: then the night stays as it was) and its price may be changed here.
-          const daySlotFree =
-            plan.kind === 'sameDay' &&
-            !!first &&
-            !tx
-              .select({ id: roomNights.id })
-              .from(roomNights)
-              .where(
-                and(
-                  eq(roomNights.roomId, stay.roomId),
-                  eq(roomNights.date, stay.checkIn),
-                  eq(roomNights.slot, 'day')
-                )
-              )
-              .get()
-          let dayUse: { date: string; priceMinor: number } | undefined
-          if (daySlotFree && first) {
-            tx.update(roomNights)
-              .set({ slot: 'day', updatedAt: iso })
-              .where(eq(roomNights.id, first.id))
-              .run()
-            if (opts.dayUsePriceMinor !== undefined && opts.dayUsePriceMinor !== first.priceMinor)
-              repriceNight(tx, ctx, now, stay.reservationId, first, opts.dayUsePriceMinor)
-            dayUse = { date: first.date, priceMinor: opts.dayUsePriceMinor ?? first.priceMinor }
-          }
-          const end = daySlotFree
-            ? stay.checkIn
-            : plan.kind === 'sameDay'
-              ? addDays(localDate(stay.checkIn), 1)
-              : day
-          tx.update(reservationRooms)
-            .set({ checkOut: end, updatedAt: iso })
-            .where(eq(reservationRooms.id, stayId))
-            .run()
-          early = {
-            checkOut: stay.checkOut,
-            nights: unused.map((n) => ({ date: n.date, slot: n.slot, priceMinor: n.priceMinor })),
-            ...(dayUse ? { dayUse } : {})
-          }
-        }
-        for (const occupantId of kbsIds) {
-          const o = tx.select().from(stayOccupants).where(eq(stayOccupants.id, occupantId)).get()
-          if (!o || o.reservationRoomId !== stayId) throw notFound('stay_occupant', occupantId)
-          if (o.kbsCheckoutAt) continue
-          if (!o.kbsReportedAt) throw invalid('errors.kbsNotReported', { name: o.fullName })
-          tx.update(stayOccupants)
-            .set({ kbsCheckoutAt: iso, kbsCheckoutBy: ctx.userId, updatedAt: iso })
-            .where(eq(stayOccupants.id, occupantId))
-            .run()
-          audit({
-            entity: 'stay_occupant',
-            entityId: occupantId,
-            action: 'update',
-            before: { kbsCheckoutAt: null },
-            after: { kbsCheckoutAt: iso, kbsCheckoutBy: ctx.userId }
-          })
-        }
-        tx.update(reservationRooms)
-          .set({ status: 'done', checkedOutAt: iso, updatedAt: iso })
-          .where(eq(reservationRooms.id, stayId))
-          .run()
-        stampOccupants(tx, audit, stayId, 'leftAt', iso)
-        refreshKind(tx, stay.reservationId, now)
-        markRoomDirtyAfterCheckout(tx, audit, ctx, stay.roomId, now)
-        const open = tx
-          .select({ id: reservationRooms.id })
-          .from(reservationRooms)
-          .where(
-            and(
-              eq(reservationRooms.reservationId, stay.reservationId),
-              inArray(reservationRooms.status, [...ACTIVE_STAY])
-            )
-          )
-          .all()
-        if (!open.length)
-          tx.update(reservations)
-            .set({ status: 'checked_out', updatedAt: iso })
-            .where(eq(reservations.id, stay.reservationId))
-            .run()
-        // An early departure keeps the released nights (dates and prices) in the log (G-24).
-        audit({
-          entity: 'reservation_room',
-          entityId: stayId,
-          action: 'check_out',
-          before: early,
-          after: {
-            at: iso,
-            ...(early ? { checkOut: stayOf(tx, stayId).checkOut } : {}),
-            ...(early?.dayUse ? { dayUse: early.dayUse } : {})
-          }
-        })
-        return { detail: detail(tx, stay.reservationId), roomId: stay.roomId, day }
-      })
+      const result = inTransaction(deps, ctx, (tx, audit, now) =>
+        checkOutIn(tx, audit, now, ctx, stayId, opts, kbsIds)
+      )
       deps.hooks?.onCheckout?.(ctx, result.roomId, result.day)
       return result.detail
     },
@@ -1504,6 +1986,350 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
           after: { reservationId, date, text }
         })
         return detail(tx, reservationId)
+      })
+    },
+
+    // ---- Group reservations (P17b) ----
+
+    group(ctx: Ctx, groupId: string): GroupViewDto {
+      requirePermission(ctx, 'calendar', 'view')
+      return groupView(db, groupId, ctx.can('payments', 'view'))
+    },
+
+    /**
+     * A group booking (G-194): one reservation per room, each with its own guest name (a room without a name takes
+     * the leader), all linked by the group. The group keeps the folio mode the hotel setting has now (S-106). One
+     * transaction: when one room cannot be booked no room and no group is written.
+     */
+    createGroup(ctx: Ctx, input: GroupCreateInput): GroupViewDto {
+      requirePermission(ctx, 'calendar', 'edit')
+      const data = parseInput(groupCreateSchema, input)
+      return inTransaction(deps, ctx, (tx, audit, now) => {
+        blacklistGate(tx, ctx, data.leader, data.blacklistConfirmed)
+        const leaderId = resolveGuest(tx, ctx, data.leader, now, audit)
+        const row = {
+          id: newId(now),
+          name: data.name,
+          leaderGuestId: leaderId,
+          folioMode: readSetting(tx, 'booking.groupFolioMode'),
+          ...stamps(now)
+        }
+        tx.insert(reservationGroups).values(row).run()
+        const reservationIds = data.rooms.map(
+          (room) =>
+            createIn(
+              tx,
+              audit,
+              now,
+              ctx,
+              parseInput(reservationCreateSchema, {
+                guest: room.guest ?? { id: leaderId },
+                channelId: data.channelId,
+                channelRef: data.channelRef,
+                status: data.status,
+                stays: [room.stay],
+                currency: data.currency,
+                adults: room.adults,
+                notes: data.notes,
+                tagIds: data.tagIds,
+                soldByUserId: data.soldByUserId,
+                overrideBlockReason: data.overrideBlockReason
+              }),
+              { blacklistConfirmed: data.blacklistConfirmed },
+              row.id
+            ).reservation.id
+        )
+        audit({
+          entity: 'reservation_groups',
+          entityId: row.id,
+          action: 'create',
+          after: { ...row, reservationIds }
+        })
+        return groupView(tx, row.id, ctx.can('payments', 'view'))
+      })
+    },
+
+    /** Check the named rooms of a group in: every room or none (one transaction, G-194). */
+    checkInMany(ctx: Ctx, input: GroupStaysInput): GroupViewDto {
+      requirePermission(ctx, 'calendar', 'edit')
+      const data = parseInput(groupStaysSchema, input)
+      const stayIds = [...new Set(data.stayIds)]
+      const result = inTransaction(deps, ctx, (tx, audit, now) => {
+        if (groupOf(tx, data.groupId).voidedAt) throw invalid('errors.groupClosed')
+        assertGroupStays(tx, data.groupId, stayIds)
+        const moved = stayIds.flatMap((id) => {
+          const done = checkInIn(tx, audit, now, ctx, id)
+          return done.movedFromRoomId ? [done.movedFromRoomId] : []
+        })
+        audit({
+          entity: 'reservation_groups',
+          entityId: data.groupId,
+          action: 'check_in',
+          after: { stayIds }
+        })
+        return { view: groupView(tx, data.groupId, ctx.can('payments', 'view')), moved }
+      })
+      // The check-ins are committed; a failing follow-up must not report them as failed.
+      for (const roomId of result.moved) afterCheckout(ctx, roomId, today(deps.clock()))
+      return result.view
+    },
+
+    /** Check the named rooms of a group out: every room or none (one transaction, G-194). */
+    checkOutMany(ctx: Ctx, input: GroupStaysInput): GroupViewDto {
+      requirePermission(ctx, 'calendar', 'edit')
+      const data = parseInput(groupStaysSchema, input)
+      const stayIds = [...new Set(data.stayIds)]
+      const result = inTransaction(deps, ctx, (tx, audit, now) => {
+        if (groupOf(tx, data.groupId).voidedAt) throw invalid('errors.groupClosed')
+        assertGroupStays(tx, data.groupId, stayIds)
+        const left = stayIds.map((id) => checkOutIn(tx, audit, now, ctx, id, {}, []))
+        audit({
+          entity: 'reservation_groups',
+          entityId: data.groupId,
+          action: 'check_out',
+          after: { stayIds }
+        })
+        return { view: groupView(tx, data.groupId, ctx.can('payments', 'view')), left }
+      })
+      for (const l of result.left) afterCheckout(ctx, l.roomId, l.day)
+      return result.view
+    },
+
+    /**
+     * Rooms among `stayIds` that still lack KBS information (a person in the room not reported, or nobody recorded;
+     * S-124). Read only: a bulk check-out lists them as a warning and goes on. Empty when the hotel's KBS checks
+     * are off or the user may not see the people.
+     */
+    kbsGaps(ctx: Ctx, input: KbsGapsInput): { stayId: string; roomNumber: string }[] {
+      requirePermission(ctx, 'calendar', 'view')
+      const data = parseInput(kbsGapsInputSchema, input)
+      if (!ctx.can('in_house', 'view') || !readSetting(db, 'kbs.checksEnabled')) return []
+      const stayIds = [...new Set(data.stayIds)]
+      const nowIso = deps.clock().toISOString()
+      const stays = db
+        .select({
+          id: reservationRooms.id,
+          roomId: reservationRooms.roomId,
+          reservationId: reservationRooms.reservationId,
+          checkIn: reservationRooms.checkIn,
+          checkOut: reservationRooms.checkOut,
+          checkedInAt: reservationRooms.checkedInAt,
+          checkedOutAt: reservationRooms.checkedOutAt,
+          status: reservationRooms.status,
+          roomNumber: rooms.number
+        })
+        .from(reservationRooms)
+        .innerJoin(rooms, eq(rooms.id, reservationRooms.roomId))
+        .where(inArray(reservationRooms.id, stayIds))
+        .all()
+      const occupants = db
+        .select()
+        .from(stayOccupants)
+        .where(inArray(stayOccupants.reservationRoomId, stayIds))
+        .all()
+      const gaps = new Set(
+        kbsMissing(
+          stays.map((s) => ({
+            id: s.id,
+            roomId: s.roomId,
+            reservationId: s.reservationId,
+            checkIn: s.checkIn as LocalDate,
+            checkOut: s.checkOut as LocalDate,
+            checkedInAt: s.checkedInAt,
+            checkedOutAt: s.checkedOutAt,
+            cancelled: s.status === 'cancelled'
+          })),
+          occupants,
+          nowIso
+        )
+          .filter((k) => k.kind !== 'checkout')
+          .map((k) => k.reservationRoomId)
+      )
+      return stays.filter((s) => gaps.has(s.id)).map((s) => ({ stayId: s.id, roomNumber: s.roomNumber }))
+    },
+
+    /** One note on every reservation of the group (bulk note); a note is never edited or deleted. */
+    addGroupNote(ctx: Ctx, input: GroupNoteInput): GroupViewDto {
+      requirePermission(ctx, 'calendar', 'edit')
+      const data = parseInput(groupNoteSchema, input)
+      return inTransaction(deps, ctx, (tx, audit, now) => {
+        if (groupOf(tx, data.groupId).voidedAt) throw invalid('errors.groupClosed')
+        for (const member of groupMembers(tx, data.groupId)) {
+          const id = newId(now)
+          tx.insert(reservationNotes)
+            .values({
+              id,
+              reservationId: member.id,
+              date: null,
+              text: data.text,
+              createdBy: ctx.userId,
+              ...stamps(now)
+            })
+            .run()
+          audit({
+            entity: 'reservation_note',
+            entityId: id,
+            action: 'create',
+            after: { reservationId: member.id, groupId: data.groupId, text: data.text }
+          })
+        }
+        return groupView(tx, data.groupId, ctx.can('payments', 'view'))
+      })
+    },
+
+    /**
+     * Cancel the rooms of a group that are still to come (one transaction). A room in the house stops it
+     * (`guestInHouse`); rooms already closed stay as they are. Payments stay on the folios (a refund is made on the
+     * room's own panel). When no room is left open the group is voided (`voided_at`).
+     */
+    cancelGroup(ctx: Ctx, input: GroupCancelInput): GroupViewDto {
+      requirePermission(ctx, 'calendar', 'edit')
+      const data = parseInput(groupCancelSchema, input)
+      return inTransaction(deps, ctx, (tx, audit, now) => {
+        const group = groupOf(tx, data.groupId)
+        if (group.voidedAt) throw invalid('errors.groupClosed')
+        const open = groupMembers(tx, data.groupId).filter(
+          (m) => m.status === 'tentative' || m.status === 'confirmed' || m.status === 'checked_in'
+        )
+        for (const m of open)
+          endReservationIn(
+            tx,
+            audit,
+            now,
+            m.id,
+            'cancelled',
+            { cancelledAt: now.toISOString(), cancelReason: data.reason },
+            data.reason
+          )
+        const stillOpen = groupMembers(tx, data.groupId).some((m) => m.status !== 'cancelled')
+        if (!stillOpen)
+          tx.update(reservationGroups)
+            .set({ voidedAt: now.toISOString(), updatedAt: now.toISOString() })
+            .where(eq(reservationGroups.id, data.groupId))
+            .run()
+        audit({
+          entity: 'reservation_groups',
+          entityId: data.groupId,
+          action: 'cancel',
+          before: {
+            reservationIds: open.map((m) => m.id),
+            statuses: open.map((m) => m.status),
+            voided: false
+          },
+          after: { reservationIds: open.map((m) => m.id), voided: !stillOpen },
+          reason: data.reason
+        })
+        return groupView(tx, data.groupId, ctx.can('payments', 'view'))
+      })
+    },
+
+    /**
+     * One payment on the group's single account (S-106): the amount covers the rooms' open balances in booking
+     * order, a payment row per room, all in one transaction. It never overpays: the amount may not exceed what is
+     * open, and the folios must all be in the payment's currency. Only for a single-folio group; a per-room group
+     * is refused (`errors.groupPayPerRoom`).
+     */
+    payGroup(ctx: Ctx, input: GroupPayInput): GroupViewDto {
+      requirePermission(ctx, 'payments', 'edit')
+      const data = parseInput(groupPaySchema, input)
+      return inTransaction(deps, ctx, (tx, audit, now) => {
+        const group = groupOf(tx, data.groupId)
+        if (group.voidedAt) throw invalid('errors.groupClosed')
+        // One payment on one account only exists in a single-folio group; a per-room group is paid room by room.
+        if (group.folioMode !== 'single') throw invalid('errors.groupPayPerRoom')
+        const open = groupMembers(tx, data.groupId)
+          .filter((m) => isGroupPayableStatus(m.status))
+          .map((m) => ({ id: m.id, status: m.status, folio: detail(tx, m.id).folio }))
+        if (open.some((m) => m.folio.currency !== data.currency)) throw invalid('errors.groupPayCurrency')
+        const due = groupPayableMinor(
+          open.map((m) => ({ status: m.status, balanceMinor: m.folio.balanceMinor }))
+        )
+        if (data.amountMinor > due) throw invalid('errors.groupPayExceeds', { balanceMinor: due })
+        let left = data.amountMinor
+        const parts: { reservationId: string; amountMinor: number }[] = []
+        for (const m of open) {
+          if (left <= 0) break
+          const part = Math.min(left, Math.max(0, m.folio.balanceMinor))
+          if (part <= 0) continue
+          parts.push({ reservationId: m.id, amountMinor: part })
+          left -= part
+        }
+        const record = deps.hooks?.recordPayment
+        if (!record) throw invalid('errors.internal')
+        for (const part of parts)
+          record(ctx, tx, audit, now, {
+            reservationId: part.reservationId,
+            date: data.date,
+            kind: 'payment',
+            methodId: data.methodId,
+            amountMinor: part.amountMinor,
+            currency: data.currency,
+            reference: data.reference,
+            note: data.note ?? group.name,
+            dayClosedReason: data.dayClosedReason
+          })
+        audit({
+          entity: 'reservation_groups',
+          entityId: data.groupId,
+          action: 'update',
+          after: { amountMinor: data.amountMinor, currency: data.currency, parts }
+        })
+        return groupView(tx, data.groupId, ctx.can('payments', 'view'))
+      })
+    },
+
+    /**
+     * Existing reservations into a group (G-194): a group that exists or a new one named here, led by the first
+     * reservation's guest. Reservations already in a group stay where they are; closed ones cannot be linked.
+     * Nothing about the stays or the money changes.
+     */
+    attachToGroup(ctx: Ctx, input: GroupAttachInput): GroupViewDto {
+      requirePermission(ctx, 'calendar', 'edit')
+      const data = parseInput(groupAttachSchema, input)
+      const ids = [...new Set(data.reservationIds)]
+      return inTransaction(deps, ctx, (tx, audit, now) => {
+        const rows = tx.select().from(reservations).where(inArray(reservations.id, ids)).all()
+        if (rows.length !== ids.length) throw notFound('reservation', ids.join(','))
+        if (rows.some((r) => r.groupId)) throw invalid('errors.groupAttachTaken')
+        if (
+          rows.some(
+            (r) => !(r.status === 'tentative' || r.status === 'confirmed' || r.status === 'checked_in')
+          )
+        )
+          throw invalid('errors.groupAttachClosed')
+        let groupId = data.groupId ?? ''
+        if (groupId) {
+          if (groupOf(tx, groupId).voidedAt) throw invalid('errors.groupClosed')
+          if (groupMembers(tx, groupId).length + ids.length > MAX_GROUP_ROOMS)
+            throw invalid('errors.groupTooLarge')
+        } else {
+          if (ids.length < 2) throw invalid('errors.groupAttachTooFew')
+          const first = ids.map((id) => rows.find((r) => r.id === id)!)[0]!
+          const row = {
+            id: newId(now),
+            name: data.name ?? '',
+            leaderGuestId: first.primaryGuestId,
+            folioMode: readSetting(tx, 'booking.groupFolioMode'),
+            ...stamps(now)
+          }
+          tx.insert(reservationGroups).values(row).run()
+          audit({ entity: 'reservation_groups', entityId: row.id, action: 'create', after: row })
+          groupId = row.id
+        }
+        for (const r of rows) {
+          tx.update(reservations)
+            .set({ groupId, updatedAt: now.toISOString() })
+            .where(eq(reservations.id, r.id))
+            .run()
+          audit({
+            entity: 'reservation',
+            entityId: r.id,
+            action: 'update',
+            before: { groupId: null },
+            after: { groupId }
+          })
+        }
+        return groupView(tx, groupId, ctx.can('payments', 'view'))
       })
     },
 
@@ -1700,12 +2526,84 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
     },
 
     /** Rooms another booking or a block keeps from [from, to) (a day-use when equal). */
-    roomsTaken(ctx: Ctx, input: { from: string; to: string; excludeReservationId?: string }) {
+    roomsTaken(
+      ctx: Ctx,
+      input: { from: string; to: string; excludeReservationId?: string; startTime?: string; endTime?: string }
+    ) {
       requirePermission(ctx, 'calendar', 'view')
       const data = parseInput(availabilityInputSchema, input)
       if (diffDays(localDate(data.from), localDate(data.to)) > MAX_STAY_NIGHTS)
         throw invalid('errors.validation')
-      return roomsTaken(db, localDate(data.from), localDate(data.to), data.excludeReservationId)
+      return roomsTaken(
+        db,
+        localDate(data.from),
+        localDate(data.to),
+        data.excludeReservationId,
+        data.startTime !== undefined && data.endTime !== undefined
+          ? { start: data.startTime, end: data.endTime }
+          : undefined
+      )
+    },
+
+    /**
+     * An hour range in a room's day (K-48): whether it is free, which cleaning gaps it leaves short (a warning only,
+     * S-103) and the suggested price from the room type's hour price. Nothing is written.
+     */
+    hourlyCheck(ctx: Ctx, input: HourlyCheckInput): HourlyCheck {
+      requirePermission(ctx, 'calendar', 'view')
+      const data = parseInput(hourlyCheckInputSchema, input)
+      const date = localDate(data.date)
+      const range = { start: data.startTime, end: data.endTime }
+      const occupied = occupiedSlots(db, date, addDays(date, 1)).filter((o) => o.roomId === data.roomId)
+      const blocks = db
+        .select()
+        .from(roomBlocks)
+        .where(
+          and(
+            eq(roomBlocks.roomId, data.roomId),
+            isNull(roomBlocks.cancelledAt),
+            lt(roomBlocks.dateFrom, addDays(date, 1))
+          )
+        )
+        .all()
+        .map((b) => ({ ...b, dateFrom: b.dateFrom as LocalDate, dateTo: b.dateTo as LocalDate }))
+      const conflicts = findConflicts(
+        data.roomId,
+        staySlots(date, date, range),
+        occupied,
+        blocks,
+        data.excludeReservationId
+      )
+      const taken = conflicts.filter((c) => c.reason === 'occupied')
+      const others = occupied
+        .filter((o) => o.date === date && o.slot === 'day' && o.startTime && o.endTime)
+        .map((o) => ({ reservationId: o.reservationId, start: o.startTime, end: o.endTime }))
+      const turnoverMinutes = readSetting(db, 'dayUse.turnoverMinutes')
+      const type = db
+        .select({ hourly: roomTypes.hourlyPriceMinor, currency: roomTypes.baseCurrency })
+        .from(rooms)
+        .innerJoin(roomTypes, eq(rooms.roomTypeId, roomTypes.id))
+        .where(eq(rooms.id, data.roomId))
+        .get()
+      const currency = type?.currency ?? baseCurrencyOf(db)
+      return {
+        taken: taken.length > 0,
+        hours: [
+          ...new Set(taken.filter((c) => c.startTime && c.endTime).map((c) => `${c.startTime}–${c.endTime}`))
+        ].sort(),
+        blocked: conflicts.some((c) => c.reason === 'blocked'),
+        warnings: turnoverWarnings(range, others, turnoverMinutes, data.excludeReservationId).map((w) => ({
+          startTime: w.other.start ?? '',
+          endTime: w.other.end ?? '',
+          gapMinutes: w.gapMinutes
+        })),
+        turnoverMinutes,
+        suggestedMinor:
+          type?.hourly != null
+            ? hourlyAmountMinor(type.hourly, currency, data.startTime, data.endTime)
+            : null,
+        currency
+      }
     },
 
     /** Parked reservations with what they paid and the rooms they had (G-39). */

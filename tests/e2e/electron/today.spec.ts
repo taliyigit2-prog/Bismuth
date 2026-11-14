@@ -72,7 +72,7 @@ test('otelde kalanlar: "kızıl" araması, KBS işareti kim/ne zaman, kişi ekle
   const room = page.getByTestId('in-house-room-101')
   const elif = room.locator('li[data-kbs]', { hasText: 'Elif Yılmaz' })
   await expect(elif).toHaveAttribute('data-kbs', 'missing')
-  await elif.getByRole('button', { name: "KBS'ye bildirdim" }).click()
+  await elif.getByRole('button', { name: "KBS'ye bildirildi olarak işaretle" }).click()
   await expect(elif).toHaveAttribute('data-kbs', 'ok')
   await expect(elif).toContainText('Otel Sahibi')
 

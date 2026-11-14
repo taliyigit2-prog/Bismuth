@@ -208,7 +208,15 @@ describe('dışa aktarma (G-122, S-43)', () => {
       s.res.create(owner, {
         guest: { firstName: 'Deneme', lastName: name },
         channelId: s.id(salesChannels, 'direct'),
-        stays: [{ roomId: s.roomId(room), checkIn, checkOut, nightlyPriceMinor: 100_000 }]
+        stays: [
+          {
+            roomId: s.roomId(room),
+            checkIn,
+            checkOut,
+            nightlyPriceMinor: 100_000,
+            ...(checkIn === checkOut ? { startTime: '10:00', endTime: '11:00' } : {})
+          }
+        ]
       })
     stay('101', '2026-10-01', '2026-10-05', 'Biten') // leaves on the 5th: no night in the range
     stay('102', '2026-10-03', '2026-10-07', 'Suren') // started before, still in

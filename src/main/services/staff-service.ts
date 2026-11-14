@@ -322,6 +322,12 @@ function assertPeriodOpen(db: Reader, employeeId: string, year: number, month: n
 const employedBetween = (periods: readonly EmploymentPeriod[], from: LocalDate, to: LocalDate): boolean =>
   periods.some((p) => p.from < to && (p.until === null || p.until >= from))
 
+/** A day outside every employment period of the card cannot carry leave or hours. */
+function assertEmployedOn(tx: Reader, e: EmployeeRow, date: LocalDate): void {
+  if (!periodsOf(tx, e).some((p) => date >= p.from && (p.until === null || date <= p.until)))
+    throw invalid('errors.notEmployedOn', { date })
+}
+
 type AuditFn = Parameters<Parameters<typeof inTransaction>[2]>[1]
 
 /** Keeps the last employment period equal to the card's dates (a card without rows gets its first one). */
@@ -679,6 +685,10 @@ export function createStaffService(deps: ServiceDeps) {
       const after = inTransaction(deps, ctx, (tx, audit, now) => {
         const before = employeeOf(tx, id)
         if (data.userId !== undefined) assertUserFree(tx, data.userId, id)
+        const start = data.startDate ?? before.startDate
+        const end = data.endDate === undefined ? before.endDate : data.endDate
+        if (end && end < start)
+          throw invalid('errors.validation', { fields: { endDate: ['end before start'] } })
         tx.update(employees)
           .set({ ...data, updatedAt: now.toISOString() })
           .where(eq(employees.id, id))
@@ -860,7 +870,7 @@ export function createStaffService(deps: ServiceDeps) {
       requirePermission(ctx, 'staff.leave', 'edit')
       const data = parseInput(leaveInputSchema, input)
       return inTransaction(deps, ctx, (tx, audit, now) => {
-        employeeOf(tx, data.employeeId)
+        assertEmployedOn(tx, employeeOf(tx, data.employeeId), data.date as LocalDate)
         const { year, month } = yearMonthOf(data.date)
         assertPeriodOpen(tx, data.employeeId, year, month)
         const taken = tx
@@ -995,7 +1005,7 @@ export function createStaffService(deps: ServiceDeps) {
           if (data.date > today || data.date < addDays(today, -back))
             throw invalid('errors.ownHoursDay', { from: addDays(today, -back), to: today })
         }
-        employeeOf(tx, employeeId)
+        assertEmployedOn(tx, employeeOf(tx, employeeId), data.date as LocalDate)
         const { year, month } = yearMonthOf(data.date)
         assertPeriodOpen(tx, employeeId, year, month)
         const before = tx
@@ -1102,6 +1112,11 @@ export function createStaffService(deps: ServiceDeps) {
         const e = employeeOf(tx, data.employeeId)
         const year = data.periodYear ?? yearMonthOf(data.date).year
         const month = data.periodMonth ?? yearMonthOf(data.date).month
+        // The salary period must be a month the person was employed in (an advance for a month nobody works
+        // would vanish from every salary table).
+        const bounds = monthBounds(year, month)
+        if (!employedBetween(periodsOf(tx, e), bounds.from, bounds.to))
+          throw invalid('errors.notEmployedInPeriod', { year, month })
         assertPeriodOpen(tx, e.id, year, month)
         const salary = salaryOfMonth(salaryHistory(tx, e.id), periodsOf(tx, e), year, month)
         const currency = data.currency ?? salary?.currency ?? baseCurrencyOf(tx)
@@ -1353,9 +1368,16 @@ export function createStaffService(deps: ServiceDeps) {
       const staff = db
         .select()
         .from(employees)
-        .where(eq(employees.active, true))
         .all()
-        .filter((e) => employedBetween(periodsOf(db, e), from, to))
+        // Someone who left during the month is still on its panel (their last days); a deactivated card without a
+        // last day is not.
+        .filter((e) => {
+          const periods = periodsOf(db, e)
+          return (
+            employedBetween(periods, from, to) &&
+            (e.active || periods.some((p) => p.until !== null && p.until >= from && p.from < to))
+          )
+        })
         .sort((a, b) => a.firstName.localeCompare(b.firstName, 'tr'))
       if (!staff.length) return []
       const ids = staff.map((e) => e.id)
@@ -1406,7 +1428,11 @@ export function createStaffService(deps: ServiceDeps) {
           currency: seeMoney ? (salary?.currency ?? mine[0]?.currency ?? null) : null,
           leaveEntitled: entitled,
           leaveUsed: used,
-          leaveLeft: Math.max(0, entitled - used)
+          // The same "kalan" as the salary table: carried rest days count when the hotel carries them over.
+          leaveLeft: Math.max(
+            0,
+            entitled + (policy.leaveCarryOver ? carriedLeave(e, policy, year, month) : 0) - used
+          )
         }
       })
     }

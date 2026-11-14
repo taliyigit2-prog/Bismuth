@@ -19,16 +19,24 @@ birbirine sıkı bağlı işler (aynı servis + aynı ekran) için bölme; kendi
 - Port tablosu (ui:shot / `E2E_PORT`): paket 1 → 47411/47412, 2 → 47421/47422, 3 → 47431/47432, 4 → 47441/47442,
   5 → 47451/47452.
 
-## 2. Model seçimi
+## 2. Ajan ve model seçimi
 
-| İş | Ajan | Model |
-|---|---|---|
-| Ekran + servis + test, karmaşık iş kuralı, yetki | `feature-builder` | opus (varsayılan) |
-| Seed/liste genişletme, metin, küçük UI düzeltmesi | `feature-builder` | `model: sonnet` ile çağır |
-| Alan araştırması (platformlar, mevzuat) | `researcher` | sonnet |
-| Kontroller, e2e, özet | `/qa` becerisi | haiku |
-| Gözden geçirme | `ui-reviewer`, `turkish-ui-copy`, `db-reviewer`, `requirements-tracer` | sonnet |
-| Güvenlik | `security-reviewer` | opus |
+Model ve çaba **ajan dosyasının ön bilgisinde** sabittir (`.claude/agents/<ad>.md`); burada tekrar yazılmaz, `model`
+parametresi verilmez (tablo: `docs/analiz/09-ajan-sistemi.md` §2). Paket → ajan eşlemesi:
+
+| İş | Ajan |
+|---|---|
+| Takvim, rezervasyon paneli, konaklama/gece kuralları, iptal/iade | `calendar-specialist` |
+| Ekran + servis + test (diğer modüller) | `feature-builder` |
+| Şema/migrasyon/veri taşıma | `db-migration-builder` (ekran paketinden önce biter) |
+| Kamera yan süreci, Python, Kamera sekmesi | `camera-integrator` |
+| electron-builder, iş akışı dosyaları, kurulum belgeleri | `packager` |
+| Seed/liste, metin, belge, küçük düzeltme | `feature-builder-lite` |
+| Alan araştırması | `researcher` |
+| Kontroller, e2e, özet | `/qa` |
+
+Aynı anda en çok **3 kodlayan ajan** (bu Codespace 4 çekirdek; yük > 5 ise 2; tam test/e2e/build aynı anda tek). Kontrol ajanları kodlayanlar bittikten
+sonra, tek mesajda paralel.
 
 ## 3. Görev metni (her pakete)
 

@@ -157,6 +157,7 @@ export const roomTypeViewSchema = z.object({
   maxAdults: z.number().int().nullable(),
   basePriceMinor: minorSchema.nullable(),
   weekendPriceMinor: minorSchema.nullable(),
+  hourlyPriceMinor: minorSchema.nullish(),
   baseCurrency: z.string().nullable(),
   sort: z.number().int(),
   active: z.boolean()
@@ -384,14 +385,16 @@ export const setupDraftSchema = z.object({
         z.object({
           id: idSchema,
           basePriceMinor: amountSchema.nonnegative().nullish(),
-          weekendPriceMinor: amountSchema.nonnegative().nullish()
+          weekendPriceMinor: amountSchema.nonnegative().nullish(),
+          /** The optional hourly-stay step of the wizard (K-48): the price of one hour. */
+          hourlyPriceMinor: amountSchema.nonnegative().nullish()
         })
       )
       .max(100),
     custom: z
       .array(
         roomTypeInputSchema
-          .pick({ name: true, basePriceMinor: true, weekendPriceMinor: true })
+          .pick({ name: true, basePriceMinor: true, weekendPriceMinor: true, hourlyPriceMinor: true })
           .extend({ tempKey: z.string().min(1).max(40) })
       )
       .max(50)

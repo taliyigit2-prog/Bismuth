@@ -40,7 +40,7 @@
 | K-33 | **Odadaki kişiler** (`stay_occupants`, eski `reservation_guests` yerine): kişi başına ad, tanıtıcı not, geliş/ayrılış saati, KBS giriş/çıkış işareti (kim/ne zaman); kişi sayısı türetilir; işaretsiz kişi → takvim/Bugün/vardiya uyarısı; "Otelde kalanlar" ekranı | **kesin** (S-22, S-61; sahip: "yasal olarak çok önemli") |
 | K-34 | **Görevler + vardiya devri + notlar**: `task_templates` (tekrar kuralı: saat, hafta günü, ay günü, her N konaklama) → `tasks`; bakım hatırlatıcıları bu yapıya taşınır (ayrı `maintenance_*` tabloları yok); `shift_definitions`, `shift_handovers` (otomatik özet anlık görüntüsü + elle not + okundu), `notes` (kişisel/pano) | **kesin** (sahip isteği, S-16, S-94) |
 | K-35 | **Giderler**: hazır kategori yok; `description` serbest + normalize edilmiş anahtar (otomatik tamamlama ve "en çok harcama" gruplaması); görünürlük `expense_sections` (Genel / Yönetici; yeniden adlandırılabilir); tedarik = gider + `expense_items` (ürün satırları; ayrı `purchases` tablosu yok) | **kesin** (S-33, S-74) |
-| K-36 | **KBS uyruk eşleme ve otelde kalanlar**: anahtar normalizasyonu (Türkçe büyük harf, aksan/noktalama), takma adlar (TR, KKTC, GKRY…), İngilizce + Türkçe ülke adları dizini, **harf hatalı yazımda tek en yakın aday → öneri + kullanıcı onayı**, belirsiz ("KIBRIS") ve hassas ("CYPRUS") değerler otomatik eşlenmez; onaylanan eşleme `country_map`'te kalıcı. Otelde kalanlar: Bismuth'ta aynı oda + giriş günü rezervasyonunun **planlı çıkışına** kadar, yoksa içe alma gününe kadar (işaretli, düzeltilebilir) | **kesin** (S-81, S-91; prototip: `prototypes/kbs-stats`, 15 test) |
+| K-36 | **KBS uyruk eşleme ve otelde kalanlar**: anahtar normalizasyonu (Türkçe büyük harf, aksan/noktalama), takma adlar (TR, KKTC, GKRY…), İngilizce + Türkçe ülke adları dizini, **harf hatalı yazımda tek en yakın aday → öneri + kullanıcı onayı**, belirsiz ("KIBRIS") ve hassas ("CYPRUS") değerler otomatik eşlenmez; onaylanan eşleme `country_map`'te kalıcı. Otelde kalanlar: Bismuth'ta aynı oda + giriş günü rezervasyonunun **planlı çıkışına** kadar, yoksa içe alma gününe kadar (işaretli, düzeltilebilir) | **kesin** (S-81, S-91; prototip: `prototypes/kbs-stats` (arşiv etiketi `archive/faz0`), 15 test) |
 | K-37 | **Açılış ekranı Takvim** (kullanıcı başına değiştirilebilir); Bugün ekranı menüde | **kesin** (S-11) |
 | K-38 | **Personel yetkileri**: teslim alma (x) Sahip + Müdür; ek mesai saati yalnız Müdür/Sahip; çalışan kendi geliş/çıkış saatini girer (`work_records.start_time/end_time`); mesai, bayram ve prim oranlarını Sahip + Müdür belirler (Pandora: ek mesai ücreti kapalı); kasadan avans ayarı | **kesin** (S-30, S-34…S-39) |
 | K-39 | **Kesintisiz faz yürütme**: Faz 5–16 ara onaysız; cevapsız soru = varsayılan; tek onay paketi en sonda | **kesin** (sahip, 2026-10-04) |
@@ -52,6 +52,21 @@
 | K-45 | Uzaktan erişim güvenlik varsayılanları (yerel ağ kapalı, uzaktan PIN yok, anahtar yalnız masaüstü, devralda anahtar) | varsayılan (2026-10-05) |
 | K-46 | Son kontrol varsayılanları (takvim aralığı, misafir etiketleri, oda/tarih araması, tanıtıcı not, otel kuru, ay sonu işaretleri) | varsayılan (2026-10-05) |
 | K-47 | Akış testi düzeltme varsayılanları (para yazımı, sınırlar, tek "bugün", yinelenen ad, kutu ayarları, gelmedi, vergi no) | varsayılan (2026-10-11) |
+| K-48 | **Saatlik konaklama (gündüz kullanımı 2.0):** gündüz yuvası saat aralıklı (`start_time`/`end_time`); aynı odada aynı gün **sınırsız** saatlik satış, yalnız saat çakışması engel; temizlik arası `dayUse.turnoverMinutes` (varsayılan 60, uyarı); tutarı resepsiyon satış anında girer, oda tipi başına isteğe bağlı varsayılan saat ücreti (`room_types.hourly_price_minor`, kurulum sihirbazında ve ayarlarda); KBS'ye bildirilir; raporlara **dahil** + "konaklama türü" filtresi + aylık saatlik sayısı; aynı gün ikinci tur çıkışında gece yuvası boşalır (K-44 eki) | kesin (2026-11-13; sahip S-102…S-105) |
+| K-49 | **Kamera ağ sınırı:** `src/main/camera/` beşinci izinli ağ klasörü; yalnız `127.0.0.1` (yan süreç), `rtsp://` (yerel kamera) ve yerel ağ keşfi (ONVIF/SADP, yalnız özel IP aralıkları) hedefleri | kesin (2026-11-13; varsayılan) |
+| K-50 | **Telegram ayarlı istisna (G-07 ve yasak 14'e tek istisna):** kamera alarmı her zaman Bismuth bildirim merkezine düşer; `camera.telegram.enabled` açıksa (bot token ve sohbet kimliği `safeStorage` ile şifreli ayar) aynı alarm Bismuth tarafından `src/main/network/telegram/` üzerinden Telegram'a da gider; fotoğraf eki `camera.telegram.photo` ayarı (varsayılan açık, mevcut davranış; KVKK yurt dışı aktarım notu `06` §6.1 — sahibin kararı); 5 sn zaman aşımı, sessiz başarısızlık, kuyruk yok, `network.enabled=false` ile tamamen kapanır; Python yan süreç dış servise bağlanmaz | kesin (2026-11-13; sahip S-109) |
+| K-51 | **Biyometrik veri saklama:** yüz vektörü/kırpma yalnız Bismuth DB'de AES-GCM şifreli (`safeStorage` anahtarı), yedek/dışa aktarma/kopya/kutu dışı; Python tarafı diske yazmaz; kanca `camera-data-guard` | kesin (2026-11-13; varsayılan) |
+| K-52 | **Biyometrik veri silinir:** "veri silinmez" kuralının istisnası; çıkışta / `camera.faceRetentionDays` sonunda fiziksel silme + `audit_log`; alarm kırpması `camera.alertRetentionDays` (3 gün) | kesin (2026-11-13; varsayılan) |
+| K-53 | **Kamera tek giriş:** kamera panelinde elle misafir girişi yok; ad/oda/tarih Bismuth'tan; yüz kaydı Kişiler sekmesinden (`enrolled_at`, `enrolled_by`; yazılı rıza alanı yok, bkz. K-58) | kesin (2026-11-13; sahip S-111) |
+| K-54 | **Çoklu otel:** her otelin **kendi ana bilgisayarı ve kendi veritabanı** (2 otel, aynı şehir); oteller arası bağlantı mevcut uzaktan erişimle (NetBird + sunucu modu): sahip/istemci kayıtlı bağlantı listesinden otel seçer (P21b); sahip için portföy ekranı: iki otelin takvimi (otel seçerek ya da yan yana), gelir-gider, bugünkü doluluk, kasa (P21c); personel otel bazında; tek makinede birden çok profil (`userData/hotels/<kod>/`, P21a) isteğe bağlı; tek DB'de `hotel_id` reddedildi | kesin (2026-11-13; sahip S-114…S-117) |
+| K-55 | **Vazgeçme ve iade akışı:** check-in sonrası iptal yerine "Vazgeçme ve iade" menüsü (aynı gün çıkış + iade / girişi geri al + iptal / erken çıkış); iptal ve çıkış pencereleri tahsilatı gösterir ve iade satırı ya da "İade bekliyor" parkı sunar; kapalı rezervasyonda üç nokta menüsü kalır; **resepsiyon iade girebilir** (`payments.refund` resepsiyonda varsayılan E, rol ayarından kapatılabilir; audit) | kesin (2026-11-13; sahip S-100) |
+| K-56 | **Model ve çaba ataması (ajanlar):** tek kaynak ajan dosyası ön bilgisi; orkestra şefi Opus 5.5, kod yazan sonnet, tarama haiku, karar denetimi opus; Fable yalnız sahip isteğiyle (`docs/analiz/09-ajan-sistemi.md` §2) | kesin (2026-11-12, Fable) |
+| K-57 | **Kamera modelleri korunur:** InsightFace `buffalo_s` (tanıma) + Ultralytics YOLO11n (kişi tespiti) + mevcut Python kodu kalır; sahip kendi otelinde kullanacak, satış planı yok. Lisans durumu `06-kamera-entegrasyonu.md` §6.3 (AGPL yalnız dağıtımda; model ağırlıkları "ticari olmayan araştırma" — risk sahibe bildirildi); Ultralytics `settings.sync=False` + çevrimdışı zorunlu; alternatif açık lisanslı model planı (YuNet + SFace) belge olarak hazır, satış gündeme gelirse uygulanır | kesin (2026-11-13; sahip S-110) |
+| K-58 | **Aydınlatma yeterli, yazılı rıza yok:** sahibin avukat görüşü (S-111) kayda geçti; "Bu otelde kamera ile kayıt alınmaktadır" tabelası + program içinde üç dilde aydınlatma metni şablonu (kurulum sihirbazı ve Kamera sekmesi, yazdırılabilir); misafir yüz kaydı için rıza kutusu yok; saklama süreleri ve şifreleme (K-51, K-52) aynen; Fable'ın KVKK notu (biyometrik veri için açık rıza beklentisi) raporda "sahibin hukuki değerlendirmesi farklı" diye kalır | kesin (2026-11-13; sahip S-111) |
+| K-59 | **Kamera kurulum sihirbazı:** otomatik alınabilenler (CPU, RAM, OS, çekirdek) kurulumda okunur ve performans profili (`camera.profile`: düşük/orta/yüksek → kare hızı, çözünürlük, algılama aralığı) seçilir; kamera elle: yerel ağ keşfi (ONVIF WS-Discovery + Hikvision SADP), IP/kullanıcı/şifre, Hikvision RTSP kalıbı (kullanıcı adı, şifre, IP, port 554, yol `/Streaming/Channels/<kanal>01`) önerilir, bağlantı ve görüntü testi, kanal/kamera sayısı; şifre `safeStorage` ile şifreli ayar | kesin (2026-11-13; sahip S-112) |
+| K-61 | **Ponytail sadeleştirme becerisi:** `dietrichgebert/ponytail` 5.3.3 (`SKILL.md`, commit `96608e0`, MIT) `.claude/skills/ponytail/` altında değiştirilmemiş kopya + "Bismuth notu" (CLAUDE.md yasakları ve kod kuralları Ponytail'den önce gelir; i18n, para, ayar, yetki, shadcn, test dosyaları kısaltılamaz); eklenti/kanca kurulmaz (`~/.claude`'a yazar, her oturumda `node -e` çalıştırır); `/orkestra` her dalgada commit'ten sonra tek `feature-builder` (sonnet) ile `lite` sadeleştirme turu, testler aynı kalıp yeşil, diff küçülmediyse atılır; `ultra` yalnız sahip isterse | kesin (2026-11-13; sahip B.2) |
+| K-62 | **Rust/Tauri kararı (öneri):** tam Rust yeniden yazım **yapılmaz** (~180 bin satır, 2.427 test, 19 migrasyon; resepsiyon sorunlarını çözmez). Yol: Faz 17–21'den sonra Faz 22 — (R0) Electron'u ölç ve hafiflet (+ "hafif mod": tepsi + tarayıcı), (R1) kabuk soyutlaması `lib/shell`, (R2) Tauri 2 kabuk + Node yan süreç prototipi aynı ölçümle; **karar noktası sahipte**: boşta RAM ve açılışta ≥ %30 kazanç yoksa Electron kalır (K-01), varsa Tauri ürünleştirilir; Rust servis taşıma yalnız ölçülmüş darboğazda; kamera Python kalır | taslak (2026-11-13; `11-rust-gecisi.md`; sahip S-120…S-122) |
+| K-60 | **21st.dev kullanımı:** sahibin ücretli üyeliği; MCP sunucusu `.mcp.json` (`x-api-key`, Codespaces secret `API_KEY_21ST`), `.claude/settings.json` `enabledMcpjsonServers`; seçilen tasarımlar `docs/analiz/12-21st-tasarim-secimi.md`; her alınan bileşen lisans + bağımlılık (CDN/font yok) + i18n + CSS değişkeni + mantıksal CSS dönüşümünden geçer, `ui-reviewer` onayı; uygulama Faz 17/18 paketlerinde | kesin (2026-11-13; sahip S-118) |
 
 ## K-01 · Electron vs Tauri
 (v1 metni geçerli.) Ek: sunucu modu için Node tarafında Hono çalıştırmak Electron'da doğal; Tauri'de sidecar gerekirdi → Electron lehine bir neden daha.
@@ -88,6 +103,69 @@ Supabase ve diğer "bulut ana kaynak" seçenekleri reddedildi (çevrimdışı ç
 ## K-24 · Turizm istatistiği
 KBS Excel'i (`EGM_Konaklayan_Listesi`) yapısı `02-excel-analizi.md` §2.4.2'de. Kimlik/ad sütunları içe alınmaz. Uyruk ham adı → `country_map` (ISO2 + bakanlık Türkçe adı) tohum tablosu (~250 ülke, KBS'nin İngilizce/parantezli yazımları dahil); eşleşmeyen → kullanıcıya sor. Çıktı tablosu bakanlık paneli sırasıyla (Ülke · Toplam Giriş · Toplam Geceleme) + kopyala. Aynı gün = 1 gece (sahip bakanlıkla teyit etti). Türkler dahil.
 
+## K-48…K-56 · Analiz turu taslakları (2026-11-12)
+
+Gerekçeler ve ayrıntılar `docs/analiz/` altında: K-48 ve K-55 → `03-resepsiyon-geri-bildirimi.md`; K-49…K-53 →
+`06-kamera-entegrasyonu.md` §5–6; K-54 → `10-coklu-otel.md`; K-56 → `09-ajan-sistemi.md`. Taslaklar sahibin
+`00-ozet.md`'deki soruları cevaplamasıyla kesinleşir; cevap gelmezse Opus varsayılanla uygular ve satırı
+"varsayılan (tarih)" yapar (K-39).
+
+## Sahip cevapları (2026-11-14, 9. tur — Son dalgası bulguları S-124…S-128)
+
+> Kaynak: sahip, oturumda sunulan beş soruya "önerine göre devam et" dedi (Opus oturumu, 2026-11-14). Bulgular
+> `docs/analiz/ekler/son-kontrol/`.
+
+| Soru | Cevap | Etki |
+|---|---|---|
+| S-124 Toplu çıkışta KBS bilgisi eksik odalar | Öneri: eksik odalar adlarıyla uyarıda listelenir, çıkış engellenmez (tek çıkışla aynı) | Toplu çıkış diyaloğu; servis değişmez |
+| S-125 Elle girilen kurda akla yatkınlık | Öneri: son bilinen kurdan ≥ %20 sapmada uyarı, kayıt engellenmez (çevrimdışı giriş bozulmaz, G-01) | Kur alanı uyarısı; eşik ayar (G-09) |
+| S-126 Avansın maaşı aşması | Öneri: dönemin avansları net maaşı aşınca uyarı, engel yok | Avans diyaloğu uyarısı |
+| S-127 Kapanmış çamaşır ayı | Öneri: yönetici/sahip gerekçeyle yeniden açabilir; audit'e yazılır (kapalı gün kalıbı) | Çamaşır ayı "yeniden aç" |
+| S-128 Pasif oda tipine oda eklemek | Öneri: reddedilir, anlaşılır hata ("önce oda tipini etkinleştirin") | `rooms-service` doğrulaması |
+
+## Sahip cevapları (2026-11-13, 8. tur — S-119…S-123)
+
+> Kaynak: sahibin terminalden verdiği cevaplar (Opus oturumu, 2026-11-13).
+
+| Soru | Cevap | Etki |
+|---|---|---|
+| S-119 | "Takvim vurgusu bilinçli." | Hafta sonu ayrımı bilinçli: fiyat Cuma + Cumartesi (K-44), takvim vurgusu Cumartesi + Pazar (G-40); kod değişmez, K-44 detayına not (P19b) |
+| S-120 | "Otel bilgisayarında şikâyet yok." | Faz 22 ölçümü genel; belirli ekran hedeflenmez (K-62 karar noktası ölçüme göre) |
+| S-121 | "Evet, internetsiz kurulum." | Çevrimdışı kurulum şart (G-03); Tauri seçilirse WebView2 çevrimdışı paket dahil (+127 MB) |
+| S-122 | "Evet, Mac'te yazdırma ve tarih seçici kusursuz." | Tauri değerlendirmesinde Mac yazdırma/PDF ve tarih seçici kabul ölçütü (Faz 22) |
+| S-123 | varsayılan | InsightFace izin e-postası gönderilmez; mevcut modellerle devam, risk sahipte (K-57) |
+
+## Sahip cevapları (2026-11-12, 7. tur — analiz turu soruları S-100…S-119)
+
+> Kaynak: sahibin ayrı sohbette verdiği cevaplar (`docs/sahip-cevaplari-2026-11-12.md`, `claude/wizardly-feynman-0t0ywb`
+> dalı; Fable 2026-11-13'te işledi). "Varsayılan" = sahip varsayılanı seçti. S-119 cevapsız → varsayılan.
+
+| Soru | Cevap | Etki |
+|---|---|---|
+| S-100 | "Resepsiyon iade girebilir." | K-55 kesin: `payments.refund` resepsiyonda **E** (rol ayarından kapatılabilir); her iade `audit_log`; tutar tahsilatı aşamaz. "İade bekliyor" parkı yetkisiz kullanıcı için kalır. P17a |
+| S-101 | (a) | Grup rezervasyonu: oda başına misafir adı, oda başına ya da toplu işlem, toplu giriş. Zincir simgesi (b) yapılmaz. P17b |
+| S-102 | "Saatlik. Fiyatı resepsiyon belirlesin. Kurulumda da sorulabilir." | K-48 kesin: gündüz = **saatlik konaklama**; tutarı resepsiyon satış anında girer; kurulum sihirbazı ve ayarlarda oda tipi başına isteğe bağlı varsayılan saat ücreti (`room_types.hourly_price_minor`). P17d |
+| S-103 | "Sınırsız." | `dayUse.maxPerRoomPerDay` kalkar: aynı odada aynı gün sınırsız saatlik satış; yalnız saat çakışması engel; temizlik arası `dayUse.turnoverMinutes` ayarlı, varsayılan uyarı. P17d |
+| S-104 | "Evet, bildirilir." | Saatlik misafir KBS listesine girer (`dayUse.kbsReport` ayarı yok, her zaman). P17d |
+| S-105 | "Dahil edilsin, sadece filtreleme yapılabilsin; aylık kaç tane saatlik satılmış görebilmiş oluruz." | Saatlik gelir ve doluluk raporlara **dahil**; raporlarda "konaklama türü: gecelik / saatlik" filtresi + aylık saatlik satış sayısı; `dayUse.countsInOccupancy` ayarı kalkar (hep dahil). P17d |
+| S-106 | varsayılan | Tek hesap (grup lideri); oda başına hesap seçeneği ayar. P17b |
+| S-107 | varsayılan | Personel dışlama listesi; personel yüz tanımaya girmez. P20e |
+| S-108 | "Canlı görüntü yalnızca otel bilgisayarında; telefonda sadece alarm listesi." | Canlı yayın yalnız ana bilgisayar; telefon/Mac alarm listesi. P20b |
+| S-109 | "Telegram'da da olsun, programda da." | **K-50 değişti:** Telegram kalır, ayarlı (`camera.telegram.*`); kod Bismuth tarafında izinli ağ klasöründe `src/main/network/telegram/`; 5 sn zaman aşımı, sessiz başarısızlık, `network.enabled=false` ile kapanır; internet yokken alarm programda görünür. G-07 istisnası K-50'de. P20a |
+| S-110 | "Mevcut sistemin ticariye uygun olduğunu biliyorum… Test ettim, çok iyi çalışıyor; değiştirmek istemiyorum. Kendi otelimde kişisel olarak kullanacağım, şimdilik satmayı düşünmüyorum." | **K-57 (yeni):** InsightFace `buffalo_s` + YOLO11n **korunur**; lisans yeniden araştırıldı (`06-kamera-entegrasyonu.md` §6.3): AGPL yalnız dağıtımda tetiklenir, kendi otelinde kullanım dağıtım değildir; InsightFace model ağırlıkları "yalnız ticari olmayan araştırma" — otelde güvenlik amaçlı kullanım bu tanımın dışında, risk sahibe yazıldı. Satış gündeme gelirse alternatif model planı (eski P20d) hazır, şimdi yapılmaz. Ultralytics telemetrisi kapatılır. |
+| S-111 | "Yazılı onay gerekmiyor. Otelde 'bu otelde kamera ile kayıt alınmaktadır' gibi bir yazı yeterli. Avukatla görüştüm." | **K-58 (yeni):** sahibin hukuki değerlendirmesi kayda geçti: aydınlatma tabelası yeterli; yazılı rıza akışı yok; program kurulumda ve Kamera sekmesinde aydınlatma metni şablonu sunar; yüz verisi şifreli, yerel, saklama süreli. K-53'teki `consent_at` kalkar. P20c/P20e |
+| S-112 | "Bilgisayar bilgileri… kurulumda otomatik alınsın. Kamera gibi elle girilmesi gerekenleri kurulum sorsun. Kameranın markasını bilmiyorum ama Hik-Connect uygulamasıyla bağlanıyorum." | **K-59 (yeni):** Kamera kurulum sihirbazı (P20g): Hikvision (Hik-Connect) varsayımı; yerel ağda keşif (ONVIF WS-Discovery + Hikvision SADP benzeri), IP/kullanıcı/şifre, Hikvision RTSP kalıbı (kullanıcı adı, şifre, IP, port 554, yol `/Streaming/Channels/<kanal>01`), görüntü testi, kanal sayısı; CPU/RAM/OS otomatik okunur → performans profili; şifre `safeStorage` ile şifreli. |
+| S-113 | varsayılan | Kullanıcı başına kurulum (bugünkü). P19b belgede uyarı |
+| S-114 | "Aynı şehirde, 2 otel, farklı adres." | K-54 kesin |
+| S-115 | "Her otelin kendi bilgisayarı ana bilgisayar olur. Fakat birbirlerine bağlanabilirler." | K-54 kesin: her otel kendi ana bilgisayarında kendi veritabanıyla; oteller arası bağlantı mevcut uzaktan erişim (NetBird + sunucu modu, K-19/K-31) ile: sahip bir otelden diğerine istemci olarak bağlanır. P21b öne alındı; tek makinede çoklu profil (P21a) isteğe bağlı |
+| S-116 | "Takvim, gelir-gider sekmesi, bugünkü doluluk, kasa." | P21c portföy: iki otelin takvimi (otel seçerek ya da yan yana), gelir-gider, bugünkü doluluk, kasa |
+| S-117 | "Aynı personel iki otelde çalışmıyor." | Personel otel bazında; ortak bordro yok |
+| S-118 | "Ücretli üyeliğim var, kullanalım; bolca hakkım var… 'Apps' sekmesi geldi… Opus ya da Fable kendisi seçebilir… direkt alsın." | **K-60 (yeni):** 21st.dev kullanılır; seçimler `docs/analiz/12-21st-tasarim-secimi.md`; anahtar Codespaces secret `API_KEY_21ST`; uygulama Opus (Faz 17/18 paketlerine bağlı) |
+| S-119 | cevapsız (8. turda cevaplandı) | hafta sonu ayrımı bilinçli; K-44 detayına not (P19b) |
+
+Yeni yönergeler (aynı dosya §B): Rust'a geçiş araştırması → `docs/analiz/11-rust-gecisi.md` (K-62 önerisi); Ponytail becerisi
+→ K-61; 21st.dev → K-60.
+
 ## Sahip cevapları (2026-10-04, altıncı tur — çalışma düzeni)
 
 | Soru | Cevap | Etki |
@@ -109,7 +187,7 @@ kapanır; sonda modül başına hata avı, akış testi, karar denetimi, güvenl
 json'a değil, dil başına Markdown dosyalarına yazılır (`src/renderer/guide/content/{tr,en,ru}/`). Bu, yasak 8'in ("metin
 koda gömülmez") ruhuna uyar: metin kodda değil, dile göre ayrılmış içerik dosyasındadır. Üç dilde aynı bölüm ve çapa
 kümesi testle zorlanır; Markdown'ı yeni bağımlılık olmadan kendi küçük işleyicimiz React öğelerine çevirir (HTML
-enjeksiyonu yok); kılavuz arayüzünün kısa metinleri yine i18n anahtarıdır. `docs/kullanim-kilavuzu.md` Türkçe içerikten
+enjeksiyonu yok); kılavuz arayüzünün kısa metinleri yine i18n anahtarıdır. `docs/otel/kullanim-kilavuzu.md` Türkçe içerikten
 betikle üretilir (Faz 16 madde 7: "program içi yardımla aynı içerik").
 
 **K-41 · Bismuth anahtarının kâğıt biçimi: 11×5 harf-rakam + QR (2026-10-05, varsayılan; K-05'in biçim kısmını
@@ -140,7 +218,7 @@ birimi" (P7fix, `manualFolioRateMicro`); iki alan da aynı biçimde sorar.
 ilk gecenin ücreti gündüz kullanımı ücreti olarak kalır (kullanıcı çıkış penceresinde değiştirebilir), sonraki
 geceler ve masrafları iptal edilir, oda bu gece yeniden satılabilir. Çıkış penceresi "N gece boşalacak" der.
 (2) Önerilen fiyattaki "hafta sonu gecesi" takvimin vurgu günleri ayarından ayrılır: yeni ayar `pricing.weekendNights`,
-varsayılan **Cuma ve Cumartesi geceleri**. Takvim vurgusu (S-24) değişmez.
+varsayılan **Cuma ve Cumartesi geceleri**. Takvim vurgusu (S-24) değişmez. Bu ayrım bilinçlidir (S-119, sahip cevabı 8. tur): fiyat için hafta sonu Cuma + Cumartesi geceleridir, takvim vurgusu Cumartesi + Pazar'dır (G-40); ikisi ayrı ayardır, kod değişmez.
 
 **K-45 · Uzaktan erişimin güvenlik varsayılanları (2026-10-05, varsayılan; Faz 13 güvenlik incelemesi).**
 (1) Sunucu modu varsayılan olarak yalnız **bu bilgisayarı ve özel ağı (NetBird/Tailscale)** dinler; otelin yerel ağını

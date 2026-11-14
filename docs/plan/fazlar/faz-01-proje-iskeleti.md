@@ -11,7 +11,7 @@ kullanıcı renkleri); test ve lint; GitHub Actions ile Windows/macOS paketleri;
 
 ## Başlangıç (Faz 0 kararı)
 
-1. electron-vite resmi şablonunu **geçici klasöre** üret: `npm create @quick-start/electron@1.0.30 bismuth -- --template react-ts --skip` (`--skip` hedef klasörü siler; depo kökünde çalıştırma). Dosyaları depoya kopyala; `docs/`, `.claude/`, `CLAUDE.md`, `prototypes/` korunur.
+1. electron-vite resmi şablonunu **geçici klasöre** üret: `npm create @quick-start/electron@1.0.30 bismuth -- --template react-ts --skip` (`--skip` hedef klasörü siler; depo kökünde çalıştırma). Dosyaları depoya kopyala; `docs/`, `.claude/`, `CLAUDE.md`, `prototypes/` (arşiv etiketi `archive/faz0`) korunur.
 2. Şablon düzeltmeleri (`repo-masaustu-sablonlar.md` §4.3): `sandbox: true` · **`@electron-toolkit/preload` kaldır** (her kanala ham `ipcRenderer` açıyor) · `noImplicitAny: true` · `publish` bloğu, `postinstall: install-app-deps`, Linux hedefleri, kamera/mikrofon açıklamaları sil · CSP (`connect-src 'self'`, `object-src 'none'`, `base-uri 'none'`, `frame-ancestors 'none'`) · `electronFuses` (ad‑hoc mac için `resetAdHocDarwinSignature`) · tek örnek kilidi · izin isteklerini reddet · `will-navigate` engeli · `spellcheck: false`.
 3. Dosya düzeyinde alımlar (MIT, her dosyaya kaynak satırı + `THIRD_PARTY_NOTICES.md`): electron-db (DB açılışı, migrasyon öncesi yedek, geri yükleme, e2e fikstürleri, 3‑OS CI), guasam/electron-react-app (güvenli pencere, CI matrisi), LuanRoger/electron-shadcn (TanStack Router → **hash history**, i18next önyükleme, tema senkronu, Vitest kurulumu), cawa-93/vite-electron-builder (güvenlik modülleri, paketli uygulama e2e), actualbudget/actual (`security.ts`, yol geçişi koruması, additive‑only migrasyon testi). Frappe Books (AGPL) ve Beekeeper (GPL) kodu **kopyalanmaz**.
 4. Vite **7.3.6**'ya sabitle (electron-vite 5, Vite 8'i desteklemiyor).
@@ -31,7 +31,7 @@ kullanıcı renkleri); test ve lint; GitHub Actions ile Windows/macOS paketleri;
 9. **Test altyapısı**: vitest örnekleri (Money, kontrat doğrulama, format), Playwright `_electron` açılış testi + `mobile` projesi (telefon emülasyonu, Vite dev sunucusuna karşı), CI'da xvfb.
 10. **CI/CD**: `ci.yml` (typecheck, lint, test, build, e2e), `release.yml` (tag `v*`: Windows NSIS x64/arm64 — `installerLanguages` tr/en/ru —, macOS DMG arm64/x64, smoke test, Release'e yükleme); `electron-builder.yml` (`04-arastirma/masaustu-yigin.md` §10.2 tabanlı, `productName: Bismuth`, `mac.identity: "-"`).
 11. **Claude düzeni**: mevcut kancalara ek: `pre-commit-gate`, `format-file`, `i18n-literal-warn`, `stop-gate`; ajanlar `ui-reviewer` (masaüstü+mobil ekran görüntüleri), `db-reviewer`, `security-reviewer`; beceriler `qa`, `add-migration`, `ui-screen`, `release`, `tr-copy-guide`, `electron-security`; hepsi `test-hooks.mjs` ile doğrulanır.
-12. **Belgeler**: `README.md`, `docs/gelistirici.md` iskeleti, `docs/plan/bagimliliklar.md`.
+12. **Belgeler**: `README.md`, `docs/gelistirici/README.md` iskeleti, `docs/plan/bagimliliklar.md`.
 
 ## Kabul ölçütleri
 
@@ -93,7 +93,7 @@ kullanıcı renkleri); test ve lint; GitHub Actions ile Windows/macOS paketleri;
 - **Claude düzeni**: kancalar `pre-commit-gate`, `format-file`, `i18n-literal-warn`, `stop-gate` (57 kanca senaryosu
   geçiyor); ajanlar `ui-reviewer`, `db-reviewer`, `security-reviewer`; beceriler `qa`, `add-migration`, `ui-screen`,
   `release`, `tr-copy-guide`, `electron-security`.
-- **Belgeler**: `README.md`, `docs/gelistirici.md`, `docs/plan/bagimliliklar.md`, `THIRD_PARTY_NOTICES.md` (betikle
+- **Belgeler**: `README.md`, `docs/gelistirici/README.md`, `docs/plan/bagimliliklar.md`, `THIRD_PARTY_NOTICES.md` (betikle
   üretilir; CI güncelliğini denetler), `03-mimari.md` §9 güncel.
 - **Simge**: kademeli bizmut kristali (yanardöner), `build/icon.svg` → png.
 

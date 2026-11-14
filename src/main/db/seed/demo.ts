@@ -258,7 +258,16 @@ export async function seedDemo(handle: DatabaseHandle, opts: DemoOptions = {}): 
         channelId: codeId(salesChannels, r.pick(CHANNELS)),
         currency,
         adults: r.int(1, 2),
-        stays: [{ roomId: room.id, checkIn, checkOut, nightlyPriceMinor: price }]
+        stays: [
+          {
+            roomId: room.id,
+            checkIn,
+            checkOut,
+            nightlyPriceMinor: price,
+            // A same-day stay names its hours (S-103).
+            ...(nights === 0 ? { startTime: '14:30', endTime: '18:00' } : {})
+          }
+        ]
       })
       reservations++
       const total = multiplyRatio(money(price, currency), Math.max(1, nights)).amountMinor

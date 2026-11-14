@@ -1,219 +1,183 @@
-# 🏨 OTEL KAMERA — MANGO SUITES GÜVENLİK VE KBS DENETİM SİSTEMİ
-## Yapay Zeka Ajanları ve Geliştiriciler İçin Kapsamlı Proje El Kitabı (Hand-off Documentation)
+# Otel Kamera — geliştirici ve yapay zeka el kitabı
 
-> **Bu Belgenin Amacı:** Bu proje üzerinde daha sonra çalışacak herhangi bir **Yapay Zeka (AI) asistanı** veya **yazılım geliştiricinin** sistemin tüm mimarisini, çözülmüş kritik problemleri, veritabanı şemasını ve çalışma prensiplerini hiçbir bilgi kaybı olmadan saniyeler içinde anlayabilmesi için hazırlanmıştır.
+> Bu belge **kodla eşitlenmiştir** (Faz 20 P20a, 2026-11-13; Ç-08). Eski sürümde bulunan ama kodda olmayan şeyler
+> (`guest_face_profiles` tablosu, `.env.example`'a dayalı kurulum) kaldırıldı ya da "yapılacak" olarak işaretlendi; P20d
+> (2026-11-13) izleme, model yükleme ve yayını değiştirdi. Üst belgeler: `docs/analiz/06-kamera-entegrasyonu.md`, `.claude/rules/camera.md`, `docs/plan/fazlar/faz-20-*.md`.
 
----
+## 1. Ne yapar?
 
-## 📌 1. Projeye Genel Bakış ve Amaç
-* **Proje Adı:** `Otel Kamera` (Mango Suites Hotel Sentinel)
-* **Temel İşlev:** Otelin güvenlik kamerasından gelen canlı görüntüyü yerel yapay zeka modelleriyle işleyerek:
-  1. **KBS Kayıtlı Misafirleri Tanıma:** Resepsiyonda konaklayan kişilerin yüzlerini tanıyıp yeşil çerçeveyle doğrulamak.
-  2. **Kaçak / Tanımsız Girişleri Yakalama:** KBS kaydı bulunmayan yabancı kişileri kat/merdiven geçişinde yakalamak.
-  3. **Telegram Anlık Kanıt Bildirimi:** Yakalanan kişinin hem tam sahne görüntüsünü hem de sağ üst köşeye **yakınlaştırılmış yüzünü (PIP - Picture in Picture)** basarak Telegram grubuna anında göndermek.
-  4. **Kameraya Tekrar Geçmeden Kayıt:** Misafirin yanında sonradan gelen arkadaşı kameranın önüne tekrar geçmek zorunda kalmadan, paneldeki "Yakalanan Yüzler" listesinden tek tıkla oda numarası girilerek KBS'ye kaydedilebilir.
-  5. **Tekil Çıkış (Check-out):** Aynı odada kalan 2-3 kişiden sadece biri ayrıldığında diğerlerinin kaydı bozulmadan yalnızca ayrılan kişinin çıkışı yapılabilir.
+Güvenlik kamerasından (RTSP ya da web kamerası) gelen görüntüyü yerelde işler:
 
----
+1. YOLO11n ile kişiyi bulur, InsightFace `buffalo_s` ile yüzünü tanır (512-D vektör, kosinüs benzerliği).
+2. Yüzü **aktif misafir listesiyle** eşleştirir; eşleşen = "kayıtlı", eşleşmeyen = "kayıtsız".
+3. Kayıtsız kişi `CONFIRMATION_FRAMES` kez **zaman penceresi içinde ardışık** görülürse ve soğuma süresi geçtiyse alarm üretir
+   (ham kare + yüz kırpması yerelde saklanır, alarm kaydı yazılır).
+4. Canlı görüntüyü MJPEG olarak (`/api/stream`) ve durumu JSON olarak sunar.
 
-## 🏗️ 2. Sistem Mimarisi ve Veri Akışı
+Bismuth bu hizmeti **yan süreç** olarak çalıştırır (mimari A'); Telegram bildirimi Bismuth'tadır (K-50), Python dış servise bağlanmaz.
 
-```mermaid
-flowchart TD
-    Cam[Güvenlik Kamerası RTSP / H.264] --> Grabber[_ResilientCameraGrabber\nTCP Soket + 8s Watchdog]
-    Grabber --> DarkCheck{is_frame_dark_or_covered\nKaranlık / Kapalı Ekran?}
-    DarkCheck -- Evet --> SkipFrame[Alarm Üretme / Akışı Koru]
-    DarkCheck -- Hayır --> CLAHE[Düşük Işık Dengeleme\nCLAHE L-Kanalı Kontrast]
-    
-    CLAHE --> YOLO[YOLO11n + ByteTrack\nKişi Tespiti & Tracker ID]
-    YOLO --> SizeFilter{Yüz Boyutu >= 55px?\nLaptop Ekranı Filtresi}
-    SizeFilter -- Hayır --> SkipFace[Göz Ardı Et]
-    SizeFilter -- Evet --> InsightFace[InsightFace buffalo_s\n512-D Embedding Çıkarımı]
-    
-    InsightFace --> Matcher{KBS Misafirleriyle Eşleşti mi?\nCosine Sim >= 0.36}
-    Matcher -- Evet (Kayıtlı) --> GreenBox[Yeşil Kutu: Misafir Adı + Oda No]
-    Matcher -- Hayır (Kayıtsız) --> Cooldown{Embedding Cooldown\n60 Saniye Geçti mi?}
-    
-    Cooldown -- Hayır --> LiveOnly[Sadece Canlı Ekranda Kırmızı Kutu]
-    Cooldown -- Evet --> TriggerAlert[Alarm Üret]
-    
-    TriggerAlert --> PIP[notifier.py: Tam Sahne + Sağ Üst PIP Yüz Kırpma]
-    PIP --> DB[(SQLite: alert_logs\nEmbedding + Fotoğraf Yolu)]
-    PIP --> TG[Telegram Bot: Anlık Kanıt Fotoğrafı]
-    
-    DB --> WebApp[FastAPI Web Arayüzü: localhost:8000]
-    WebApp --> Receptionist[Resepsiyon Ekranı: Tek Tıkla KBS Kayıt / Çıkış]
-```
+## 2. Süreç ve köprü (K-49)
 
----
+| Konu | Kural | Kod |
+|---|---|---|
+| Başlatma | Electron `src/main/camera/sidecar.ts`: `python web_app.py`, `stdio=['pipe','pipe','pipe']` | `web_app.main` |
+| Belirteç | Her başlatmada 32 bayt rastgele (hex), `BISMUTH_CAMERA_TOKEN` ortam değişkeni; komut satırında yok | `config.load_token` |
+| Ayarlar | `BISMUTH_CAMERA_CONFIG` JSON (Bismuth `camera.*` ayarları + kamera adresi); `.env` yüklenmez | `config.load_config` |
+| Adres | Yalnız `127.0.0.1`; başka adres `ConfigError` (0.0.0.0 reddedilir) | `config.is_loopback` |
+| İstek denetimi | Sıra: `Host` (DNS rebinding) → `Origin` (CSRF; varsa yalnız kendi adresimiz) → `X-Bismuth-Token` (401). CORS yok | `bridge_security.BridgeGuard` |
+| Canlı yayın | `<img>` başlık gönderemez: yalnız `GET /api/stream?st=<bitiş>.<hmac>` kısa ömürlü imza kabul edilir (belirteç URL'ye girmez) | `make_stream_token` (TS karşılığı `bridge.ts`) |
+| Ebeveyn ölümü | `BISMUTH_CAMERA_WATCH_STDIN=1`: stdin kapanınca (Bismuth kapandı/çöktü) süreç çıkar | `parent_watch.py` |
+| Sağlık | `GET /api/health`: `state` = `starting` (modeller yükleniyor) / `running` / `failed` + analiz döngüsü sağlığı (`ok`/`degraded`/`stalled`) | `web_app.health`, `health.LoopHealth` |
+| Günlük | Kaynak adresindeki `kullanıcı:şifre@` ve bot belirteci günlüklerde maskelenir | `bridge_security.redact` |
 
-## 📂 3. Dosya ve Dizin Düzeni
+Electron tarafı (`sidecar.ts`): çökmede artan bekleme ile yeniden başlatır; 10 dk içinde **3 çökme → bildirim**,
+**5 çökme → vazgeç + bildirim** (Kamera ekranından elle yeniden başlatılır); sağlık yoklaması başlangıçta (modeller yüklenirken)
+ve sonra her 10 sn (3 cevapsızlıkta süreç öldürülüp çökme sayılır).
+
+## 3. Dosya düzeni
 
 ```text
-Otel Kamera/
-├── web_app.py                               # FastAPI Web Sunucusu, Güvenlik Başlıkları & REST API'ler
-├── security_service.py                      # Kesintisiz RTSP Kamera Okuyucu, Watchdog & 30 Günlük Hafıza Temizliği
-├── face_engine.py                           # InsightFace (buffalo_s) ONNX Yüz Tanıma & Benzerlik Karşılaştırma
-├── tracker.py                               # Ultralytics YOLO11n + ByteTrack Kişi Takibi & Alarm Karar Motoru
-├── database.py                              # SQLite WAL Veritabanı (Çoklu Açı Yüz Profilleri & Mükerrer Engelleme)
-├── notifier.py                              # Telegram Botu & Sağ Üst Yakınlaştırılmış Yüz (PIP) Kompozisyonu
-├── config.py                                # Merkezi Sistem, Kamera, Güvenlik ve Eşik Ayarları
-├── .env                                     # Kamera RTSP Linki, Telegram Token ve Parametreler
-├── .env.example                             # Örnek Konfigürasyon Şablonu
-├── requirements.txt                         # Python Bağımlılıkları (fastapi, uvicorn, opencv, insightface, ultralytics)
-├── yolo11n.pt                               # YOLO11 Nano Eğitilmiş Model Ağırlıkları
-├── hotel_guests.db                          # Canlı SQLite Veritabanı
-├── static/
-│   └── index.html                           # Modern Resepsiyon Yönetim Konsolu (Taste-skill / Shadcn Tasarım)
-├── alerts/                                  # Yakalanan tanımsız kişilerin kanıt fotoğrafları (30 gün saklanır)
-├── guest_photos/                            # KBS kayıtlı misafirlerin vesikalık fotoğrafları
-├── test_system.py                           # Baştan sona tüm sistemi doğrulayan otomatik test paketi
-├── Baslat_Mac                               # macOS Tıkla-Çalıştır Başlatıcı (tmux entegreli)
-├── Durdur_Mac                               # macOS Tek Tıkla Sistemi Kapatıcı
-├── Otel_Ilk_Kurulum_Windows.bat             # Windows Bilgisayarda Python Sanal Ortamını Kuran Sihirbaz (1 Kez Tıklanır)
-├── Otel_Baslat_Windows.bat                  # Windows Başlatıcı + Otomatik Tarayıcı Açıcı + Çökme Bekçisi
-├── Otel_Otomatik_Baslangica_Kur_Windows.bat # Elektrik kesintisi sonrası bilgisayar açılınca sistemi gizli başlatan servis
-├── README.md                                # Hızlı Başlangıç Kılavuzu
-└── AI_GELISTIRICI_NOTLARI.md                # (Bu dosya) Gelecekteki geliştiriciler ve AI için teknik el kitabı
+otel-kamera/
+├── web_app.py            # create_app(...) fabrikası + main(); uç noktalar `def` (iş parçacığı havuzu), modeller arka planda yüklenir
+├── bridge_security.py    # Host/Origin/belirteç ara katmanı, akış imzası, redact
+├── config.py             # Config (JSON/ortam), loopback ve aralık doğrulaması, OPENCV_FFMPEG_CAPTURE_OPTIONS
+├── timeutil.py           # tek zaman kuralı (yerel, "YYYY-MM-DDTHH:MM:SS")
+├── health.py             # analiz döngüsü sağlık sayacı
+├── parent_watch.py       # stdin EOF → çık
+├── camera_grabber.py     # kamera okuyucu + gözcü (takılan read() yeniden başlatılır) + artan geri çekilme
+├── security_service.py   # analiz döngüsü (try/except + sağlık), yüz çıkarma, kutu verisi (`get_overlay`), yayın (`stream_frame`); ÇİZİM YOK; ağır bileşenler enjekte edilir
+├── face_engine.py        # InsightFace sarmalayıcısı (yerel yükleme; sahte `app` ile test edilir)
+├── model_loader.py       # YEREL model yükleme, çevrimdışı ortam, ultralytics sync=False, SHA256SUMS (K-57)
+├── bytetrack_lite.py     # IoU tabanlı iki aşamalı izleyici (kişi ve kişi kutusuz yüz izleri)
+├── tracker.py            # iz atama (bytetrack_lite), doğrulanmış kimlik (TTL), kayıtsız sayaç (pencereli), poligon (oranlı), tek kilit
+├── alert_recorder.py     # alarm için yüz kırpması (HAM kare, JPEG baytı, yalnız bellek); Telegram yok
+├── face_store.py         # BELLEKTEKİ yüz listesi (`FaceStore`) ve alarm kuyruğu (`AlertQueue`); diske yazmaz (P20c)
+├── static/index.html     # eski tarayıcı paneli: yollar kaldırıldı, dosya P20b'de silinir
+├── tests/                # pytest (sentetik görüntü + sahte bileşen; model ve ağ gerekmez)
+├── requirements.txt      # `==` sabit; requirements-dev.txt: pytest, httpx, ruff
+└── pyproject.toml        # pytest + ruff ayarı
 ```
 
----
+Kaldırılanlar: `notifier.py` (Telegram — K-50), `test_system.py` (gerçek DB'ye dokunuyordu; yerine `tests/`), `.env` okuma
+(`python-dotenv`), `requests`, `HEADLESS` ayarı (kullanılmıyordu), `/api/system/test-telegram`, `/`, `/static`.
 
-## 🧠 4. Çözülen Kritik Problemler ve Mühendislik Kararları
+## 4. Veri (P20c: yan süreçte disk verisi YOK; K-51, K-53)
 
-Geliştirme sürecinde karşılaşılan ve çözülen problemler:
+Tek kaynak Bismuth'tur (şifreli `guest_faces` ve `camera_events`; AES-GCM, anahtar `safeStorage`). Yan süreç yalnız bellek tutar:
 
-### 1. Siyah / Kapalı Kamera Ekranında Yanlış Alarm Üretilmesi
-* **Sorun:** Kamera lensi kapatıldığında veya gece kızılötesi geçişinde siyah ekranda rastgele gürültü sebebiyle yanlış yüz alarmları tetikleniyordu.
-* **Çözüm:** [`security_service.py`](file:///Users/yigittali/Desktop/deneme/security_service.py) içine `is_frame_dark_or_covered(frame)` eklendi. Ortalama parlaklık (Luminance) < 18 veya standart sapma < 8 ise kare anında elenir, alarm tetiklenmez.
+- **Yüz listesi** (`face_store.FaceStore`): Bismuth, içerideki misafirlerin yüzlerini `PUT /api/faces/active` ile verir
+  (`{faces:[{id, name, room, embedding(base64 float32 ×512)}]}`; tüm liste değişir, biri geçersizse 422 ve eski liste kalır).
+  Check-in/check-out, yüz ekleme/silme, yan sürecin yeniden başlaması Bismuth tarafında algılanır ve liste yeniden gönderilir.
+  Ad/oda yalnız ekran etiketi içindir, günlüğe yazılmaz.
+- **Yakalama:** `POST /api/faces/capture` (kameradaki yüz) ve `POST /api/faces/extract` (`{image: base64 JPEG}`, alarm kırpması)
+  vektör + 240×240 kırpmayı YALNIZ yanıt olarak verir; saklamaz.
+- **Alarmlar** (`face_store.AlertQueue`, en çok `MAX_ALERT_COUNT`=200, bellek): `GET /api/alerts?after=<n>&limit=<k>&boot=<id>`
+  → `{boot, alerts:[{id, alert_time, track, crop(base64 JPEG)}]}` eskiden yeniye. Numaralar bu çalışmaya özgüdür; `boot`
+  başka bir çalışmanınsa `after` yok sayılır (Bismuth `boot:id` ile tekilleştirir). Bismuth çekip şifreleyerek yazar,
+  bildirim ve (ayarlıysa) Telegram'ı o gönderir.
+- Süreç kapanınca hepsi gider. Kaldırılanlar: `database.py` (SQLite), `/alerts` ve `/guest_photos` statik yolları, `/api/guests*`,
+  `/api/alerts/{id}/register|DELETE|clear`, `/api/system/cleanup-storage`, `DB_PATH`/`ALERTS_DIR`/`GUEST_PHOTOS_DIR`/
+  `ALERT_RETENTION_DAYS`/`DEDUP_WINDOW_HOURS`/`ORPHAN_MIN_AGE_SECONDS` ayarları. `RUNTIME_DIR` yalnız model çalışma zamanının
+  (ultralytics) kendi ayar klasörüdür, misafir verisi değil. Eski sürümlerin düz dosyalarını Bismuth açılışta siler.
+- Tarihler **yerel ISO** (`YYYY-MM-DDTHH:MM:SS`); Bismuth bunu bilgisayarın yerel saati olarak okur.
+- Koruma testi: `tests/test_no_disk.py` (kaynakta sqlite/imwrite/yazma kipli `open` yok; çalışırken yazma girişimi testi düşürür).
 
-### 2. Yandan Bakış (Profil) ile Karşıdan Bakış Eşleşmeme Problemi
-* **Sorun:** Misafir kameraya 90° profilden baktığında tek bir açıdan alınan fotoğraf bazen tanınamayabiliyordu.
-* **Çözüm:** [`database.py`](file:///Users/yigittali/Desktop/deneme/database.py) içinde **Çoklu Açı Yüz Profilleri (`guest_face_profiles`)** yapısı kuruldu. Bir misafir için 5 farklı açıdan (ön, sağ profil, sol profil) yüz embedding'i saklanabilir. Tanıma motoru misafirin herhangi bir açısıyla eşleştiğinde kişiyi yeşil olarak doğrular.
-* **Eşik Değeri:** `FACE_SIMILARITY_THRESHOLD = 0.36` olarak kalibre edildi (InsightFace `buffalo_s` için ideal denge).
+## 5. Ayarlar (Bismuth `camera.*` → `BISMUTH_CAMERA_CONFIG`)
 
-### 3. Resepsiyon Masasındaki Bilgisayar/Laptop Ekranlarındaki Yüzler
-* **Sorun:** Resepsiyon görevlisinin laptop ekranında görünen bir aktör veya video görüntüsü alarm üretiyordu.
-* **Çözüm:** [`tracker.py`](file:///Users/yigittali/Desktop/deneme/tracker.py) içine `min_face_size = 55px` piksel sınırı ve YOLO gövde-yüz örtüşme doğrulaması eklendi. Ekranda uzakta kalan küçük pikselli yüzler filtrelenir.
+| Python adı | Bismuth ayarı | Varsayılan |
+|---|---|---|
+| `CAMERA_SOURCE` (SIR) | sırlar deposu (şifreli), ayar değil | — (yoksa başlamaz) |
+| `CAMERA_LOCATION` | `camera.location` | boş = Python varsayılanı |
+| `FACE_SIMILARITY_THRESHOLD` (TEK "aynı kişi" eşiği) | `camera.similarityThreshold` | 0.36 |
+| `FACE_UNCERTAIN_MARGIN` | `camera.uncertainMargin` | 0.06 (0 = "emin değil" bandı kapalı) |
+| `IDLE_FACE_SCAN_EVERY` | `camera.idleFaceScanEvery` | 3 (0 = kişi yokken yüz arama kapalı) |
+| `STREAM_MAX_WIDTH` | `camera.streamMaxWidth` | 960 |
+| `MODELS_DIR` | Bismuth verir (`resources/camera/models`) | boş = `model_loader.default_models_dir()` |
+| `CHECKOUT_MIN_SIMILARITY` | `camera.confirmSimilarity` | 0.45 |
+| `MIN_FACE_DET_SCORE` / `MIN_FACE_SIZE_PX` | `camera.minFaceScore` / `camera.minFacePx` | 0.62 / 55 |
+| `CONFIRMATION_FRAMES` | `camera.confirmationFrames` | 3 |
+| `PROCESS_EVERY_N_FRAMES` | `camera.processEveryN` | 3 |
+| `ALARM_COOLDOWN_SECONDS` | `camera.alarmCooldownSeconds` | 60 |
+| `VERIFIED_TTL_SECONDS` | `camera.verifiedTtlSeconds` | 20 |
+| `ZONE_POLYGON` | `camera.zonePolygon` | boş (tüm kare); `x,y;…` piksel ya da 0..1 oranlı |
+| `RUNTIME_DIR` | Bismuth verir (`userData/camera`) | model çalışma zamanı ayar klasörü; misafir verisi değil |
+| `MAX_ALERT_COUNT` | Python varsayılanı | 200 (bellek kuyruğu); `camera.alertRetentionDays` Bismuth'ta işler (K-52) |
+| `CONFIRMATION_WINDOW_SECONDS`, `STALL_SECONDS`, `STREAM_JPEG_QUALITY`, `STREAM_MAX_FPS`, `TRACK_*` | Python varsayılanı | 6 / 15 / 75 / 15 / yüksek 0.5, düşük 0.1, IoU 0.3, tampon 4 sn |
 
-### 4. Xiaomi Wi-Fi Menzil Genişletici ve Elektrik Kesintisi Dayanıklılığı
-* **Sorun:** Otelde kamera kabloyla modeme, bilgisayar ise Xiaomi Wi-Fi güçlendirici ile modeme bağlıdır. Elektrik kesintisinde kamera ve sinyal güçlendirici geç açıldığında OpenCV `cv2.VideoCapture` sonsuza kadar kilitleniyordu.
-* **Çözüm:** [`security_service.py`](file:///Users/yigittali/Desktop/deneme/security_service.py) içine `_ResilientCameraGrabber` yazıldı:
-  * RTSP bağlantısı **TCP üzerinden zorlanır** (`rtsp_transport=tcp`), paket kaybı önlenir.
-  * Soket zaman aşımı 5 saniyeye çekildi (`stimeout=5000000`).
-  * Ayrı bir **Watchdog Thread** her 8 saniyede bir yeni kare gelip gelmediğini denetler; 8 saniye boyunca donma olursa kamerayı arka planda otomatik yeniden bağlar.
-  * Windows bilgisayarın uykuya / ekran koruyucuya geçip ağı kapatmasını önlemek için Win32 `SetThreadExecutionState` kancası entegre edildi.
+Telegram (`camera.telegram.enabled`, `camera.telegram.photo`) ve bot belirteci/sohbet kimliği **Python'a hiç gitmez**.
 
-### 5. Disk Hafızasının Dolması ve 30 Günlük Saklama Politikası
-* **Sorun:** Sürekli alarm fotoğrafları kaydedildiğinde otel bilgisayarının diski dolabilirdi.
-* **Çözüm:** [`database.py`](file:///Users/yigittali/Desktop/deneme/database.py) içine `run_storage_maintenance()` motoru eklendi:
-  * Otel kamerasının 30 günlük hafızasına sadık kalınarak **30 günden eski tüm fotoğraflar diskten ve veritabanından otomatik silinir**.
-  * Aynı yabancı kişinin son 12 saat içinde çekilmiş mükerrer fotoğrafları yüz benzerliği (`DEDUP_SIMILARITY_THRESHOLD = 0.46`) ile tekilleştirilir, yalnızca en net ve en güncel kare tutulur.
-  * Veritabanında kaydı kalmayan sahipsiz (orphan) tüm `.jpg` dosyaları otomatik temizlenir.
+## 6. Çözülen kritik problemler (kod bulgusu numarasıyla)
 
-### 6. Ağ Güvenliği ve KVKK Koruma Kalkanı
-* **Sorun:** Otel Wi-Fi ağına bağlanan misafirlerin tarayıcılarından `http://<bilgisayar-ip>:8000` yazarak canlı kamerayı ve diğer misafirlerin isim/oda listesini görme riski vardı.
-* **Çözüm:**
-  * [`config.py`](file:///Users/yigittali/Desktop/deneme/config.py) içinde `WEB_HOST = "127.0.0.1"` yapıldı; dış IP'lerden gelen tüm istekler engellendi. Panele **yalnızca resepsiyon bilgisayarının kendi ekranından** erişilebilir.
-  * [`static/index.html`](file:///Users/yigittali/Desktop/deneme/static/index.html) içine HTML karakterlerini temizleyen `esc()` fonksiyonu eklenerek DOM XSS açıkları kapatıldı.
-  * Sunucu seviyesinde `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff` ve `Cache-Control: no-store` güvenlik başlıkları eklendi.
-  * Fotoğraf yükleme API'sine 10 MB boyut sınırı (`MAX_UPLOAD_BYTES`) getirildi.
+| # | Konu | Çözüm | Test |
+|---|---|---|---|
+| 1 | Telegram karesinde misafir adı/oda | Telegram Python'dan kalktı; alarm karesi etiketsiz ham kare | `test_service_loop::test_alarm_karesi_etiketsiz_ham_karedir…`, `test_alert_recorder` |
+| 3 | Doğrulanmış kimlik hiç bitmiyor, yabancı devralıyor | TTL + yalnız gerçek eşleşmeyle tazelenme + ardışık eşleşmemede düşme | `test_tracker` (3 test), `test_service_loop::test_kayıtlı_iz_yabancıya_geçmez…` |
+| 4 | Kayıtsız sayaç "üst üste" değil, sözlükler büyüyor | Zaman pencereli sayaç + periyodik temizlik | `test_tracker::test_kayıtsız_alarm…`, `…sözlükler_periyodik_temizlenir…` |
+| 7 | Bakım tekilleştirmesi tüm geçmişe | P20c: depo yok; tekilleştirme izleyicinin cooldown'ında, saklama Bismuth'ta | `test_tracker` |
+| 8 | Sahipsiz dosya temizliği yarışı | P20c: yan süreç dosya yazmaz, temizlenecek dosya kalmadı | `test_no_disk` |
+| 9 | Telegram belirteci günlüğe | Python'da ağ çağrısı yok ("kaldırıldı"); kalan günlükler maskeli | `test_config_and_bridge::test_redact…`, `test_grabber…::test_bağlantı_hatası…` |
+| 10 | Watchdog yok | `camera_grabber` gözcü iş parçacığı; `OPENCV_FFMPEG_CAPTURE_OPTIONS` `config.py`'de (import sırası) | `test_grabber…::test_takılan_okuma…` |
+| 11 | Sabit geri çekilme, sessiz | 2→4→8→16→30 sn + günlük | `test_grabber…::test_geri_çekilme…` |
+| 12, 13 | Döngüde try/except yok; alarm yolu hatası | Tüm döngü try/except + `LoopHealth`; alarm kaydı ayrı korunur | `test_service_loop::test_tespit_hatası…`, `…test_disk_hatası…` |
+| 14 | Bloklayan `async def` | Uç noktalar `def` (iş parçacığı havuzu) | `test_web_app::test_bloklayan_uç_noktalar…` |
+| 15 | Misafir listesi yarışı, 10 sn'de DB yazma | Tracker tek kilit; okuma yazmaz, süre dolumu dakikada bir | `test_tracker::test_eşzamanlı…` |
+| 16 | Okuma yolunda yazma | P20c: depo yok; `FaceStore.snapshot` salt okuma | `test_face_store` |
+| 17 | Serbest metin çıkış tarihi | P20c: çıkış tarihi yan süreçte yok (Bismuth'un konaklaması) | — |
+| 18 | Yanlış kişi çıkışı | P20c: yan süreç çıkış yapmaz ve kimlik tanıma ucu yok; çıkış Bismuth'ta, yüzler çıkışta silinir | `tests/unit/camera-faces.test.ts` |
+| 19 | Kayıt atomik değil, çift tıklama | P20c: yan süreç kayıt yapmaz; yakalama yanıt olarak döner, Bismuth tek işlemde yazar | `test_web_app::test_yakalama…` |
+| 21 | Karışık saat dilimi | Tek yerel ISO kuralı (`timeutil`); `CURRENT_TIMESTAMP` yok | `test_face_store::test_alarm_kuyruğu…` |
+| 22 | SQLite bağlantı sızıntısı | P20c: SQLite kalktı | `test_no_disk::test_kaynakta_sqlite…` |
+| 25 | `HEADLESS` ölü ayar; ad/oda güncelleme yok | Kaldırıldı (misafir verisi Bismuth'ta, G-60) | — |
+| 26 | Piksel poligonu çözünürlüğe bağlı; hata sessiz | 0..1 oranlı poligon; ayrıştırma hatası uyarı günlüğü | `test_tracker::test_oranlı_poligon…`, `…test_bozuk_poligon…` |
+| 27 | Alarm dosya adı çakışması | P20c: dosya yok; alarm numarası + `boot` tekildir | `test_face_store::test_kuyruk_sınırlıdır…` |
+| 28 | Test gerçek DB'ye dokunuyor | P20c: DB yok; testler yalnız bellek | tüm `tests/` |
+| 2 | Gerçek ByteTrack yok; 380 px merkez-yakınlığı iz karıştırıyor | `bytetrack_lite.py`: IoU, iki aşamalı (yüksek/düşük güven), hız tahmini, süre bazlı tampon; `supervision` 0.31'de `ByteTrack` olmadığı için ek bağımlılıksız yazıldı. Kişi ve (kişi kutusuz) yüz izleri ayrı örnek | `test_tracking_overlay_stream::test_iki_yan_yana…`, `…ayrılan_kişinin_kimliği…`, `…kısa_kaybolma…`, `…düşük_güvenli…`, `…iou_matrisi…` |
+| 5 | Yüz yalnız kişi kutusu varsa aranıyor | Kişi kutusu yoksa her `IDLE_FACE_SCAN_EVERY`. analizde yüz aranır, yalnız geçiş bölgesindeki yüzler alınır; kişi kutusu varken kutuya düşmeyen küçük yüz yok sayılır | `…kişi_kutusu_yokken_de_yüz_aranır…`, `…her_nci_turda…`, `…kapatılabilir`, `…bölgesi_dışındaki…`, `…kişi_kutusuz_iki_yüz…` |
+| 6 | Üç eşik (0.36 / 0.40 / 0.46) aynı kavram için | TEK `FACE_SIMILARITY_THRESHOLD` (misafir eşleşmesi, alarm tekrar-tanıma, alarm tekilleştirme); `CHECKOUT_MIN_SIMILARITY` yalnız kameradan tanıma onayı için ayrı; "emin değil" bandı `FACE_UNCERTAIN_MARGIN` (kayıtsız sayılmaz, alarm saymaz; 0 = kapalı). Üçü de Bismuth ayarından gelir. **Saha FAR/FRR ölçümü yapılmadı** (sahip onay paketi); varsayılan 0.36 eski değerdir | `…tek_ayarlı_eşiği_kullanır`, `…eşik_değişince…`, `…emin_değil_bandındaki…`, `…marj_sıfırsa…`, `test_config_and_bridge::test_p20d_ayarları…` |
+| 20 | Etiketlerde Türkçe/Kiril bozuluyor (`cv2.putText`) | OpenCV'de yazı/kutu çizimi KALDIRILDI (`draw_overlays` yok). Kutu ve ham etiket verisi `GET /api/overlay` ile (0..1 koordinat); yazıyı Bismuth penceresi (P20b) dizer. Alarm karesi zaten ham | `…çizim_yazısı_kaynaktan_kalktı…`, `…kutu_ve_etiket_verisi…`, `…örtülü_kamerada…`, `test_web_app::test_kutu_verisi_…` |
+| 23 | MJPEG boşta aynı kareyi 20 Hz gönderiyor | Yayın yalnız `frame_seq` değişince kare yollar (`stream_frame(last_seq)`), en çok `STREAM_MAX_FPS` | `…yayın_aynı_kareyi_tekrar_göndermez…`, `test_web_app::test_canlı_yayın_son_kare…` |
+| 24 | Her karede tam çözünürlük çizim + JPEG | Analiz döngüsünde çizim ve JPEG yok; JPEG yalnız izleyici isteyince, `STREAM_MAX_WIDTH`'e küçültülerek ve izleyiciler arasında paylaşılarak; gerçek okuyucu `frame_seq` verir, aynı kare iki kez analiz edilmez | `…önbellekten_paylaşılır…`, `…küçültülür_ve_çizimsizdir`, `…aynı_karede_analiz_iki_kez_çalışmaz…` |
 
----
+### Model yükleme ve çevrimdışı (P20d, K-57)
 
-## 🗄️ 5. Veritabanı Şeması (SQLite)
+`model_loader.py` modelleri YALNIZ yerel dosyadan yükler (`MODELS_DIR`; Bismuth `resources/camera/models` yolunu verir). Dosya
+yoksa `ModelMissingError` (indirme yok; `/api/health` `state=failed` + sebep). `ultralytics` içe aktarılmadan ÖNCE
+`YOLO_OFFLINE=1` (içe aktarmadaki DNS yoklaması da kapanır), `YOLO_AUTOINSTALL=false`, `HF_HUB_OFFLINE=1`; sonra
+`settings.update({"sync": False})`. InsightFace `root/models/buffalo_s/` yerel klasöründen, yalnız `detection` + `recognition`
+modülleriyle yüklenir. Dosya listesi, kaynak ve lisans: `resources/camera/models/README.md`. Test: `tests/test_models_offline.py`
+(soket/DNS/urllib yamalı; ağ çağrısı testi düşürür).
 
-Veritabanı `hotel_guests.db` SQLite WAL (Write-Ahead Logging) modunda çalışır:
+### `/api/overlay` sözleşmesi (P20b'nin çizimi için)
 
-```sql
--- 1. Misafir Bilgileri Tablosu
-CREATE TABLE IF NOT EXISTS guests (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    room_number TEXT NOT NULL,
-    face_embedding BLOB,               -- 512 elemanlı float32 numpy vektörü
-    photo_path TEXT,                   -- guest_photos/ klasöründeki vesikalık yolu
-    check_in_date DATETIME NOT NULL,
-    check_out_date DATETIME NOT NULL,
-    is_active INTEGER DEFAULT 1,       -- 1: Konaklıyor, 0: Çıkış yaptı
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
--- 2. Çoklu Açı Yüz İmzaları Tablosu (Multi-Angle Profiles)
-CREATE TABLE IF NOT EXISTS guest_face_profiles (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    guest_id INTEGER NOT NULL,
-    face_embedding BLOB NOT NULL,       -- Farklı açılardan alınan 512-D embedding
-    angle_label TEXT DEFAULT 'front',  -- 'front', 'side', 'angled'
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY(guest_id) REFERENCES guests(id) ON DELETE CASCADE
-);
-
--- 3. Yetkisiz / Tanımsız Giriş Alarmları Tablosu
-CREATE TABLE IF NOT EXISTS alert_logs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    alert_time DATETIME NOT NULL,
-    image_path TEXT NOT NULL,           -- alerts/ klasöründeki tam sahne resmi
-    face_crop_path TEXT,                -- alerts/ klasöründeki yakınlaştırılmış yüz resmi
-    embedding BLOB,                     -- Kişiyi sonradan kameraya gelmeden kaydetmek için 512-D embedding
-    details TEXT
-);
 ```
+{ "seq": 12, "at": "2026-11-13T12:00:00", "frame": {"width": 1920, "height": 1080},
+  "camera_connected": true, "camera_covered": false, "alarms_paused": false, "guests_count": 3,
+  "zone": [[0.1,0.2],[0.9,0.2],...] | null,
+  "persons": [{"id": 4, "box": [x1,y1,x2,y2], "name": "..."|null, "room": "..."|null}],
+  "faces":   [{"box": [x1,y1,x2,y2], "kind": "known"|"unknown"|"uncertain", "name": ..., "room": ..., "score": 0.71|null}] }
+```
+Kutular 0..1 (kare genişliği/yüksekliğine oranlı); yayın küçültülse de aynı kutu çizilir. Metni (ad, oda, "Tanımsız", "Belirsiz",
+"Kamera kapalı") pencere `camera.*` anahtarlarıyla dizer. Hizmet hazır değilken boş ama aynı biçimde döner.
 
----
-
-## ⚙️ 6. Konfigürasyon Parametreleri (`.env`)
-
-| Değişken | Varsayılan | Açıklama |
-| :--- | :--- | :--- |
-| `CAMERA_SOURCE` | `0` | RTSP kamera linki (Örn: `rtsp://admin:sifre@192.168.1.64:554/stream1`) veya yerel kamera indeksi |
-| `CAMERA_LOCATION` | `Merdiven / Kat Girisi` | Bildirimlerde ve ekranda görünen kamera konumu |
-| `FACE_SIMILARITY_THRESHOLD`| `0.36` | Kosinüs benzerlik eşiği (0.36 ve üzeri = Aynı Kişi / Kayıtlı Misafir) |
-| `MIN_FACE_DET_SCORE` | `0.62` | Yüz algılama güven skoru (düşük kaliteli yüzleri eler) |
-| `MIN_FACE_SIZE_PX` | `55` | Minimum yüz boyutu (arka plandaki laptop ekranlarını eler) |
-| `PROCESS_EVERY_N_FRAMES` | `3` | Her N karede bir yapay zeka çalıştırma (CPU tasarrufu sağlar) |
-| `ALARM_COOLDOWN_SECONDS` | `60` | Aynı kişi kameranın önünde dururken tekrar tekrar alarm üretilmesini önler |
-| `TELEGRAM_BOT_TOKEN` | `""` | Telegram Bot Token (`botfather` üzerinden alınan) |
-| `TELEGRAM_CHAT_ID` | `""` | Bildirim gidecek Telegram Grup ID'si (Örn: `-100123456789`) |
-| `ALERT_RETENTION_DAYS` | `30` | Kaç gün geriye dönük alarm fotoğrafı saklanacağı (Otel kamerasıyla senkron) |
-| `WEB_HOST` | `127.0.0.1` | Güvenlik: Sadece yerel resepsiyon bilgisayarı erişimi |
-| `WEB_PORT` | `8000` | Web konsol portu |
-
----
-
-## 🚀 7. Oteldeki Bilgisayar Tamir Edildiğinde Yapılacaklar (Adım Adım Çalıştırma)
-
-Oteldeki bilgisayar onarıldığında veya yeni bir bilgisayar bağlandığında şu adımları takip edin:
-
-1. **Projeyi Bilgisayara İndirin:**
-   * Google Drive'a yüklediğimiz `Otel Kamera.zip` arşivini otelin Windows bilgisayarına indirin ve klasörü Masaüstüne çıkarın (`C:\Users\<Kullanıcı>\Desktop\Otel Kamera`).
-2. **Python Kurulumunu Kontrol Edin:**
-   * Bilgisayarda Python 3.11 veya 3.12 kurulu olmalıdır. Kurulum sırasında pencerenin en altındaki **`Add Python to PATH`** seçeneğinin işaretli olduğundan emin olun.
-3. **Kamera RTSP Linkini ve Telegram Bilgilerini Girin:**
-   * Klasördeki `.env` dosyasını Not Defteri ile açın.
-   * `CAMERA_SOURCE=...` satırına kamera ustasından alınan RTSP bağlantısını yazın.
-   * `TELEGRAM_BOT_TOKEN` ve `TELEGRAM_CHAT_ID` satırlarına otelin bildirim grubunu girin.
-4. **İlk Kurulum Sihirbazını Çalıştırın (Sadece 1 Kez):**
-   * [`Otel_Ilk_Kurulum_Windows.bat`](file:///Users/yigittali/Desktop/deneme/Otel_Ilk_Kurulum_Windows.bat) dosyasına çift tıklayın. Gerekli kütüphaneler otomatik kurulacaktır.
-5. **Elektrik Kesintisi Sonrası Otomatik Başlatmayı Aktif Edin:**
-   * [`Otel_Otomatik_Baslangica_Kur_Windows.bat`](file:///Users/yigittali/Desktop/deneme/Otel_Otomatik_Baslangica_Kur_Windows.bat) dosyasına çift tıklayın.
-   * Artık resepsiyon görevlileri bilgisayarı açtığında sistem arka planda otomatik çalışacak ve resepsiyon ekranında `http://localhost:8000` açılacaktır.
-
----
-
-## 🧪 8. Test Paketi Nasıl Çalıştırılır?
-
-Sistemin veritabanını, yüz tanıma motorunu, güvenlik filtrelerini ve yakınlaştırma algoritmalarını doğrulamak için terminalde şu komutu çalıştırabilirsiniz:
+## 7. Test ve kalite
 
 ```bash
-./venv/bin/python test_system.py
+./venv/bin/python -m pytest      # 50+ test, ~3 sn; model/ağ/kamera gerekmez
+./venv/bin/ruff check .
 ```
 
-Tüm testler yeşil (`TÜM TESTLER GEÇTİ! OTEL KAMERA SİSTEMİ %100 HAZIR.`) olarak sonuçlanmalıdır.
+Testler sentetik gürültü karesi, sahte `FaceAnalysis` (`tests/fakes.py::FakeInsightApp`) ve sahte tespit kullanır; gerçek
+YOLO/InsightFace ile uçtan uca doğrulama (gerçek model dosyalarıyla) P20f ve sahip onay paketindedir (i5-8 GB sınıfında
+≥ 4 analiz/sn). Model yükleme testleri sahte `ultralytics`/`insightface` modülleriyle ve ağ yamalı çalışır
+(`tests/test_models_offline.py`).
 
----
+## 8. Durum
 
-## 📋 9. Mevcut Durum Özeti (Hand-Off State)
-* **Yazılım Durumu:** %100 Tamamlandı, test edildi, temizlendi ve donduruldu.
-* **Neden Duraklatıldı:** Oteldeki resepsiyon bilgisayarı fiziksel arıza yaptığı için otel tarafındaki saha montajına ve canlı kamera testine geçici olarak ara verildi.
-* **Gelecekteki Geliştiriciye Not:** Projenin mantığı eksiksizdir; kodlarda hiçbir eksik veya yarım kalmış fonksiyon yoktur. Yeni bilgisayar geldiğinde yalnızca `.env` dosyasındaki kamera adresi güncellenip `.bat` dosyasıyla başlatılacaktır.
+- **P20a:** yan süreç sözleşmesi, hijyen, Telegram'ın Bismuth'a taşınması, testler.
+- **P20d (bu paket):** çevrimdışı yerel model yükleme, ByteTrack benzeri izleme, kişi yokken yüz arama, tek eşik + "emin değil"
+  bandı, çizimsiz yayın + `/api/overlay`, yayın/analiz performansı; alternatif model planı yalnız belge (`06` §6.2.1).
+  Kamera sekmesi P20b (kutuları `/api/overlay` ile çizer), KVKK P20e, sihirbaz P20g, paketleme + model dosyaları P20f.
+- **P20c (veri entegrasyonu):** yan süreç diske yazmaz; yüz listesi Bismuth'tan bellekte, alarmlar Bismuth'a çekilir (§4);
+  `database.py` ve eski misafir/alarm uçları kalktı; `tests/test_no_disk.py`.
+- Eski `static/index.html` ve `Baslat_*`/`Otel_*` betikleri bağımsız dönemden kalmadır; belirteç zorunluluğuyla tek başına
+  çalışmaz, P20b/P20f'de kaldırılır.

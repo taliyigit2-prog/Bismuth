@@ -1,6 +1,8 @@
 // "Genel" → Görünüm (G-17, faz-15 madde 5–6): theme, density, text size and whether amounts show decimals.
 // Everyone's own choice (K-37); the hotel's colours are a link away (Tema önizleme, `settings.colors`).
+import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useQueryClient } from '@tanstack/react-query'
 import type { SettingsPatch, SettingsValues } from '@shared/contract'
 import { money } from '@shared/money'
 import { formatMoney, isAppLocale } from '@shared/format'
@@ -13,6 +15,8 @@ import { PaletteIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useCan } from '@/lib/view-as'
 import { FONT_SIZES } from '@/features/theme-preview/font-sizes'
+import { useIsMobile } from '@/hooks/use-mobile'
+import { ZOOM_STEPS } from '@shared/window-zoom'
 
 interface Props {
   values: SettingsValues
@@ -33,6 +37,24 @@ const DENSITIES = [
 export function AppearanceSection({ values, onSave }: Props) {
   const { t, i18n } = useTranslation()
   const can = useCan()
+  // Page zoom belongs to the computer's own window; a phone's browser has its own.
+  const isMobile = useIsMobile()
+  // Ctrl +/-/0 and the View menu change the zoom in the main process; the page only sees its window resize. Read the
+  // saved value again then, so the selection here follows the key.
+  const queryClient = useQueryClient()
+  useEffect(() => {
+    if (isMobile) return
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const onResize = () => {
+      clearTimeout(timer)
+      timer = setTimeout(() => void queryClient.invalidateQueries({ queryKey: ['settings.get'] }), 300)
+    }
+    window.addEventListener('resize', onResize)
+    return () => {
+      clearTimeout(timer)
+      window.removeEventListener('resize', onResize)
+    }
+  }, [isMobile, queryClient])
   const locale = isAppLocale(i18n.language) ? i18n.language : 'tr'
   // The hotel's own currency: the sample looks like the amounts the person will see.
   const sample = money(250_000, values['hotel.baseCurrency'])
@@ -109,6 +131,28 @@ export function AppearanceSection({ values, onSave }: Props) {
           </RadioGroup>
           <CardDescription>{t('settings.fontSizeHelp')}</CardDescription>
         </fieldset>
+
+        {isMobile ? null : (
+          <fieldset className="grid gap-3">
+            <legend className="mb-2 text-sm font-medium">{t('settings.zoom')}</legend>
+            <RadioGroup
+              className="content-start max-md:gap-1"
+              value={String(values['ui.zoom'])}
+              onValueChange={(v) => {
+                const percent = Number(v)
+                if (ZOOM_STEPS.some((z) => z === percent)) onSave({ 'ui.zoom': percent })
+              }}
+            >
+              {ZOOM_STEPS.map((z) => (
+                <Label key={z} htmlFor={`zoom-${z}`} className="min-h-6 font-normal">
+                  <RadioGroupItem id={`zoom-${z}`} value={String(z)} data-testid={`zoom-${z}`} />
+                  <bdi>{t('settings.zoomValue', { percent: z })}</bdi>
+                </Label>
+              ))}
+            </RadioGroup>
+            <CardDescription>{t('settings.zoomHelp')}</CardDescription>
+          </fieldset>
+        )}
 
         {can('settings.colors') ? (
           <div className="grid content-start gap-2">

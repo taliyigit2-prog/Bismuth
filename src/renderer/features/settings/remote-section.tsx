@@ -1,7 +1,7 @@
 // "Uzaktan erişim" (faz-13 madde 1; G-140…G-146, K-19, K-31): how this computer works with others — alone, as the
 // hotel's main computer (other computers and phones connect) or using another one — the port, the addresses to
 // open (local network and the private network, found on the network cards: NetBird wt0 / Tailscale / 100.x) with a
-// QR code for phones, the private-network setup in short (the full guide: docs/uzaktan-erisim.md), "always on"
+// QR code for phones, the private-network setup in short (the full guide: docs/otel/uzaktan-erisim.md), "always on"
 // (start with the computer, G-146), the remote session length and the signed-in devices (devices-card.tsx).
 // K-45 (1): the hotel's Wi-Fi is served only when switched on here (with a warning: guests' Wi-Fi must be separate);
 // this computer's identity is shown so the owner can compare it with what a client computer shows.
@@ -279,6 +279,7 @@ function ServerState({ status, canEdit }: { status: HostStatus; canEdit: boolean
   const { t } = useTranslation()
   const [qr, setQr] = useState<string | null>(null)
   const update = useUpdateSettings()
+  const settings = useSettings()
   const queryClient = useQueryClient()
   const setMode = useAdminMutation('remote.setMode', { invalidate: ['remote.hostStatus'] })
   const setListenLan = useAdminMutation('remote.setListenLan', {
@@ -332,6 +333,16 @@ function ServerState({ status, canEdit }: { status: HostStatus; canEdit: boolean
             if (enabled) setConfirmLan(true)
             else setListenLan.mutate({ enabled: false })
           }}
+        />
+      </div>
+      <div className="grid gap-2 rounded-lg border p-3" data-testid="light-mode">
+        <SwitchRow
+          id="remote-light-mode"
+          label={t('settings.remote.lightMode.label')}
+          help={t('settings.remote.lightMode.help')}
+          checked={settings.data?.['app.lightMode'] ?? false}
+          disabled={!canEdit || update.isPending}
+          onChange={(enabled) => update.mutate({ 'app.lightMode': enabled })}
         />
       </div>
       {status.running && status.addresses.length === 0 ? (
@@ -480,8 +491,9 @@ function ClientCard() {
   const [confirmIdentity, setConfirmIdentity] = useState(false)
   const accept = useAdminMutation('remote.acceptHostIdentity', { invalidate: ['remote.clientStatus'] })
   const afterChange = async (): Promise<void> => {
+    // Another hotel (or none) from now on: the earlier one's data leaves the cache (P21b).
+    await events.hotelChanged()
     await queryClient.invalidateQueries()
-    await events.refresh()
   }
   return (
     <Card className="lg:col-span-2" data-testid="remote-client-card">

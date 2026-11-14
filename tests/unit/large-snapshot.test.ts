@@ -2,6 +2,8 @@
 // for the owner's copy and the Drive box. The rows are read in pages and compressed as they come, so the program's
 // memory does not grow with the size of the hotel; the package opens again to exactly the rows that went in.
 import { randomBytes } from 'node:crypto'
+import { setFlagsFromString } from 'node:v8'
+import { runInNewContext } from 'node:vm'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createServices } from '../../src/main/services'
 import type { DatabaseHandle } from '../../src/main/db/client'
@@ -13,6 +15,12 @@ import { seedBigHotel } from '../factories/big-hotel'
 import { tempDataDir } from '../factories/runtime'
 
 let handle: DatabaseHandle
+
+/** Forces a collection so the heap numbers are what is still held, not garbage waiting for the next GC. */
+function collectGarbage(): void {
+  setFlagsFromString('--expose-gc')
+  ;(runInNewContext('gc') as () => void)()
+}
 
 beforeAll(async () => {
   handle = await seededDatabase(new Date('2016-01-01T08:00:00.000Z'))
@@ -35,6 +43,7 @@ afterAll(() => handle?.close())
 describe('büyük otelde tam kopya ve kutu paketi', () => {
   it('10 yıl × 20 oda: satırlar sayfa sayfa okunur, sıkıştırılarak paketlenir; bellek veriyle büyümez', async () => {
     const key = randomBytes(32)
+    collectGarbage()
     const baseline = process.memoryUsage().heapUsed
     let peak = 0
     let count = 0
@@ -46,7 +55,10 @@ describe('büyük otelde tam kopya ve kutu paketi', () => {
         const line = JSON.stringify(r)
         count++
         textBytes += line.length
-        if (count % 5_000 === 0) peak = Math.max(peak, process.memoryUsage().heapUsed - baseline)
+        if (count % 5_000 === 0) {
+          collectGarbage() // live memory only: uncollected garbage depends on GC pacing, not on what is held
+          peak = Math.max(peak, process.memoryUsage().heapUsed - baseline)
+        }
         yield line
       }
     }

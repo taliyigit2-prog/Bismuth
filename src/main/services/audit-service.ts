@@ -49,7 +49,13 @@ const MODULE_OF_ENTITY: Readonly<Record<string, PermissionKey>> = {
   employee: 'staff',
   employment_period: 'staff',
   work_record: 'staff',
-  leave_record: 'staff'
+  leave_record: 'staff',
+  // Money rows (amount, guest): a custom role with the audit log but without money rights sees them hidden.
+  payment: 'payments',
+  charge: 'payments',
+  folio: 'payments',
+  damage_deposit: 'payments',
+  cash_handover: 'ledger'
 }
 
 /** Rows that are salary data as a whole: hidden from readers without `staff.salary` view (K-38). */

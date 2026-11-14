@@ -25,11 +25,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
 import { useApiMutation, useApiQuery } from '@/lib/api/hooks'
+import { hostAddressProblem } from '@shared/contract/remote'
 import { ApiError } from '@/lib/transport'
 import { useSessionEvents } from '@/lib/session/session'
 import { AuthFrame } from './auth-frame'
 import { olderSide } from './connect-rules'
 import { Field, FormAlert } from './fields'
+import { HotelList } from './hotel-list'
 import { failureKey, type AuthMessageKey } from './rules'
 
 /** While the main computer is away the screen asks again on its own. */
@@ -43,6 +45,8 @@ export function ConnectPage() {
   const [address, setAddress] = useState('')
   /** The address last tried: "connect anyway" after an identity warning goes to the same one. */
   const [tried, setTried] = useState<string | null>(null)
+  /** The address field was left or sent: only then it says what is wrong with it (H-33). */
+  const [checked, setChecked] = useState(false)
   const status = useApiQuery(
     'remote.clientStatus',
     {},
@@ -51,8 +55,9 @@ export function ConnectPage() {
   const found = useApiQuery('remote.discover', {}, { staleTime: Infinity })
   /** Connected: the main computer decides the rest (sign-in screen, its language and look). */
   const proceed = async (): Promise<void> => {
+    // Another hotel may answer than the one used before: nothing of the earlier one stays in the cache (P21b).
+    await events.hotelChanged()
     await queryClient.invalidateQueries()
-    await events.refresh()
   }
   const connect = useApiMutation('remote.connect', {
     onSuccess: async (next) => {
@@ -93,6 +98,7 @@ export function ConnectPage() {
   const failure = connect.isError && !changed ? failureKey(connect.error) : null
   const leaveFailure = leave.isError ? failureKey(leave.error) : null
   const busy = connect.isPending
+  const problem = address.trim() ? hostAddressProblem(address) : null
 
   return (
     <AuthFrame>
@@ -184,6 +190,19 @@ export function ConnectPage() {
             </Button>
           ) : null}
 
+          {failure ? (
+            <FormAlert testId="connect-error">
+              {tried ? (
+                <code dir="ltr" className="text-xs break-all">
+                  {tried}
+                </code>
+              ) : null}
+              <p>{t(failure as AuthMessageKey)}</p>
+            </FormAlert>
+          ) : null}
+
+          <HotelList busy={busy} onConnect={(hotel) => tryConnect(hotel.url)} />
+
           <section className="grid gap-2" aria-labelledby="connect-found">
             <div className="flex items-center justify-between gap-2">
               <h2 id="connect-found" className="text-sm font-medium">
@@ -242,10 +261,16 @@ export function ConnectPage() {
             noValidate
             onSubmit={(e) => {
               e.preventDefault()
-              if (address.trim() && !busy) tryConnect(address.trim())
+              setChecked(true)
+              if (address.trim() && !problem && !busy) tryConnect(address.trim())
             }}
           >
-            <Field id="connect-address" label={t('connect.address')} help={t('connect.addressHelp')}>
+            <Field
+              id="connect-address"
+              label={t('connect.address')}
+              help={t('connect.addressHelp')}
+              error={checked && problem ? `connect.problem.${problem}` : undefined}
+            >
               {(aria) => (
                 <Input
                   {...aria}
@@ -256,15 +281,11 @@ export function ConnectPage() {
                   placeholder={t('connect.addressPlaceholder')}
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
+                  onBlur={() => setChecked(true)}
                   data-testid="connect-address"
                 />
               )}
             </Field>
-            {failure ? (
-              <FormAlert testId="connect-error">
-                <p>{t(failure as AuthMessageKey)}</p>
-              </FormAlert>
-            ) : null}
             <Button type="submit" disabled={!address.trim() || busy} data-testid="connect-submit">
               {busy ? <Loader2Icon className="animate-spin" aria-hidden /> : <PlugIcon aria-hidden />}
               {t('connect.submit')}

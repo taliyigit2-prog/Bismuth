@@ -284,4 +284,26 @@ describe('denetim kaydı (G-24)', () => {
       '"Otel 4"'
     )
   })
+
+  it('G4: ödeme ve güvence bedeli satırlarının içeriği, para yetkisi olmayan denetçiye gizlidir', async () => {
+    handle = await seededDatabase()
+    const deps = depsOf(handle, testClock('2026-10-01T09:00:00.000Z'))
+    const audit = createAuditService(deps)
+    for (const [i, entity] of ['payment', 'damage_deposit'].entries())
+      handle.db
+        .insert(auditLog)
+        .values({
+          id: `a${i}`,
+          ts: '2026-10-01T09:00:00.000Z',
+          entity,
+          entityId: `e${i}`,
+          action: 'create',
+          afterJson: JSON.stringify({ amountMinor: 987_654 })
+        })
+        .run()
+    const blind = ctxFromPermissions('u-d1', 'd', 'ipc', { audit_log: 'view' })
+    expect(JSON.stringify(audit.list(blind, { limit: 50 }).entries)).not.toContain('987654')
+    const sighted = ctxFromPermissions('u-d2', 'd', 'ipc', { audit_log: 'view', payments: 'view' })
+    expect(JSON.stringify(audit.list(sighted, { limit: 50 }).entries)).toContain('987654')
+  })
 })

@@ -4,8 +4,11 @@ import { useState } from 'react'
 import { TriangleAlertIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import type { CompanyViewDto } from '@shared/contract/procedures/guests'
+import { companyInputSchema } from '@shared/contract/guests'
+import { limitsOf } from '@shared/contract/limits'
 import { normalizeName } from '@shared/domain/normalize'
-import { isValidIban, isValidTurkishTaxNumber } from '@shared/domain/tax-id'
+import { isPlausiblePhone } from '@shared/phone'
+import { compactTaxNumber, isValidIban, isValidTurkishTaxNumber } from '@shared/domain/tax-id'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -31,6 +34,7 @@ const FIELDS = [
 type Field = (typeof FIELDS)[number]
 const WIDE: ReadonlySet<Field> = new Set(['title', 'address'])
 const LTR: ReadonlySet<Field> = new Set(['taxNumber', 'phone', 'email', 'iban'])
+const LIMITS = limitsOf(companyInputSchema)
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const LABEL = {
   title: 'guests.company.form.title',
@@ -79,6 +83,8 @@ export function CompanyDialog({
     ...(values.taxNumber.trim() && !isValidTurkishTaxNumber(values.taxNumber)
       ? { taxNumber: t('companies.form.taxNumberInvalid') }
       : {}),
+    // H-21: a phone is digits (with + ( ) - and spaces), not the word "telefon".
+    ...(!isPlausiblePhone(values.phone) ? { phone: t('form.phone') } : {}),
     ...(values.email.trim() && !EMAIL.test(values.email.trim())
       ? { email: t('guests.form.emailInvalid') }
       : {})
@@ -94,6 +100,14 @@ export function CompanyDialog({
   const sameTitle = (sameTitleQuery.data ?? []).find(
     (c) => c.id !== company?.id && normalizeName(c.title) === titleKey
   )
+  // The same tax number on another card: also a warning (two cards of one company are rarely meant).
+  const taxKey = compactTaxNumber(values.taxNumber)
+  const sameTaxQuery = useApiQuery(
+    'companies.list',
+    { q: taxKey },
+    { enabled: open && isValidTurkishTaxNumber(taxKey) }
+  )
+  const sameTax = (sameTaxQuery.data ?? []).find((c) => c.id !== company?.id && c.taxNumber === taxKey)
   const save = (): void => {
     setTried(true)
     if (Object.keys(errors).length || pending) return
@@ -146,12 +160,19 @@ export function CompanyDialog({
                 onChange={(e) => setValues({ ...values, [key]: e.target.value })}
                 aria-invalid={error ? true : undefined}
                 aria-describedby={error ? `company-${key}-error` : undefined}
+                maxLength={LIMITS[key].maxLength}
                 autoComplete="off"
                 autoFocus={key === 'title'}
               />
               {error ? (
                 <p id={`company-${key}-error`} className="text-destructive text-xs">
                   {error}
+                </p>
+              ) : null}
+              {key === 'taxNumber' && sameTax ? (
+                <p className="flex items-start gap-1.5 text-xs" role="status" data-testid="company-same-tax">
+                  <TriangleAlertIcon className="text-warning size-3.5 shrink-0" aria-hidden />
+                  {t('companies.form.sameTax', { title: sameTax.title })}
                 </p>
               ) : null}
               {key === 'title' && sameTitle && values.title.trim() ? (
@@ -169,7 +190,13 @@ export function CompanyDialog({
         })}
         <div className="grid gap-1.5 sm:col-span-2">
           <Label htmlFor="company-note">{t('guests.company.form.note')}</Label>
-          <Textarea id="company-note" rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
+          <Textarea
+            id="company-note"
+            rows={2}
+            value={note}
+            maxLength={LIMITS.note.maxLength}
+            onChange={(e) => setNote(e.target.value)}
+          />
         </div>
         <Label
           htmlFor="company-favorite"

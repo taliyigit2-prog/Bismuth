@@ -42,6 +42,7 @@ const CATALOG = {
   today: ['daily', [E, E, E, E, V, V]],
   calendar: ['daily', [E, E, E, V, N, N]], // tape chart + reservations (edit = create, change, cancel, park)
   'calendar.notes': ['daily', [E, E, E, N, N, N]], // special days, holidays, notes
+  'booking.undoCheckIn': ['daily', [E, E, N, N, N, N]], // K-55: take a check-in back (owner enables it for reception)
   in_house: ['daily', [E, E, E, N, N, N]], // room occupants + KBS marks (G-53, G-54)
   tasks: ['daily', [E, E, E, E, E, V]], // services narrow housekeeping/employee to their own tasks
   shift_notes: ['daily', [E, E, E, N, N, N]], // handover + board notes; personal notes need no permission
@@ -55,7 +56,7 @@ const CATALOG = {
   lost_items: ['guests', [E, E, E, N, V, N]],
   // Money
   payments: ['money', [E, E, E, E, N, N]],
-  'payments.refund': ['money', [E, E, N, E, N, N]],
+  'payments.refund': ['money', [E, E, E, E, N, N]], // S-100: reception may refund (the owner can switch it off)
   'payments.void': ['money', [E, E, N, N, N, N]],
   'payments.handover': ['money', [E, E, N, N, N, N]], // the "x" (S-30, S-31)
   ledger: ['money', [E, E, V, E, N, N]], // day view, day note, sort
@@ -79,7 +80,10 @@ const CATALOG = {
   room_issues: ['operations', [E, E, E, N, E, N]],
   contacts: ['operations', [E, E, E, V, V, N]],
   supplies: ['operations', [E, E, E, E, N, N]],
+  'laundry.reopen': ['operations', [E, E, N, N, N, N]], // S-127: reopening a settled month is owner/manager only (the accountant edits laundry but may not reopen)
   laundry: ['operations', [E, E, E, E, V, N]], // faz-12 madde 5: Muhasebeci edits (invoice, "Ödendi")
+  camera: ['operations', [E, E, V, N, N, N]], // Faz 20 (K-49…K-53): view = status and alarms, edit = settings and secrets
+  'camera.enroll': ['operations', [E, E, E, N, N, N]], // K-51: take a guest's face from the camera (biometric)
   // Reports
   'reports.operations': ['reports', [E, E, N, E, N, N]],
   'reports.finance': ['reports', [E, V, N, E, N, N]],

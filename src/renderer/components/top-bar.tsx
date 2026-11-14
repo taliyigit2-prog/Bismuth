@@ -8,7 +8,6 @@ import { SidebarTrigger } from '@/components/ui/sidebar'
 import { Separator } from '@/components/ui/separator'
 import { useSettings } from '@/lib/api/hooks'
 import { useFormat } from '@/hooks/use-format'
-import { useIsMobile } from '@/hooks/use-mobile'
 import { ConnectionBadge } from '@/components/connection-status'
 import { UserMenu } from '@/features/auth/user-menu'
 import { CashDrawerButton } from '@/components/cash-drawer/cash-drawer-button'
@@ -28,15 +27,14 @@ export function TopBar({
   const locale = isAppLocale(i18n.language) ? i18n.language : 'tr'
   const hotelName = settings.data?.['hotel.name'] ?? t('app.name')
   const f = useFormat()
-  const isMobile = useIsMobile()
   const day = today()
   const todayText = t('topbar.todayIs', { date: formatDate(day, locale, 'full') })
-  // The phone has room for a short weekday and the day ("Cmt, 10 Eki"), not the year or the word "Bugün"; the full
-  // date is the title and what a screen reader reads.
+  // Below 1024 px (phone, a 1280 px screen at 150% zoom) there is room for a short weekday and the day
+  // ("Cmt, 10 Eki"), not the year or the word "Bugün"; the full date is the title and what a screen reader reads.
   const shortWeekday = new Intl.DateTimeFormat(locale, { weekday: 'short', timeZone: 'UTC' }).format(
     new Date(`${day}T00:00:00Z`)
   )
-  const shownText = isMobile ? `${shortWeekday}, ${f.dayMonth(day)}` : todayText
+  const shortText = `${shortWeekday}, ${f.dayMonth(day)}`
   const isMac = isMacLike()
   const searchHint = shortcutHint('search', isMac)
   return (
@@ -52,14 +50,10 @@ export function TopBar({
           {hotelName}
         </p>
         <p className="text-muted-foreground truncate text-xs" data-testid="today-label" title={todayText}>
-          {shownText === todayText ? (
-            todayText
-          ) : (
-            <>
-              <span aria-hidden>{shownText}</span>
-              <span className="sr-only">{todayText}</span>
-            </>
-          )}
+          <span aria-hidden className="lg:hidden">
+            {shortText}
+          </span>
+          <span className="max-lg:sr-only">{todayText}</span>
         </p>
       </div>
       <ConnectionBadge />

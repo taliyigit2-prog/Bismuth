@@ -11,3 +11,4 @@ Faz 3'te eklenenler (2026-10-04, aynı kaynak): `table`, `tabs`, `popover`, `che
 Faz 15 (P15a1): `Table` `density="compact"` alır (satır ve başlık yüksekliği küçülür); kişinin "Sıkışık" yoğunluk seçimi
 (`<html data-density="compact">`) bütün tabloları aynı biçimde sıklaştırır.
 Yeni bileşen: aynı kaynaktan kopyala, bu listeye ekle.
+P17c (2026-11-13, aynı kaynak): `context-menu` (sağ tık / telefonda uzun basma menüsü; `Content`, `Item`, `Label`, `Separator`; öğeler `dropdown-menu` ile aynı 44 px telefon ayarı). Yeni bağımlılık yok (`radix-ui` paketinin parçası).

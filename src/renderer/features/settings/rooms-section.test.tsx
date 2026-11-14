@@ -122,10 +122,44 @@ describe('Odalar ve tipler', () => {
           group: 'custom',
           basePriceMinor: 400_000,
           weekendPriceMinor: 450_000,
+          hourlyPriceMinor: null,
           baseCurrency: 'TRY'
         }
       ])
     )
+  })
+
+  it('oda tipine isteğe bağlı saat ücreti yazılır (K-48) ve tabloda görünür', async () => {
+    const transport = adminTransport()
+    await render(transport)
+    const user = userEvent.setup()
+    await user.click(await screen.findByTestId('add-type'))
+    await user.type(await screen.findByTestId('type-name'), 'Saatlik oda')
+    await user.type(screen.getByLabelText('Saat ücreti'), '300')
+    await user.click(screen.getByTestId('dialog-save'))
+    await waitFor(() =>
+      expect(transport.callsTo('rooms.createType')).toEqual([
+        expect.objectContaining({ name: 'Saatlik oda', hourlyPriceMinor: 30_000 })
+      ])
+    )
+    expect(await screen.findByText('₺300')).toBeInTheDocument()
+  })
+
+  it('satışlar arası temizlik süresi alandan çıkılınca kaydedilir; geçersiz sayı söylenir', async () => {
+    const transport = adminTransport()
+    await render(transport)
+    const user = userEvent.setup()
+    const field = await screen.findByLabelText('Satışlar arası temizlik süresi (dk)')
+    expect(field).toHaveValue('60')
+    await user.clear(field)
+    await user.type(field, '999')
+    await user.tab()
+    expect(await screen.findByText('0 ile 240 arasında bir sayı yazın.')).toBeInTheDocument()
+    expect(transport.callsTo('settings.set')).toEqual([])
+    await user.clear(field)
+    await user.type(field, '45')
+    await user.tab()
+    await waitFor(() => expect(transport.callsTo('settings.set')).toEqual([{ 'dayUse.turnoverMinutes': 45 }]))
   })
 
   it('aynı ad ikinci kez verilirse alanın altında söylenir; bildirim çıkmaz', async () => {

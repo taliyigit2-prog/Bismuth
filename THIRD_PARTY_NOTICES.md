@@ -1275,6 +1275,54 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
+## Camera module (optional; runs only when switched on in Settings)
+
+Bismuth can start a separate Python program ("sidecar", folder `otel-kamera/`) that recognises faces from a hotel camera.
+It listens on 127.0.0.1 only, downloads nothing and sends nothing out; its model files ship inside the installer.
+
+### Licence warning (owner decision K-57, 2026-11-13)
+
+- The InsightFace `buffalo_s` model weights are licensed by their authors for **non-commercial research purposes only**.
+  Using them for hotel door security is not "research"; the licence text does not define commercial use, so a risk
+  remains. The owner knowingly keeps them for the owner's own single hotel and does not sell or pass on this program.
+- Ultralytics YOLO11 is **AGPL-3.0**. It is run as a separate process and its code is never modified. Ultralytics
+  states on its own licence page that internal business use also needs an Enterprise licence; that is a company policy
+  stricter than the licence text.
+- Consequence: **this build must not be sold, sub-licensed or handed to another hotel with these models.** Before any
+  such step, replace them with openly licensed models (YuNet MIT + SFace Apache-2.0; plan in
+  `docs/analiz/06-kamera-entegrasyonu.md` section 6.2) or obtain written permission / an Enterprise licence.
+- Telemetry of the libraries is switched off (`ultralytics settings.sync=False`, offline environment variables).
+
+### Model files
+
+| File | Source | Licence |
+|---|---|---|
+| yolo11n.pt | Ultralytics (github.com/ultralytics/assets) | AGPL-3.0 |
+| buffalo_s (det_500m.onnx, w600k_mbf.onnx) | InsightFace model zoo (github.com/deepinsight/insightface) | non-commercial research only |
+
+### Python packages (pinned in `otel-kamera/requirements.txt` and `requirements-bundle.txt`)
+
+| Package | Version | Licence | Use |
+|---|---|---|---|
+| fastapi | 0.115.6 | MIT | HTTP surface of the sidecar (127.0.0.1 only) |
+| uvicorn | 0.34.0 | BSD-3-Clause | ASGI server |
+| python-multipart | 0.0.33 | Apache-2.0 | form uploads |
+| pydantic | 2.14.3 | MIT | request validation |
+| numpy | 2.5.4 | BSD-3-Clause | image and vector maths |
+| opencv-python-headless | 5.0.0.93 | Apache-2.0 (bundled FFmpeg: LGPL-2.1, dynamically linked) | RTSP reading, JPEG |
+| supervision | 0.31.7 | MIT | detections and zone helpers |
+| ultralytics | 8.4.212 | AGPL-3.0 | YOLO11n person detection; code is called, never modified (K-57) |
+| insightface | 0.7.3 | MIT (code) | face detection and recognition; model weights are NON-COMMERCIAL (below) |
+| onnxruntime | 1.32.0 | MIT | runs the InsightFace models on the CPU |
+| torch | 2.15.0 | BSD-3-Clause | PyTorch (CPU build) runs YOLO11n for Ultralytics |
+| torchvision | 0.29.2 | BSD-3-Clause | image helpers of PyTorch used by Ultralytics |
+
+Pulled in by these (versions fixed when the add-on is built): scipy, scikit-learn, scikit-image, matplotlib, onnx, albumentations, sympy, networkx, pillow, polars, av, requests: BSD / MIT / Apache-2.0 / PSF style licences (matplotlib: PSF-based).
+
+The camera is a separate download (the camera add-on, `Bismuth-Kamera-*.zip`). Full licence texts of every Python package in it are
+in its `licenses/` folder; the interpreter is Python (PSF-2.0, python.org embeddable / python-build-standalone).
+The Ultralytics source (AGPL-3.0) is available from github.com/ultralytics/ultralytics for the pinned version.
+
 ## Source code adapted from other projects
 
 ### electron-vite react-ts template (alex8088/quick-start) (MIT)

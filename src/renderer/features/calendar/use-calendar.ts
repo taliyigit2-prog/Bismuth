@@ -38,9 +38,10 @@ export interface GridData {
  * booked twelve years on, an import) reads the years again too; read afresh each time the calendar opens (a new
  * start year from the settings).
  */
-export function useGridYears(today: LocalDate): CalendarYears | null {
+export function useGridYears(today: LocalDate, enabled = true): CalendarYears | null {
   const transport = useTransport()
   const query = useQuery({
+    enabled,
     queryKey: ['reservations.grid', 'calendar.bounds'],
     queryFn: () => transport.call('calendar.bounds', {}),
     staleTime: 0,
@@ -50,13 +51,14 @@ export function useGridYears(today: LocalDate): CalendarYears | null {
 }
 
 /** The grid of [from, to), read as whole months. */
-export function useGridData(from: LocalDate, to: LocalDate): GridData {
+export function useGridData(from: LocalDate, to: LocalDate, enabled = true): GridData {
   const transport = useTransport()
   const months = useMemo(() => monthsCovering(from, to), [from, to])
   const results = useQueries({
     queries: months.map((range) => ({
       queryKey: queryKey('reservations.grid', range),
       queryFn: () => transport.call('reservations.grid', range),
+      enabled,
       staleTime: STALE_MS
     }))
   })

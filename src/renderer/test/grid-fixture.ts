@@ -114,6 +114,8 @@ export interface CalendarTransportOptions {
   bounds?: () => Promise<ProcedureOutput<'calendar.bounds'>>
   /** Answer of `reservations.findStays` (default: guest name or exact room number over the demo hotel). */
   findStays?: (query: string) => ProcedureOutput<'reservations.findStays'>
+  /** Answer of `reservations.recentEnded` (default: none). */
+  recentEnded?: ProcedureOutput<'reservations.recentEnded'>
 }
 
 /**
@@ -163,6 +165,50 @@ export function calendarTransport(hotel: DemoHotel, opts: CalendarTransportOptio
       lifted.add(id)
       const block = [...added, ...hotel.blocks].find((b) => b.id === id)
       return { ...block, note: null, manual: true } as never
+    }
+    if (n === 'reservations.recentEnded') {
+      base.calls.push({ name: n, input })
+      return (opts.recentEnded ?? []) as never
+    }
+    if (n === 'today.summary') {
+      // The strip above the grid (P17c): today's arrivals and departures read off the demo hotel.
+      base.calls.push({ name: n, input })
+      const grid = gridFromDemo(hotel, addDays(hotel.today, -400), addDays(hotel.today, 400))
+      const row = (s: Grid['stays'][number]) => ({
+        stayId: s.id,
+        reservationId: s.reservationId,
+        reservationCode: s.code,
+        roomNumber: hotel.rooms.find((r) => r.id === s.roomId)?.number ?? '',
+        guestName: s.guestName,
+        checkIn: s.checkIn,
+        checkOut: s.checkOut,
+        nights: s.nights.length,
+        checkedInAt: s.stayStatus === 'planned' ? null : '2026-10-04T08:00:00.000Z',
+        checkedOutAt: s.stayStatus === 'done' ? '2026-10-04T08:00:00.000Z' : null,
+        overdue: false,
+        note: null,
+        balanceMinor: null,
+        currency: null
+      })
+      const inHouse = grid.stays.filter((s) => s.stayStatus === 'in_house')
+      return {
+        at: '2026-10-04T09:00:00.000Z',
+        today: hotel.today,
+        nowTime: '09:00',
+        checkoutTime: '12:00',
+        sellableRooms: hotel.rooms.length,
+        soldTonight: inHouse.length,
+        arrivals: grid.stays.filter((s) => s.checkIn === hotel.today).map(row),
+        departures: grid.stays.filter((s) => s.checkOut === hotel.today).map(row),
+        inHouse: { rooms: inHouse.length, people: inHouse.length },
+        kbsMissing: null,
+        dirtyRooms: null,
+        tasks: null,
+        handovers: null,
+        drawer: null,
+        specialDays: [],
+        reminders: []
+      } as never
     }
     if (n === 'calendar.bounds') {
       base.calls.push({ name: n, input })

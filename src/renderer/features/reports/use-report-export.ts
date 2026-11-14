@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 import type { ReportExportInput, ReportKind } from '@shared/contract/procedures/reports'
 import { useFormat } from '@/hooks/use-format'
 import { useApiMutation } from '@/lib/api/hooks'
+import { shell } from '@/lib/shell'
 import { useCan } from '@/lib/view-as'
 import { saveExport } from '../data-transfer/files'
 
@@ -64,7 +65,7 @@ export function usePrint() {
       }
       window.addEventListener('afterprint', done)
       // Let React draw the print layout first.
-      setTimeout(() => window.print(), 50)
+      setTimeout(() => shell.print(), 50)
     }
   }
 }

@@ -400,6 +400,11 @@ export function SupplyPage({ today = todayOf() }: { today?: LocalDate }) {
   const active = rows.filter((p) => p.active)
   const opened = rows.find((p) => p.id === openId) ?? null
   const categoryName = useCategoryName(categories.data ?? [])
+  const emptyBody = canEdit
+    ? t('supply.emptyBody')
+    : isMobile
+      ? t('supply.emptyBodyPhone')
+      : t('supply.emptyBodyViewOnly')
   const actions =
     canEdit || canBuy ? (
       <div className="flex flex-wrap gap-2">
@@ -423,7 +428,7 @@ export function SupplyPage({ today = todayOf() }: { today?: LocalDate }) {
         query={query}
         loading={<SupplySkeleton />}
         isEmpty={(list) => list.length === 0}
-        empty={{ icon: ShoppingCartIcon, title: t('supply.emptyTitle'), body: t('supply.emptyBody') }}
+        empty={{ icon: ShoppingCartIcon, title: t('supply.emptyTitle'), body: emptyBody }}
       >
         {(list) => (
           <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)} className="gap-4">
@@ -443,7 +448,7 @@ export function SupplyPage({ today = todayOf() }: { today?: LocalDate }) {
               />
             </TabsContent>
             <TabsContent value="purchases">
-              <PurchasesList today={today} products={list} canEdit={canBuy} />
+              <PurchasesList today={today} products={list} canEdit={canBuy} isMobile={isMobile} />
             </TabsContent>
             <TabsContent value="summary">
               <MonthSummaryView today={today} base={base} />

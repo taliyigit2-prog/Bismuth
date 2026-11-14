@@ -7,6 +7,7 @@ import { APP_LOCALES } from '../../format'
 import { diffDays, isLocalDate, type LocalDate } from '../../date'
 import { METHOD_GROUPS } from '../../domain/cash'
 import { MAX_PERIOD_DAYS } from '../../domain/reports-period'
+import { nightReportSchema } from '../fees'
 import { exportFileSchema } from '../backup'
 import { proc, type Procedure } from '../proc'
 import { i18nTextSchema, idSchema, localDateSchema, minorSchema } from '../rooms'
@@ -20,18 +21,31 @@ const methodGroupSchema = z.enum(METHOD_GROUPS)
 export const listNameSchema = z.object({ name: z.string().nullable(), nameI18n: i18nTextSchema.nullable() })
 export type ListName = z.infer<typeof listNameSchema>
 
-export const periodInputSchema = z
-  .object({ from: localDateSchema, to: localDateSchema })
-  .strict()
-  .refine((p) => p.from < p.to, { path: ['to'], message: 'to after from' })
-  .refine(
-    (p) =>
-      !isLocalDate(p.from) ||
-      !isLocalDate(p.to) ||
-      diffDays(p.from as LocalDate, p.to as LocalDate) <= MAX_PERIOD_DAYS,
-    { path: ['to'], message: 'period too long' }
-  )
+const periodRules = <T extends z.ZodType<{ from: string; to: string }>>(schema: T) =>
+  schema
+    .refine((p) => p.from < p.to, { path: ['to'], message: 'to after from' })
+    .refine(
+      (p) =>
+        !isLocalDate(p.from) ||
+        !isLocalDate(p.to) ||
+        diffDays(p.from as LocalDate, p.to as LocalDate) <= MAX_PERIOD_DAYS,
+      { path: ['to'], message: 'period too long' }
+    )
+
+export const periodInputSchema = periodRules(
+  z.object({ from: localDateSchema, to: localDateSchema }).strict()
+)
 export type PeriodInput = z.input<typeof periodInputSchema>
+
+/** "Konaklama türü" filter of the occupancy views (K-48): nights only, hourly (same-day) stays only, or both. */
+export const STAY_KINDS = ['all', 'overnight', 'hourly'] as const
+export type StayKind = (typeof STAY_KINDS)[number]
+
+/** A period read that can be narrowed to one kind of stay (summary KPIs, occupancy report). */
+export const kindedPeriodInputSchema = periodRules(
+  z.object({ from: localDateSchema, to: localDateSchema, stayKind: z.enum(STAY_KINDS).optional() }).strict()
+)
+export type KindedPeriodInput = z.input<typeof kindedPeriodInputSchema>
 
 const yearSchema = z.number().int().min(2000).max(2100)
 
@@ -44,7 +58,7 @@ export const reportsContextSchema = z.object({
   baseCurrency: z.string(),
   /** First day with any payment, expense or night; null on an empty hotel. */
   firstDay: localDateSchema.nullable(),
-  /** `reports.dayUseInOccupancy`: same-day stays counted as sold nights. */
+  /** Same-day and hourly stays always count (S-105). */
   dayUseIncluded: z.boolean()
 })
 export type ReportsContext = z.infer<typeof reportsContextSchema>
@@ -57,7 +71,7 @@ export const reportSummarySchema = z.object({
   baseCurrency: z.string(),
   occupancy: z.object({
     soldNights: count,
-    /** Same-day stays in the period (counted in `soldNights` only when included). */
+    /** Same-day and hourly sales in the period (each room-day with one counts once in `soldNights`). */
     dayUseNights: count,
     sellableNights: count,
     occupancyBp: bp,
@@ -74,7 +88,10 @@ export const reportSummarySchema = z.object({
       profitMinor: minorSchema,
       /** Room-night charges of the period's nights (ADR, RevPAR). */
       roomRevenueMinor: minorSchema,
+      /** Nightly rate only: night charges / sold nights (same-day and hourly revenue stays out). */
       adrMinor: minorSchema,
+      /** Room charges of same-day and hourly sales (part of `roomRevenueMinor`); the sale count is `dayUseNights`. */
+      hourlyRevenueMinor: minorSchema,
       revparMinor: minorSchema,
       missingRate: missingRateSchema,
       /** Room-night charges in another currency with no rate known yet: left out of the room revenue. */
@@ -246,6 +263,16 @@ export const occupancyReportSchema = z.object({
   topGuests: z
     .array(z.object({ guestId: idSchema, name: z.string(), stays: count, revenueMinor: minorSchema }))
     .nullable(),
+  /**
+   * Bookings that did not happen and money that went back, each on its own line (K-55): cancelled and "gelmedi"
+   * reservations of the period; refund rows and their base-currency total (null without `reports.finance`).
+   */
+  outcomes: z.object({
+    cancelled: count,
+    noShow: count,
+    refundRows: count.nullable(),
+    refundMinor: minorSchema.nullable()
+  }),
   /** Room-night charges in another currency with no rate known yet: left out of the room revenue. */
   missingNightRates: count
 })
@@ -463,7 +490,9 @@ export const reportExportInputSchema = z
     to: localDateSchema.optional(),
     years: z.array(yearSchema).min(1).max(2).optional(),
     year: yearSchema.optional(),
-    month: z.number().int().min(1).max(12).optional()
+    month: z.number().int().min(1).max(12).optional(),
+    /** The "Konaklama türü" filter of the screen (summary and occupancy files carry the same numbers). */
+    stayKind: z.enum(STAY_KINDS).optional()
   })
   .strict()
   .refine((v) => v.format === 'xlsx' || !!v.table, { path: ['table'], message: 'csv needs one table' })
@@ -472,15 +501,17 @@ export type ReportExportInput = z.input<typeof reportExportInputSchema>
 
 export const reportsProcedures = {
   'reports.context': proc(z.object({}).strict(), reportsContextSchema),
-  'reports.summary': proc(periodInputSchema, reportSummarySchema),
+  'reports.summary': proc(kindedPeriodInputSchema, reportSummarySchema),
   'reports.monthly': proc(periodInputSchema, monthlyReportSchema),
   'reports.yearly': proc(yearlyInputSchema, yearlyReportSchema),
-  'reports.occupancy': proc(periodInputSchema, occupancyReportSchema),
+  'reports.occupancy': proc(kindedPeriodInputSchema, occupancyReportSchema),
   'reports.cash': proc(periodInputSchema, cashReportSchema),
   'reports.expenses': proc(periodInputSchema, expensesReportSchema),
   'reports.staff': proc(staffInputSchema, staffReportSchema),
   'reports.monthEnd': proc(monthEndInputSchema, monthEndSchema),
   'reports.monthEndTicks': proc(monthEndInputSchema, monthEndTicksSchema),
   'reports.setMonthEndTicks': proc(monthEndTicksInputSchema, monthEndTicksSchema),
+  /** One A4 page for a day: arrivals, departures, in-house, no-shows, room states and the cash summary (P21d). */
+  'reports.nightReport': proc(z.object({ date: localDateSchema }).strict(), nightReportSchema),
   'reports.export': proc(reportExportInputSchema, exportFileSchema)
 } as const satisfies Record<string, Procedure>

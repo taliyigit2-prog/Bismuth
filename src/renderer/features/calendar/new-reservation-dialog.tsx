@@ -7,10 +7,11 @@
 import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import { ChevronDownIcon, ShieldAlertIcon, TriangleAlertIcon } from 'lucide-react'
-import { MAX_STAY_NIGHTS } from '@shared/contract/reservations'
+import { TEXT_MAX } from '@shared/contract/text'
+import { MAX_STAY_NIGHTS, newGuestSchema } from '@shared/contract/reservations'
 import { addDays, diffDays, localDateOf, type LocalDate } from '@shared/date'
 import { suggestNightPrice, splitFullName, type PriceReason } from '@shared/domain/booking'
-import { staySlots } from '@shared/domain/stays'
+import { isValidHourRange, staySlots } from '@shared/domain/stays'
 import { money, sum } from '@shared/money'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -24,6 +25,10 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { DateInput } from '@/components/date-input'
 import { GuestCombobox, type ComboGuest } from '@/components/guest-combobox'
 import { MoneyInput } from '@/components/money-input'
+import { useOverAmountConfirm } from '@/components/money-input-confirm'
+import { FieldError } from '@/components/field-error'
+import { useSchemaErrors, type FieldErrors } from '@/lib/form-errors'
+import { TimeInput } from '@/components/time-input'
 import { ResponsiveDialog } from '@/components/responsive-dialog'
 import { ErrorState } from '@/components/states'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -35,6 +40,7 @@ import { deferForPendingAmount } from '@/features/settings/use-admin'
 import { cn } from '@/lib/utils'
 import {
   localName,
+  requestGroupPanel,
   requestPanel,
   useBookingMutation,
   useBookingOptions,
@@ -43,7 +49,7 @@ import {
   type BookingRoom
 } from './booking-api'
 import { GuestSummaryCard, StandingNoteAlert } from './guest-summary-card'
-import { CHANNEL_REF_MAX, GUEST_NAME_MAX, RESERVATION_NOTE_MAX } from './booking-limits'
+import { CHANNEL_REF_MAX, GROUP_NAME_MAX, GUEST_NAME_MAX, RESERVATION_NOTE_MAX } from './booking-limits'
 import { NightPriceTable } from './night-price-table'
 import { OverrideReasonField } from './override-dialog'
 import { RoomMultiPicker } from './room-multi-picker'
@@ -125,6 +131,11 @@ export function NewReservationDialog({
             if (onCreated) onCreated(id)
             else requestPanel(id)
           }}
+          onGroupDone={(groupId, firstReservationId) => {
+            onOpenChange(false)
+            if (onCreated) onCreated(firstReservationId)
+            else requestGroupPanel(groupId)
+          }}
         />
       )}
     </ResponsiveDialog>
@@ -134,11 +145,14 @@ export function NewReservationDialog({
 function NewReservationForm({
   seed,
   options,
-  onDone
+  onDone,
+  onGroupDone
 }: {
   seed: NewReservationSeed
   options: NonNullable<ReturnType<typeof useBookingOptions>['data']>
   onDone: (reservationId: string) => void
+  /** A group was booked (G-194): its id and the id of its first reservation. */
+  onGroupDone: (groupId: string, firstReservationId: string) => void
 }) {
   const { t } = useTranslation()
   const f = useFormat()
@@ -149,6 +163,9 @@ function NewReservationForm({
   const [query, setQuery] = useState('')
   const [checkIn, setCheckIn] = useState<LocalDate>(seed.date)
   const [checkOut, setCheckOut] = useState<LocalDate>(addDays(seed.date, 1))
+  /** Hours of a same-day sale (S-103): a day-use always names them, so it never locks the whole day. */
+  const [startTime, setStartTime] = useState('')
+  const [endTime, setEndTime] = useState('')
   const [roomIds, setRoomIds] = useState<string[]>(
     seed.roomId && options.rooms.some((r) => r.id === seed.roomId) ? [seed.roomId] : []
   )
@@ -165,12 +182,22 @@ function NewReservationForm({
   const [status, setStatus] = useState<'confirmed' | 'tentative'>('confirmed')
   const [tagIds, setTagIds] = useState<string[]>([])
   const [notes, setNotes] = useState('')
+  /** "Grup rezervasyonu" (G-194): one reservation per room, a guest name per room, one group. */
+  const [groupOn, setGroupOn] = useState(false)
+  const [groupName, setGroupName] = useState('')
+  const [roomNames, setRoomNames] = useState<Record<string, string>>({})
   /** The person and the entries the blacklist tick was given for (another person needs a tick of their own). */
   const [blacklistOkFor, setBlacklistOkFor] = useState<string | null>(null)
   const [standingOk, setStandingOk] = useState(false)
   const [overrideReason, setOverrideReason] = useState('')
   const canOverride = can('rooms.block', 'edit')
   const [serverHits, setServerHits] = useState<BlacklistHit[] | null>(null)
+  /** Messages under the new guest's fields (H-07: a name over the limit, a phone that is not a number). */
+  const [guestErrors, setGuestErrors] = useState<FieldErrors>({})
+  const checkSchema = useSchemaErrors()
+  /** The price list the "0 price" question was answered "save anyway" for. */
+  const [zeroOkFor, setZeroOkFor] = useState<string | null>(null)
+  const zero = useOverAmountConfirm()
   const [error, setError] = useState<string | null>(null)
   const errorRef = useRef<HTMLParagraphElement>(null)
   // The form scrolls: a refusal is brought into view next to the buttons.
@@ -184,6 +211,15 @@ function NewReservationForm({
     { q: debounced, limit: 8 },
     { enabled: debounced.length >= 2 && can('guests') }
   )
+  // 04 §3: a name typed for a new guest that already has a card is offered as that card (no double cards).
+  const typedName = guest?.kind === 'new' ? `${guest.firstName} ${guest.lastName}`.trim().slice(0, 100) : ''
+  const sameName = useDebounced(typedName)
+  const similar = useApiQuery(
+    'booking.searchGuests',
+    { q: sameName, limit: 3 },
+    { enabled: sameName.length >= 3 && guest?.kind === 'new' && can('guests') }
+  )
+  const similarGuests = guest?.kind === 'new' && sameName === typedName ? (similar.data ?? []) : []
   const comboGuests: ComboGuest[] = (search.data ?? []).map((g) => ({
     id: g.id,
     name: `${g.firstName} ${g.lastName}`.trim(),
@@ -195,9 +231,13 @@ function NewReservationForm({
 
   const candidate =
     guest?.kind === 'existing'
-      ? { name: guest.name, guestId: guest.id }
+      ? { name: guest.name.slice(0, 160), guestId: guest.id }
       : guest?.kind === 'new'
-        ? { name: `${guest.firstName} ${guest.lastName}`.trim(), phone: guest.phone.trim() || null }
+        ? {
+            // H-07: a very long typed name is checked by its start (the check takes 160 characters at most).
+            name: `${guest.firstName} ${guest.lastName}`.trim().slice(0, 160),
+            phone: guest.phone.trim().slice(0, 40) || null
+          }
         : null
   const candidateKey = useDebounced(candidate)
   const blacklist = useApiQuery('booking.checkBlacklist', candidateKey ?? { name: '' }, {
@@ -214,6 +254,7 @@ function NewReservationForm({
   /** A new person (or another spelling, another phone) drops the earlier tick and the earlier refusal. */
   const changeGuest = (next: GuestChoice): void => {
     setGuest(next)
+    setGuestErrors({})
     setServerHits(null)
     setBlacklistOkFor(null)
   }
@@ -228,7 +269,15 @@ function NewReservationForm({
 
   const validDates = checkOut >= checkIn && diffDays(checkIn, checkOut) <= MAX_STAY_NIGHTS
   const rangeEnd = checkOut > checkIn ? checkOut : addDays(checkIn, 1)
-  const taken = useApiQuery('booking.availability', { from: checkIn, to: checkOut }, { enabled: validDates })
+  const sameDay = checkIn === checkOut
+  const hoursOk = isValidHourRange(startTime, endTime)
+  const taken = useApiQuery(
+    'booking.availability',
+    sameDay && hoursOk
+      ? { from: checkIn, to: checkOut, startTime, endTime }
+      : { from: checkIn, to: checkOut },
+    { enabled: validDates && (!sameDay || hoursOk) }
+  )
   const days = useApiQuery('calendar.days', { from: checkIn, to: rangeEnd }, { enabled: validDates })
   const special = useMemo(
     () => new Set((days.data ?? []).filter((d) => PRICED_KINDS.has(d.kind)).map((d) => d.occurrenceDate)),
@@ -284,19 +333,26 @@ function NewReservationForm({
     setOverrides({})
   }
 
+  const onCreateError = (e: ApiError): boolean => {
+    if (e.messageKey === 'errors.blacklistMatch') {
+      const details = e.details as { hits?: BlacklistHit[] } | undefined
+      setServerHits(details?.hits ?? [])
+      setBlacklistOkFor(null)
+      return true
+    }
+    return false
+  }
   const create = useBookingMutation('booking.create', {
     success: t('booking.toast.created'),
     onSuccess: (view) => onDone(view.reservation.id),
-    onError: (e: ApiError) => {
-      if (e.messageKey === 'errors.blacklistMatch') {
-        const details = e.details as { hits?: BlacklistHit[] } | undefined
-        setServerHits(details?.hits ?? [])
-        setBlacklistOkFor(null)
-        return true
-      }
-      return false
-    }
+    onError: onCreateError
   })
+  const createGroup = useBookingMutation('booking.createGroup', {
+    success: t('booking.group.created'),
+    onSuccess: (view) => onGroupDone(view.id, view.rooms[0]?.reservationId ?? ''),
+    onError: onCreateError
+  })
+  const asGroup = groupOn && rooms.length >= 2
 
   const submit = (e: FormEvent<HTMLFormElement>): void => {
     e.preventDefault()
@@ -304,39 +360,91 @@ function NewReservationForm({
     setError(null)
     if (!guest || (guest.kind === 'new' && !guest.firstName.trim()))
       return setError(t('booking.form.needGuest'))
+    if (guest.kind === 'new') {
+      const found = checkSchema(newGuestSchema, {
+        firstName: guest.firstName.trim(),
+        lastName: guest.lastName.trim(),
+        phone: guest.phone.trim() || null,
+        email: guest.email.trim() || null
+      })
+      setGuestErrors(found)
+      if (Object.keys(found).length) return setError(t('form.invalid'))
+    }
     if (!validDates)
       return setError(
         checkOut < checkIn ? t('booking.form.badDates') : t('booking.form.tooLong', { max: MAX_STAY_NIGHTS })
       )
+    if (sameDay && !hoursOk) return setError(t('booking.hourly.badRange'))
     if (!rooms.length) return setError(t('booking.form.needRoom'))
     if (!channelId) return setError(t('booking.form.needChannel'))
     if (allPrices.some((p) => p === null)) return setError(t('errors.priceMissing'))
+    // H-08: a night at 0 is allowed (a free stay) but asked once, so a missed digit does not slip through.
+    const priceKey = `${currency}:${allPrices.join(',')}`
+    if (allPrices.some((p) => p === 0) && zeroOkFor !== priceKey) {
+      return zero.ask({
+        title: t('booking.price.zeroTitle'),
+        body: t('booking.price.zeroBody'),
+        action: t('booking.price.zeroAction'),
+        go: () => {
+          setZeroOkFor(priceKey)
+          // Sent again once the answer is kept (the state is read by the next submit).
+          setTimeout(
+            () =>
+              (document.getElementById('new-reservation-form') as HTMLFormElement | null)?.requestSubmit(),
+            0
+          )
+        }
+      })
+    }
     if (hitsBlockReception) return setError(t('booking.blacklist.blockedHint'))
     if (hits.length && !blacklistOk) return setError(t('booking.blacklist.confirmFirst'))
     if (standing?.level === 'warn' && !standingOk) return setError(t('booking.standing.confirmFirst'))
     if (closedChosen.length && !canOverride) return setError(t('booking.override.noRight'))
     if (closedChosen.length && overrideReason.trim().length < 3)
       return setError(t('booking.override.needReason'))
+    const guestInput =
+      guest.kind === 'existing'
+        ? { id: guest.id }
+        : {
+            firstName: guest.firstName.trim(),
+            lastName: guest.lastName.trim(),
+            phone: guest.phone.trim() || null,
+            email: guest.email.trim() || null
+          }
+    const stayOf = (r: BookingRoom) => ({
+      roomId: r.id,
+      checkIn,
+      checkOut,
+      prices: slots.map((date) => ({ date, priceMinor: priceOf(r, date) ?? 0 })),
+      ...(sameDay ? { startTime, endTime } : {})
+    })
+    if (groupOn && rooms.length === 1) return setError(t('booking.group.needRooms'))
+    if (asGroup) {
+      if (!groupName.trim()) return setError(t('booking.group.needName'))
+      return createGroup.mutate({
+        name: groupName.trim(),
+        leader: guestInput,
+        channelId,
+        channelRef: channelRef.trim() || null,
+        status,
+        currency,
+        rooms: rooms.map((r) => {
+          const named = (roomNames[r.id] ?? '').trim()
+          return { stay: stayOf(r), ...(named ? { guest: splitFullName(named) } : {}) }
+        }),
+        notes: notes.trim() || null,
+        tagIds,
+        blacklistConfirmed: hits.length ? blacklistOk : undefined,
+        ...(closedChosen.length ? { overrideBlockReason: overrideReason.trim() } : {})
+      })
+    }
     create.mutate({
-      guest:
-        guest.kind === 'existing'
-          ? { id: guest.id }
-          : {
-              firstName: guest.firstName.trim(),
-              lastName: guest.lastName.trim(),
-              phone: guest.phone.trim() || null,
-              email: guest.email.trim() || null
-            },
+      guest: guestInput,
       channelId,
       channelRef: channelRef.trim() || null,
       status,
       currency,
-      stays: rooms.map((r) => ({
-        roomId: r.id,
-        checkIn,
-        checkOut,
-        prices: slots.map((date) => ({ date, priceMinor: priceOf(r, date) ?? 0 }))
-      })),
+      stays: rooms.map(stayOf),
       notes: notes.trim() || null,
       tagIds,
       blacklistConfirmed: hits.length ? blacklistOk : undefined,
@@ -345,262 +453,389 @@ function NewReservationForm({
   }
 
   return (
-    <form id="new-reservation-form" className="grid gap-4 sm:grid-cols-2" onSubmit={submit} noValidate>
-      <div className="grid gap-2 sm:col-span-2">
-        <GuestCombobox
-          label={t('calendar.new.guest')}
-          guests={comboGuests}
-          remote
-          value={guest?.kind === 'existing' ? guest.id : guest?.kind === 'new' ? NEW_GUEST : null}
-          selectedName={
-            guest?.kind === 'existing'
-              ? guest.name
-              : guest?.kind === 'new'
-                ? t('guestCombo.create', { name: `${guest.firstName} ${guest.lastName}`.trim() })
-                : undefined
-          }
-          onQueryChange={setQuery}
-          onChange={(id) => {
-            const g = comboGuests.find((x) => x.id === id)
-            changeGuest({ kind: 'existing', id, name: g?.name ?? '' })
-            setStandingOk(false)
-          }}
-          onCreate={(name) => {
-            const { firstName, lastName } = splitFullName(name)
-            changeGuest({ kind: 'new', firstName, lastName, phone: '', email: '' })
-          }}
-        />
-        {guest?.kind === 'new' ? (
-          <fieldset className="grid gap-3 rounded-lg border p-3 sm:grid-cols-2" data-testid="new-guest-form">
-            <legend className="px-1 text-xs font-medium">{t('booking.newGuest.title')}</legend>
-            <TextField
-              label={t('booking.newGuest.firstName')}
-              value={guest.firstName}
-              onChange={(v) => changeGuest({ ...guest, firstName: v })}
-              maxLength={GUEST_NAME_MAX}
-              testId="new-guest-first"
-            />
-            <TextField
-              label={t('booking.newGuest.lastName')}
-              value={guest.lastName}
-              onChange={(v) => changeGuest({ ...guest, lastName: v })}
-              maxLength={GUEST_NAME_MAX}
-              testId="new-guest-last"
-            />
-            <TextField
-              label={t('booking.newGuest.phone')}
-              value={guest.phone}
-              onChange={(v) => changeGuest({ ...guest, phone: v })}
-              type="tel"
-              ltr
-            />
-            <TextField
-              label={t('booking.newGuest.email')}
-              value={guest.email}
-              onChange={(v) => setGuest({ ...guest, email: v })}
-              type="email"
-              ltr
-            />
-          </fieldset>
-        ) : null}
-      </div>
-
-      {hits.length ? (
-        <BlacklistWarning
-          hits={hits}
-          confirmed={blacklistOk}
-          onConfirm={(ok) => setBlacklistOkFor(ok ? hitsKey : null)}
-          className="sm:col-span-2"
-        />
-      ) : null}
-      {standing ? (
+    <>
+      <form id="new-reservation-form" className="grid gap-4 sm:grid-cols-2" onSubmit={submit} noValidate>
         <div className="grid gap-2 sm:col-span-2">
-          <StandingNoteAlert note={standing} />
-          {standing.level === 'warn' ? (
-            <label className="flex min-h-8 items-center gap-2 text-sm max-md:min-h-11">
-              <Checkbox checked={standingOk} onCheckedChange={(c) => setStandingOk(c === true)} />
-              {t('booking.standing.confirm')}
-            </label>
+          <GuestCombobox
+            label={t('calendar.new.guest')}
+            guests={comboGuests}
+            remote
+            value={guest?.kind === 'existing' ? guest.id : guest?.kind === 'new' ? NEW_GUEST : null}
+            selectedName={
+              guest?.kind === 'existing'
+                ? guest.name
+                : guest?.kind === 'new'
+                  ? t('guestCombo.create', { name: `${guest.firstName} ${guest.lastName}`.trim() })
+                  : undefined
+            }
+            onQueryChange={setQuery}
+            onChange={(id) => {
+              const g = comboGuests.find((x) => x.id === id)
+              changeGuest({ kind: 'existing', id, name: g?.name ?? '' })
+              setStandingOk(false)
+            }}
+            onCreate={(name) => {
+              const { firstName, lastName } = splitFullName(name)
+              changeGuest({ kind: 'new', firstName, lastName, phone: '', email: '' })
+            }}
+          />
+          {guest?.kind === 'new' ? (
+            <fieldset
+              className="grid gap-3 rounded-lg border p-3 sm:grid-cols-2"
+              data-testid="new-guest-form"
+            >
+              <legend className="px-1 text-xs font-medium">{t('booking.newGuest.title')}</legend>
+              <TextField
+                label={t('booking.newGuest.firstName')}
+                value={guest.firstName}
+                onChange={(v) => changeGuest({ ...guest, firstName: v })}
+                maxLength={GUEST_NAME_MAX}
+                error={guestErrors.firstName}
+                testId="new-guest-first"
+              />
+              <TextField
+                label={t('booking.newGuest.lastName')}
+                value={guest.lastName}
+                onChange={(v) => changeGuest({ ...guest, lastName: v })}
+                maxLength={GUEST_NAME_MAX}
+                error={guestErrors.lastName}
+                testId="new-guest-last"
+              />
+              <TextField
+                label={t('booking.newGuest.phone')}
+                value={guest.phone}
+                onChange={(v) => changeGuest({ ...guest, phone: v })}
+                type="tel"
+                ltr
+                maxLength={TEXT_MAX.phone}
+                error={guestErrors.phone}
+                testId="new-guest-phone"
+              />
+              <TextField
+                label={t('booking.newGuest.email')}
+                value={guest.email}
+                onChange={(v) => setGuest({ ...guest, email: v })}
+                type="email"
+                ltr
+                error={guestErrors.email}
+              />
+              {similarGuests.length ? (
+                <div
+                  className="bg-muted/50 grid gap-2 rounded-md p-2 text-sm sm:col-span-2"
+                  data-testid="similar-guests"
+                >
+                  <p className="text-muted-foreground text-xs">{t('booking.newGuest.similar')}</p>
+                  {similarGuests.map((g) => {
+                    const name = `${g.firstName} ${g.lastName}`.trim()
+                    return (
+                      <div key={g.id} className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="min-w-0 break-words">
+                          {name}
+                          {g.phone ? (
+                            <bdi className="text-muted-foreground ms-2 text-xs" dir="ltr">
+                              {g.phone}
+                            </bdi>
+                          ) : null}
+                        </span>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            changeGuest({ kind: 'existing', id: g.id, name })
+                            setStandingOk(false)
+                          }}
+                          data-testid={`use-guest-${g.id}`}
+                        >
+                          {t('booking.newGuest.useCard')}
+                        </Button>
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : null}
+            </fieldset>
           ) : null}
         </div>
-      ) : null}
-      {guest?.kind === 'existing' ? (
-        <div className="sm:col-span-2">
-          <GuestSummaryCard guestId={guest.id} showNote={false} />
-        </div>
-      ) : null}
 
-      <DateInput
-        label={t('calendar.panel.checkInDate')}
-        value={checkIn}
-        onChange={(d) => {
-          setCheckIn(d)
-          if (checkOut < d) setCheckOut(addDays(d, 1))
-        }}
-      />
-      <DateInput
-        label={t('calendar.panel.checkOutDate')}
-        value={checkOut}
-        onChange={setCheckOut}
-        min={checkIn}
-      />
-      {checkIn === checkOut ? (
-        <p className="text-muted-foreground -mt-2 text-xs sm:col-span-2">{t('booking.form.dayUse')}</p>
-      ) : null}
-      {checkIn < localDateOf(new Date()) ? (
-        // QA3c1 #17: a past arrival is allowed (late entry) but never silently: the stay is saved as "planned".
-        <p role="status" className="flex items-start gap-2 text-sm sm:col-span-2" data-testid="past-check-in">
-          <TriangleAlertIcon className="text-warning mt-0.5 size-4 shrink-0" aria-hidden />
-          {t('booking.form.pastCheckIn')}
-        </p>
-      ) : null}
+        {hits.length ? (
+          <BlacklistWarning
+            hits={hits}
+            confirmed={blacklistOk}
+            onConfirm={(ok) => setBlacklistOkFor(ok ? hitsKey : null)}
+            className="sm:col-span-2"
+          />
+        ) : null}
+        {standing ? (
+          <div className="grid gap-2 sm:col-span-2">
+            <StandingNoteAlert note={standing} />
+            {standing.level === 'warn' ? (
+              <label className="flex min-h-8 items-center gap-2 text-sm max-md:min-h-11">
+                <Checkbox checked={standingOk} onCheckedChange={(c) => setStandingOk(c === true)} />
+                {t('booking.standing.confirm')}
+              </label>
+            ) : null}
+          </div>
+        ) : null}
+        {guest?.kind === 'existing' ? (
+          <div className="sm:col-span-2">
+            <GuestSummaryCard guestId={guest.id} showNote={false} />
+          </div>
+        ) : null}
 
-      <div className="sm:col-span-2">
-        <RoomMultiPicker
-          label={t('booking.rooms.label')}
-          rooms={options.rooms}
-          value={roomIds}
-          onChange={setRoomIds}
-          occupied={occupied}
-          blocked={blocked}
-          allowOverride={canOverride}
+        <DateInput
+          label={t('calendar.panel.checkInDate')}
+          value={checkIn}
+          onChange={(d) => {
+            setCheckIn(d)
+            if (checkOut < d) setCheckOut(addDays(d, 1))
+          }}
         />
-      </div>
-      {rooms.some((r) => occupied.has(r.id) || (blocked.has(r.id) && !canOverride)) ? (
-        <p role="alert" className="text-destructive text-sm sm:col-span-2">
-          {t('booking.rooms.takenChosen', {
-            rooms: rooms
-              .filter((r) => occupied.has(r.id) || (blocked.has(r.id) && !canOverride))
-              .map((r) => r.number)
-              .join(', ')
-          })}
-        </p>
-      ) : null}
-      {closedChosen.length && canOverride ? (
-        <OverrideReasonField value={overrideReason} onChange={setOverrideReason} className="sm:col-span-2" />
-      ) : null}
-      {rooms
-        .filter((r) => r.openIssues.length)
-        .map((r) => (
-          <Alert
-            key={r.id}
-            className="border-warning bg-warning/15 sm:col-span-2"
-            data-testid="room-issue-warning"
+        <DateInput
+          label={t('calendar.panel.checkOutDate')}
+          value={checkOut}
+          onChange={setCheckOut}
+          min={checkIn}
+        />
+        {sameDay ? (
+          <>
+            <p className="text-muted-foreground -mt-2 text-xs sm:col-span-2">{t('booking.form.dayUse')}</p>
+            <div className="grid gap-1.5">
+              <Label htmlFor="new-reservation-start">{t('booking.hourly.start')}</Label>
+              <TimeInput
+                id="new-reservation-start"
+                value={startTime}
+                onChange={setStartTime}
+                data-testid="new-reservation-start"
+              />
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="new-reservation-end">{t('booking.hourly.end')}</Label>
+              <TimeInput
+                id="new-reservation-end"
+                value={endTime}
+                onChange={setEndTime}
+                data-testid="new-reservation-end"
+              />
+            </div>
+            {startTime && endTime && !hoursOk ? (
+              <p role="alert" className="text-destructive text-sm sm:col-span-2">
+                {t('booking.hourly.badRange')}
+              </p>
+            ) : null}
+          </>
+        ) : null}
+        {checkIn < localDateOf(new Date()) ? (
+          // QA3c1 #17: a past arrival is allowed (late entry) but never silently: the stay is saved as "planned".
+          <p
+            role="status"
+            className="flex items-start gap-2 text-sm sm:col-span-2"
+            data-testid="past-check-in"
           >
-            <ShieldAlertIcon />
-            <AlertTitle>{t('booking.issues.title', { room: r.number })}</AlertTitle>
-            <AlertDescription className="text-foreground">
-              {r.openIssues.map((i) => i.title).join(' · ')}
-            </AlertDescription>
-          </Alert>
+            <TriangleAlertIcon className="text-warning mt-0.5 size-4 shrink-0" aria-hidden />
+            {t('booking.form.pastCheckIn')}
+          </p>
+        ) : null}
+
+        <div className="sm:col-span-2">
+          <RoomMultiPicker
+            label={t('booking.rooms.label')}
+            rooms={options.rooms}
+            value={roomIds}
+            onChange={setRoomIds}
+            occupied={occupied}
+            blocked={blocked}
+            allowOverride={canOverride}
+            chips
+          />
+        </div>
+        {rooms.length >= 2 ? (
+          <fieldset className="grid gap-3 rounded-lg border p-3 sm:col-span-2" data-testid="group-fieldset">
+            <legend className="px-1 text-xs font-medium">{t('booking.group.title')}</legend>
+            <div className="flex items-start gap-2">
+              <Checkbox
+                id="new-group-on"
+                checked={groupOn}
+                onCheckedChange={(c) => setGroupOn(c === true)}
+                data-testid="group-toggle"
+              />
+              <Label htmlFor="new-group-on" className="grid gap-0.5 font-normal">
+                <span className="font-medium">{t('booking.group.option')}</span>
+                <span className="text-muted-foreground text-xs">{t('booking.group.optionHelp')}</span>
+              </Label>
+            </div>
+            {groupOn ? (
+              <>
+                <TextField
+                  label={t('booking.group.name')}
+                  value={groupName}
+                  onChange={setGroupName}
+                  maxLength={GROUP_NAME_MAX}
+                  placeholder={t('booking.group.namePlaceholder')}
+                  testId="group-name-input"
+                />
+                <p className="text-muted-foreground text-xs">{t('booking.group.leaderHelp')}</p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {rooms.map((r) => (
+                    <TextField
+                      key={r.id}
+                      label={t('booking.group.roomGuest', { room: r.number })}
+                      value={roomNames[r.id] ?? ''}
+                      onChange={(v) => setRoomNames({ ...roomNames, [r.id]: v })}
+                      placeholder={t('booking.group.roomGuestPlaceholder')}
+                      testId={`group-room-guest-${r.number}`}
+                    />
+                  ))}
+                </div>
+              </>
+            ) : null}
+          </fieldset>
+        ) : null}
+        {rooms.some((r) => occupied.has(r.id) || (blocked.has(r.id) && !canOverride)) ? (
+          <p role="alert" className="text-destructive text-sm sm:col-span-2">
+            {t('booking.rooms.takenChosen', {
+              rooms: rooms
+                .filter((r) => occupied.has(r.id) || (blocked.has(r.id) && !canOverride))
+                .map((r) => r.number)
+                .join(', ')
+            })}
+          </p>
+        ) : null}
+        {closedChosen.length && canOverride ? (
+          <OverrideReasonField
+            value={overrideReason}
+            onChange={setOverrideReason}
+            className="sm:col-span-2"
+          />
+        ) : null}
+        {rooms
+          .filter((r) => r.openIssues.length)
+          .map((r) => (
+            <Alert
+              key={r.id}
+              className="border-warning bg-warning/15 sm:col-span-2"
+              data-testid="room-issue-warning"
+            >
+              <ShieldAlertIcon />
+              <AlertTitle>{t('booking.issues.title', { room: r.number })}</AlertTitle>
+              <AlertDescription className="text-foreground">
+                {r.openIssues.map((i) => i.title).join(' · ')}
+              </AlertDescription>
+            </Alert>
+          ))}
+
+        {rooms.map((room) => (
+          <RoomPriceBlock
+            key={room.id}
+            room={room}
+            currency={currency}
+            currencies={options.currencies}
+            slots={slots}
+            nightly={nightlyOf(room)}
+            suggestion={(d) => suggestion(room, d)}
+            priceOf={(d) => priceOf(room, d)}
+            lastNightly={lastNightly}
+            onNightly={(value) => {
+              changeCurrency(value.currency)
+              if (value.currency !== currency) return
+              setNightly({ ...nightly, [room.id]: value.amountMinor })
+              setOverrides({ ...overrides, [room.id]: {} })
+            }}
+            onNight={(date, minor) =>
+              setOverrides({ ...overrides, [room.id]: { ...(overrides[room.id] ?? {}), [date]: minor } })
+            }
+          />
         ))}
 
-      {rooms.map((room) => (
-        <RoomPriceBlock
-          key={room.id}
-          room={room}
-          currency={currency}
-          currencies={options.currencies}
-          slots={slots}
-          nightly={nightlyOf(room)}
-          suggestion={(d) => suggestion(room, d)}
-          priceOf={(d) => priceOf(room, d)}
-          lastNightly={lastNightly}
-          onNightly={(value) => {
-            changeCurrency(value.currency)
-            if (value.currency !== currency) return
-            setNightly({ ...nightly, [room.id]: value.amountMinor })
-            setOverrides({ ...overrides, [room.id]: {} })
-          }}
-          onNight={(date, minor) =>
-            setOverrides({ ...overrides, [room.id]: { ...(overrides[room.id] ?? {}), [date]: minor } })
-          }
+        <div className="grid gap-1.5">
+          <Label htmlFor="new-channel">{t('calendar.new.channel')}</Label>
+          <Select value={channelId} onValueChange={setChannelId}>
+            <SelectTrigger id="new-channel" className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {options.channels.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {localName(f, c)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <TextField
+          label={t('booking.form.channelRef')}
+          value={channelRef}
+          onChange={setChannelRef}
+          maxLength={CHANNEL_REF_MAX}
+          ltr
         />
-      ))}
-
-      <div className="grid gap-1.5">
-        <Label htmlFor="new-channel">{t('calendar.new.channel')}</Label>
-        <Select value={channelId} onValueChange={setChannelId}>
-          <SelectTrigger id="new-channel" className="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {options.channels.map((c) => (
-              <SelectItem key={c.id} value={c.id}>
-                {localName(f, c)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <TextField
-        label={t('booking.form.channelRef')}
-        value={channelRef}
-        onChange={setChannelRef}
-        maxLength={CHANNEL_REF_MAX}
-        ltr
-      />
-      <div className="grid gap-1.5 sm:col-span-2">
-        <span className="text-sm font-medium">{t('booking.form.status')}</span>
-        <ToggleGroup
-          type="single"
-          variant="outline"
-          value={status}
-          onValueChange={(v) => v && setStatus(v as typeof status)}
-          aria-label={t('booking.form.status')}
-          className="w-full sm:w-auto"
-        >
-          <ToggleGroupItem value="confirmed" className="flex-1">
-            {t('calendar.resStatus.confirmed')}
-          </ToggleGroupItem>
-          <ToggleGroupItem value="tentative" className="flex-1">
-            {t('calendar.resStatus.tentative')}
-          </ToggleGroupItem>
-        </ToggleGroup>
-      </div>
-      <div className="grid gap-1.5 sm:col-span-2">
-        <span className="text-sm font-medium">{t('booking.tags.label')}</span>
-        <TagPicker value={tagIds} onChange={setTagIds} />
-      </div>
-      <div className="grid gap-1.5 sm:col-span-2">
-        <Label htmlFor="new-note">{t('calendar.new.note')}</Label>
-        <Textarea
-          id="new-note"
-          rows={2}
-          value={notes}
-          maxLength={RESERVATION_NOTE_MAX}
-          onChange={(e) => setNotes(e.target.value)}
-          placeholder={t('calendar.new.notePlaceholder')}
-        />
-      </div>
-      {rooms.length && slots.length && total !== null ? (
-        <p className="text-muted-foreground text-sm sm:col-span-2" aria-live="polite" data-testid="new-total">
-          {checkIn === checkOut ? (
-            <Trans
-              i18nKey="booking.form.dayUseTotal"
-              values={{ total: f.money(total, currency) }}
-              components={{ m: <bdi /> }}
-            />
-          ) : (
-            <Trans
-              i18nKey="calendar.new.summary"
-              count={slots.length}
-              values={{ count: slots.length, total: f.money(total, currency) }}
-              components={{ m: <bdi /> }}
-            />
-          )}
-        </p>
-      ) : null}
-      {error ? (
-        <p
-          role="alert"
-          className="text-destructive text-sm sm:col-span-2"
-          data-testid="new-reservation-error"
-        >
-          {error}
-        </p>
-      ) : null}
-    </form>
+        <div className="grid gap-1.5 sm:col-span-2">
+          <span className="text-sm font-medium">{t('booking.form.status')}</span>
+          <ToggleGroup
+            type="single"
+            variant="outline"
+            value={status}
+            onValueChange={(v) => v && setStatus(v as typeof status)}
+            aria-label={t('booking.form.status')}
+            className="w-full sm:w-auto"
+          >
+            <ToggleGroupItem value="confirmed" className="flex-1">
+              {t('calendar.resStatus.confirmed')}
+            </ToggleGroupItem>
+            <ToggleGroupItem value="tentative" className="flex-1">
+              {t('calendar.resStatus.tentative')}
+            </ToggleGroupItem>
+          </ToggleGroup>
+        </div>
+        <div className="grid gap-1.5 sm:col-span-2">
+          <span className="text-sm font-medium">{t('booking.tags.label')}</span>
+          <TagPicker value={tagIds} onChange={setTagIds} />
+        </div>
+        <div className="grid gap-1.5 sm:col-span-2">
+          <Label htmlFor="new-note">{t('calendar.new.note')}</Label>
+          <Textarea
+            id="new-note"
+            rows={2}
+            value={notes}
+            maxLength={RESERVATION_NOTE_MAX}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder={t('calendar.new.notePlaceholder')}
+          />
+        </div>
+        {rooms.length && slots.length && total !== null ? (
+          <p
+            className="text-muted-foreground text-sm sm:col-span-2"
+            aria-live="polite"
+            data-testid="new-total"
+          >
+            {checkIn === checkOut ? (
+              <Trans
+                i18nKey="booking.form.dayUseTotal"
+                values={{ total: f.money(total, currency) }}
+                components={{ m: <bdi /> }}
+              />
+            ) : (
+              <Trans
+                i18nKey="calendar.new.summary"
+                count={slots.length}
+                values={{ count: slots.length, total: f.money(total, currency) }}
+                components={{ m: <bdi /> }}
+              />
+            )}
+          </p>
+        ) : null}
+        {error ? (
+          <p
+            role="alert"
+            className="text-destructive text-sm sm:col-span-2"
+            data-testid="new-reservation-error"
+          >
+            {error}
+          </p>
+        ) : null}
+      </form>
+      {zero.dialog}
+    </>
   )
 }
 
@@ -611,6 +846,8 @@ function TextField({
   type = 'text',
   ltr = false,
   maxLength,
+  placeholder,
+  error,
   testId
 }: {
   label: string
@@ -619,6 +856,9 @@ function TextField({
   type?: string
   ltr?: boolean
   maxLength?: number
+  placeholder?: string
+  /** The message under the field; it turns red. */
+  error?: string
   testId?: string
 }) {
   const id = useId()
@@ -632,9 +872,13 @@ function TextField({
         dir={ltr ? 'ltr' : undefined}
         autoComplete="off"
         maxLength={maxLength}
+        placeholder={placeholder}
         data-testid={testId}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? `${id}-error` : undefined}
         onChange={(e) => onChange(e.target.value)}
       />
+      <FieldError id={`${id}-error`} message={error} />
     </div>
   )
 }

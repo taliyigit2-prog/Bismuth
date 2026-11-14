@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { DOC_FILE, readGuidePages, renderGuideDoc, shortcutTableMarkdown } from '../../scripts/guide-docs-lib'
 
-describe('docs/kullanim-kilavuzu.md', () => {
+describe('docs/otel/kullanim-kilavuzu.md', () => {
   it('programdaki Türkçe kılavuzla aynı; değilse "npm run guide:docs" çalıştırın', () => {
     expect(readFileSync(DOC_FILE, 'utf8')).toBe(renderGuideDoc(readGuidePages()))
   })
@@ -17,7 +17,7 @@ describe('docs/kullanim-kilavuzu.md', () => {
     expect(doc).toContain('1. [Başlarken](#getting-started)')
     expect(doc).toContain('<a id="lock"></a>\n\n### Kilit')
     expect(doc).toContain('[kasa](#cash-drawer), [yedek](#backup), defter.')
-    expect(doc).toContain('![Takvim](../src/renderer/guide/img/tr/calendar.jpg)')
+    expect(doc).toContain('![Takvim](../../src/renderer/guide/img/tr/calendar.jpg)')
     expect(doc).toContain('> [!TIP]\n> Not.')
     expect(doc).not.toContain('doğrula')
   })

@@ -15,5 +15,6 @@ export const reportsHandlers = (services: Services): HandlersFor<keyof typeof re
   'reports.monthEnd': (ctx, input) => services.reports.monthEnd(ctx, input),
   'reports.monthEndTicks': (ctx, input) => services.reports.monthEndTicks(ctx, input),
   'reports.setMonthEndTicks': (ctx, input) => services.reports.setMonthEndTicks(ctx, input),
+  'reports.nightReport': (ctx, input) => services.fees.nightReport(ctx, input),
   'reports.export': (ctx, input) => services.reports.export(ctx, input)
 })

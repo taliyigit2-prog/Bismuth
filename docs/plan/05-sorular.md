@@ -15,7 +15,7 @@
 | S-03 | Bilgisayarlar? | — | ✅ Mac M2 / macOS 26; otel PC muhtemelen Win10; "hepsi için hazır" |
 | S-04 | İmza ücreti? | — | ✅ Ücretsiz yol |
 | S-05 | Program adı? | — | ✅ Bismuth |
-| S-06 | Diller? | — | ✅ TR, EN, RU, AR |
+| S-06 | Diller? | — | ✅ TR, EN, RU, AR (not: Arapça K-20 ve S-69 ile ertelendi; bugün TR, EN, RU) |
 | S-07 | Kuruş görünümü / tema? | — | ✅ Tam sayı varsayılan; açık/koyu/sistem |
 | S-08 | 2026 Excel verisi taşınsın mı? | Sıfırdan; içe aktarma aracı isteğe bağlı faz | ✅ Taşınsın |
 | S-09 | Yetki tablosu? | — | ✅ Sahip kendisi select ile tanımlar |
@@ -121,3 +121,40 @@
 | S-51 | Klavye kısayolları? | Var | ✅ Evet |
 | S-52 | Program içi kılavuz? | Var | ✅ Evet; ayarlardan her zaman; çok ayrıntılı, basit kelimeler |
 | S-77 | Rusça ve Arapça çevirileri bir **ana dili konuşan** kişiye kontrol ettirebilir misiniz? (Biz üretiriz; son kontrol insan.) | Yapay zekâ çevirisi + sahip kontrolü | ✅ Arapça yok; Rusça için bizim kontrolümüz yeterli (sahip Rusça biliyor) |
+
+## Analiz turu (2026-11-12, Fable) — resepsiyon, gündüz kullanımı, kamera, çoklu otel
+
+Cevaplar `06-kararlar.md` 7. tura yazılır. Cevap gelmezse varsayılan uygulanır (K-39).
+
+| No | Soru | Varsayılan | Durum |
+|---|---|---|---|
+| S-100 | Resepsiyon kendi başına **iade** girebilsin mi (örn. 5.000 ₺'ye kadar), yoksa her iade müdür/sahip onayı mı istesin? | Resepsiyon iade giremez; "İade bekliyor" diye park eder, sahip telefonla onaylar (yetki değişmez) | ✅ (06-kararlar 7. tur) |
+| S-101 | "Bir müşterinin ismi üzerine kayıtlı bütün rezervasyonlar ortak görünüyor" derken hangisini kastettiniz: (a) bir isimle alınan birden çok oda tek panelde/tek iptal, (b) aynı misafirin eski konaklamaları panelde listeleniyor, (c) başka bir şey (ekran görüntüsü gönderebilir misiniz)? | (a): grup rezervasyonu + oda başına misafir adı + toplu giriş yapılır; (b) için geçmiş kartı daraltılabilir yapılır | ✅ (06-kararlar 7. tur) |
+| S-102 | Gündüz kullanımı için **sabit** bir fiyat mı alıyorsunuz, **saatlik** mi, yoksa gecelik fiyat mı? | Sabit gündüz fiyatı (oda tipi başına ayar), gecelik fiyat varsayılan değer | ✅ (06-kararlar 7. tur) |
+| S-103 | Aynı odada aynı gün **kaç** gündüz satışı olabilir (sabah + öğleden sonra)? Temizlik için aradaki süre kaç dakika olsun? | Günde en çok 2; temizlik arası 60 dk (yalnız uyarı, engel değil) | ✅ (06-kararlar 7. tur) |
+| S-104 | Gündüz müşterisi **KBS'ye** bildiriliyor mu? Muhasebeciniz turizm istatistiğinde geceleme sayılıp sayılmadığını söyleyebilir mi? | KBS'ye bildirilir; istatistikte aynı gün = 1 gece kuralı (K-29) korunur | ✅ (06-kararlar 7. tur) |
+| S-105 | Gündüz geliri doluluk ve oda başına gelir raporlarına **girsin mi**, yoksa ayrı satırda mı kalsın? | Ayrı satır; doluluğa girmez (ayar) | ✅ (06-kararlar 7. tur) |
+| S-106 | Grup rezervasyonunda ödeme **tek folyo** (grup lideri öder) mi, **oda başına** folyo mu? | Tek folyo varsayılan, oda başına folyo seçeneği ayar | ✅ (06-kararlar 7. tur) |
+| S-107 | Kameralar **personeli** de görüyor mu? (Görüyorsa yüz tanıma personele uygulanmaz; dışlama listesi.) | Evet görüyor varsayılır; personel dışlama listesi yapılır | ✅ (06-kararlar 7. tur) |
+| S-108 | Kamera görüntüsü **telefonda/Mac'te** de görünsün mü, yoksa yalnız alarm listesi mi? | Yalnız alarm listesi; canlı yayın yalnız otel bilgisayarında | ✅ (06-kararlar 7. tur) |
+| S-109 | **Telegram** tamamen kaldırılsın mı (alarm Bismuth bildirimi + telefon arayüzü)? Fotoğrafsız metin bildirimi seçeneği ister misiniz? | Kaldırılır; fotoğrafsız metin bildirimi ileride isteğe bağlı | ✅ (06-kararlar 7. tur) |
+| S-110 | Kamera modelleri: **açık lisanslı** modellere geçelim mi (YuNet + SFace/AuraFace), yoksa Ultralytics/InsightFace'ten ticari lisans teklifi mi alacaksınız? | Açık lisanslı modellere geçilir | ✅ (06-kararlar 7. tur) |
+| S-111 | Misafirden yüz tanıma için **yazılı rıza** alıp rıza vermeyene kamerasız giriş sunmayı kabul ediyor musunuz? Bir KVKK avukatına danışacak mısınız? | Rıza zorunlu, rızasız kayıt yok; satıştan önce avukat görüşü "sahip onay paketine" | ✅ (06-kararlar 7. tur) |
+| S-112 | Kaç kamera var, marka/RTSP adresi biçimi nedir; otel bilgisayarının işlemcisi ve RAM'i? | 1 kamera, RTSP; i5 / 8 GB varsayılır (ölçüm gerçek makinede) | ✅ (06-kararlar 7. tur) |
+| S-113 | Windows'ta program **tüm kullanıcılar** için mi kurulsun (yönetici ister), yoksa yalnız kuran kullanıcı için mi (bugünkü)? | Bugünkü (kullanıcı başına); belgede açık uyarı | ✅ (06-kararlar 7. tur) |
+| S-114 | Kaç oteliniz var ya da olacak; aynı şehirde mi? | 2 otel, farklı adres | ✅ (06-kararlar 7. tur) |
+| S-115 | İkinci otelin resepsiyonu **kendi bilgisayarını** mı kullanacak? | Evet; her otelin kendi ana bilgisayarı | ✅ (06-kararlar 7. tur) |
+| S-116 | Tüm oteller için tek yerde görmek istediğiniz ilk **üç bilgi**? | Bugünkü doluluk, kasa, ayın geliri | ✅ (06-kararlar 7. tur) |
+| S-117 | Aynı personel iki otelde de çalışıyor mu (maaş tek bordroda mı)? | Hayır; çalışıyorsa her otelde ayrı kayıt | ✅ (06-kararlar 7. tur) |
+| S-118 | 21st.dev için ücretsiz anahtar alıp denemeyi onaylıyor musunuz (günde 2 bileşen)? Codespaces secret adı `API_KEY_21ST`. | Denenmez; mevcut shadcn bileşenleriyle devam | ✅ (06-kararlar 7. tur) |
+| S-120 | Otel bilgisayarında program bugün gerçekten **yavaşlıyor ya da donuyor mu**; hangi ekranda, kaç odalı/gün görünümünde? (Faz 22 ölçümünü hedeflemek için.) | Belirgin şikâyet yok varsayılır; ölçüm genel | ✅ (06-kararlar 8. tur: şikâyet yok) |
+| S-121 | Kurulum **internetsiz** bir bilgisayarda da yapılabilmeli mi? (Tauri'de WebView2 yoksa çevrimdışı kurulum paketi +127 MB.) | Evet, çevrimdışı kurulum şart (G-03) | ✅ (06-kararlar 8. tur: evet) |
+| S-122 | Mac'te **yazdırma/PDF** ve tarih seçici kusursuz çalışmalı mı? (Tauri Mac'te Safari motoru kullanır; farklar olabilir.) | Evet; Mac ikinci sınıf olamaz (K-01 gerekçesi) | ✅ (06-kararlar 8. tur: evet) |
+| S-119 | Hafta sonu tanımı: fiyat için **Cuma + Cumartesi** (K-44), takvim vurgusu **Cumartesi + Pazar** (G-40). Bu ayrım bilinçli mi, yoksa ikisi de aynı günler mi olsun? (02 raporu Ç-01) | Bilinçli; K-44 detayına tek cümle not düşülür, kod değişmez (P19b) | ✅ (06-kararlar 8. tur: bilinçli) |
+| S-123 | InsightFace'e model kullanımı için **izin e-postası** (`06-kamera-entegrasyonu.md` §6.4) gönderilsin mi? | Varsayılan: gönderilmez; mevcut modellerle devam, risk sahipte (K-57) | ✅ (06-kararlar 8. tur: varsayılan) |
+
+| S-124 | Toplu çıkışta KBS bilgisi eksik odalar ne olsun? | Eksik odalar uyarıda listelenir, çıkış engellenmez | ✅ (06-kararlar 9. tur: öneri) |
+| S-125 | Elle girilen kur son bilinen kurdan çok saparsa? | ≥ %20 sapmada uyarı, kayıt engellenmez; eşik ayar | ✅ (06-kararlar 9. tur: öneri) |
+| S-126 | Avans net maaşı aşarsa? | Uyarı, engel yok | ✅ (06-kararlar 9. tur: öneri) |
+| S-127 | Kapanmış çamaşır ayı yeniden açılabilir mi? | Yönetici/sahip gerekçeyle açar, audit'e yazılır | ✅ (06-kararlar 9. tur: öneri) |
+| S-128 | Pasif oda tipine oda eklenebilir mi? | Hayır, anlaşılır hata | ✅ (06-kararlar 9. tur: öneri) |

@@ -192,6 +192,25 @@ describe('Döviz ekranı', { timeout: 20_000 }, () => {
     })
   })
 
+  it('otel kurunda son bilinen kurdan %20 ve üzeri sapma uyarır ama kaydı engellemez (S-125)', async () => {
+    const user = userEvent.setup()
+    const { transport } = await render()
+    await user.click(await screen.findByRole('button', { name: 'Otel kuru gir' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Otel kuru' })
+    const input = within(dialog).getByLabelText('1 EUR kaç TRY')
+    await user.type(input, '51,5')
+    expect(within(dialog).queryByTestId('hotel-rate-deviation')).not.toBeInTheDocument()
+    await user.clear(input)
+    await user.type(input, '4500')
+    expect(await within(dialog).findByTestId('hotel-rate-deviation')).toBeInTheDocument()
+    await user.click(within(dialog).getByRole('button', { name: 'Kaydet' }))
+    const calls = (transport as ReturnType<typeof withExternal>).calls
+    expect(calls.find((c) => c.name === 'fx.setHotelRate')?.input).toEqual({
+      currency: 'EUR',
+      rateMicro: 4_500_000_000
+    })
+  })
+
   it('resepsiyon kuru görür ama otel kurunu değiştiremez, TCMB satırını kapatamaz', async () => {
     act(() => setViewAs('reception'))
     await render()
@@ -217,6 +236,24 @@ describe('Döviz ekranı', { timeout: 20_000 }, () => {
     expect(screen.getByRole('switch', { name: 'İnternetten güncelle' }).closest('label')).toHaveClass(
       'max-md:min-h-11'
     )
+  })
+})
+
+describe('çevirici tutar denetimi', () => {
+  it('eksi, fazla ondalıklı ve çok büyük tutar açıklamalı hata verir (H-26)', async () => {
+    const user = userEvent.setup()
+    await render()
+    const converter = await screen.findByTestId('converter')
+    const input = within(converter).getByLabelText('Tutar')
+    for (const [text, message] of [
+      ['-5', /sıfırdan küçük/],
+      ['1.000,555', /sayı olmalı/],
+      ['99999999999999999', /çok büyük/]
+    ] as const) {
+      await user.clear(input)
+      await user.type(input, text)
+      expect(await within(converter).findByText(message)).toBeInTheDocument()
+    }
   })
 })
 

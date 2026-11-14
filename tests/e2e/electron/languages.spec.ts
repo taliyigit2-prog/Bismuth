@@ -53,7 +53,7 @@ async function wizard(page: Page, lang: Lang): Promise<void> {
     }
     await clean(page, `setup ${step}`)
   }
-  for (const step of ['money', 'staff', 'employees', 'calendar', 'owner']) {
+  for (const step of ['hourly', 'money', 'staff', 'employees', 'calendar', 'camera', 'owner']) {
     await next(page)
     await expect(title).toHaveText(text(lang, `setup.step.${step}.title`))
     await clean(page, `setup ${step}`)

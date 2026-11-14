@@ -46,10 +46,12 @@ import {
   type WizardDraft
 } from './draft'
 import { RecoveryCodes } from './recovery-codes'
+import { CameraStep } from './camera-step'
 import { CalendarStep } from './step-calendar'
 import { CurrenciesStep } from './step-currencies'
 import { EmployeesStep } from './step-employees'
 import { HotelStep } from './step-hotel'
+import { HourlyStep } from './step-hourly'
 import { LanguageStep } from './step-language'
 import { ModeStep } from './step-mode'
 import { MoneyStep } from './step-money'
@@ -71,10 +73,12 @@ const BODIES: Record<Step, (props: StepProps) => ReactNode> = {
   currencies: CurrenciesStep,
   roomTypes: RoomTypesStep,
   rooms: RoomsStep,
+  hourly: HourlyStep,
   money: MoneyStep,
   staff: StaffStep,
   employees: EmployeesStep,
   calendar: CalendarStep,
+  camera: CameraStep,
   owner: OwnerStep,
   summary: SummaryStep
 }
@@ -383,11 +387,12 @@ function Wizard({
               <ChevronLeftIcon className="rtl:rotate-180" aria-hidden />
               {t('setup.back')}
             </Button>
-            <div className="flex flex-wrap items-center justify-end gap-2">
+            <div className="flex min-w-0 flex-wrap items-center justify-end gap-2 max-md:gap-1">
               {optional ? (
                 <Button
                   type="button"
                   variant="ghost"
+                  className="max-md:h-11 max-md:px-3"
                   onClick={() => move(index + 1)}
                   disabled={busy}
                   data-testid="setup-skip"

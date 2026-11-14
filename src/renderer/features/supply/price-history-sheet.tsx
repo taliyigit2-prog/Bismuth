@@ -163,7 +163,9 @@ export function PriceHistorySheet({
                       tickMargin={8}
                       minTickGap={16}
                     />
+                    {/* H-43: one purchase has no trend; an axis of 12,48–12,52 would only mislead. */}
                     <YAxis
+                      hide={data.length < 2}
                       tickLine={false}
                       axisLine={false}
                       width={64}

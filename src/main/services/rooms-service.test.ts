@@ -41,6 +41,60 @@ describe('odalar ve kapasite geçmişi (G-12, K-27)', () => {
     expect(svc.listRooms(owner).map((r) => r.number)).toEqual(['102'])
   })
 
+  it('oda numarası büyük/küçük harf duyarsız tektir; olmayan oda tipi 500 değil anlaşılır hata verir (G4)', async () => {
+    const { svc, standard } = await setup()
+    const a1 = svc.createRoom(owner, {
+      number: 'A1',
+      roomTypeId: standard.id,
+      beds: 2,
+      validFrom: '2026-01-01'
+    })
+    expect(() =>
+      svc.createRoom(owner, { number: 'a1', roomTypeId: standard.id, beds: 2, validFrom: '2026-01-01' })
+    ).toThrow(/roomNumberTaken/)
+    const b = svc.createRoom(owner, {
+      number: 'B1',
+      roomTypeId: standard.id,
+      beds: 2,
+      validFrom: '2026-01-01'
+    })
+    expect(() => svc.updateRoom(owner, b.id, { number: 'a1', validFrom: '2026-01-01' })).toThrow(
+      /roomNumberTaken/
+    )
+    // Its own number in another letter case is the same room, not a clash.
+    expect(svc.updateRoom(owner, a1.id, { number: 'a1', validFrom: '2026-01-01' }).number).toBe('a1')
+    expect(() => svc.updateRoom(owner, b.id, { roomTypeId: 'yok-tip', validFrom: '2026-01-01' })).toThrow(
+      /not.?found|notFound|NOT_FOUND/i
+    )
+  })
+
+  it('pasif oda tipine oda eklenemez ve oda taşınamaz; kendi (sonradan kapanan) tipinde kalmak serbesttir (S-128)', async () => {
+    const { svc, standard } = await setup()
+    const old = svc.createRoomType(owner, { name: 'Eski tip', baseCurrency: 'TRY' })
+    const room = svc.createRoom(owner, {
+      number: 'P1',
+      roomTypeId: old.id,
+      beds: 1,
+      validFrom: '2026-01-01'
+    })
+    handle.db.update(roomTypes).set({ active: false }).where(eq(roomTypes.id, old.id)).run()
+    expect(() =>
+      svc.createRoom(owner, { number: 'P2', roomTypeId: old.id, beds: 1, validFrom: '2026-01-01' })
+    ).toThrow(/roomTypeInactive/)
+    const other = svc.createRoom(owner, {
+      number: 'P3',
+      roomTypeId: standard.id,
+      beds: 1,
+      validFrom: '2026-01-01'
+    })
+    expect(() => svc.updateRoom(owner, other.id, { roomTypeId: old.id, validFrom: '2026-01-01' })).toThrow(
+      /roomTypeInactive/
+    )
+    expect(
+      svc.updateRoom(owner, room.id, { roomTypeId: old.id, notes: 'not', validFrom: '2026-01-01' }).notes
+    ).toBe('not')
+  })
+
   it('oda ve oda tipi yazmak "Odalar" ayar yetkisi ister; her yazma denetim kaydına düşer', async () => {
     const { svc, standard } = await setup()
     expect(() =>

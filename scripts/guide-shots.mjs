@@ -163,6 +163,7 @@ async function launch(dir) {
     env: {
       ...process.env,
       BISMUTH_USER_DATA: dir,
+      BISMUTH_DRIVE_HOME: dir,
       ELECTRON_RENDERER_URL: '',
       // The pictures never reach the internet: online data goes to a closed port.
       BISMUTH_EXTERNAL_ORIGIN: 'http://127.0.0.1:9'

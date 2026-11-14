@@ -12,6 +12,8 @@ import {
   foundHostSchema,
   helloInputSchema,
   helloSchema,
+  hotelCodeInputSchema,
+  hotelUpdateInputSchema,
   hostModeSchema,
   hostStatusSchema,
   relayHostStatusSchema,
@@ -19,6 +21,7 @@ import {
   replicaGrantSchema,
   replicaKeyInputSchema,
   replicaStatusSchema,
+  savedHotelSchema,
   takeOverInputSchema
 } from '../remote'
 
@@ -53,7 +56,13 @@ export const remoteProcedures = {
   'remote.connect': proc(connectInputSchema, clientStatusSchema, anyone),
   /** Another computer than the one met before answers at the hotel's address: the person accepts it. */
   'remote.acceptHostIdentity': proc(acceptHostIdentitySchema, clientStatusSchema, anyone),
-  /** Forgets the main computer's address (the connection screen asks again). */
+  /** The hotels this computer knows, last used first (P21b); connecting to one is `remote.connect` with its address. */
+  'remote.hotels': proc(empty, z.array(savedHotelSchema), anyone),
+  /** Renames a saved hotel or changes its address (not the one in use). */
+  'remote.hotelUpdate': proc(hotelUpdateInputSchema, z.array(savedHotelSchema), anyone),
+  /** Takes a hotel off the list (its read-only copy on this computer goes too; the hotel's own data is untouched). */
+  'remote.hotelRemove': proc(hotelCodeInputSchema, z.array(savedHotelSchema), anyone),
+  /** Leaves the hotel in use (it stays in the list); the connection screen asks again. */
   'remote.forgetHost': proc(empty, clientStatusSchema, anyone),
   /** Back to keeping the data on this computer (the program starts again). */
   'remote.leaveClient': proc(empty, ok, anyone),

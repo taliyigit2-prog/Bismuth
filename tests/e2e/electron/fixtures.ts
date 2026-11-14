@@ -16,6 +16,8 @@ export interface LaunchOptions {
   signIn?: boolean
   /** Fake server for the optional online data (default: a closed port, nothing answers). */
   externalOrigin?: string
+  /** Extra environment for the app (the camera spec points the sidecar at the Node stand-in). */
+  env?: Record<string, string>
 }
 
 export interface Launched {
@@ -49,10 +51,13 @@ export const test = base.extend<AppFixtures>({
         env: {
           ...process.env,
           BISMUTH_USER_DATA: opts.dir ?? userData,
+          // The data folder doubles as "home" for the Drive lookup: tests never write into the real Google Drive.
+          BISMUTH_DRIVE_HOME: opts.dir ?? userData,
           ELECTRON_RENDERER_URL: '',
           // Tests never reach the internet: optional online data (Faz 11) goes to a closed local port unless a
           // spec starts its own fake server.
-          BISMUTH_EXTERNAL_ORIGIN: opts.externalOrigin ?? 'http://127.0.0.1:9'
+          BISMUTH_EXTERNAL_ORIGIN: opts.externalOrigin ?? 'http://127.0.0.1:9',
+          ...opts.env
         },
         cwd: root
       })

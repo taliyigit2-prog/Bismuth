@@ -147,6 +147,28 @@ describe('Firmalar', () => {
     await waitFor(() => expect(transport.callsTo('companies.create')).toHaveLength(1))
   })
 
+  it('telefon yerine "telefon" yazılınca alan işaretlenir, kayıt gitmez; aynı vergi numarası uyarır; unvan sınırda sayaç gösterir (H-21)', async () => {
+    const user = userEvent.setup()
+    const transport = guestsTransport(hotel())
+    await renderWithProviders(<CompaniesPage />, { transport })
+    await user.click(await screen.findByTestId('company-new'))
+    const dialog = await screen.findByRole('dialog', { name: 'Yeni firma' })
+    const title = within(dialog).getByLabelText('Unvan')
+    await user.click(title)
+    await user.paste('B'.repeat(500))
+    expect((title as HTMLInputElement).value).toHaveLength(200)
+    expect(within(dialog).getByText('En çok 200 karakter yazabilirsiniz.')).toBeInTheDocument()
+    await user.clear(title)
+    await fill(user, title, 'Beta Turizm')
+    await fill(user, within(dialog).getByLabelText('Telefon'), 'telefon')
+    await fill(user, within(dialog).getByLabelText('Vergi no'), '1234567890')
+    expect(await within(dialog).findByTestId('company-same-tax')).toHaveTextContent('Zeta Turizm A.Ş.')
+    await user.click(within(dialog).getByTestId('company-save'))
+    expect(within(dialog).getByText(/Telefonu rakamlarla yazın/)).toBeInTheDocument()
+    expect(within(dialog).getByLabelText('Telefon')).toHaveAttribute('aria-invalid', 'true')
+    expect(transport.callsTo('companies.create')).toHaveLength(0)
+  })
+
   it('firma ayrıntısı bağlı misafirleri ve kurumsal geçmişi (konaklama ve ödeme) gösterir', async () => {
     const user = userEvent.setup()
     await renderWithProviders(<CompaniesPage />, { transport: guestsTransport(hotel()) })

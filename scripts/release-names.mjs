@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // node scripts/release-names.mjs [folder=release] — gives the installers electron-builder wrote their fixed download
 // names (G-03, faz-16 madde 3), then writes SHA256SUMS.txt next to them. Used by .github/workflows/ci.yml and
-// release.yml so the CI download and the GitHub Release carry the same names as docs/kurulum.md and README.md.
+// release.yml so the CI download and the GitHub Release carry the same names as docs/otel/kurulum.md and README.md.
 //
 //   Bismuth-Setup-x64.exe   → Bismuth-Setup.exe        Windows 10/11, x64 (the hotel PC; nearly every Windows PC)
 //   Bismuth-Setup-arm64.exe → Bismuth-Setup-arm64.exe  Windows on ARM (G-04)

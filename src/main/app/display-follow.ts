@@ -1,11 +1,11 @@
-// Which settings writes change this computer's own window: its native theme, its menu language and the language of
+// Which settings writes change this computer's own window: its native theme, its page zoom, its menu language and the language of
 // its next start (`--lang`). The language and the theme are each person's own choice (K-37): a change made on a
 // phone or another computer belongs to that screen, never to the hotel computer's window (QA2c #2). No Electron
 // import: tested with plain Node.
 import type { SettingsKey } from '@shared/contract'
 import type { Ctx } from '../services/context'
 
-const DISPLAY_KEYS: readonly SettingsKey[] = ['ui.language', 'ui.theme']
+const DISPLAY_KEYS: readonly SettingsKey[] = ['ui.language', 'ui.theme', 'ui.zoom']
 
 /**
  * True when a write of `changed` by `by` should be applied to the window: made in this computer's window (IPC) by

@@ -2,6 +2,7 @@
 // day with who arrives and who leaves (room and name, tap to open the reservation) and how many rooms stay free,
 // read from the same `reservations.grid` service as the desktop grid. Arrows move a week; the title goes back to
 // today.
+import { useCan } from '@/lib/view-as'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { CalendarDaysIcon, ChevronLeftIcon, ChevronRightIcon, LogInIcon, LogOutIcon } from 'lucide-react'
@@ -12,17 +13,23 @@ import { EmptyState, ErrorState } from '@/components/states'
 import { useFormat } from '@/hooks/use-format'
 import { useApiQuery } from '@/lib/api/hooks'
 import { cn } from '@/lib/utils'
+import { StayContextMenu } from '@/features/calendar/context-menu'
 import type { GridStayView } from '@/features/calendar/grid-model'
 import { WEEK_DAYS, weekOf } from './week'
 
 export function WeekList({ onOpen }: { onOpen: (reservationId: string) => void }) {
   const { t } = useTranslation()
+  const can = useCan()
   const f = useFormat()
   const [clientToday] = useState(todayOf)
   const [picked, setPicked] = useState<LocalDate | null>(null)
   const start = picked ?? clientToday
   // The day before too: a departure's last night belongs to it.
-  const query = useApiQuery('reservations.grid', { from: addDays(start, -1), to: addDays(start, WEEK_DAYS) })
+  const query = useApiQuery(
+    'reservations.grid',
+    { from: addDays(start, -1), to: addDays(start, WEEK_DAYS) },
+    { enabled: can('calendar') }
+  )
   const page = query.data
   const days = useMemo(() => (page ? weekOf(page, start) : null), [page, start])
   const roomNumber = (s: GridStayView): string => page?.rooms.find((r) => r.id === s.roomId)?.number ?? ''
@@ -31,22 +38,24 @@ export function WeekList({ onOpen }: { onOpen: (reservationId: string) => void }
     const Icon = arrival ? LogInIcon : LogOutIcon
     return (
       <li key={`${arrival ? 'a' : 'd'}-${s.id}`}>
-        <button
-          type="button"
-          onClick={() => onOpen(s.reservationId)}
-          className="hover:bg-accent focus-visible:ring-ring flex min-h-11 w-full items-center gap-2 rounded-md px-2 text-start text-sm outline-none focus-visible:ring-[3px]"
-        >
-          <Icon
-            className={cn('size-4 shrink-0', arrival ? 'text-success' : 'text-muted-foreground')}
-            aria-label={arrival ? t('calendar.week.arrival') : t('calendar.week.departure')}
-          />
-          <span className="bg-muted grid min-w-9 shrink-0 place-items-center rounded px-1 font-semibold tabular-nums">
-            {roomNumber(s)}
-          </span>
-          <span className="min-w-0 flex-1 truncate" title={s.guestName}>
-            {s.guestName}
-          </span>
-        </button>
+        <StayContextMenu stay={s} today={page?.today ?? s.checkIn}>
+          <button
+            type="button"
+            onClick={() => onOpen(s.reservationId)}
+            className="hover:bg-accent focus-visible:ring-ring flex min-h-11 w-full items-center gap-2 rounded-md px-2 text-start text-sm outline-none focus-visible:ring-[3px]"
+          >
+            <Icon
+              className={cn('size-4 shrink-0', arrival ? 'text-success' : 'text-muted-foreground')}
+              aria-label={arrival ? t('calendar.week.arrival') : t('calendar.week.departure')}
+            />
+            <span className="bg-muted grid min-w-9 shrink-0 place-items-center rounded px-1 font-semibold tabular-nums">
+              {roomNumber(s)}
+            </span>
+            <span className="min-w-0 flex-1 truncate" title={s.guestName}>
+              {s.guestName}
+            </span>
+          </button>
+        </StayContextMenu>
       </li>
     )
   }

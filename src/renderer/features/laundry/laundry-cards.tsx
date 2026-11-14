@@ -49,7 +49,13 @@ import {
   type ItemType,
   type YearMonth
 } from './derive'
-import { InvoiceDialog, PaidDialog, PriceDialog, VoidDeliveryDialog } from './laundry-dialogs'
+import {
+  InvoiceDialog,
+  PaidDialog,
+  PriceDialog,
+  ReopenMonthDialog,
+  VoidDeliveryDialog
+} from './laundry-dialogs'
 
 const LOG_SIZE = 8
 
@@ -65,7 +71,8 @@ export function SettlementCard({
   today,
   base,
   canInvoice,
-  canPay
+  canPay,
+  canReopen = false
 }: {
   contactId: string
   months: readonly [YearMonth, YearMonth]
@@ -75,13 +82,15 @@ export function SettlementCard({
   base: string
   canInvoice: boolean
   canPay: boolean
+  /** Manager / owner: open a settled month again (S-127). */
+  canReopen?: boolean
 }) {
   const { t } = useTranslation()
   const f = useFormat()
   const isMobile = useIsMobile()
   const [last, current] = months
   const [picked, setPicked] = useState<YearMonth>(last)
-  const [dialog, setDialog] = useState<'invoice' | 'paid' | null>(null)
+  const [dialog, setDialog] = useState<'invoice' | 'paid' | 'reopen' | null>(null)
   const query = useApiQuery('laundry.month', { contactId, ...picked })
   const label = capitalFirst(f.monthYear(monthStart(picked)), f.locale)
   const priceDay = picked.year === current.year && picked.month === current.month ? today : monthLast(picked)
@@ -213,6 +222,16 @@ export function SettlementCard({
                           {t('laundry.settlement.fixInvoice')}
                         </Button>
                       ) : null}
+                      {canReopen ? (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setDialog('reopen')}
+                          data-testid="settlement-reopen"
+                        >
+                          {t('laundry.reopen.open')}
+                        </Button>
+                      ) : null}
                       {canPay && !paid ? (
                         <Button
                           size="sm"
@@ -266,6 +285,15 @@ export function SettlementCard({
           monthLabel={label}
           invoicedMinor={settled.invoicedTotalMinor}
           base={base}
+          onClose={() => setDialog(null)}
+        />
+      ) : null}
+      {dialog === 'reopen' && settled ? (
+        <ReopenMonthDialog
+          contactId={contactId}
+          year={picked.year}
+          month={picked.month}
+          monthLabel={label}
           onClose={() => setDialog(null)}
         />
       ) : null}

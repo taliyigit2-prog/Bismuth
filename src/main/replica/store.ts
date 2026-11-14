@@ -5,9 +5,10 @@
 // right off: changes are refused with "read-only copy". Answers carry status 203 so the screens know where the data
 // comes from (the "Yedek kopya · 14:32" badge, write buttons closed).
 // No Electron here (the main process passes paths and version in; tests use a temporary folder).
-import { mkdirSync, rmSync } from 'node:fs'
-import { join } from 'node:path'
+import { existsSync, mkdirSync, renameSync, rmSync } from 'node:fs'
+import { join, resolve, sep } from 'node:path'
 import { isProcedureName, type ProcedureName } from '@shared/contract'
+import { hotelCodeSchema } from '@shared/contract/remote'
 import { createApiApp } from '../api/app'
 import { createHandlers } from '../api/handlers'
 import { MigrationError, openReplicaDatabase, type ReplicaDatabase } from '../db/client'
@@ -35,6 +36,8 @@ const AUTH_OK: ReadonlySet<string> = new Set([
 export interface ReplicaStoreOptions {
   /** userData of this computer. */
   root: string
+  /** P21b: the copy of this hotel lives in `replica/<hotel>/`; none = an empty placeholder (no hotel in use). */
+  hotel?: string | null
   migrationsFolder: string
   version: string
   onError?: (error: unknown, what: string) => void
@@ -48,9 +51,27 @@ const isReadOnlyFailure = (error: unknown): boolean =>
   typeof error === 'object' &&
   String((error as { code?: unknown }).code ?? '').startsWith('SQLITE_READONLY')
 
+/** `userData/replica/<hotel>/` (P21b). */
+export const copyFolder = (root: string, hotel: string | null | undefined): string =>
+  join(root, 'replica', hotel ?? '_none')
+
+/**
+ * Before P21b a computer kept one copy in `replica/` itself: it moves under the hotel's code (once, when the saved
+ * hotel list is first made from the one address this computer used).
+ */
+export function migrateLegacyCopy(root: string, hotel: string): void {
+  const legacy = join(root, 'replica')
+  if (!existsSync(join(legacy, 'replica.db'))) return
+  const target = copyFolder(root, hotel)
+  if (existsSync(join(target, 'replica.db'))) return
+  mkdirSync(target, { recursive: true })
+  for (const name of ['replica.db', 'replica.db-wal', 'replica.db-shm', 'attachments', 'backups'])
+    if (existsSync(join(legacy, name))) renameSync(join(legacy, name), join(target, name))
+}
+
 export function createReplicaStore(options: ReplicaStoreOptions) {
-  const folder = join(options.root, 'replica')
-  const file = join(folder, 'replica.db')
+  let folder = copyFolder(options.root, options.hotel)
+  let file = join(folder, 'replica.db')
   let db: ReplicaDatabase | null = null
   let services: Services | null = null
   let api: ReturnType<typeof createApiApp> | null = null
@@ -68,6 +89,13 @@ export function createReplicaStore(options: ReplicaStoreOptions) {
       db = openReplicaDatabase({ file, migrationsFolder: options.migrationsFolder })
     }
     return db
+  }
+
+  function drop(): void {
+    db?.close()
+    db = null
+    services = null
+    api = null
   }
 
   function removeFiles(): void {
@@ -105,7 +133,24 @@ export function createReplicaStore(options: ReplicaStoreOptions) {
   }
 
   return {
-    file,
+    get file(): string {
+      return file
+    },
+    /** Another hotel's copy from now on (null: none in use). The earlier one stays on disk as it was. */
+    use(hotel: string | null): void {
+      drop()
+      folder = copyFolder(options.root, hotel)
+      file = join(folder, 'replica.db')
+    },
+    /** A hotel left the list: its copy goes (it is only a copy; the hotel's own data is untouched). */
+    removeCopy(hotel: string): void {
+      // Never delete anything outside the copies root, whatever the caller passes.
+      if (!hotelCodeSchema.safeParse(hotel).success) return
+      const target = copyFolder(options.root, hotel)
+      if (!resolve(target).startsWith(resolve(options.root) + sep)) return
+      if (target === folder) drop()
+      rmSync(target, { recursive: true, force: true })
+    },
     state(): ReplicaState {
       return readState(open().writer)
     },
@@ -117,6 +162,11 @@ export function createReplicaStore(options: ReplicaStoreOptions) {
         options.onError?.(error, 'replica state')
         return false
       }
+    },
+    /** The services over this copy, for reading as the person who asks (P21c portfolio); null when it holds no data. */
+    readable(): { services: Services; asOf: string | null } | null {
+      if (!this.usable()) return null
+      return { services: router().services, asOf: readState(open().writer).asOf }
     },
     /** The copier's connection (live sync, box reader). */
     writer: () => open().writer,

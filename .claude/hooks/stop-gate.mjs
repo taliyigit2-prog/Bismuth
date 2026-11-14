@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-// Stop: do not let a turn end while files under src/ or tests/ changed after the last successful check run
+// Stop: do not let a turn end while files under src/, tests/, drizzle/, scripts/, .github/ or package.json, package-lock.json,
+// electron-builder.yml changed after the last successful check run
 // (CLAUDE.md > Çalışma şekli: typecheck + lint + test; üçü geçmeden madde "bitti" sayılmaz).
 // "Last successful check run" = mtime of <root>/.claude/.checks-passed, written by `npm run check` and by
 // pre-commit-gate.mjs when all three pass. Changed files come from `git status` (modified, staged, untracked).
@@ -28,6 +29,9 @@ try {
 if (!["typecheck", "lint", "test", "check"].every((s) => typeof scripts[s] === "string")) process.exit(0);
 if (!existsSync(join(root, "node_modules"))) process.exit(0);
 
+// Single files outside the watched folders that still change what ships (dependencies, the installer).
+const WATCHED_FILES = ["package.json", "package-lock.json", "electron-builder.yml"];
+
 const git = (args) =>
   execFileSync("git", args, {
     cwd: root,
@@ -42,7 +46,7 @@ let status;
 try {
   top = git(["rev-parse", "--show-toplevel"]).trim();
   // -z: raw paths (Turkish characters are not octal-quoted); porcelain paths are relative to the repo top level.
-  status = git(["status", "--porcelain=v1", "-z", "--untracked-files=all", "--", "src", "tests"]);
+  status = git(["status", "--porcelain=v1", "-z", "--untracked-files=all", "--", "src", "tests", "drizzle", "scripts", ".github", ...WATCHED_FILES]);
 } catch {
   process.exit(0); // not a git repository, or git missing
 }
@@ -56,7 +60,7 @@ for (let i = 0; i < entries.length; i++) {
   const abs = resolve(top, entry.slice(3));
   if (xy[0] === "R" || xy[0] === "C") i++; // the next NUL field is the rename/copy source
   const rel = relative(root, abs).replace(/\\/g, "/");
-  if (/^(src|tests)\//.test(rel)) changed.push({ abs, rel });
+  if (/^(src|tests|drizzle|scripts|\.github)\//.test(rel) || WATCHED_FILES.includes(rel)) changed.push({ abs, rel });
 }
 if (changed.length === 0) process.exit(0);
 
@@ -88,7 +92,7 @@ if (existsSync(marker)) {
 const list = changed.slice(0, 5).map((c) => c.rel);
 if (changed.length > 5) list.push(`+${changed.length - 5} dosya`);
 const reason =
-  `src/ veya tests/ altındaki dosyalar son başarılı kontrolden sonra değişti (${list.join(", ")}). ` +
+  `src/, tests/, drizzle/, scripts/, .github/ altındaki dosyalar ya da package.json, package-lock.json, electron-builder.yml son başarılı kontrolden sonra değişti (${list.join(", ")}). ` +
   `Bitirmeden önce \`npm run check\` çalıştır (typecheck + lint + test); hata varsa düzelt ve yeniden çalıştır. ` +
   `CLAUDE.md: üçü geçmeden madde "bitti" sayılmaz. Kontroller bu değişiklikle ilgisiz bir nedenle geçmiyorsa ` +
   `ya da kullanıcı kontrolleri açıkça ertelediyse, bunu kullanıcıya açıkça yaz.`;

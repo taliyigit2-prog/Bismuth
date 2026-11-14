@@ -4,10 +4,10 @@
 dönüştürmek**; kod yazmadan önce en riskli varsayımları gerçek derleme, gerçek API çağrısı ve gerçek makinelerle
 sınamak. Bu faz "deep research" modunda çalışır: her başlık için kaynak listesi, bulgular, karar önerisi.
 Plan aşamasındaki ajanlar çoğu dış siteye erişemedi (vekil engeli); **canlı doğrulama bu fazın işi** ve GitHub Actions çalıştırıcılarında yapılır.
-Kanıt kodu `prototypes/` altında durur; Faz 1 ürünü `src/` altında sıfırdan, seçilen şablonla kurulur (prototipler ürün kodu değildir).
+Kanıt kodu `prototypes/` (arşiv etiketi `archive/faz0`) altında durur; Faz 1 ürünü `src/` altında sıfırdan, seçilen şablonla kurulur (prototipler ürün kodu değildir).
 
 **Ön koşul:** Sahip, `05-sorular.md` Faz 0–1 bölümündeki soruları cevapladı (✅ 2026-10-01, üçüncü tur).
-**Çıktı:** güncellenmiş raporlar + **depo seçim raporu** + `06-kararlar.md` içinde kesinleşmiş kararlar + `prototypes/` (kanıt kodu) + bu dosyada "Sonuç" + `docs/plan/akislar.md`.
+**Çıktı:** güncellenmiş raporlar + **depo seçim raporu** + `06-kararlar.md` içinde kesinleşmiş kararlar + `prototypes/` (arşiv etiketi `archive/faz0`) (kanıt kodu) + bu dosyada "Sonuç" + `docs/plan/akislar.md`.
 
 ## Araştırma başlıkları (her biri ayrı rapor/bölüm)
 
@@ -29,7 +29,7 @@ Kanıt kodu `prototypes/` altında durur; Faz 1 ürünü `src/` altında sıfır
 - Diğer ülkeler için `date-holidays` kapsamını listele (ürün genel).
 
 ### A0.5 Piyasa orta kur ve hava durumu kaynakları (K-06, K-13) — canlı doğrulama
-- Bu konteynerden dış API'lere erişim engelli → doğrulama **GitHub Actions** çalıştırıcısında yapılır (`prototypes/live-checks`).
+- Bu konteynerden dış API'lere erişim engelli → doğrulama **GitHub Actions** çalıştırıcısında yapılır (`prototypes/live-checks` (arşiv etiketi `archive/faz0`)).
 - Kur: anahtarsız orta kur kaynakları (fawazahmed0 currency-api, open.er-api.com, Frankfurter (RUB yok), ExchangeRate-API v4, Türk akışları yalnızca kıyas için) + TCMB + Google Finance sayfası (yalnızca kıyas referansı). Her kaynak: HTTP durumu, gecikme, alanlar, USD/EUR/GBP/RUB değerleri, Google'a fark %.
 - Hava: MET Norway, Open‑Meteo, 7Timer, wttr.in — İstanbul için anlık + 7 gün; alanlar ve lisans notları.
 - Bayram: Google Takvim TR resmi tatil ICS akışı, Nager.Date — 2026–2027 içeriği; `date-holidays` çıktısıyla kıyas.
@@ -44,7 +44,7 @@ Kanıt kodu `prototypes/` altında durur; Faz 1 ürünü `src/` altında sıfır
 - Arapça ertelendi (S-69). i18next TR/EN/RU kurulumu, i18next-cli, Rusça çoğul; mantıksal CSS kuralı ileride RTL için korunur.
 
 ### A0.8 Turizm istatistiği kuralları (K-24, K-29)
-- Kurallar sahipten geldi (giriş ayı, aynı gün = 1, çocuk ayrı değil, doluluk = geceleme ÷ (yatak × gün)). Prototip: `prototypes/kbs-stats` gerçek Eylül dosyasıyla 607/838 sonucunu üretir (dosya depoya girmez; sentetik fixture girer).
+- Kurallar sahipten geldi (giriş ayı, aynı gün = 1, çocuk ayrı değil, doluluk = geceleme ÷ (yatak × gün)). Prototip: `prototypes/kbs-stats` (arşiv etiketi `archive/faz0`) gerçek Eylül dosyasıyla 607/838 sonucunu üretir (dosya depoya girmez; sentetik fixture girer).
 - KBS Excel'inin farklı aylardan 2–3 örneği ile sütun/biçim değişkenliği kontrolü; `country_map` tohumunu KBS'nin ülke yazımlarıyla (İngilizce + parantez) tamamla; bakanlık panelindeki ülke listesini (Türkçe) elde et.
 
 ### A0.9 Otel alanı doğrulaması ve günlük akış (K-09)
@@ -69,7 +69,7 @@ Dört kol, her biri puanlama tablosu (uygunluk, bakım, lisans, kalite, uyarlama
 
 - [~] Boş Bismuth her iki işletim sistemi için CI'dan indirilebilir paket olarak üretildi (Electron 37 ve 44 kıyas) ✅; **sahibin Mac'inde açıldı ✅ (2026-10-02)**; otel Windows makinesi bekleniyor (S-80; Faz 1'i engellemez).
 - [x] Faz 0 kararları kesinleşti: K-02 (better-sqlite3), K-03, K-04, K-06, K-12, K-13, K-24 ✅; **K-19 kesin (C2 + NetBird Free + otelin Google Drive'ı)** ✅ (2026-10-02).
-- [x] Takvim prototipi hedef performansı karşıladı (142 ms, 60 fps); ölçüm `prototypes/tape-chart/perf-result.json`.
+- [x] Takvim prototipi hedef performansı karşıladı (142 ms, 60 fps); ölçüm `prototypes/tape-chart/perf-result.json` (arşiv etiketi `archive/faz0`).
 - [x] Beş orta kur kaynağı ve dört hava kaynağı canlı doğrulandı (GitHub Actions); kıyas tablosu `canli-dogrulama.md` (Google sayfası okunamadı → Yahoo canlı piyasa referans alındı).
 - [x] Uzaktan erişim raporu ve sade anlatım hazır (`uzaktan-bulut-secenekleri.md` §9); ücretsiz yol kararı ve kılavuz iskeleti §11 ✅.
 - [x] Depo seçim raporu (`depo-secimi.md`) tamam; Faz 1 başlangıç şablonu (electron-vite `react-ts`) ve paket listesi kesin.
@@ -83,12 +83,12 @@ Dört kol, her biri puanlama tablosu (uygunluk, bakım, lisans, kalite, uyarlama
 - Sahibin üçüncü tur cevapları plana işlendi (gereksinimler v3; Arapça ertelendi; orta kur; hava zorunlu; yatak kapasitesi + geçmiş; KBS kuralları; çamaşırhane; içe aktarma zorunlu; uzaktan erişim yeniden açıldı).
 - **Derin depo araştırması** dört kolda tamamlandı ve tek tabloda birleştirildi: `04-arastirma/depo-secimi.md` (+ `repo-masaustu-sablonlar.md` 29 depo, `repo-ui-kutuphaneler.md`, `uzaktan-bulut-secenekleri.md`, `repo-alan-tr-hava.md`).
 - **Canlı doğrulama** GitHub Actions'ta: kur (5 kaynak + TCMB + piyasa referansı), hava (4 kaynak), bayram (Google ICS, Nager.Date) → `canli-dogrulama.md`.
-- **Prototipler** (`prototypes/`, ürün kodu değil) → `faz0-prototipler.md`:
+- **Prototipler** (`prototypes/` (arşiv etiketi `archive/faz0`), ürün kodu değil) → `faz0-prototipler.md`:
   - Kabuk: Electron 37 ve 44, Windows NSIS + macOS DMG paketleme ve duman testi 4/4 geçti; kurulum ~92 MB / ~118 MB.
   - Takvim ızgarası: 10 yıl × 19 oda, 17.900 konaklama → 142 ms, 60 fps.
   - KBS istatistiği: sahibin gerçek Eylül dosyası → 607 giriş / 23 ülke; KBS'nin `1900-01-01` "çıkmadı" değeri bulundu; 8 test.
   - Bayram: sınırsız yıl (2026–2200), 7 test.
-- Kancalar: `deps-guard` yanlış pozitifi düzeltildi; `prototypes/` ağ kuralından muaf; 20 kanca testi geçiyor.
+- Kancalar: `deps-guard` yanlış pozitifi düzeltildi; `prototypes/` (arşiv etiketi `archive/faz0`) ağ kuralından muaf; 20 kanca testi geçiyor.
 
 **Kesinleşen kararlar:** K-02 (better-sqlite3), K-03, K-04, K-06, K-12, K-13, K-24 (+ K-27…K-30 sahip cevaplarından).
 
@@ -116,7 +116,7 @@ Dört kol, her biri puanlama tablosu (uygunluk, bakım, lisans, kalite, uyarlama
 - `03-mimari.md` v4: yeni tablolar (`stay_occupants`, `task_templates`, `tasks`, `shift_definitions`, `shift_handovers`, `notes`, `lost_items`,
   `expense_sections`, `expense_items`, `product_categories`, `change_log`), misafirde doğum/anne‑baba alanları kaldırıldı, yeni kurallar §6.15–§6.17.
 - **KBS önlemi** (sahip: "Türkiye ve Kuzey Kıbrıs yazımında hatalar olabiliyor"): prototipe normalizasyon + takma adlar + yazım hatası önerisi +
-  kullanıcı onayı + otelde kalanlar için planlı çıkış kuralı (`prototypes/kbs-stats`, **15 test geçiyor**). Gerçek Eylül dosyasında
+  kullanıcı onayı + otelde kalanlar için planlı çıkış kuralı (`prototypes/kbs-stats` (arşiv etiketi `archive/faz0`), **15 test geçiyor**). Gerçek Eylül dosyasında
   "KUZEY KIBRIS TURK CUMHURİYETİ" (Ü eksik) zaten bu türden bir yazım; 38 yatakla Eylül doluluğu **%73,7**.
 - **Hava simgeleri**: Yr hava simgeleri (MET kodlarıyla birebir; CC BY 4.0) — `canli-dogrulama.md` §2.
 - **Günlük akış**: `akislar.md` (kişisel veri içermez).

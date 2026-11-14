@@ -40,6 +40,7 @@ describe('bileşen kuralları (saf)', () => {
     expect(readMoneyText('-100', 'TRY', 'tr')).toEqual({ minor: null, problem: 'negative' })
     expect(readMoneyText('-100', 'TRY', 'tr', true)).toEqual({ minor: -10_000, problem: null })
     expect(readMoneyText('99.999.999.999', 'TRY', 'tr')).toEqual({ minor: null, problem: 'tooLarge' })
+    expect(readMoneyText('99999999999999999', 'TRY', 'tr')).toEqual({ minor: null, problem: 'tooLarge' })
     expect(readMoneyText('1.000.000.000', 'TRY', 'tr')).toEqual({ minor: 100_000_000_000, problem: null })
     expect(readMoneyText('  ', 'TRY', 'tr')).toEqual({ minor: null, problem: null })
     expect(isAmount({ amountMinor: 0, currency: 'TRY' })).toBe(true)
@@ -53,6 +54,9 @@ describe('bileşen kuralları (saf)', () => {
     expect(parsePhone('0532 000 11 22')).toEqual({ code: '90', number: '5320001122' })
     expect(parsePhone('+7 900 123 4567')).toEqual({ code: '7', number: '9001234567' })
     expect(formatPhone({ code: '90', number: '5320001122' })).toBe('+90 532 000 11 22')
+    // A country code the list does not have survives a save and a read (E.164).
+    expect(formatPhone(parsePhone('+86 138 0013 8000'))).toBe('+8613800138000')
+    expect(parsePhone('+8613800138000')).toEqual({ code: '', number: '8613800138000' })
   })
 
   it('ay ekleme günü taşırmaz; ay görünümü pazartesiden başlar, 42 gün', () => {
@@ -198,7 +202,7 @@ describe('bileşenler (ekran)', () => {
     )
     expect(await screen.findByText('KBS girişi eksik')).toBeInTheDocument()
     expect(screen.getByText('kızıl saçlı')).toBeInTheDocument()
-    await userEvent.setup().click(screen.getByRole('button', { name: "KBS'ye bildirdim" }))
+    await userEvent.setup().click(screen.getByRole('button', { name: "KBS'ye bildirildi olarak işaretle" }))
     expect(onMark).toHaveBeenCalledWith('o1', 'in')
   })
 

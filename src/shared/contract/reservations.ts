@@ -2,8 +2,10 @@
 // G-68). Service-side validation; the same schemas serve the API in later phases.
 import * as z from 'zod'
 import { diffDays, type LocalDate } from '../date'
+import { isValidHourRange } from '../domain/stays'
 import { amountSchema, idSchema, localDateSchema } from './rooms'
 import { currencyCode } from './settings'
+import { optionalPhone } from './text'
 
 const nightPriceSchema = z.object({ date: localDateSchema, priceMinor: amountSchema.nonnegative() })
 
@@ -24,10 +26,23 @@ export const stayInputSchema = z
     /** One price copied to every night (G-36: editable night by night afterwards)… */
     nightlyPriceMinor: amountSchema.nonnegative().optional(),
     /** …or explicit prices per night. */
-    prices: z.array(nightPriceSchema).max(400).optional()
+    prices: z.array(nightPriceSchema).max(400).optional(),
+    /** Hours of an hourly stay (K-48): both 'HH:MM', end after start, only on a day-use; none = the whole day. */
+    startTime: z.string().optional(),
+    endTime: z.string().optional()
   })
   .refine((s) => s.checkOut >= s.checkIn, { path: ['checkOut'], message: 'checkOut before checkIn' })
   .refine(stayLengthOk, { path: ['checkOut'], message: 'stay too long' })
+  .refine(
+    (s) =>
+      s.startTime === undefined && s.endTime === undefined
+        ? true
+        : s.startTime !== undefined &&
+          s.endTime !== undefined &&
+          s.checkIn === s.checkOut &&
+          isValidHourRange(s.startTime, s.endTime),
+    { path: ['endTime'], message: 'hours need a day-use and a start before the end' }
+  )
   .refine((s) => s.nightlyPriceMinor !== undefined || (s.prices?.length ?? 0) > 0, {
     path: ['nightlyPriceMinor'],
     message: 'price required'
@@ -36,7 +51,7 @@ export const stayInputSchema = z
 export const newGuestSchema = z.object({
   firstName: z.string().trim().min(1).max(80),
   lastName: z.string().trim().max(80).default(''),
-  phone: z.string().trim().max(40).nullish(),
+  phone: optionalPhone,
   email: z.email().max(120).nullish()
 })
 
@@ -110,10 +125,40 @@ export type ChangeRoomInput = z.input<typeof changeRoomSchema>
 /** Why a reservation or one of its rooms is cancelled (kept with it, G-24). */
 export const cancelReasonSchema = z.string().trim().min(3).max(200)
 
+/**
+ * What happens to the money when a reservation is cancelled (K-55): give it back now (a refund row on the folio
+ * in the same step; needs `payments.refund`) or keep it with a reason (cancellation fee). "Refund pending" is a
+ * park (`booking.park`), not a cancellation.
+ */
+export const cancelRefundSchema = z.discriminatedUnion('mode', [
+  z.object({
+    mode: z.literal('refund'),
+    methodId: idSchema,
+    amountMinor: amountSchema.positive(),
+    /** Default: the folio currency. */
+    currency: currencyCode.optional(),
+    note: z.string().max(500).nullish(),
+    dayClosedReason: z.string().trim().min(3).max(200).optional()
+  }),
+  z.object({ mode: z.literal('keep'), note: z.string().trim().min(3).max(200) })
+])
+export type CancelRefundInput = z.input<typeof cancelRefundSchema>
+
 export const parkSchema = z.object({
   reason: z.enum(['no_show_paid', 'refund_pending', 'postponed', 'other']),
   note: z.string().max(500).nullish()
 })
+
+/**
+ * What follows a taken-back check-in in the same transaction (K-55, G-193): cancel the reservation with the money
+ * settled, park it (e.g. "refund pending"), or give up only this room of a reservation with more rooms.
+ */
+export const undoThenSchema = z.discriminatedUnion('do', [
+  z.object({ do: z.literal('cancel'), refund: cancelRefundSchema.optional() }),
+  z.object({ do: z.literal('park'), park: parkSchema }),
+  z.object({ do: z.literal('cancelStay') })
+])
+export type UndoThenInput = z.input<typeof undoThenSchema>
 
 export const paymentCreateSchema = z
   .object({

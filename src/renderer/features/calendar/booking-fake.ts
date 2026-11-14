@@ -9,12 +9,12 @@ import {
   type ProcedureName,
   type ProcedureOutput
 } from '@shared/contract'
-import { localDate, type LocalDate } from '@shared/date'
+import { addDays, localDate, type LocalDate } from '@shared/date'
 import { matchBlacklist } from '@shared/domain/blacklist'
 import { cellStyle } from '@shared/domain/cell-status'
 import { normalizeName } from '@shared/domain/normalize'
 import { allocatePayments, folioTotals } from '@shared/domain/payment-allocation'
-import { staySlots } from '@shared/domain/stays'
+import { hourlyAmountMinor, staySlots } from '@shared/domain/stays'
 import { fakeTransport, type FakeTransport, type FakeTransportOptions } from '@/test/render'
 import { ApiError } from '@/lib/transport/types'
 
@@ -48,14 +48,30 @@ export interface BookingState {
   parked: Parked[]
   days: Day[]
   taken: { occupied: string[]; blocked: string[]; notForSale?: string[] }
+  /** What `booking.hourlyCheck` answers besides the suggested price (a clash, a cleaning-gap warning). */
+  hourly?: Partial<ProcedureOutput<'booking.hourlyCheck'>>
+  /** Room numbers `booking.kbsGaps` reports as lacking KBS information (S-124). */
+  kbsGapRooms?: string[]
   payments: Record<string, { kind: 'payment' | 'deposit' | 'refund'; amountMinor: number }[]>
+  /** Groups booked in this session (P17b): id → name, leader and folio mode; the rooms are the views with that group. */
+  groups?: Record<
+    string,
+    { name: string; leader: string; folioMode: 'single' | 'per_room'; voided: boolean; notes: string[] }
+  >
 }
 
 const TODAY = localDate('2026-10-04')
 const i18n = (tr: string, en = tr, ru = tr) => ({ tr, en, ru })
 
 export function defaultBookingState(): BookingState {
-  const room = (id: string, number: string, floor: string, base: number, weekend: number | null) => ({
+  const room = (
+    id: string,
+    number: string,
+    floor: string,
+    base: number,
+    weekend: number | null,
+    hourly: number | null = null
+  ) => ({
     id,
     number,
     floor,
@@ -67,6 +83,7 @@ export function defaultBookingState(): BookingState {
     hkStatus: 'clean',
     basePriceMinor: base,
     weekendPriceMinor: weekend,
+    hourlyPriceMinor: hourly,
     priceCurrency: 'TRY',
     openIssues: [] as Options['rooms'][number]['openIssues']
   })
@@ -77,7 +94,10 @@ export function defaultBookingState(): BookingState {
       currencies: ['TRY', 'EUR', 'USD'],
       highlightWeekdays: [6, 0],
       weekendNights: [5, 6],
-      rooms: [room('room-101', '101', '1', 280_000, 320_000), room('room-102', '102', '1', 270_000, null)],
+      rooms: [
+        room('room-101', '101', '1', 280_000, 320_000, 30_000),
+        room('room-102', '102', '1', 270_000, null)
+      ],
       channels: [
         { id: 'ch-direct', code: 'direct', name: 'Direkt', nameI18n: i18n('Direkt', 'Direct', 'Напрямую') },
         { id: 'ch-booking', code: 'booking', name: 'Booking.com', nameI18n: null }
@@ -196,6 +216,7 @@ export function bookingTransport(
         parkedReason: null,
         parkedNote: null,
         cancelReason: null,
+        group: null,
         createdAt: '2026-10-04T09:00:00.000Z'
       },
       guest: {
@@ -223,10 +244,18 @@ export function bookingTransport(
           checkedInAt: null,
           checkedOutAt: null,
           dayUse: s.checkIn === s.checkOut,
-          nights: staySlots(localDate(s.checkIn), localDate(s.checkOut)).map((slot) => ({
+          startTime: s.startTime ?? null,
+          endTime: s.endTime ?? null,
+          nights: staySlots(
+            localDate(s.checkIn),
+            localDate(s.checkOut),
+            s.startTime && s.endTime ? { start: s.startTime, end: s.endTime } : undefined
+          ).map((slot) => ({
             id: `${id}-${i}-${slot.date}`,
             date: slot.date,
             slot: slot.slot,
+            startTime: slot.startTime ?? null,
+            endTime: slot.endTime ?? null,
             priceMinor: price.get(slot.date) ?? s.nightlyPriceMinor ?? 0,
             currency: input.currency ?? 'TRY',
             payStatus: 'unpaid' as const,
@@ -258,6 +287,83 @@ export function bookingTransport(
   const guestName = (id: string): string => {
     const g = state.guests.find((x) => x.id === id)
     return g ? `${g.firstName} ${g.lastName}` : ''
+  }
+
+  /** A payment, deposit or refund on a reservation: the nights repaint and the folio totals follow. */
+  function addPayment(
+    id: string,
+    kind: 'payment' | 'deposit' | 'refund',
+    amountMinor: number,
+    methodId: string
+  ) {
+    const list = (state.payments[id] ??= [])
+    list.push({ kind, amountMinor })
+    const view = repaint(state.views[id]!, list)
+    state.views[id] = {
+      ...view,
+      payments: list.map((p, n) => ({
+        id: `pay-${n}`,
+        date: TODAY,
+        kind: p.kind,
+        methodId,
+        channelId: null,
+        amountMinor: p.amountMinor,
+        currency: 'TRY',
+        amountFolioMinor: p.amountMinor,
+        rateStale: false,
+        rateObservedAt: null,
+        voided: false,
+        collected: false,
+        reference: null,
+        note: null,
+        createdAt: '2026-10-04T10:00:00.000Z'
+      }))
+    }
+    return state.views[id]
+  }
+
+  /** The group panel's view, built from the reservations the fake holds for the group. */
+  const groupView = (groupId: string): ProcedureOutput<'booking.group'> => {
+    const group = state.groups?.[groupId]
+    if (!group) throw new ApiError('NOT_FOUND', 404, 'errors.notFound')
+    const rooms = Object.values(state.views).filter((v) => v.reservation.group?.id === groupId)
+    return {
+      id: groupId,
+      name: group.name,
+      folioMode: group.folioMode,
+      voided: group.voided,
+      leader: { id: 'leader', name: group.leader },
+      rooms: rooms.map((v) => ({
+        reservationId: v.reservation.id,
+        code: v.reservation.code,
+        status: v.reservation.status,
+        guestId: v.guest.id,
+        guestName: `${v.guest.firstName} ${v.guest.lastName}`.trim(),
+        stays: v.stays.map((s) => ({
+          stayId: s.id,
+          roomId: s.roomId,
+          roomNumber: s.roomNumber,
+          checkIn: s.checkIn,
+          checkOut: s.checkOut,
+          status: s.status
+        })),
+        currency: v.folio.currency,
+        chargesMinor: v.folio.chargesMinor,
+        balanceMinor: v.folio.balanceMinor
+      })),
+      totals: {
+        currency: 'TRY',
+        chargesMinor: rooms.reduce((sum, v) => sum + v.folio.chargesMinor, 0),
+        balanceMinor: rooms.reduce((sum, v) => sum + (v.folio.balanceMinor ?? 0), 0),
+        payableMinor: rooms.reduce((sum, v) => sum + Math.max(0, v.folio.balanceMinor ?? 0), 0)
+      },
+      notes: group.notes.map((text, n) => ({
+        id: `note-${n}`,
+        reservationId: rooms[0]?.reservation.id ?? '',
+        text,
+        createdAt: '2026-10-04T09:00:00.000Z'
+      }))
+    }
   }
 
   const handle = (name: ProcedureName, input: unknown): unknown => {
@@ -324,11 +430,112 @@ export function bookingTransport(
       }
       case 'booking.create':
         return create(input as ProcedureInput<'booking.create'>)
+      case 'booking.createHourlyStay': {
+        const h = input as ProcedureInput<'booking.createHourlyStay'>
+        return create({
+          guest: h.guest,
+          channelId: h.channelId,
+          status: h.status,
+          currency: h.currency,
+          blacklistConfirmed: h.blacklistConfirmed,
+          stays: [
+            {
+              roomId: h.roomId,
+              checkIn: h.date,
+              checkOut: h.date,
+              startTime: h.startTime,
+              endTime: h.endTime,
+              nightlyPriceMinor: h.priceMinor
+            }
+          ]
+        })
+      }
+      case 'booking.hourlyCheck': {
+        const c = input as ProcedureInput<'booking.hourlyCheck'>
+        const hourly = state.options.rooms.find((r) => r.id === c.roomId)?.hourlyPriceMinor ?? null
+        return {
+          taken: false,
+          hours: [],
+          blocked: false,
+          warnings: [],
+          turnoverMinutes: 60,
+          suggestedMinor: hourly === null ? null : hourlyAmountMinor(hourly, 'TRY', c.startTime, c.endTime),
+          currency: 'TRY',
+          ...state.hourly
+        }
+      }
       case 'booking.get': {
         const view = state.views[String(i['id'])]
         if (!view) throw new ApiError('NOT_FOUND', 404, 'errors.notFound')
         // A copy, like a real answer: tests change the state in place between calls.
         return structuredClone(view)
+      }
+      case 'booking.createGroup': {
+        const g = input as ProcedureInput<'booking.createGroup'>
+        const groupId = `group-${next++}`
+        const leaderName =
+          'id' in g.leader
+            ? guestName(g.leader.id)
+            : `${g.leader.firstName} ${g.leader.lastName ?? ''}`.trim()
+        const groups = (state.groups ??= {})
+        groups[groupId] = { name: g.name, leader: leaderName, folioMode: 'single', voided: false, notes: [] }
+        for (const room of g.rooms) {
+          const view = create({
+            guest: room.guest ?? g.leader,
+            channelId: g.channelId,
+            status: g.status,
+            currency: g.currency,
+            stays: [room.stay]
+          })
+          view.reservation.group = { id: groupId, name: g.name }
+        }
+        return groupView(groupId)
+      }
+      case 'booking.group':
+        return groupView(String(i['id']))
+      case 'booking.checkInMany':
+      case 'booking.checkOutMany': {
+        const ids = i['stayIds'] as string[]
+        const entering = name === 'booking.checkInMany'
+        const views = Object.values(state.views)
+        // One transaction in the service: a stay that cannot take the step stops the whole request.
+        for (const id of ids) {
+          const stay = views.flatMap((v) => v.stays).find((s) => s.id === id)
+          if (!stay) throw new ApiError('NOT_FOUND', 404, 'errors.notFound')
+          if (stay.status !== (entering ? 'planned' : 'in_house'))
+            throw new ApiError('VALIDATION', 400, 'errors.invalidStayState', { status: stay.status })
+        }
+        for (const view of views)
+          for (const stay of view.stays)
+            if (ids.includes(stay.id)) {
+              stay.status = entering ? 'in_house' : 'done'
+              view.reservation.status = entering ? 'checked_in' : 'checked_out'
+            }
+        return groupView(String(i['groupId']))
+      }
+      case 'booking.kbsGaps': {
+        const ids = i['stayIds'] as string[]
+        return Object.values(state.views)
+          .flatMap((v) => v.stays)
+          .filter((s) => ids.includes(s.id) && (state.kbsGapRooms ?? []).includes(s.roomNumber))
+          .map((s) => ({ stayId: s.id, roomNumber: s.roomNumber }))
+      }
+      case 'booking.addGroupNote': {
+        const group = state.groups?.[String(i['groupId'])]
+        if (!group) throw new ApiError('NOT_FOUND', 404, 'errors.notFound')
+        group.notes.push(String(i['text']))
+        return groupView(String(i['groupId']))
+      }
+      case 'booking.cancelGroup': {
+        const group = state.groups?.[String(i['groupId'])]
+        if (!group) throw new ApiError('NOT_FOUND', 404, 'errors.notFound')
+        for (const view of Object.values(state.views))
+          if (view.reservation.group?.id === i['groupId']) {
+            view.reservation.status = 'cancelled'
+            for (const s of view.stays) if (s.status === 'planned') s.status = 'cancelled'
+          }
+        group.voided = true
+        return groupView(String(i['groupId']))
       }
       case 'booking.listParked':
         return state.parked
@@ -338,8 +545,44 @@ export function bookingTransport(
         state.parked = state.parked.filter((p) => p.id !== id)
         const view = state.views[id]
         if (!view) throw new ApiError('NOT_FOUND', 404, 'errors.notFound')
-        view.reservation.status = name === 'booking.noShow' ? 'no_show' : 'cancelled'
-        for (const s of view.stays) if (s.status === 'planned') s.status = 'cancelled'
+        const refund = i['refund'] as { mode: string; methodId?: string; amountMinor?: number } | undefined
+        if (refund?.mode === 'refund')
+          addPayment(id, 'refund', Number(refund.amountMinor), String(refund.methodId))
+        const current = state.views[id]!
+        current.reservation.status = name === 'booking.noShow' ? 'no_show' : 'cancelled'
+        for (const s of current.stays) if (s.status === 'planned') s.status = 'cancelled'
+        return structuredClone(current)
+      }
+      case 'booking.undoCheckIn': {
+        const view = Object.values(state.views).find((v) => v.stays.some((s) => s.id === i['stayId']))
+        if (!view) throw new ApiError('NOT_FOUND', 404, 'errors.notFound')
+        for (const s of view.stays)
+          if (s.id === i['stayId']) {
+            s.status = 'planned'
+            s.checkedInAt = null
+          }
+        view.reservation.status = view.stays.some((s) => s.status === 'in_house' || s.status === 'done')
+          ? 'checked_in'
+          : 'confirmed'
+        // The give-up that goes with the take-back is one request (one transaction in the service).
+        const then = i['then'] as
+          | { do: 'cancel'; refund?: unknown }
+          | { do: 'park'; park: { reason: string; note?: string | null } }
+          | { do: 'cancelStay' }
+          | undefined
+        if (then?.do === 'cancel')
+          return handle('booking.cancel', {
+            id: view.reservation.id,
+            reason: i['reason'],
+            refund: then.refund
+          })
+        if (then?.do === 'cancelStay')
+          return handle('booking.cancelStay', { stayId: i['stayId'], reason: i['reason'] })
+        if (then?.do === 'park') {
+          view.reservation.status = 'parked'
+          view.reservation.parkedReason = then.park.reason as typeof view.reservation.parkedReason
+          for (const s of view.stays) if (s.status === 'planned') s.status = 'cancelled'
+        }
         return structuredClone(view)
       }
       case 'booking.cancelStay': {
@@ -347,6 +590,38 @@ export function bookingTransport(
         if (!view) throw new ApiError('NOT_FOUND', 404, 'errors.notFound')
         for (const s of view.stays) if (s.id === i['stayId']) s.status = 'cancelled'
         return structuredClone(view)
+      }
+      case 'booking.suggestPrices': {
+        const room = state.options.rooms.find((r) => r.id === i['roomId'])
+        if (!room || room.basePriceMinor === null) return null
+        const nights: { date: LocalDate; priceMinor: number; reason: 'base' }[] = []
+        for (let d = localDate(String(i['checkIn'])); d < String(i['checkOut']); d = addDays(d, 1))
+          nights.push({ date: d, priceMinor: room.basePriceMinor, reason: 'base' })
+        return { currency: room.priceCurrency ?? 'TRY', nights }
+      }
+      case 'booking.checkIn': {
+        const view = Object.values(state.views).find((v) => v.stays.some((s) => s.id === i['stayId']))
+        if (!view) throw new ApiError('NOT_FOUND', 404, 'errors.notFound')
+        for (const s of view.stays) if (s.id === i['stayId']) s.status = 'in_house'
+        view.reservation.status = 'checked_in'
+        return structuredClone(view)
+      }
+      case 'booking.addNote': {
+        const view = state.views[String(i['reservationId'])]
+        if (!view) throw new ApiError('NOT_FOUND', 404, 'errors.notFound')
+        return structuredClone(view)
+      }
+      case 'booking.payGroup': {
+        const group = state.groups?.[String(i['groupId'])]
+        if (!group) throw new ApiError('NOT_FOUND', 404, 'errors.notFound')
+        let left = Number(i['amountMinor'])
+        for (const view of Object.values(state.views)) {
+          if (view.reservation.group?.id !== i['groupId'] || left <= 0) continue
+          const part = Math.min(left, Math.max(0, view.folio.balanceMinor ?? 0))
+          if (part > 0) addPayment(view.reservation.id, 'payment', part, String(i['methodId']))
+          left -= part
+        }
+        return groupView(String(i['groupId']))
       }
       case 'booking.checkOut': {
         const view = Object.values(state.views).find((v) => v.stays.some((s) => s.id === i['stayId']))
@@ -400,33 +675,13 @@ export function bookingTransport(
           }
         return { ok: true }
       }
-      case 'booking.addPayment': {
-        const id = String(i['reservationId'])
-        const list = (state.payments[id] ??= [])
-        list.push({ kind: i['kind'] as 'payment', amountMinor: Number(i['amountMinor']) })
-        const view = repaint(state.views[id]!, list)
-        state.views[id] = {
-          ...view,
-          payments: list.map((p, n) => ({
-            id: `pay-${n}`,
-            date: TODAY,
-            kind: p.kind,
-            methodId: String(i['methodId']),
-            channelId: null,
-            amountMinor: p.amountMinor,
-            currency: 'TRY',
-            amountFolioMinor: p.amountMinor,
-            rateStale: false,
-            rateObservedAt: null,
-            voided: false,
-            collected: false,
-            reference: null,
-            note: null,
-            createdAt: '2026-10-04T10:00:00.000Z'
-          }))
-        }
-        return state.views[id]
-      }
+      case 'booking.addPayment':
+        return addPayment(
+          String(i['reservationId']),
+          i['kind'] as 'payment',
+          Number(i['amountMinor']),
+          String(i['methodId'])
+        )
       default:
         return undefined
     }

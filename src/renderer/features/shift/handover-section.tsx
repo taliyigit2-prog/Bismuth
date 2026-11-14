@@ -22,6 +22,7 @@ import {
   WrenchIcon
 } from 'lucide-react'
 import type { ProcedureOutput } from '@shared/contract'
+import { TEXT_MAX } from '@shared/contract/text'
 import { localDateOf } from '@shared/date'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -424,15 +425,18 @@ export function WriteHandover({
   const id = useId()
   const errorText = useErrorText()
   const [note, setNote] = useState('')
+  // H-30: a handover saved is saved once; the button wakes up when the note changes again.
+  const [saved, setSaved] = useState(false)
   const save = useApiMutation('shift.saveHandover', { invalidates: SHIFT_QUERIES })
   const next = current ? nextShift(shifts, current.id) : undefined
   const submit = (): void => {
-    if (save.isPending) return
+    if (save.isPending || saved) return
     save.mutate(
       { fromShiftId: current?.id ?? null, toShiftId: next?.id ?? null, text: note.trim() || null },
       {
         onSuccess: () => {
           setNote('')
+          setSaved(true)
           toast.success(t('shift.write.saved'))
         },
         onError: (error) => void toast.error(errorText(error))
@@ -474,16 +478,24 @@ export function WriteHandover({
           <Textarea
             id={`${id}-note`}
             rows={3}
-            maxLength={5000}
+            maxLength={TEXT_MAX.long}
             value={note}
-            onChange={(e) => setNote(e.target.value)}
+            onChange={(e) => {
+              setNote(e.target.value)
+              setSaved(false)
+            }}
             placeholder={t('shift.write.placeholder')}
           />
+          {!note.trim() ? (
+            <p className="text-muted-foreground text-xs" data-testid="handover-empty-hint">
+              {t('shift.write.emptyHint')}
+            </p>
+          ) : null}
         </div>
         <Button
           type="submit"
           className="justify-self-end max-md:w-full"
-          disabled={save.isPending}
+          disabled={save.isPending || saved}
           data-testid="handover-save"
         >
           <CheckIcon aria-hidden />

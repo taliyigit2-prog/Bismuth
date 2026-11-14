@@ -5,6 +5,8 @@
 // - the agreed unit price from a date (a rise is a new row, the old prices stay for the old slips);
 // - the laundry's invoice of the month (then "Ödendi" writes the one expense, G-71);
 // - voiding a wrong slip with a reason.
+import { maxLengthOf } from '@shared/contract/limits'
+import { reasonSchema } from '@shared/contract/expenses'
 import { useId, useState, type FormEvent, type KeyboardEvent } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import { InfoIcon } from 'lucide-react'
@@ -586,6 +588,7 @@ export function VoidDeliveryDialog({
             id="laundry-void-reason"
             rows={2}
             value={reason}
+            maxLength={maxLengthOf(reasonSchema)}
             onChange={(e) => setReason(e.target.value)}
           />
         </div>
@@ -599,6 +602,61 @@ export function VoidDeliveryDialog({
             }}
           >
             {t('laundry.void.confirm')}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  )
+}
+
+/** Opens a settled month again (S-127): the reason goes to the audit row; the invoice is entered anew afterwards. */
+export function ReopenMonthDialog({
+  contactId,
+  year,
+  month,
+  monthLabel,
+  onClose
+}: {
+  contactId: string
+  year: number
+  month: number
+  monthLabel: string
+  onClose: () => void
+}) {
+  const { t } = useTranslation()
+  const [reason, setReason] = useState('')
+  const save = useAdminMutation('laundry.reopenMonth', {
+    invalidate: [...LAUNDRY_QUERIES, 'supply.monthSummary'],
+    success: t('laundry.reopen.saved', { month: monthLabel })
+  })
+  return (
+    <AlertDialog open onOpenChange={(o) => (o ? null : onClose())}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{t('laundry.reopen.title', { month: monthLabel })}</AlertDialogTitle>
+          <AlertDialogDescription>{t('laundry.reopen.body')}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <div className="grid gap-1.5">
+          <Label htmlFor="laundry-reopen-reason">{t('laundry.reopen.reason')}</Label>
+          <Textarea
+            id="laundry-reopen-reason"
+            rows={2}
+            value={reason}
+            maxLength={maxLengthOf(reasonSchema)}
+            onChange={(e) => setReason(e.target.value)}
+          />
+        </div>
+        <AlertDialogFooter>
+          <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+          <AlertDialogAction
+            disabled={reason.trim().length < 3 || save.isPending}
+            data-testid="laundry-reopen-confirm"
+            onClick={(e) => {
+              e.preventDefault()
+              save.mutate({ contactId, year, month, reason: reason.trim() }, { onSuccess: onClose })
+            }}
+          >
+            {t('laundry.reopen.confirm')}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

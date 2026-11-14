@@ -37,6 +37,7 @@ describe('Ayarlar', () => {
         .map((link) => link.textContent)
     ).toEqual([
       'Genel',
+      'Sık kullanılan',
       'Otel',
       'Odalar ve tipler',
       'Listeler',
@@ -46,12 +47,17 @@ describe('Ayarlar', () => {
       'Takvim',
       'Durum etiketleri',
       'Döviz',
+      'Kamera',
       'Uzaktan erişim',
       'Yedek',
       'Kullanıcılar ve roller',
       'Kılavuz',
       'Hakkında'
     ])
+    await openTab('Sık kullanılan')
+    expect(await screen.findByTestId('settings-frequent')).toBeInTheDocument()
+    await userEvent.setup().click(screen.getByTestId('frequent-rooms'))
+    expect(await screen.findByTestId('room-table')).toBeInTheDocument()
     await openTab('Otel')
     expect(await screen.findByLabelText('Otel adı')).toBeInTheDocument()
     await openTab('Odalar ve tipler')
@@ -177,15 +183,16 @@ describe('Durum etiketlerinin adları', () => {
 })
 
 describe('Ayarlar yetkileri', () => {
-  it('bölümü göremeyen rol bölümü listede görmez; açık bölüm "yetkiniz yok" der', async () => {
+  it('bölümü göremeyen rol bölümü listede görmez; açık yetkisiz bölüm yerine ilk izinli bölüm açılır (H-09)', async () => {
     const { setViewAs } = await import('@/lib/view-as')
     try {
       await renderWithProviders(<SettingsPage />, { transport: adminTransport() })
       await openTab('Uzaktan erişim')
       expect(await screen.findByTestId('device-list')).toBeInTheDocument()
       act(() => setViewAs('manager'))
-      expect(await screen.findByText('Bu ekrana yetkiniz yok')).toBeInTheDocument()
+      expect(await screen.findByTestId('language-select')).toBeInTheDocument()
       expect(screen.queryByTestId('device-list')).not.toBeInTheDocument()
+      expect(screen.queryByRole('link', { name: 'Uzaktan erişim' })).not.toBeInTheDocument()
       expect(screen.queryByRole('link', { name: 'Kullanıcılar ve roller' })).not.toBeInTheDocument()
       expect(screen.getByRole('link', { name: 'Listeler' })).toBeInTheDocument()
     } finally {
@@ -222,7 +229,7 @@ describe('Ayarlar yetkileri', () => {
         within(list)
           .getAllByRole('link')
           .map((link) => link.textContent)
-      ).toEqual(['Genel', 'Görev önerileri', 'Döviz', 'Kılavuz', 'Hakkında'])
+      ).toEqual(['Genel', 'Görev önerileri', 'Döviz', 'Kamera', 'Kılavuz', 'Hakkında'])
     } finally {
       setViewAs('owner')
     }
@@ -279,5 +286,18 @@ describe('Ayarlar yetkileri', () => {
     } finally {
       setViewAs('owner')
     }
+  })
+
+  it('yakınlaştırma tuşla değişince açık Görünüm seçimi yeni değeri gösterir', async () => {
+    const transport = adminTransport()
+    await renderWithProviders(<SettingsPage />, { transport })
+    const radio = await screen.findByTestId('zoom-100')
+    expect(radio).toBeChecked()
+    // The main process saves the key's step; the page only notices its window resizing.
+    await transport.call('settings.set', { 'ui.zoom': 125 })
+    act(() => {
+      window.dispatchEvent(new Event('resize'))
+    })
+    await waitFor(() => expect(screen.getByTestId('zoom-125')).toBeChecked(), { timeout: 2000 })
   })
 })

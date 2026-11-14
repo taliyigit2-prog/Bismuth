@@ -104,6 +104,39 @@ function cellColor(cell: ExcelJS.Cell): string | null {
   return fill.fgColor?.argb ?? null
 }
 
+export const MAX_XLSX_UNCOMPRESSED_BYTES = 50 * 1024 * 1024
+export const MAX_XLSX_ROWS = 5000
+export const MAX_XLSX_COLUMNS = 100
+
+/**
+ * Sum of the uncompressed sizes the zip central directory declares, read before anything is inflated (zip bomb
+ * guard). A broken or zip64 directory counts as unreadable.
+ */
+export function zipUncompressedTotal(bytes: Buffer): number {
+  const from = Math.max(0, bytes.length - 22 - 0xffff)
+  let eocd = -1
+  for (let i = bytes.length - 22; i >= from; i--) {
+    if (bytes.readUInt32LE(i) === 0x06054b50) {
+      eocd = i
+      break
+    }
+  }
+  if (eocd < 0) throw new TableReadError()
+  const entries = bytes.readUInt16LE(eocd + 10)
+  let at = bytes.readUInt32LE(eocd + 16)
+  if (entries === 0xffff || at === 0xffffffff) throw new TableReadError()
+  let total = 0
+  for (let n = 0; n < entries; n++) {
+    if (at + 46 > bytes.length || bytes.readUInt32LE(at) !== 0x02014b50) throw new TableReadError()
+    const size = bytes.readUInt32LE(at + 24)
+    if (size === 0xffffffff) throw new TableReadError()
+    total += size
+    if (total > MAX_XLSX_UNCOMPRESSED_BYTES) throw new TableReadError()
+    at += 46 + bytes.readUInt16LE(at + 28) + bytes.readUInt16LE(at + 30) + bytes.readUInt16LE(at + 32)
+  }
+  return total
+}
+
 export async function readTable(fileName: string, bytes: Buffer, sheet = 0): Promise<SheetTable> {
   const isZip = bytes.length > 4 && bytes[0] === 0x50 && bytes[1] === 0x4b
   if (!isZip) {
@@ -111,6 +144,7 @@ export async function readTable(fileName: string, bytes: Buffer, sheet = 0): Pro
     const rows = parseCsv(decodeText(bytes))
     return { sheetNames: [], rows, colors: rows.map((r) => r.map(() => null)) }
   }
+  zipUncompressedTotal(bytes)
   const { default: Excel } = await import('exceljs')
   const wb = new Excel.Workbook()
   try {
@@ -121,6 +155,7 @@ export async function readTable(fileName: string, bytes: Buffer, sheet = 0): Pro
   const sheets = wb.worksheets
   const ws = sheets[sheet] ?? sheets[0]
   if (!ws) throw new TableReadError()
+  if (ws.rowCount > MAX_XLSX_ROWS || ws.columnCount > MAX_XLSX_COLUMNS) throw new TableReadError()
   const rows: string[][] = []
   const colors: (string | null)[][] = []
   const width = ws.columnCount

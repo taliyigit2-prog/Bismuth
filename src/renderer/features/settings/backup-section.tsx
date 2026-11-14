@@ -14,6 +14,7 @@ import {
   DatabaseBackupIcon,
   DownloadIcon,
   FolderOpenIcon,
+  FolderSearchIcon,
   HardDriveIcon,
   KeyRoundIcon,
   RotateCcwIcon,
@@ -41,12 +42,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { CopyButton } from '@/components/copy-button'
+import { FieldError } from '@/components/field-error'
 import { QueryView } from '@/components/query-view'
 import { ResponsiveDialog } from '@/components/responsive-dialog'
 import { EmptyState } from '@/components/states'
 import { TimeInput } from '@/components/time-input'
 import { useFormat } from '@/hooks/use-format'
 import { useApiMutation, useApiQuery } from '@/lib/api/hooks'
+import { numberInLimits, useRangeText } from '@/lib/form-errors'
 import { useCan } from '@/lib/view-as'
 import { useRemoteLink } from '@/components/connection-status'
 import { ExportDialog } from '../data-transfer/export-dialog'
@@ -680,23 +683,34 @@ function SettingsCard({ values, onSave, canEdit }: Props & { canEdit: boolean })
     invalidates: [...INVALIDATES, 'settings.get'],
     onError: onError(t('backup.driveFolderFailed'))
   })
+  // "Drive klasörünü bul": the hotel computer scans its own known Drive folders (no network) and keeps the one found.
+  const find = useApiMutation('backup.findDriveFolder', {
+    invalidates: [...INVALIDATES, 'settings.get'],
+    onSuccess: (r) =>
+      r.folder ? toast.success(t('backup.driveFound')) : toast.info(t('backup.driveNotFound')),
+    onError: onError(t('backup.driveFolderFailed'))
+  })
   const [draft, setDraft] = useState({
     time: values['backup.autoTime'],
     keep: String(values['backup.keepDays']),
     pre: String(values['backup.preMigrationKeep'])
   })
+  const rangeText = useRangeText()
+  const keepLimits = { min: 1, max: 365, integer: true }
+  const preLimits = { min: 1, max: 100, integer: true }
   const keep = Number(draft.keep)
   const pre = Number(draft.pre)
-  const valid =
-    /^([01]\d|2[0-3]):[0-5]\d$/.test(draft.time) &&
-    Number.isInteger(keep) &&
-    keep >= 1 &&
-    keep <= 365 &&
-    Number.isInteger(pre) &&
-    pre >= 1 &&
-    pre <= 100
+  // What is wrong is said under the field (H-36); the button stays pressable and shows it on submit.
+  const timeBad = !/^([01]\d|2[0-3]):[0-5]\d$/.test(draft.time)
+  const keepBad = !numberInLimits(draft.keep, keepLimits)
+  const preBad = !numberInLimits(draft.pre, preLimits)
+  const valid = !timeBad && !keepBad && !preBad
+  const [shown, setShown] = useState(false)
   const save = (): void => {
-    if (!valid) return
+    if (!valid) {
+      setShown(true)
+      return
+    }
     onSave(
       {
         'backup.autoTime': draft.time,
@@ -713,6 +727,7 @@ function SettingsCard({ values, onSave, canEdit }: Props & { canEdit: boolean })
       </CardHeader>
       <CardContent>
         <form
+          noValidate
           className="grid gap-4 md:grid-cols-2"
           onSubmit={(e) => {
             e.preventDefault()
@@ -726,8 +741,11 @@ function SettingsCard({ values, onSave, canEdit }: Props & { canEdit: boolean })
               value={draft.time}
               disabled={!canEdit}
               onChange={(v) => setDraft((d) => ({ ...d, time: v }))}
+              aria-invalid={(shown && timeBad) || undefined}
+              aria-describedby={shown && timeBad ? 'backup-time-error' : undefined}
               className="max-md:text-base"
             />
+            <FieldError id="backup-time-error" message={shown && timeBad && t('backup.timeInvalid')} />
             <p className="text-muted-foreground text-xs">{t('backup.autoTimeHelp')}</p>
           </div>
           <div className="grid content-start gap-1.5">
@@ -742,8 +760,11 @@ function SettingsCard({ values, onSave, canEdit }: Props & { canEdit: boolean })
               value={draft.keep}
               disabled={!canEdit}
               onChange={(e) => setDraft((d) => ({ ...d, keep: e.target.value }))}
+              aria-invalid={(shown && keepBad) || undefined}
+              aria-describedby={shown && keepBad ? 'backup-keep-error' : undefined}
               className="max-md:text-base"
             />
+            <FieldError id="backup-keep-error" message={shown && keepBad && rangeText(keepLimits)} />
             <p className="text-muted-foreground text-xs">{t('backup.keepDaysHelp')}</p>
           </div>
           <div className="grid content-start gap-1.5 md:col-span-2">
@@ -771,6 +792,17 @@ function SettingsCard({ values, onSave, canEdit }: Props & { canEdit: boolean })
                   >
                     <FolderOpenIcon aria-hidden />
                     {t('backup.driveFolderPick')}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={find.isPending}
+                    onClick={() => find.mutate({})}
+                    data-testid="backup-drive-find"
+                  >
+                    <FolderSearchIcon aria-hidden />
+                    {t('backup.driveFolderFind')}
                   </Button>
                   {values['backup.driveFolder'] ? (
                     <Button
@@ -802,13 +834,16 @@ function SettingsCard({ values, onSave, canEdit }: Props & { canEdit: boolean })
               value={draft.pre}
               disabled={!canEdit}
               onChange={(e) => setDraft((d) => ({ ...d, pre: e.target.value }))}
+              aria-invalid={(shown && preBad) || undefined}
+              aria-describedby={shown && preBad ? 'backup-pre-error' : undefined}
               className="max-md:text-base"
             />
+            <FieldError id="backup-pre-error" message={shown && preBad && rangeText(preLimits)} />
             <p className="text-muted-foreground text-xs">{t('backup.preMigrationKeepHelp')}</p>
           </div>
           {canEdit ? (
             <div className="flex items-end md:col-span-2">
-              <Button type="submit" disabled={!valid} className="max-md:w-full">
+              <Button type="submit" className="max-md:w-full">
                 {t('common.save')}
               </Button>
             </div>

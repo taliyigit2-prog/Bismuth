@@ -33,7 +33,7 @@ export default defineConfig({
   webServer: {
     command: 'npx tsx --tsconfig tsconfig.node.json tests/e2e/mobile/server.ts',
     url: `http://127.0.0.1:${MOBILE_PORT}/`,
-    env: { E2E_PORT: String(MOBILE_PORT) },
+    env: { E2E_PORT: String(MOBILE_PORT), E2E_CAMERA: '1' },
     reuseExistingServer: !process.env['CI'],
     timeout: 60_000
   }

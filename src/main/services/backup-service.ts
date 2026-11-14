@@ -36,8 +36,9 @@ import type {
 } from '@shared/contract/backup'
 import { keepDaysSchema, type BackupKind } from '@shared/contract/users'
 import { localDateOf } from '@shared/date'
+import { scrubBiometricData } from '../backup/biometric'
 import { ArchiveError, encryptFile, readArchive, sha256Of, writeArchive } from '../backup/archive'
-import { resolveDriveBackupDir } from '../backup/drive'
+import { prepareDriveBackupDir, resolveDriveBackupDir, type DriveProbe } from '../backup/drive'
 import { PRE_MIGRATION_PREFIX, preMigrationFiles, prunePreMigration } from '../backup/pre-migration'
 import { isDue, nextSlotAt } from '../backup/scheduler'
 import { steppedBackup, type SteppedBackupOptions } from '../backup/stepped-backup'
@@ -101,6 +102,10 @@ export interface BackupDeps extends ServiceDeps {
   relaunch?: () => void
   /** The system's folder dialog of the program window (main process only): the Drive folder (K-45 (3)). */
   pickFolder?: () => Promise<string | null>
+  /** Where "Drive klasörünü bul" looks (tests); default: this computer's folders. */
+  driveProbe?: DriveProbe
+  /** Makes the folder "Drive klasörünü bul" found (tests); default: mkdir. */
+  prepareDriveDir?: () => string | null
 }
 
 export interface RestoreMarker {
@@ -251,6 +256,14 @@ export function applyPendingRestore(opts: {
     for (const suffix of ['', '-wal', '-shm'])
       if (existsSync(opts.dbFile + suffix))
         cpSync(opts.dbFile + suffix, join(safetyDir, BACKUP_DB_NAME + suffix))
+    // The safety copy is kept until removed by hand, so it must not outlive the face retention rules (K-52).
+    // A damaged live file (startup recovery) cannot be opened: it is kept as it is for diagnosis.
+    if (existsSync(join(safetyDir, BACKUP_DB_NAME)))
+      try {
+        scrubBiometricData(join(safetyDir, BACKUP_DB_NAME))
+      } catch {
+        /* damaged copy: left untouched */
+      }
     if (existsSync(opts.attachmentsDir))
       cpSync(opts.attachmentsDir, join(safetyDir, ATTACHMENTS), { recursive: true })
     cpSync(sourceDb, stagedDb)
@@ -638,6 +651,7 @@ export function createBackupService(deps: BackupDeps) {
         copy,
         fast ? { pagesPerStep: 1 << 20, restMs: 0 } : { isBusy: deps.isBusy, ...deps.stepping }
       )
+      scrubBiometricData(copy) // K-51: face vectors and crops never ride in a backup (nor into Drive)
       // P14fix #6: the copy is checked in a worker thread (the windows keep answering meanwhile).
       if ((await integrityOfFileAsync(copy)) !== 'ok') throw backupFailed()
       const manifest = {
@@ -1107,6 +1121,17 @@ export function createBackupService(deps: BackupDeps) {
       if (!isAbsolute(chosen) || /^[\\/]{2}/.test(chosen))
         throw new AppError('VALIDATION', 'errors.backupDriveFolder')
       return chosen
+    },
+
+    /**
+     * "Drive klasörünü bul": looks for Drive for desktop's folder on this computer (local folders only, no
+     * network) and returns <My Drive>/Bismuth/yedekler, made if missing; null when Drive is not found. As with
+     * "Klasör seç", only the hotel's own window; the caller writes the setting (audited there).
+     */
+    findDriveFolder(ctx: Ctx): string | null {
+      requirePermission(ctx, 'settings.backup', 'edit')
+      desktopOnly(ctx)
+      return deps.prepareDriveDir ? deps.prepareDriveDir() : prepareDriveBackupDir(deps.driveProbe)
     },
 
     /** Removes automatic copies older than `keepDays` (setting `backup.keepDays`, S-42: 30). */

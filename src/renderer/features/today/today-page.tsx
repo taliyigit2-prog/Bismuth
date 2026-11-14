@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
 import {
   BedDoubleIcon,
+  CameraIcon,
   DatabaseBackupIcon,
   LandmarkIcon,
   LogInIcon,
@@ -64,6 +65,27 @@ function ReminderAlerts({ reminders }: { reminders: TodaySummaryDto['reminders']
   ))
 }
 
+/** Camera alarms nobody looked at and a crashed camera process (K-50); only for those with the camera right. */
+function CameraAlert({ camera }: { camera: NonNullable<TodaySummaryDto['camera']> }) {
+  const { t } = useTranslation()
+  if (!camera.newAlerts && !camera.problem) return null
+  return (
+    <Alert className="border-warning/60" data-testid="today-camera">
+      <CameraIcon aria-hidden />
+      <AlertTitle>{t('today.camera.title')}</AlertTitle>
+      <AlertDescription className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <div className="grid min-w-0 flex-1 basis-64 gap-1">
+          {camera.newAlerts ? <p>{t('today.camera.newAlerts', { count: camera.newAlerts })}</p> : null}
+          {camera.problem ? <p>{t('today.camera.problem')}</p> : null}
+        </div>
+        <Button asChild size="sm">
+          <Link to="/camera">{t('today.camera.open')}</Link>
+        </Button>
+      </AlertDescription>
+    </Alert>
+  )
+}
+
 /** The backup warning (faz-14): only for those who can act on it in Ayarlar → Yedek. */
 function BackupAlert() {
   const { t } = useTranslation()
@@ -78,11 +100,14 @@ function BackupAlert() {
     <Alert className="border-warning/60" data-testid="today-backup">
       <DatabaseBackupIcon aria-hidden />
       <AlertTitle>{t('today.backupTitle')}</AlertTitle>
-      <AlertDescription className="grid gap-2">
-        {messages.map((m) => (
-          <p key={m}>{t(`backup.warning.${m}`)}</p>
-        ))}
-        <Button asChild size="sm" variant="outline" className="justify-self-start">
+      {/* 05 #6: one line on a wide screen (message, then the button); several warnings stack in the first part. */}
+      <AlertDescription className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <div className="grid min-w-0 flex-1 basis-64 gap-1">
+          {messages.map((m) => (
+            <p key={m}>{t(`backup.warning.${m}`)}</p>
+          ))}
+        </div>
+        <Button asChild size="sm" variant="outline" className="max-md:w-full">
           <Link to="/settings" search={{ tab: 'backup' }}>
             {t('today.backupOpen')}
           </Link>
@@ -185,6 +210,7 @@ function TodayView({ s }: { s: TodaySummaryDto }) {
       {/* Phone: the weather first (faz-11 madde 6); wider: in the grid below. */}
       {isMobile ? <WeatherCard /> : null}
       <ReminderAlerts reminders={s.reminders} />
+      {s.camera ? <CameraAlert camera={s.camera} /> : null}
       {can('settings.backup') ? <BackupAlert /> : null}
       {s.handovers ? <HandoverAlert handovers={s.handovers} /> : null}
 

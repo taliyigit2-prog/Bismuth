@@ -48,12 +48,22 @@ import { CHANNEL_REF_MAX, NOTE_LOG_MAX, RESERVATION_NOTE_MAX } from './booking-l
 import { NightPriceTable } from './night-price-table'
 import { useBlockOverride } from './override'
 import { OverrideDialog } from './override-dialog'
+import { FeesSection } from './fees-panel'
 import { TagPicker } from './tag-picker'
 import { useCustomTags } from './use-custom-tags'
 
 const FOLIO_KEYS = ['charges', 'credited', 'balance'] as const
 
-export function SummaryTab({ view, editable }: { view: BookingView; editable: boolean }) {
+export function SummaryTab({
+  view,
+  editable,
+  notesEditable = editable
+}: {
+  view: BookingView
+  editable: boolean
+  /** The notes log stays writable on a closed reservation for whoever may edit the calendar (K-55). */
+  notesEditable?: boolean
+}) {
   const { t } = useTranslation()
   const f = useFormat()
   const options = useBookingOptions()
@@ -67,7 +77,10 @@ export function SummaryTab({ view, editable }: { view: BookingView; editable: bo
     .sort()
     .at(-1)
   const nights = from && to ? diffDays(from, to) : 0
-  const people = live.flatMap((s) => s.occupants.filter((o) => !o.leftAt)).length
+  // After the check-out everybody has "left": the summary then names the people who stayed, not "0 kişi".
+  const present = live.flatMap((s) => s.occupants.filter((o) => !o.leftAt)).length
+  const people = present || live.flatMap((s) => s.occupants).length
+  const hours = shown.flatMap((s) => (s.startTime && s.endTime ? [`${s.startTime}–${s.endTime}`] : []))
   const [status, setStatus] = useState(r.status === 'tentative' ? 'tentative' : 'confirmed')
   const [channelId, setChannelId] = useState(r.channelId)
   const [channelRef, setChannelRef] = useState(r.channelRef ?? '')
@@ -102,9 +115,17 @@ export function SummaryTab({ view, editable }: { view: BookingView; editable: bo
         <div>
           <dt className="text-muted-foreground text-xs">{t('calendar.panel.guests')}</dt>
           <dd className="font-medium">
-            {view.occupantsVisible ? t('booking.people.count', { count: people }) : '—'}
+            {view.occupantsVisible && people > 0 ? t('booking.people.count', { count: people }) : '—'}
           </dd>
         </div>
+        {hours.length ? (
+          <div>
+            <dt className="text-muted-foreground text-xs">{t('booking.hourly.hoursLabel')}</dt>
+            <dd className="font-medium tabular-nums" data-testid="panel-hours">
+              <bdi>{hours.join(', ')}</bdi>
+            </dd>
+          </div>
+        ) : null}
         <div>
           <dt className="text-muted-foreground text-xs">{t('calendar.panel.checkInDate')}</dt>
           <dd className="font-medium">{from ? f.date(from, 'medium') : '—'}</dd>
@@ -255,7 +276,7 @@ export function SummaryTab({ view, editable }: { view: BookingView; editable: bo
         ) : null}
       </section>
       <GuestSummaryCard guestId={view.guest.id} showNote={false} excludeReservationId={r.id} />
-      <NotesLog view={view} editable={editable} />
+      <NotesLog view={view} editable={notesEditable} />
     </div>
   )
 }
@@ -735,6 +756,7 @@ export function MoneyTab({ view, onPay }: { view: BookingView; onPay?: () => voi
           {t('calendar.panel.takePayment')}
         </Button>
       ) : null}
+      <FeesSection view={view} />
     </div>
   )
 }

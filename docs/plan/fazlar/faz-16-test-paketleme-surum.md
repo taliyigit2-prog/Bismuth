@@ -12,10 +12,10 @@ yönergesi hazırlanır; v1.0 etiketi ve indirilebilir paketler.
 1. **Test tamamlama**: iş kuralı birim testleri (kapsam hedefi: `domain/` ≥ %90), uçtan uca senaryolar (kurulum sihirbazı → rezervasyon → ödeme → defter → teslim → maaş → rapor → yedek/geri yükle), rol testleri (her rol için yasak işlem denemeleri), migrasyon testi (v0 örnek veritabanından v1'e), yedek/geri yükleme testi, çevrimdışı test (ağ kapalı tüm akışlar).
 2. **Sertleştirme**: hata yakalama ve kullanıcıya Türkçe açıklama; hata günlüğü dosyası (kişisel veri içermez); çökme sonrası kurtarma (WAL); dosya kilidi (iki kopya aynı anda açılmaz); boşta kilit; şifre sıfırlama kodu; büyük veri testi (10 yıl × 20 oda sentetik).
 3. **Paketleme**: Windows `setup.exe` (NSIS, kullanıcı başına kurulum, masaüstü kısayolu, kaldırma), macOS `.dmg` (Intel + Apple Silicon evrensel ya da iki paket), simge seti, sürüm bilgisi penceresi, lisans dosyası (üçüncü taraf bildirimleri).
-4. **İmza kararı** (S-04): imzasızsa resimli "ilk açılış" yönergesi (SmartScreen ve Gatekeeper adımları) `docs/kurulum.md`; imzalıysa CI'da imza/noter adımları.
+4. **İmza kararı** (S-04): imzasızsa resimli "ilk açılış" yönergesi (SmartScreen ve Gatekeeper adımları) `docs/otel/kurulum.md`; imzalıysa CI'da imza/noter adımları.
 5. **Gerçek makine testi**: sahibin bildirdiği Windows ve Mac'lerde (S-03) kurulum + 15 dakikalık senaryo; sonuç tablosu.
 6. **Bağımlılık dondurma**: `package-lock.json` sabit, `overrides` ile sürümler kilitli, "güncelleme kontrolü yok" doğrulanır; derleme tekrarlanabilir (aynı commit → aynı paket).
-7. **Belgeler**: `docs/kurulum.md`, `docs/kullanim-kilavuzu.md` (program içi yardımla aynı içerik), `docs/yedek-ve-tasima.md`, `docs/gelistirici.md` (yıllar sonra geri dönen biri için: nasıl derlenir, nerede ne var).
+7. **Belgeler**: `docs/otel/kurulum.md`, `docs/otel/kullanim-kilavuzu.md` (program içi yardımla aynı içerik), `docs/otel/yedek-ve-tasima.md`, `docs/gelistirici/README.md` (yıllar sonra geri dönen biri için: nasıl derlenir, nerede ne var).
 8. **Sürüm**: `v1.0.0` etiketi; GitHub Release'e paketler + SHA256; sürüm notu.
 
 ## Kabul ölçütleri
@@ -46,20 +46,20 @@ işaretlenmedi: hepsi gerçek makine ya da sahip onayı istiyor.
 
 **Yapılanlar**
 
-- `docs/kurulum.md` (yeni): indirme (Releases → Assets, işlemciye göre dosya seçimi, isteğe bağlı SHA256 denetimi),
+- `docs/otel/kurulum.md` (yeni): indirme (Releases → Assets, işlemciye göre dosya seçimi, isteğe bağlı SHA256 denetimi),
   Windows 10/11 kurulumu ve **SmartScreen** adımları ("Windows bilgisayarınızı korudu" → "Ek bilgi" → "Yine de çalıştır"),
   macOS 15+/26 **Gatekeeper** adımları (Sistem Ayarları → Gizlilik ve Güvenlik → "Yine de aç"; Apple çipli ve Intel),
   ilk açılış ve kurulum sihirbazının 12 adımı (adlar `steps.ts` ve `tr.json` `setup.step.*` ile birebir), kurtarma kodları ile
   Bismuth anahtarının ayrımı, anahtarı kâğıda yazma (11×5, K-41), Drive masaüstü uygulaması ve yedek klasörü, yeni sürümü elle
   kurma (güncelleme yok; önce yedek), veri klasörü yolları (Windows/macOS), kaldırma, sorun giderme.
-- `docs/yedek-ve-tasima.md` kodla (`backup-service.ts`, `backup-section.tsx`, `drive.ts`, `scheduler.ts`, `tr.json` `backup.*`)
+- `docs/otel/yedek-ve-tasima.md` kodla (`backup-service.ts`, `backup-section.tsx`, `drive.ts`, `scheduler.ts`, `tr.json` `backup.*`)
   karşılaştırılıp düzeltildi: ekran adları ve düğme metinleri, "Denetle", "Geri yükleme bekliyor"/iptal, güvenlik yedeği,
   "Şimdi yeniden başlat" ve "Klasörü aç"ın yalnız program penceresinde çalışması, el ile alınan yedeklerin kendiliğinden
   silinmediği (listede silme düğmesi yok), taşımada **düz** `backups` dosyasının kullanılması (Drive'daki şifreli dosya değil),
   yeni bilgisayarda anahtarın her zaman kâğıttan girilmesi, sihirbazda yalnız zorunlu adımların yeterli olduğu, dışa/içe
   aktarmanın tabloları ve sihirbaz adımları; Mac'te kopya + devral bölümü eklendi (Faz 13 planına göre,
   `<!-- doğrula: P13b -->` işaretli).
-- `docs/gelistirici.md` yıllar sonra dönen biri için yeniden yazıldı: derleme/paketleme (`electron-builder.yml`, CI, smoke
+- `docs/gelistirici/README.md` yıllar sonra dönen biri için yeniden yazıldı: derleme/paketleme (`electron-builder.yml`, CI, smoke
   modu), klasör haritası (her yol `ls` ile doğrulandı), açılış sırası, veri klasörü, tarifler (API çağrısı: modül sözleşme +
   işleyici dosyaları; ekran; migrasyon; i18n spec; ayar), testler (vitest projeleri, e2e masaüstü + telefon, `E2E_PORT`),
   bağımlılık dondurma, kancalar/ajanlar/beceriler, bilinen tuzaklar (React Compiler kapalı, `vaul` yok, Radix diyalog içi menü,
@@ -89,7 +89,7 @@ işaretlenmedi: hepsi gerçek makine ya da sahip onayı istiyor.
    **Çözüldü (5c88b1a):** `README.md:37-38` "Yine de aç" yolunu anlatır.
 4. `release.yml`'in sürüm notu metni ("Windows: Bismuth-Setup-...-x64.exe …") kısa ve Türkçe; kurulum belgesine bağlantı
    yok.
-   **Çözüldü (5c88b1a):** `release.yml:91` notta sabit adlar ve `docs/kurulum.md` bağlantısı var; asıl not `docs/surum-notlari/<etiket>.md` dosyasından alınır.
+   **Çözüldü (5c88b1a):** `release.yml:91` notta sabit adlar ve `docs/otel/kurulum.md` bağlantısı var; asıl not `docs/surum-notlari/<etiket>.md` dosyasından alınır.
 5. Windows güvenlik duvarı kuralı (Faz 13 madde 9: NSIS `installer.nsh`) depoda yok (`build/` içinde yalnız simge);
    `kurulum.md` ilk açılışta çıkabilecek soruyu "doğrula: P13a" işaretiyle anlatır.
    **Çözüldü (5c88b1a):** `build/installer.nsh:8-15` özel ağlar için güvenlik duvarı kuralını ekler ve kaldırır. Gerçek Windows'ta denemek sahip onay paketinde.
@@ -152,8 +152,8 @@ kutuları işaretlenmedi: "CI yeşil", temiz makinelerde kurulum ve sahip onayı
   ekli ad yazar (`Bismuth-Setup-x64.exe`, `Bismuth-arm64.dmg` …); yeni `scripts/release-names.mjs` CI'da (ci.yml paket işi
   ve release.yml) bunları sabit adlara çevirir, SHA256SUMS.txt yazar ve belgelenmemiş bir kurulum dosyası çıkarsa durur.
   Sürüm Release başlığında ve Hakkında'da; `…/releases/latest/download/Bismuth-Setup.exe` bağlantısı her sürümde çalışır.
-  G-03 ve CLAUDE.md'deki `Bismuth-Setup.exe` / `Bismuth.dmg` adları böylece gerçek adlar oldu; `docs/kurulum.md`,
-  `README.md`, `docs/gelistirici.md`, `docs/yedek-ve-tasima.md` aynı adlara çevrildi.
+  G-03 ve CLAUDE.md'deki `Bismuth-Setup.exe` / `Bismuth.dmg` adları böylece gerçek adlar oldu; `docs/otel/kurulum.md`,
+  `README.md`, `docs/gelistirici/README.md`, `docs/otel/yedek-ve-tasima.md` aynı adlara çevrildi.
 - **release.yml:** etiket `package.json` sürümüyle aynı değilse durur (Hakkında yanlış sürüm göstermesin); sürüm notu
   `docs/surum-notlari/<etiket>.md` dosyasından (`--notes-file`), yoksa kısa bir satır; dört dosyanın varlığı denetlenir;
   SHA256SUMS.txt yayın işinde bütün dosyalar için yeniden hesaplanır. İki iş akışı YAML olarak ayrıştırıldı (hata yok);
@@ -174,7 +174,7 @@ kutuları işaretlenmedi: "CI yeşil", temiz makinelerde kurulum ve sahip onayı
   bilerek yapılmayanlar). Taslak notu HTML yorumunda; Release sayfasında görünmez.
 - **Yedek listesinde silme düğmesi:** eklenmedi. G-120 yalnız otomatik yedeklerin 30 gün sonra kendiliğinden silinmesini,
   G-121 elle yedek / geri yüklemeyi ister; elle alınan yedeği programdan silmek gereksinimde yok ve "veri silinmez"
-  ilkesiyle örtüşmez. Yer gerekirse sahip **Klasörü aç** ile dosyayı elle siler (`docs/yedek-ve-tasima.md` bunu
+  ilkesiyle örtüşmez. Yer gerekirse sahip **Klasörü aç** ile dosyayı elle siler (`docs/otel/yedek-ve-tasima.md` bunu
   anlatıyor). (varsayılan)
 
 **Testler:** `tests/unit/packaging.test.ts` (NSIS kullanıcı başına + kısayollar; birleşik kurucu yok; kaldırıcı veriyi
@@ -239,7 +239,7 @@ aylık 385–460, gider 150–220, kasa 165 ms.
   `publish: null`, kodda `autoUpdater`/`checkForUpdates` yok.
 - Ağ sınırı: ESLint'e `no-restricted-imports` (http/https/net/tls/dgram/dns, undici/axios/ws…, electron `net`) eklendi;
   `tests/unit/network-boundary.test.ts` kaynakları tarar ve kuralı ESLint API'siyle dener.
-- Tekrarlanabilir derleme: iki ardışık `npm run build` → `out/` (204 dosya) sha256 aynı; not `docs/gelistirici.md` §7.
+- Tekrarlanabilir derleme: iki ardışık `npm run build` → `out/` (204 dosya) sha256 aynı; not `docs/gelistirici/README.md` §7.
   `overrides` gerekmedi (alt bağımlılıklar kilit dosyasında sabit) (varsayılan).
 
 **Kalanlar / sahip onay paketine**

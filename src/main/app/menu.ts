@@ -1,5 +1,14 @@
-import { app, Menu, type MenuItemConstructorOptions } from 'electron'
+import { app, BrowserWindow, Menu, type MenuItemConstructorOptions } from 'electron'
+import { toggleFullScreen, zoomStep } from '../windows/window-actions'
 import { tMain } from './i18n'
+
+/** A menu click acts on the window it came from (none on a Mac with every window closed: nothing to do). */
+const onWindow =
+  (act: (win: BrowserWindow) => void) =>
+  (_item: unknown, win: unknown): void => {
+    const target = (win as BrowserWindow | undefined) ?? BrowserWindow.getAllWindows()[0]
+    if (target) act(target)
+  }
 
 /** Minimal localized menu: copy/paste and zoom shortcuts work everywhere; no update/about links. */
 export function buildMenu(): void {
@@ -33,11 +42,33 @@ export function buildMenu(): void {
     {
       label: tMain('main.menu.view'),
       submenu: [
-        { role: 'resetZoom', label: tMain('main.menu.resetZoom') },
-        { role: 'zoomIn', label: tMain('main.menu.zoomIn') },
-        { role: 'zoomOut', label: tMain('main.menu.zoomOut') },
+        // The keys are answered by the window (windowKeyAction, also in text fields); the menu shows them and works
+        // with the mouse. `registerAccelerator: false` keeps the menu from answering the same key a second time.
+        {
+          label: tMain('main.menu.resetZoom'),
+          accelerator: 'CommandOrControl+0',
+          registerAccelerator: false,
+          click: onWindow((w) => zoomStep('reset', w))
+        },
+        {
+          label: tMain('main.menu.zoomIn'),
+          accelerator: 'CommandOrControl+Plus',
+          registerAccelerator: false,
+          click: onWindow((w) => zoomStep('in', w))
+        },
+        {
+          label: tMain('main.menu.zoomOut'),
+          accelerator: 'CommandOrControl+-',
+          registerAccelerator: false,
+          click: onWindow((w) => zoomStep('out', w))
+        },
         { type: 'separator' },
-        { role: 'togglefullscreen', label: tMain('main.menu.fullScreen') },
+        {
+          label: tMain('main.menu.fullScreen'),
+          accelerator: 'F11',
+          registerAccelerator: false,
+          click: onWindow((w) => toggleFullScreen(w))
+        },
         ...(app.isPackaged
           ? []
           : ([{ role: 'reload' }, { role: 'toggleDevTools' }] as MenuItemConstructorOptions[]))

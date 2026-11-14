@@ -1,8 +1,10 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
+import { CharCounter } from "@/components/char-counter"
 
-function Textarea({ className, ...props }: React.ComponentProps<"textarea">) {
-  return (
+function Textarea({ className, counter = true, ...props }: React.ComponentProps<"textarea"> & { counter?: boolean }) {
+  const length = counter && props.maxLength && typeof props.value === "string" ? props.value.length : null
+  const field = (
     <textarea
       data-slot="textarea"
       className={cn(
@@ -11,6 +13,14 @@ function Textarea({ className, ...props }: React.ComponentProps<"textarea">) {
       )}
       {...props}
     />
+  )
+  return length === null ? (
+    field
+  ) : (
+    <>
+      {field}
+      <CharCounter length={length} max={props.maxLength!} />
+    </>
   )
 }
 

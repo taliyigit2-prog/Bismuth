@@ -3,13 +3,18 @@
 // `BlockNotAllowedOrigins` (MIT) — see THIRD_PARTY_NOTICES.md. Differences: no permission is ever granted
 // except clipboard writing (not even to file://), webviews are refused, and the renderer may not load anything from the network.
 import { app, session, type WebContents } from 'electron'
-import { isAppUrl } from './app-url'
+import { isAppUrl, isCameraStream } from './app-url'
 
-export { isAppUrl } from './app-url'
+export { isAppUrl, isCameraStream } from './app-url'
 
 export interface SecurityOptions {
   /** Dev server origin (http://localhost:5173) in development, null when packaged. */
   devOrigin: string | null
+  /**
+   * The sidecar's own address while it runs (`http://127.0.0.1:<port>`, Faz 20 P20b): the live picture's `<img>` may load
+   * `<that origin>/api/stream` and nothing else of it. Any other loopback port stays blocked.
+   */
+  cameraOrigin?: () => string | null
   /** Called for every blocked request so e2e tests can assert "no network". */
   onBlockedRequest?(url: string): void
 }
@@ -41,6 +46,7 @@ export function applySecurityPolicy(options: SecurityOptions): void {
       isAppUrl(details.url, options.devOrigin) ||
       details.url.startsWith('data:') ||
       details.url.startsWith('blob:') ||
+      isCameraStream(details.url, options.cameraOrigin?.() ?? null) ||
       (options.devOrigin !== null && details.url.startsWith('ws://localhost'))
     if (!allowed) options.onBlockedRequest?.(details.url)
     callback({ cancel: !allowed })

@@ -50,7 +50,9 @@
     "audit": "Audit log",
     "companies": "Companies",
     "calendarNotes": "Calendar notes",
-    "guide": "Guide"
+    "guide": "Guide",
+    "camera": "Camera",
+    "portfolio": "Portfolio"
   },
   "topbar": {
     "search": "Search or go to…",
@@ -190,7 +192,9 @@
       "vip": "VIP",
       "standing": "Guest note: {{text}}",
       "openIssues_one": "{{count}} open issue",
-      "openIssues_other": "{{count}} open issues"
+      "openIssues_other": "{{count}} open issues",
+      "group": "Group reservation",
+      "groupNamed": "Group: {{name}}"
     },
     "nav": {
       "month": "Month",
@@ -316,6 +320,108 @@
       "datesBody": "{{guest}}, room {{room}}: {{from}} → {{to}}. The number of nights stays the same; each night moves with its own price, so the total does not change.",
       "confirm": "Move",
       "hint": "Drag a bar to move the reservation to another room or other dates; you are asked to confirm when you drop it. With the keyboard: open the reservation and use the Nights tab."
+    },
+    "groupLegend": "The same coloured frame and icon belong to one group",
+    "quick": {
+      "menu": {
+        "checkIn": "Check in",
+        "checkOut": "Check out",
+        "pay": "Take payment",
+        "move": "Move",
+        "extend": "Extend or shorten",
+        "note": "Add note",
+        "park": "Park",
+        "noShow": "Mark as no-show",
+        "giveUp": "Give up and refund",
+        "guest": "Guest card",
+        "cellTitle": "Room {{room}} · {{date}}",
+        "quick": "Quick reservation",
+        "detail": "Detailed reservation",
+        "hourly": "Hourly sale",
+        "block": "Close the room"
+      },
+      "title": "Quick reservation · Room {{room}} · {{date}}",
+      "name": "Guest name",
+      "people": "Guests",
+      "nights": "Nights",
+      "price": "Nightly rate",
+      "detail": "Detailed reservation",
+      "errors": {
+        "name": "Enter the guest's name.",
+        "nights": "The number of nights must be between 1 and {{max}}.",
+        "price": "Enter the nightly rate.",
+        "people": "The number of guests must be between 1 and {{max}}.",
+        "nameLong": "The first and the last name can each be at most {{max}} characters."
+      },
+      "today": {
+        "label": "Today's summary",
+        "arrivals": "Arriving today: {{count}}",
+        "departures": "Departing today: {{count}}",
+        "done": "Done",
+        "failed": "Today's summary could not be loaded.",
+        "inHouse_one": "In the hotel: {{count}} room",
+        "inHouse_other": "In the hotel: {{count}} rooms"
+      },
+      "recent": {
+        "button": "Recent cancellations",
+        "title": "Cancellations of the last {{days}} days",
+        "empty": "No cancellations or no-shows lately.",
+        "failed": "The list could not be loaded.",
+        "note": "Cancelled and no-show records also stay under Guest card → History.",
+        "status": {
+          "cancelled": "Cancelled",
+          "no_show": "No-show"
+        },
+        "rooms": "Room {{rooms}}",
+        "meta": "{{place}} · {{ended}}",
+        "metaDates": "{{place}} · {{from}} – {{to}} · {{ended}}"
+      },
+      "legendNote": "Cancelled and no-show reservations leave the calendar; they stay under Guest card → History.",
+      "bulk": {
+        "label": "Bulk actions",
+        "count": "Selected: {{count}}",
+        "checkIn": "Bulk check-in",
+        "checkOut": "Bulk check-out",
+        "note": "Bulk note",
+        "pay": "Bulk payment",
+        "attach": "Link to a group",
+        "clear": "Clear selection",
+        "partial": "{{ok}} done, {{failed}} could not be done. {{reason}}",
+        "noteTitle": "Note for the chosen reservations",
+        "noteLabel": "Note",
+        "payTitle": "Bulk payment",
+        "payBody": "Each reservation pays its own open balance. The amounts are below.",
+        "paySave": "Save payments",
+        "payNone": "The chosen reservations have no open balance.",
+        "payTotal": "Total",
+        "method": "Payment method",
+        "attachTitle": "Link to a group",
+        "attachSave": "Link to the group",
+        "groupName": "Group name",
+        "checkInCount": "Bulk check-in ({{count}})",
+        "checkOutCount": "Bulk check-out ({{count}})",
+        "checkInDone_one": "Room checked in: {{count}}",
+        "checkInDone_other": "Rooms checked in: {{count}}",
+        "checkOutDone_one": "Room checked out: {{count}}",
+        "checkOutDone_other": "Rooms checked out: {{count}}",
+        "noteDone_one": "Reservation with a note: {{count}}",
+        "noteDone_other": "Reservations with a note: {{count}}",
+        "payDone_one": "Reservation paid: {{count}}",
+        "payDone_other": "Reservations paid: {{count}}",
+        "attachDone_one": "Reservation linked to the group: {{count}}",
+        "attachDone_other": "Reservations linked to the group: {{count}}",
+        "noteBody_one": "The note is added to the chosen reservation.",
+        "noteBody_other": "The note is added to all {{count}} chosen reservations.",
+        "attachBodyJoin_one": "The chosen reservation joins the group. Stays and amounts do not change.",
+        "attachBodyJoin_other": "The {{count}} chosen reservations join the group. Stays and amounts do not change.",
+        "attachBodyNew_one": "The chosen reservation is joined in a new group. Stays and amounts do not change.",
+        "attachBodyNew_other": "The {{count}} chosen reservations are joined in a new group. Stays and amounts do not change."
+      }
+    },
+    "kbsGaps": {
+      "title": "KBS reports are missing for some rooms",
+      "body": "KBS reporting is incomplete in these rooms: {{rooms}}. You can still check out and finish the KBS steps afterwards.",
+      "go": "Check out anyway"
     }
   },
   "today": {
@@ -397,7 +503,14 @@
     "inHouseRooms_one": "{{count}} room in house",
     "inHouseRooms_other": "{{count}} rooms in house",
     "inHousePeople_one": "{{count}} guest",
-    "inHousePeople_other": "{{count}} guests"
+    "inHousePeople_other": "{{count}} guests",
+    "camera": {
+      "title": "Camera",
+      "newAlerts_one": "{{count}} new camera alert waiting.",
+      "newAlerts_other": "{{count}} new camera alerts waiting.",
+      "problem": "The camera process is not running; check the Camera tab.",
+      "open": "Open camera"
+    }
   },
   "settings": {
     "title": "Settings",
@@ -444,7 +557,9 @@
       "backup": "Backup",
       "users": "Users and roles",
       "about": "About",
-      "guide": "Guide"
+      "guide": "Guide",
+      "camera": "Camera",
+      "frequent": "Frequently used"
     },
     "tags": {
       "autoTitle": "Automatic statuses",
@@ -826,7 +941,8 @@
         "summaryFailed": "Could not be written",
         "never": "Not yet",
         "term": "Main computer term",
-        "summaryPlace": "The summary is Drive/Bismuth/ozet.pdf; open it with the Drive app on the phone."
+        "summaryPlace": "The summary is Drive/Bismuth/ozet.pdf; open it with the Drive app on the phone.",
+        "runBlocked": "First choose the Drive folder and create the key."
       },
       "replaced": {
         "title": "This computer is no longer the main computer",
@@ -929,6 +1045,10 @@
         "acceptTitle": "Accept the new identity?",
         "acceptBody": "Accept it only if the hotel's main computer changed (taken over or set up again). Compare the new identity with the one in Settings → Remote access on the main computer; if you are not sure, tell the hotel owner.",
         "accept": "Accept new identity"
+      },
+      "lightMode": {
+        "label": "Keep running in the tray when the window is closed",
+        "help": "Closing the window does not stop the program; it stays in the tray and the screens open in this computer's browser. The computer uses less memory. To close the program completely, choose \"Quit\" from the tray icon."
       }
     },
     "timeInvalid": "Enter the time like 14:00.",
@@ -1068,7 +1188,9 @@
         "withdrawn": "Planned change withdrawn",
         "help": "To change the capacity, edit beds, for sale or in use above and pick the date it applies from."
       },
-      "typeOff": "Off"
+      "typeOff": "Off",
+      "typeNameOnly": "The type needs a name (at most 80 characters).",
+      "typePriceNegative": "The price cannot be below zero."
     },
     "shifts": {
       "title": "Shifts",
@@ -1191,7 +1313,8 @@
       "ownHoursToday": "Today only",
       "ownHoursDays_one": "{{count}} day back",
       "ownHoursDays_other": "{{count}} days back",
-      "numberRange": "Enter a whole number from {{min}} to {{max}}."
+      "numberRange": "Enter a whole number from {{min}} to {{max}}.",
+      "rateRange": "Enter a rate between {{min}} and {{max}}."
     },
     "calendar": {
       "highlight": "Highlighted days",
@@ -1210,7 +1333,11 @@
       "startYear": "Calendar start year",
       "startYearHelp": "The calendar starts in this year, or in the year of an older stay if there is one. Leave it empty to start from the oldest stay.",
       "startYearEmpty": "e.g. 2020",
-      "startYearInvalid": "The year must be between {{min}} and {{max}}."
+      "startYearInvalid": "The year must be between {{min}} and {{max}}.",
+      "groupFolio": "Folio of a group reservation",
+      "groupFolioHelp": "New groups start with this choice; groups already made do not change.",
+      "groupFolioSingle": "One folio",
+      "groupFolioPerRoom": "A folio per room"
     },
     "currencyNote": {
       "body": "Exchange rates are entered and followed on the “Exchange rates” screen. Pick the currencies you accept in the “Hotel” section.",
@@ -1243,7 +1370,132 @@
     "fontSizeLarger": "Larger",
     "colorsTitle": "Hotel colours",
     "colorsHelp": "The accent and status colours are the same for everyone. Change them in the theme preview and see the result at once.",
-    "openThemePreview": "Open theme preview"
+    "openThemePreview": "Open theme preview",
+    "hourly": {
+      "price": "Hourly price",
+      "col": "Hourly price",
+      "priceHelp": "Optional. Shown as a suggestion at an hourly sale; you still enter the amount at the sale.",
+      "turnover": "Cleaning time between sales (min)",
+      "turnoverHelp": "A new hourly sale inside this time after the previous one shows a warning; it never blocks the sale.",
+      "turnoverInvalid": "Enter a number from 0 to 240.",
+      "turnoverSaved": "Cleaning time saved",
+      "title": "Hourly sales"
+    },
+    "zoom": "Zoom",
+    "zoomValue": "{{percent}}%",
+    "zoomHelp": "You can also change it with Ctrl and + or - (⌘ on a Mac). It applies to you only.",
+    "camera": {
+      "systemTitle": "Camera system",
+      "systemHelp": "The program that watches the camera picture and spots unregistered people. When a change is saved the camera system restarts by itself.",
+      "enabled": "Switch the camera system on",
+      "enabledHelp": "While off, the camera system does not run at all.",
+      "location": "Camera location",
+      "locationHelp": "Shown above the live picture. Example: Staircase, floor entrance.",
+      "source": "Camera address",
+      "sourceHelp": "The camera's address starting with rtsp:// or a webcam number (0). The user name and password go at the start of the address; once saved it is never shown again.",
+      "sourcePlaceholder": "rtsp://192.168.1.64:554/…",
+      "secretSet": "Saved",
+      "secretMissing": "Not entered",
+      "secretRemove": "Remove",
+      "secretsHostOnly": "The camera address and the Telegram details can only be changed on the hotel's main computer.",
+      "telegramTitle": "Telegram notification",
+      "telegramHelp": "An alarm always reaches the program's notifications. If you like, it is also sent to Telegram.",
+      "telegramEnabled": "Also send alarms to Telegram",
+      "telegramEnabledHelp": "Works only while the internet is connected; if it cannot be sent it is quietly skipped.",
+      "networkOff": "Online data is off, so nothing is sent to Telegram. It is switched on from the Currency screen.",
+      "telegramPhoto": "Also send the alarm photo",
+      "telegramPhotoHelp": "The unregistered person's photo goes to Telegram's servers abroad. If you turn this off, only text is sent.",
+      "telegramToken": "Bot token",
+      "telegramTokenHelp": "The code you get from BotFather in Telegram. Once saved it is never shown again.",
+      "telegramTokenPlaceholder": "123456:ABC…",
+      "telegramChats": "Chat numbers",
+      "telegramChatsHelp": "The numbers of the people or groups that get the alarm; separate several with commas.",
+      "telegramChatsPlaceholder": "-1001234567890, 42",
+      "telegramTestButton": "Test Telegram",
+      "telegramTest": {
+        "ok": "Test message sent",
+        "off": "Telegram is off. Switch on sending alarms to Telegram and online data first.",
+        "noCredentials": "The bot token and chat number have not been entered.",
+        "invalidCredentials": "Telegram did not accept the details. Check the token and the numbers.",
+        "network": "Telegram could not be reached. Check the internet connection.",
+        "timeout": "Telegram did not answer. Try again in a moment.",
+        "none": "The message could not be sent. Check the chat numbers.",
+        "failed": "The test could not be run"
+      },
+      "alarmTitle": "Alarms and retention",
+      "alarmHelp": "How often an alarm repeats for the same person and how long the images are kept.",
+      "numberInvalid": "Enter a number between {{min}} and {{max}}.",
+      "field": {
+        "cooldown": "Wait between alarms (seconds)",
+        "cooldownHelp": "At least this many seconds pass between two alarms for the same person.",
+        "alertRetention": "Keep alarm images for (days)",
+        "alertRetentionHelp": "After how many days the alarm pictures are deleted.",
+        "faceRetention": "Keep face data for (days)",
+        "faceRetentionHelp": "How many days face data is kept after the guest checks out. 0 = deleted at check-out.",
+        "similarity": "Recognition threshold",
+        "similarityHelp": "How alike a face must be to a registered guest. Raising it means fewer wrong matches but harder recognition.",
+        "confirmSimilarity": "Confirmation threshold",
+        "confirmSimilarityHelp": "The stricter value used when asking the camera \"who is this\".",
+        "minFaceScore": "Lowest face score",
+        "minFaceScoreHelp": "Faces less clear than this are ignored.",
+        "minFacePx": "Smallest face size (pixels)",
+        "minFacePxHelp": "Faces smaller than this are ignored.",
+        "confirmationFrames": "Frames to confirm",
+        "confirmationFramesHelp": "In how many frames in a row a person must be seen before an alarm.",
+        "processEveryN": "Check every how many frames",
+        "processEveryNHelp": "Raising it eases the computer but slows the reaction.",
+        "verifiedTtl": "Recognised person time (seconds)",
+        "verifiedTtlHelp": "A recognised person is not checked again for this long.",
+        "uncertainMargin": "Uncertain recognition margin",
+        "uncertainMarginHelp": "Matches this close to the threshold are not counted as sure and are checked again. 0 = off.",
+        "idleFaceScanEvery": "Idle face scan (frames)",
+        "idleFaceScanEveryHelp": "How many frames pass between face checks while nothing moves. Higher eases the computer. 0 = no check while idle.",
+        "streamMaxWidth": "Live view width (pixels)",
+        "streamMaxWidthHelp": "Largest width of the live view. Smaller eases the local network and phones."
+      },
+      "advancedTitle": "Recognition settings",
+      "advancedHelp": "Leave these alone unless you know what you are doing; the defaults suit most hotels.",
+      "zone": "Watched area",
+      "zoneHelp": "Leave empty to watch the whole picture. Format: x1,y1;x2,y2;… (a fraction from 0 to 1, or pixels).",
+      "rescan": {
+        "button": "Scan again",
+        "title": "Camera setup",
+        "description": "Search the network for cameras again, test the new details and save them. The saved password is not shown."
+      }
+    },
+    "fees": {
+      "title": "Fees",
+      "help": "Suggested amounts for late check-out, no-shows and the damage deposit. The desk can change the amount on every line.",
+      "late": "Late check-out fee",
+      "mode": "Rule",
+      "lateNone": "No suggestion",
+      "lateFixed": "Fixed amount",
+      "latePercent": "Share of the nightly price",
+      "afterTime": "After this time",
+      "amount": "Amount",
+      "percent": "Percent",
+      "percentInvalid": "Enter a whole number from 0 to 1000.",
+      "noShow": "No-show fee",
+      "noShowNone": "No fee",
+      "noShowFirstNight": "First night's price",
+      "noShowFixed": "Fixed amount",
+      "deposit": "Damage deposit",
+      "depositAmount": "Default amount",
+      "depositHelp": "Leave it empty or zero to type the amount each time.",
+      "save": "Save fees"
+    },
+    "frequent": {
+      "title": "Frequently used settings",
+      "help": "Jump to the settings that change over time. The rest is in the list on the side.",
+      "hint": {
+        "hotel": "Hotel name, times, taxes and fee items",
+        "rooms": "Rooms, room types and nightly rates",
+        "lists": "Payment methods, sales channels and extra services",
+        "staff": "Day-off, pay and overtime rules",
+        "users": "Users, roles and permissions",
+        "backup": "Backup, restore and export"
+      }
+    }
   },
   "status": {
     "paid": "Paid",
@@ -1518,7 +1770,46 @@
     "expenseSectionInvalid": "This expense section does not exist or is not in use. Choose an active section in Settings → Lists.",
     "ownHoursDay": "You can enter your own hours only for today and the last few days, never for a future day. For an older day, ask the manager or the hotel owner.",
     "nameTaken": "This name is already in use. Enter a different name.",
-    "noShowTooEarly": "A reservation cannot be marked as a no-show before its arrival day. If the guest cancelled, cancel the reservation."
+    "noShowTooEarly": "A reservation cannot be marked as a no-show before its arrival day. If the guest cancelled, cancel the reservation.",
+    "undoCheckInNotToday": "A check-in can only be taken back on the day it was made. Check out instead or ask the hotel owner.",
+    "undoCheckInMoved": "This room was opened by a room move; it cannot be taken back. Check out first.",
+    "undoCheckInKbs": "{{names}} is reported to KBS. Confirm to take it back.",
+    "dayUseFreeNeedsConfirm": "The price is 0. Confirm a free check-out or enter an amount.",
+    "hoursRequired": "Enter the hours for a same-day stay.",
+    "groupStayMismatch": "The chosen room does not belong to this group. Close and reopen the group panel.",
+    "groupClosed": "This group was cancelled. Make a new group if needed.",
+    "groupPayCurrency": "The group's rooms are not in this currency. Take the payment on each room's own account.",
+    "groupPayExceeds": "The amount is more than the group's open balance. Lower the amount.",
+    "groupAttachTaken": "One of the chosen reservations is already in a group.",
+    "groupAttachClosed": "A closed or cancelled reservation cannot be linked to a group.",
+    "groupTooLarge": "A group can hold at most 30 rooms.",
+    "groupAttachTooFew": "Choose at least two reservations for a new group.",
+    "groupPayPerRoom": "In this group every room pays on its own account. Take the payment from the room's reservation.",
+    "cameraSourceInvalid": "The camera address must start with rtsp:// (the camera's user name and password come first in the address) or be a webcam number.",
+    "cameraTelegramInvalid": "The Telegram details are not valid. Check the bot token and the chat numbers.",
+    "cameraUnavailable": "The camera system does not run on this computer. Use the hotel's main computer.",
+    "cameraGuestNotInHouse": "This guest is not in the hotel now. A face is only saved for a guest who is staying.",
+    "cameraNoKeyStore": "This computer cannot keep face data safely (no system key store). A face cannot be saved.",
+    "cameraNoFace": "The camera does not see a clear face. Ask the guest to face the camera and try again.",
+    "cameraFaceLimit": "This guest has the most face records allowed. Delete an old one first.",
+    "cameraCropGone": "The picture of this alarm was deleted because its keep time ran out.",
+    "cameraStaffLeft": "This staff member has left; they cannot be added to the list.",
+    "hostTimeout": "The main computer did not answer in time. Check your connection (is NetBird on?) and that the main computer is on, then try again.",
+    "hostDenied": "The main computer refused this computer's connection. Tell the hotel owner.",
+    "hotelInUse": "The address of the hotel in use cannot be changed. Switch to another hotel first.",
+    "hotelExists": "This address is already saved for another hotel.",
+    "feeStayNotStarted": "This room has not been checked in yet. Check the guest in first.",
+    "feeNotVoidable": "This line cannot be voided here.",
+    "depositSettled": "This deposit has already been given back or turned into income.",
+    "portfolioNoCopy": "This computer has no copy of this hotel. Connect to the hotel once and sign in.",
+    "depositNotConverted": "This deposit was not turned into income.",
+    "dayInFuture": "A day that has not started cannot be closed.",
+    "dateTooFar": "An expense can be dated at most one year ahead.",
+    "notEmployedOn": "The employee was not employed on {{date}}; no record can be added for that day.",
+    "notEmployedInPeriod": "The employee was not employed in {{month}}/{{year}}; nothing can be booked to that period.",
+    "laundryMonthSettled": "This month's invoice is entered; incoming slips can no longer be added or voided.",
+    "roomTypeInactive": "This room type is switched off. Switch the room type on first, then add or move the room.",
+    "laundryMonthNotSettled": "This month has no invoice entered; there is nothing to reopen."
   },
   "common": {
     "close": "Close",
@@ -1622,6 +1913,26 @@
       "hide": "Hide Bismuth",
       "hideOthers": "Hide others",
       "quit": "Quit Bismuth"
+    },
+    "camera": {
+      "crashedTitle": "Camera system stopped",
+      "crashedBody": "The camera system stopped {{count}} times; it is restarting by itself.",
+      "gaveUpTitle": "Camera system is off",
+      "gaveUpBody": "The camera system kept stopping and is no longer restarted. Restart it from the Camera screen.",
+      "telegramTest": "Bismuth: the Telegram connection works",
+      "alertTitle": "An unregistered person came in",
+      "alertBody": "At {{time}}. Open the Camera screen.",
+      "alertBodyAt": "At {{time}}, {{location}}. Open the Camera screen.",
+      "alertTelegram": "Bismuth: an unregistered person is at the camera. At {{time}}.",
+      "alertTelegramAt": "Bismuth: an unregistered person is at the camera. At {{time}}, {{location}}.",
+      "crashedBody_one": "The camera system stopped {{count}} time; it is restarting by itself.",
+      "crashedBody_other": "The camera system stopped {{count}} times; it is restarting by itself."
+    },
+    "tray": {
+      "open": "Open Bismuth",
+      "openBrowser": "Open in browser",
+      "quit": "Quit",
+      "tooltip": "Bismuth is running"
     }
   },
   "companies": {
@@ -1645,7 +1956,8 @@
       "editTitle": "Edit company",
       "ibanInvalid": "The IBAN looks invalid. Write it with the country code; its check digits may be wrong, e.g. TR33 0006 1005 1978 6457 8413 26.",
       "taxNumberInvalid": "The tax number must have 10 digits (or a valid 11-digit national ID number for a person).",
-      "sameTitle": "A company with the same name already exists: {{title}}. You can still save."
+      "sameTitle": "A company with the same name already exists: {{title}}. You can still save.",
+      "sameTax": "A company with this tax number already exists: {{title}}. You can still save."
     },
     "toast": {
       "created": "Company saved",
@@ -1709,8 +2021,8 @@
     "left": "Left",
     "kbsMissingIn": "KBS check-in missing",
     "kbsMissingOut": "KBS check-out missing",
-    "markIn": "Reported to KBS",
-    "markOut": "KBS check-out done"
+    "markIn": "Mark as reported to KBS",
+    "markOut": "Mark KBS check-out as done"
   },
   "attachments": {
     "hint": "Drop photos or PDFs — up to {{maxMb}} MB, {{max}} files per record.",
@@ -2079,7 +2391,11 @@
       "settings_backup": "Backup",
       "remote_settings": "Remote access",
       "devices": "Devices",
-      "audit_log": "Audit log"
+      "audit_log": "Audit log",
+      "booking_undoCheckIn": "Taking a check-in back",
+      "camera": "Camera",
+      "camera_enroll": "Face capture from the camera",
+      "laundry_reopen": "Reopen laundry month"
     }
   },
   "setup": {
@@ -2139,6 +2455,14 @@
       "summary": {
         "title": "Summary",
         "body": "Check the details. You can change most of it later in Settings."
+      },
+      "hourly": {
+        "title": "Hourly sales",
+        "body": "If you also sell rooms by the hour, enter an hourly price per room type. You can leave it empty."
+      },
+      "camera": {
+        "title": "Camera",
+        "body": "If the hotel has a security camera, connect it here. This step is optional; you can skip it and add the camera later in Settings → Camera."
       }
     },
     "hotel": {
@@ -2399,13 +2723,28 @@
     },
     "recovery": {
       "ready": "Your hotel is ready.",
-      "title": "Your recovery codes",
-      "body": "If you forget your password, you set a new one with one of these codes. Each code works once.",
-      "once": "These codes are not shown again. Write them down or copy them somewhere safe.",
+      "title": "Write it on paper",
+      "body": "The two items below are not shown again. Write them all on paper or print them, and keep the sheet in a safe place.",
+      "once": "This information is not shown again. Write it on paper, print it, or copy it somewhere safe.",
       "list": "Recovery codes",
       "copy": "Copy the codes",
-      "written": "I have saved the codes",
-      "continue": "Open the program"
+      "written": "I have written it down",
+      "continue": "Open the program",
+      "codesTitle": "Recovery codes",
+      "codesHelp": "If you forget your password, you set a new one with one of these codes. Each code works once.",
+      "keyTitle": "Bismuth key",
+      "keyHelp": "Backups sent to Drive are encrypted with this key. You need it to open a backup on a new computer; if it is lost, the encrypted backups cannot be opened.",
+      "keyLoading": "Preparing the key…",
+      "keyFailed": "The key could not be shown now. Once the program is open, get it from Settings → Backup with “Show the key” and write it on paper.",
+      "keyCopy": "Copy the key",
+      "keyQr": "QR code of the Bismuth key",
+      "print": "Print",
+      "sheet": {
+        "title": "Bismuth setup details",
+        "keep": "Keep this sheet in a safe or another secure place; do not photograph or share it.",
+        "codes": "Recovery codes are for the password; each code works once.",
+        "key": "The Bismuth key is for backups; if it is lost, the encrypted backups in Drive cannot be opened."
+      }
     },
     "errors": {
       "required": "Fill in this field.",
@@ -2430,7 +2769,92 @@
       "role": "Pick a role."
     },
     "stepComplete": "completed",
-    "skipToStep": "Skip to the step"
+    "skipToStep": "Skip to the step",
+    "hourly": {
+      "title": "Hourly price (optional)",
+      "help": "At an hourly sale you always enter the amount; the price here is only a suggestion.",
+      "noTypes": "Choose the room types first.",
+      "price": "Hourly price",
+      "optional": "If you do not sell by the hour, skip this step. You can also enter the prices later in Settings → Rooms and types."
+    },
+    "camera": {
+      "computer": {
+        "title": "This computer",
+        "summary": "Your computer: {{cpu}}, {{cores}} cores, {{ram}} GB memory, {{os}}.",
+        "unknownCpu": "processor",
+        "failed": "The computer's details could not be read. You can pick the profile below yourself.",
+        "profile": "Performance profile",
+        "recommended": "Suggested",
+        "apply": "Apply profile",
+        "applied": "Profile applied"
+      },
+      "profile": {
+        "light": "Light",
+        "lightHelp": "Analyses the picture less often and shows a smaller live picture. For slow computers or ones with little memory.",
+        "standard": "Standard",
+        "standardHelp": "A balanced setting for most hotel computers.",
+        "high": "High",
+        "highHelp": "Analyses the picture often and shows a larger live picture. For powerful computers."
+      },
+      "find": {
+        "title": "Find the camera",
+        "help": "Looks for cameras on the same network; it takes about 5 seconds. If none is found, you can type the IP address yourself.",
+        "scan": "Scan the network",
+        "rescan": "Scan again",
+        "scanning": "Searching…",
+        "empty": "No camera found. Check that the camera is on and on the same network, or type its IP address below.",
+        "noNetwork": "This computer does not seem to be on a local network. Check the network connection.",
+        "failed": "The search could not run. Try again.",
+        "found_one": "{{count}} camera found",
+        "found_other": "{{count}} cameras found",
+        "use": "Use this one",
+        "notActivated": "Not activated",
+        "onvif": "ONVIF",
+        "sadp": "SADP"
+      },
+      "form": {
+        "title": "Camera details",
+        "help": "A Hikvision camera's address follows a fixed pattern: just fill in the details below and Bismuth builds the address.",
+        "ip": "IP address",
+        "ipHint": "Example: 192.168.1.64",
+        "ipInvalid": "Enter a valid IP address (for example 192.168.1.64).",
+        "port": "Port",
+        "portInvalid": "The port must be between 1 and 65535.",
+        "user": "User name",
+        "userRequired": "Enter the user name.",
+        "password": "Password",
+        "passwordHint": "The password is stored encrypted on this computer and never shown in the settings.",
+        "channels": "Number of channels",
+        "channelsHint": "Enter 1 for a single camera. If the cameras are on a recorder (NVR), enter how many there are.",
+        "channelsInvalid": "The number of channels must be between 1 and 32.",
+        "channel": "Channel to use",
+        "channelN": "Channel {{n}}",
+        "address": "Connection address"
+      },
+      "test": {
+        "title": "Connection and picture test",
+        "run": "Test the connection",
+        "running": "Testing…",
+        "ok": "Connected and a picture was received from the camera ({{width}}×{{height}}).",
+        "preview": "Test picture taken from the camera",
+        "failed": "The test could not run. Try again.",
+        "timeout": "The camera did not answer in time. Check that it is on and on the same network.",
+        "unreachable": "No camera was found at this address. Check the IP address and the port.",
+        "auth": "The user name or password is wrong. Make sure the camera is activated and the password is correct.",
+        "path": "The camera does not know this channel. Check the channel number.",
+        "noFrame": "The camera answered but no picture came. Try again in a few seconds.",
+        "badAddress": "This address does not look like a camera on the hotel's own network.",
+        "unavailable": "The camera part does not run on this computer. See the camera section of the installation guide.",
+        "noAddon": "The camera add-on is not installed, so the picture test cannot run. Install it, reopen Bismuth and try again."
+      },
+      "save": {
+        "run": "Save the camera",
+        "saving": "Saving…",
+        "done": "The camera was saved and switched on.",
+        "failed": "The camera could not be saved. Try again.",
+        "note": "If you go on without saving, no camera is added. You can add it later in Settings → Camera."
+      }
+    }
   },
   "auth": {
     "title": "Sign in",
@@ -3403,7 +3827,9 @@
       "voidTitle": "Cancel this purchase?",
       "voidBody": "The {{amount}} expense of {{date}} is cancelled: it stays in the ledger as cancelled and its products leave the price history.",
       "reason": "Reason",
-      "voided": "Purchase cancelled"
+      "voided": "Purchase cancelled",
+      "emptyBodyPhone": "Purchases are entered on the computer; they are listed here.",
+      "emptyBodyViewOnly": "No purchases yet. An authorised user enters them."
     },
     "summary": {
       "month": "Month",
@@ -3414,7 +3840,9 @@
       "bySupplier": "By supplier",
       "slips": "Slips",
       "note": "Amounts come from the purchase expenses; product lines may add up to less than the expense (delivery and the like on the slip)."
-    }
+    },
+    "emptyBodyPhone": "Products and purchases are entered on the computer; the phone is view only.",
+    "emptyBodyViewOnly": "No products yet. An authorised user adds them."
   },
   "laundry": {
     "description": "Clean slips and dirty hand-overs; pieces waiting, missing and stained per item; the month-end invoice check.",
@@ -3580,7 +4008,15 @@
       "confirm": "Cancel the record",
       "saved": "Delivery cancelled"
     },
-    "closedType": "{{name}} (removed from the list)"
+    "closedType": "{{name}} (removed from the list)",
+    "reopen": {
+      "open": "Reopen month",
+      "title": "Reopen {{month}}?",
+      "body": "The invoice figures of the month are cleared and its expense, if paid, is voided. Fix the slips, then enter the invoice again. The reason is recorded.",
+      "reason": "Reason",
+      "confirm": "Reopen",
+      "saved": "{{month}} reopened"
+    }
   },
   "contacts": {
     "description": "Suppliers, the laundry, tradespeople, taxis and emergency numbers. Click a number to copy it; on the phone, tap to call.",
@@ -3644,7 +4080,7 @@
     "phoneLabel": "Label of number {{n}}",
     "phoneNumber": "Number {{n}}",
     "removePhone": "Remove number {{n}}",
-    "phoneInvalid": "A number needs at least 3 digits.",
+    "phoneInvalid": "Write the number in digits (6 to 17 digits).",
     "addPhone": "Add number",
     "emailInvalid": "The e-mail should look like name@example.com.",
     "import": {
@@ -3852,7 +4288,8 @@
       "voided": "Payment voided",
       "overTitle": "Take more than the balance?",
       "overBody": "The balance is {{balance}} and {{amount}} is being taken. The extra {{over}} stays as money owed to the guest.",
-      "overConfirm": "Save anyway"
+      "overConfirm": "Save anyway",
+      "futureDay": "This day has not started yet. The payment is still recorded on it."
     },
     "sale": {
       "service": "Service",
@@ -4027,7 +4464,7 @@
       "expenses": "Expenses",
       "occupancy": "Occupancy",
       "adr": "Average nightly rate",
-      "adrHint": "room revenue ÷ nights sold",
+      "adrHint": "nightly room revenue ÷ nights sold",
       "revpar": "Revenue per room",
       "revparHint": "room revenue ÷ sellable nights",
       "margin": "Margin {{value}}",
@@ -4098,7 +4535,8 @@
       "occupancy": "Occupancy and indicators",
       "cash": "Cash and payments",
       "expenses": "Expenses",
-      "staff": "Staff"
+      "staff": "Staff",
+      "night": "Night report"
     },
     "compare": {
       "label": "Compare with",
@@ -4147,11 +4585,9 @@
       "roomTypes": "By room type",
       "rooms": "By room",
       "topGuests": "Guests who brought the most revenue",
-      "dayUseOut_one": "Day use ({{count}}) is not counted as a sold night; it is shown apart.",
-      "dayUseOut_other": "Day use ({{count}}) is not counted in sold nights; it is shown apart.",
-      "dayUseIn_one": "Day use ({{count}}) counts as a sold night.",
-      "dayUseIn_other": "Day use ({{count}}) counts as sold nights.",
-      "dayUseSwitch": "Count in occupancy"
+      "hourlyCount_one": "{{count}} hourly or same-day sale in this period",
+      "hourlyCount_other": "{{count}} hourly or same-day sales in this period",
+      "hourlyRevenue": "Hourly and same-day revenue: {{amount}}"
     },
     "cash": {
       "methods": "By payment method",
@@ -4268,7 +4704,50 @@
       "missing_one": "{{count}} purchase with no known rate is not in the total.",
       "missing_other": "{{count}} purchases with no known rate are not in the total."
     },
-    "emptyAction": "Go to the ledger"
+    "emptyAction": "Go to the ledger",
+    "outcomes": {
+      "cancelled": "Cancelled",
+      "cancelledHint": "Reservations cancelled in the period",
+      "noShow": "No-show",
+      "noShowHint": "Reservations marked no-show in the period",
+      "refund": "Refunded",
+      "refundHint_one": "{{count}} refund; already taken off the revenue",
+      "refundHint_other": "{{count}} refunds; already taken off the revenue"
+    },
+    "stayKind": {
+      "label": "Stay type",
+      "all": "All",
+      "overnight": "Overnight",
+      "hourly": "Hourly"
+    },
+    "night": {
+      "date": "Day",
+      "arrivals": "Arrivals",
+      "departures": "Departures",
+      "staying": "Staying",
+      "noShows": "No-shows",
+      "none": "No records.",
+      "room": "Room",
+      "guest": "Guest",
+      "dates": "Dates",
+      "balance": "Balance due",
+      "rooms": {
+        "total": "Total rooms",
+        "occupied": "Occupied",
+        "clean": "Clean",
+        "dirty": "Dirty",
+        "inspected": "Inspected",
+        "outOfService": "Maintenance / out of order"
+      },
+      "cash": "Cash summary",
+      "cashNone": "No cash movements on this day.",
+      "currency": "Currency",
+      "income": "Income",
+      "refunds": "Refunds",
+      "expenses": "Expenses",
+      "depositHeld": "Deposits held",
+      "depositNote": "Deposits held are not income; they are money to give back to the guest."
+    }
   },
   "currency": {
     "description": "Market mid rates, the hotel's own rate, a converter, the weather and holiday dates.",
@@ -4347,7 +4826,8 @@
       "saved": "Hotel rate for {{currency}} saved",
       "cleared": "{{currency}} is back on the market rate",
       "quote": "Quote guests this rate",
-      "quoteHelp": "When on, the converter, the guest view and new payments and expenses use the hotel rate."
+      "quoteHelp": "When on, the converter, the guest view and new payments and expenses use the hotel rate.",
+      "deviates": "The rate you typed is {{percent}}% or more away from the last known rate ({{rate}}). You can still save it if it is right."
     },
     "tabs": {
       "fx": "Exchange rates",
@@ -4375,6 +4855,12 @@
       "keyRemove": "Remove key",
       "keySaved": "Key saved",
       "keyRemoved": "Key removed"
+    },
+    "warnPercent": {
+      "label": "Typed-rate warning threshold (%)",
+      "hint": "A warning shows when a typed rate is this many percent away from the last known rate; saving stays possible.",
+      "invalid": "Type a whole number from 1 to 1000.",
+      "saved": "Warning threshold saved"
     }
   },
   "monthEnd": {
@@ -4415,7 +4901,7 @@
       "revenue": "Revenue",
       "expenses": "Expenses",
       "profit": "Profit",
-      "occupancy": "Occupancy",
+      "occupancy": "Occupancy (whole month)",
       "vsPrevious": "vs previous month",
       "margin": "Margin {{value}}",
       "nights": "{{sold}}/{{sellable}} room-nights"
@@ -4958,7 +5444,8 @@
       "placeholder": "Anything to add to the summary, e.g. 503 arrives late, leave the door open.",
       "save": "Save handover",
       "saved": "Handover saved",
-      "noShift": "No shifts are set up. Enter the hours in Settings → Shifts."
+      "noShift": "No shifts are set up. Enter the hours in Settings → Shifts.",
+      "emptyHint": "If you write no note, only the automatic summary is saved."
     },
     "auto": {
       "title": "Automatic summary",
@@ -5175,7 +5662,9 @@
       "changed": "Last change: {{name}} · {{when}}",
       "system": "The program",
       "occupied": "The room is occupied.",
-      "closedNoBlock": "No block on the calendar: the room is occupied tonight."
+      "closedNoBlock": "No block on the calendar: the room is occupied tonight.",
+      "reminderTitle": "Room {{room}}: set the status again after the guest leaves",
+      "reminderBody": "“{{state}}” was chosen but no block was opened because the room is occupied. Choose the status again when the guest leaves."
     },
     "noMatchBody": "Pick another status.",
     "statusSaved": "Room {{room}} marked as “{{state}}”",
@@ -5212,7 +5701,30 @@
     "foundTitle": "Found on the local network",
     "searchAgain": "Search again",
     "searching": "Searching the local network…",
-    "noneFound": "No Bismuth main computer was found on the local network. Type its address below."
+    "noneFound": "No Bismuth main computer was found on the local network. Type its address below.",
+    "hotels": {
+      "title": "Saved hotels",
+      "empty": "No hotels saved yet. Type a main computer address below; the hotel is added here once connected.",
+      "active": "In use",
+      "noFingerprint": "Identity not received yet",
+      "lastUsed": "Last used: {{date}} {{time}}",
+      "neverUsed": "Not connected yet",
+      "editLabel": "Edit: {{name}}",
+      "removeLabel": "Remove from list: {{name}}",
+      "editTitle": "Edit hotel",
+      "name": "Hotel name",
+      "addressHelp": "If you type another address, the main computer's identity is checked again when you connect.",
+      "addressInUse": "The address of the hotel in use cannot be changed. Switch to another hotel first.",
+      "removeTitle": "Remove {{name}} from the list?",
+      "removeBody": "The hotel's own records stay on its main computer. Its read-only copy on this computer is deleted; you can connect again later.",
+      "remove": "Remove from list"
+    },
+    "problem": {
+      "empty": "Type an address.",
+      "scheme": "The address must start with http or be just the address (e.g. 192.168.1.20:7373). https is not supported.",
+      "port": "The port must be between 1 and 65535 (e.g. 7373).",
+      "invalid": "This does not look like an address. Write it like 192.168.1.20 or 192.168.1.20:7373."
+    }
   },
   "userMenu": {
     "open": "Account menu",
@@ -5306,7 +5818,8 @@
       "export": "Exported",
       "park": "Parked",
       "no_show": "Marked as no-show",
-      "reauth_failed": "Wrong password entered"
+      "reauth_failed": "Wrong password entered",
+      "check_in_undo": "Took the check-in back"
     },
     "entity": {
       "attachment": "Attachment",
@@ -5371,7 +5884,14 @@
       "takeover": "Main computer takeover",
       "import_batch": "Import",
       "guest_tag": "Guest tag",
-      "room_capacity_change": "Room capacity"
+      "room_capacity_change": "Room capacity",
+      "reservation_groups": "Group reservation",
+      "camera": "Camera system",
+      "camera_alert": "Camera alarm",
+      "guest_face": "Face record",
+      "camera_event": "Camera event",
+      "staff_face": "Staff face record",
+      "damage_deposit": "Damage deposit"
     },
     "fieldName": {
       "name": "Name",
@@ -5425,7 +5945,18 @@
       "startTime": "Start time",
       "endTime": "End time",
       "status": "Status",
-      "remoteAccess": "Remote sign-in"
+      "remoteAccess": "Remote sign-in",
+      "method": "Method",
+      "password": "Password",
+      "expiresAt": "Expires at",
+      "folioId": "Folio",
+      "titleI18n": "Title",
+      "reservationId": "Reservation",
+      "guestId": "Guest",
+      "roomId": "Room",
+      "date": "Date",
+      "phone": "Phone",
+      "email": "Email"
     },
     "importReason": "Import",
     "setting": {
@@ -5437,7 +5968,8 @@
   "booking": {
     "conflict": {
       "occupied": "Room {{room}} is taken on {{dates}} ({{codes}}). Choose another room or other dates.",
-      "blocked": "Room {{room}} is not for sale on {{dates}}. Choose another room or other dates."
+      "blocked": "Room {{room}} is not for sale on {{dates}}. Choose another room or other dates.",
+      "occupiedHours": "Room {{room}} is taken on {{dates}} at these hours: {{hours}}. Choose other hours or another room."
     },
     "standing": {
       "infoTitle": "Guest's standing note",
@@ -5469,7 +6001,8 @@
       "openIssue": "Open issue: {{title}}",
       "blocked": "Not for sale",
       "takenChosen": "Taken in the chosen dates: room {{rooms}}. Choose another room or other dates.",
-      "notForSale": "Not for sale"
+      "notForSale": "Not for sale",
+      "remove": "Remove room {{room}}"
     },
     "price": {
       "reason": {
@@ -5487,7 +6020,10 @@
       "byNight_one": "Rate by night ({{count}} night)",
       "byNight_other": "Rate by night ({{count}} nights)",
       "listOf": "Room {{room}}: rate and payment by night",
-      "save": "Save rates ({{count}})"
+      "save": "Save rates ({{count}})",
+      "zeroTitle": "Save with a price of 0?",
+      "zeroBody": "At least one night of this reservation costs 0. Continue if the stay is free of charge.",
+      "zeroAction": "Save anyway"
     },
     "toast": {
       "created": "Reservation saved",
@@ -5507,14 +6043,16 @@
       "roomChanged": "Room changed",
       "roomAdded": "Room added",
       "noShow": "Reservation marked as a no-show",
-      "stayCancelled": "Room {{room}} cancelled"
+      "stayCancelled": "Room {{room}} cancelled",
+      "checkInUndone": "Room {{room}}: check-in taken back",
+      "refundPending": "Reservation parked as refund pending"
     },
     "form": {
       "needGuest": "Choose a guest or type the new guest's name.",
       "badDates": "Check-out cannot be before check-in.",
       "needRoom": "Choose at least one room.",
       "needChannel": "Choose the sales channel.",
-      "dayUse": "Check-in and check-out on the same day: saved as a day use.",
+      "dayUse": "Check-in and check-out on the same day: enter the hours. The room's other hours that day stay for sale.",
       "channelRef": "Booking no. in the channel",
       "status": "Status",
       "dayUseTotal": "Day use, total <m>{{total}}</m>",
@@ -5539,7 +6077,9 @@
       "firstName": "First name",
       "lastName": "Last name",
       "phone": "Phone",
-      "email": "Email"
+      "email": "Email",
+      "similar": "A guest with a similar name is already saved. If it is the same person, use that card instead of a new one.",
+      "useCard": "Use this card"
     },
     "issues": {
       "title": "Room {{room}} has an open issue",
@@ -5584,7 +6124,11 @@
       "release_one": "{{count}} night will be freed; the room can be sold again that night.",
       "release_other": "{{count}} nights will be freed; the room can be sold again those nights.",
       "sameDay": "The guest leaves on the check-in day: the first night stays as a day use.",
-      "dayUsePrice": "Day use price"
+      "dayUsePrice": "Day use price",
+      "dayUseHours": "Hours used: {{start}}–{{end}}",
+      "dayUseSuggested": "Suggested: {{amount}} (room type hourly price × time used)",
+      "freeConfirm": "Free check-out: record the amount as 0",
+      "freeNeeded": "The amount is 0: confirm the free check-out or enter an amount."
     },
     "park": {
       "title": "Park this reservation?",
@@ -5614,7 +6158,8 @@
       "parkedLine": "Parked: {{reason}}",
       "cancelledLine": "Reason for cancelling: {{reason}}",
       "noContact": "No contact details.",
-      "noStays": "This reservation has no room on the calendar (parked or cancelled)."
+      "noStays": "This reservation has no room on the calendar (parked or cancelled).",
+      "history": "History"
     },
     "kbs": {
       "badge": "KBS missing: {{count}}",
@@ -5659,13 +6204,166 @@
     "noShow": {
       "title": "Mark the reservation as a no-show?",
       "description": "The nights are freed, the payments stay on record.",
-      "confirm": "Mark as no-show"
+      "confirm": "Mark as no-show",
+      "fee": "No-show fee",
+      "feeHelp": "Leave it empty for no fee. The fee is added to the guest's folio."
     },
     "cancelStay": {
       "menu": "Room {{room}}: cancel",
       "title": "Cancel room {{room}}?",
       "description": "This room's nights are freed. The other rooms, the nights already stayed and the payments stay on record.",
       "confirm": "Cancel the room"
+    },
+    "giveup": {
+      "menu": "Gave up and refund",
+      "menuRoom": "Room {{room}}: gave up and refund",
+      "title": "Room {{room}}: guest gave up",
+      "description": "Choose how to go on when the guest gave up while in the room. Nothing is deleted.",
+      "sameDay": "Check out the same day",
+      "sameDayHint": "The first night stays as a same-day stay; fix its price at check-out and refund the rest.",
+      "sameDayNo": "Not available: the guest did not check in today.",
+      "undo": "Take the check-in back and cancel",
+      "undoHint": "The stay counts as if it never happened; you refund the payments.",
+      "undoNoRight": "You are not allowed to do this. Ask the hotel owner.",
+      "undoNotToday": "It cannot be taken back after the check-in day.",
+      "early": "Check out early",
+      "earlyHint": "The nights left are freed, the nights stayed remain.",
+      "earlyNo": "No nights left.",
+      "undoConfirm": "Take check-in back",
+      "checkoutConfirm": "Check out",
+      "otherRooms": "The reservation has other rooms; only this room is cancelled. Use the payment window for a refund.",
+      "kbsTitle": "A person is reported to KBS",
+      "kbsBody": "{{names}} was reported to KBS. The report stays on record; make the check-out on the KBS side yourself.",
+      "kbsConfirm": "Understood, take the check-in back anyway",
+      "refundAfter": "After the check-out the refund window opens for the payments.",
+      "refundNeedsManager": "Ask the hotel owner or the manager for the refund.",
+      "choose": "How to continue"
+    },
+    "refund": {
+      "collected": "This reservation has {{amount}} collected",
+      "choose": "What happens to the payments",
+      "enter": "Enter a refund",
+      "needManager": "You are not allowed to refund. Ask the hotel owner or the manager.",
+      "amount": "Refund amount",
+      "needAmount": "Write the refund amount.",
+      "tooMuch": "The refund cannot exceed what was collected.",
+      "park": "Park as refund pending",
+      "parkHint": "The reservation waits below the calendar; the manager or owner enters the refund.",
+      "keep": "Keep the payments",
+      "keepHint": "For example a cancellation fee; the reason is written and kept on record.",
+      "keepReason": "Reason (e.g. cancellation fee)",
+      "needNote": "Write the reason.",
+      "parkConfirm": "Park as refund pending",
+      "menu": "Enter a refund"
+    },
+    "hourly": {
+      "button": "Hourly sale",
+      "title": "Hourly sale",
+      "description": "Sell a room for set hours within one day. You enter the amount.",
+      "room": "Room",
+      "roomPlaceholder": "Choose a room",
+      "date": "Date",
+      "start": "Start time",
+      "end": "End time",
+      "amount": "Amount",
+      "channel": "Sales channel",
+      "suggested": "Suggested: {{amount}} (room type hourly price × duration)",
+      "noSuggestion": "This room type has no hourly price. Enter the amount.",
+      "needGuest": "Enter the guest's name.",
+      "needRoom": "Choose a room.",
+      "needAmount": "Enter the amount.",
+      "badRange": "The end time must be after the start time.",
+      "taken": "Room {{room}} is taken at these hours: {{hours}}. Choose other hours or another room.",
+      "takenDay": "Room {{room}} is taken that day. Choose another day or room.",
+      "blocked": "Room {{room}} is not for sale that day.",
+      "turnover": "There are {{gap}} min between this and the {{start}}–{{end}} sale; {{min}} min are advised for cleaning. You can still save.",
+      "toast": {
+        "created": "Hourly sale saved"
+      },
+      "hoursLabel": "Hours",
+      "kind": "Hourly"
+    },
+    "group": {
+      "title": "Group reservation",
+      "option": "Book as a group",
+      "optionHelp": "Each room becomes its own reservation; the rooms are kept in one group and can be checked in and out together.",
+      "name": "Group name",
+      "namePlaceholder": "e.g. Tour group",
+      "needName": "Enter the group name.",
+      "needRooms": "Choose at least two rooms for the group.",
+      "leaderHelp": "The guest above is the group leader and is put in every room left without a name.",
+      "roomGuest": "Room {{room}} guest name",
+      "roomGuestPlaceholder": "Group leader",
+      "created": "Group saved",
+      "badge": "Group: {{name}}",
+      "open": "Open the group panel",
+      "panel": {
+        "title": "Group",
+        "description": "The group's rooms, guests and bulk actions",
+        "loading": "Loading the group",
+        "leader": "Group leader: {{name}}",
+        "rooms_one": "{{count}} room",
+        "rooms_other": "{{count}} rooms",
+        "folio": {
+          "single": "One folio (the group leader pays)",
+          "per_room": "A folio per room"
+        },
+        "voided": "Group cancelled",
+        "roomsHeading": "Rooms",
+        "selectAll": "Select all",
+        "selectRoom": "Select room {{room}}",
+        "openReservation": "Open reservation",
+        "notDue": "Not the check-in day yet",
+        "checkIn": "Check in together",
+        "checkOut": "Check out together",
+        "note": "Note for all",
+        "cancel": "Cancel the group",
+        "atomic": "All chosen rooms are done together; if one fails none is done.",
+        "total": "Group total",
+        "balance": "Balance due",
+        "mixedCurrency": "The rooms use different currencies; no total is shown.",
+        "notes": "Group notes",
+        "noNotes": "No group notes yet. Press \"Note for all\" to add the first one.",
+        "charges": "Room charges",
+        "pay": "Take group payment",
+        "roomPay": "Take payment",
+        "roomBalance": "Balance due: {{amount}}",
+        "stayRange": "{{from}} – {{to}}",
+        "stayRangeNotDue": "{{from}} – {{to}} · Not the check-in day yet"
+      },
+      "noteDialog": {
+        "title": "Note on every room",
+        "description": "The note is added to the reservation of every room of the group.",
+        "label": "Note"
+      },
+      "cancelDialog": {
+        "title": "Cancel the group?",
+        "body": "The nights of the rooms yet to arrive are freed. Payments stay on record; for a refund open the room's reservation.",
+        "reason": "Reason"
+      },
+      "toast": {
+        "checkedIn": "The chosen rooms checked in",
+        "checkedOut": "The chosen rooms checked out",
+        "noteAdded": "Note added to every room",
+        "cancelled": "Group cancelled",
+        "paid": "Group payment saved"
+      },
+      "payDialog": {
+        "title": "Group payment",
+        "body": "The group's open balance is {{amount}}.",
+        "amount": "Amount",
+        "method": "Payment method",
+        "note": "Note",
+        "needAmount": "Enter the amount.",
+        "tooMuch": "The amount is more than the open balance ({{amount}}).",
+        "spread": "The amount is spread over the rooms' open balances in booking order; each room gets its own payment row."
+      }
+    },
+    "lateCheckout": {
+      "added": "Late check-out fee added",
+      "failed": "Checked out, but the late check-out fee could not be added. Add it from the Money tab.",
+      "offer": "Add a late check-out fee ({{time}})",
+      "amount": "Late check-out fee"
     }
   },
   "holidayCheck": {
@@ -5836,7 +6534,11 @@
     "driveFolderDesktopOnly": "The folder is chosen only in the program window on the main computer.",
     "driveFolderFailed": "Folder not saved",
     "foldersDesktopOnly": "Folder locations are shown only on the main computer.",
-    "restoreDesktopOnly": "Restores are managed on the main computer."
+    "restoreDesktopOnly": "Restores are managed on the main computer.",
+    "timeInvalid": "Enter the time like 04:00.",
+    "driveFolderFind": "Find the Drive folder",
+    "driveFound": "Drive folder found and saved",
+    "driveNotFound": "No Google Drive folder was found on this computer. Make sure the Drive app is installed and running, or use “Choose folder”."
   },
   "dataTransfer": {
     "title": "Export and import",
@@ -5905,7 +6607,14 @@
       "laundryPrices": "Laundry prices",
       "laundrySettlements": "Laundry monthly accounts",
       "productCategories": "Product categories",
-      "importBatches": "Imports"
+      "importBatches": "Imports",
+      "damageDeposits": "Damage deposits",
+      "salaryPeriods": "Salary periods",
+      "payPolicies": "Pay rules",
+      "paymentMethods": "Payment methods",
+      "salesChannels": "Sales channels",
+      "extraServices": "Extra services",
+      "statusTags": "Status tags"
     },
     "col": {
       "date": "Date",
@@ -6083,7 +6792,14 @@
       "importedExpenses": "Expenses",
       "importedSalaries": "Salary amounts",
       "importedSalaryPayments": "Salary payments",
-      "voidedAt": "Voided at"
+      "voidedAt": "Voided at",
+      "takenDate": "Taken on",
+      "settledDate": "Settled on",
+      "settleNote": "Settlement note",
+      "depositStatus": "Status",
+      "lockedAt": "Locked at",
+      "policyKey": "Rule",
+      "policyValue": "Value"
     },
     "value": {
       "yes": "Yes",
@@ -6197,6 +6913,11 @@
         "tcmb": "CBRT (TCMB)",
         "manual": "Entered by hand",
         "hotel": "Hotel rate"
+      },
+      "depositStatus": {
+        "held": "Held",
+        "refunded": "Refunded",
+        "converted": "Converted to damage"
       }
     },
     "import": {
@@ -6648,14 +7369,19 @@
       "search": "Quick search",
       "list": "Open the shortcut list",
       "lock": "Lock the screen",
-      "sidebar": "Fold or open the side menu"
+      "sidebar": "Fold or open the side menu",
+      "fullscreen": "Enter or leave full screen",
+      "zoom": "Zoom in or out",
+      "zoomReset": "Reset zoom"
     },
     "calendar": {
       "move": "Move between cells",
       "week": "One week forward or back",
       "today": "Back to today",
       "open": "Open the selected cell",
-      "new": "New reservation in the selected cell"
+      "new": "New reservation in the selected cell",
+      "select": "Pick or drop a stay (Ctrl or Shift + click)",
+      "menu": "Actions menu of the stay or cell (right click)"
     },
     "forms": {
       "save": "Save",
@@ -6691,6 +7417,340 @@
     "wholeNumber": "Type a whole number.",
     "range": "Type a number from {{min}} to {{max}}.",
     "rangeWhole": "Type a whole number from {{min}} to {{max}}.",
-    "minWhole": "Type a whole number of {{min}} or more."
+    "minWhole": "Type a whole number of {{min}} or more.",
+    "limitReached": "You can write at most {{max}} characters.",
+    "phone": "Write the phone number in digits (e.g. +90 532 123 45 67)."
+  },
+  "camera": {
+    "title": "Camera",
+    "description": "The camera system's state, the live picture and alarms.",
+    "restart": "Restart",
+    "restarted": "Camera system restarted",
+    "restartFailed": "Could not restart the camera system",
+    "pauseFailed": "Could not change the alarm state",
+    "openSettings": "Camera settings",
+    "status": {
+      "title": "Camera system",
+      "crashes_one": "Stopped {{count}} time since the program started.",
+      "crashes_other": "Stopped {{count}} times since the program started."
+    },
+    "state": {
+      "running": "Running",
+      "slow": "Running slowly",
+      "starting": "Starting",
+      "restarting": "Restarting",
+      "gaveUp": "Error: stopped",
+      "stopped": "Stopped",
+      "noSource": "No camera address",
+      "disabled": "Off",
+      "unavailable": "Not on this computer",
+      "noAddon": "Camera add-on not installed"
+    },
+    "stateHelp": {
+      "running": "The camera picture is being watched. An alarm is raised when someone unregistered walks in.",
+      "slow": "The camera system is slow to answer. If it does not recover in a few minutes, press Restart.",
+      "starting": "The camera system is starting; this can take about a minute.",
+      "restarting": "The camera system stopped and is restarting by itself.",
+      "gaveUp": "The camera system kept stopping and is no longer restarted. Press Restart; if that does not help, tell the hotel owner.",
+      "stopped": "The camera system is not running. Press Restart.",
+      "noSource": "No camera address has been entered. Enter it in Settings under Camera; if you cannot, ask the hotel owner.",
+      "disabled": "The camera system is off. To switch it on, go to Settings under Camera; if you cannot, ask the hotel owner.",
+      "unavailable": "The camera system does not run on this computer. Use the hotel's main computer.",
+      "noAddon": "The camera add-on is a separate download: get Bismuth-Kamera-Windows.zip (Mac: Bismuth-Kamera-Mac.zip) from Bismuth's releases page, unpack it, put the camera-addon folder into Bismuth's data folder on the main computer (Windows: %APPDATA%\\Bismuth, Mac: ~/Library/Application Support/Bismuth) and reopen Bismuth."
+    },
+    "pause": {
+      "label": "Pause alarms",
+      "help": "While on, no alarm is raised for unregistered people; the picture is still watched."
+    },
+    "live": {
+      "title": "Live picture",
+      "help": "Shown only on this computer and never recorded.",
+      "defaultLocation": "Camera",
+      "guests_one": "{{count}} registered guest",
+      "guests_other": "{{count}} registered guests",
+      "alarmsPaused": "Alarms paused",
+      "disconnected": "Camera not connected",
+      "covered": "Camera covered or dark",
+      "alt": "Live picture from the camera",
+      "failed": "The picture could not be loaded.",
+      "retry": "Try again",
+      "noPicture": "The picture address could not be fetched. If the camera system is running it will come back in a few seconds.",
+      "staff": "Staff"
+    },
+    "alerts": {
+      "title": "Alarms",
+      "help": "Shown here when someone unregistered walks in. Mark when you have looked and when it is dealt with.",
+      "unknownPerson": "An unregistered person walked in",
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "noTime": "Time unknown",
+      "state": {
+        "new": "New",
+        "seen": "Seen",
+        "handled": "Handled"
+      },
+      "markSeen": "Mark as seen",
+      "markHandled": "Mark as handled",
+      "reopen": "Reopen",
+      "markFailed": "Could not mark the alarm",
+      "emptyTitle": "No alarms",
+      "emptyBody": "An alarm shows up here when someone unregistered walks in.",
+      "unavailableTitle": "The alarm list is not available",
+      "unavailableBody": "The camera system is not running. See the state card.",
+      "filterEmptyTitle": "No alarms in this state",
+      "filterEmptyBody": "Try another option.",
+      "filter": {
+        "label": "Alarm state",
+        "all": "All · {{count}}",
+        "new": "New · {{count}}",
+        "seen": "Seen · {{count}}",
+        "handled": "Handled · {{count}}"
+      },
+      "saveAsGuest": "Save as guest",
+      "linked": "Linked to a guest",
+      "saveDialog": {
+        "title": "Link the person in the alarm to a guest",
+        "body": "This face is added to the face record of the guest you pick. It is deleted when the guest checks out.",
+        "crop": "Face in the alarm",
+        "guest": "Guest",
+        "pick": "Pick a guest",
+        "none": "No guest is staying in the hotel now.",
+        "cropGone": "The picture of this alarm is gone; its face cannot be saved.",
+        "loading": "Opening the picture",
+        "save": "Save the face",
+        "saved": "Face record added",
+        "failed": "The face could not be saved",
+        "faces_one": "{{count}} face record",
+        "faces_other": "{{count}} face records"
+      }
+    },
+    "face": {
+      "title": "Face record (camera)",
+      "help": "The face is taken so the camera can know the guest. It is kept only on this computer, encrypted, and deleted when the guest checks out.",
+      "none": "No face record",
+      "has_one": "{{count}} face record",
+      "has_other": "{{count}} face records",
+      "since": "Latest: {{when}}",
+      "cropAlt": "Saved face",
+      "enroll": "Take face from camera",
+      "delete": "Delete face record",
+      "notInHouse": "The guest is not in the hotel. A face is only saved for a guest who is staying.",
+      "noKeyStore": "This computer cannot keep face data safely; a face cannot be saved.",
+      "hostOnly": "A face is only taken from the hotel's main computer.",
+      "enrolled": "Face record added",
+      "enrollFailed": "The face could not be taken",
+      "deleted": "Face record deleted",
+      "deleteFailed": "The face record could not be deleted",
+      "confirmTitle": "Delete the face record?",
+      "confirmBody": "All face records of this guest are deleted for good. The camera will no longer know them."
+    },
+    "notice": {
+      "entry": "Privacy notice",
+      "title": "Notice on camera recording and face recognition",
+      "sign": "Camera recording is in use at this hotel",
+      "help": "Print it to show guests or to put up at the entrance. The text is a template; show it to your lawyer before you use it.",
+      "language": "Language of the text",
+      "print": "Print",
+      "controller": {
+        "title": "Data controller",
+        "body": "{{hotel}}. Contact: {{contact}}"
+      },
+      "data": {
+        "title": "Data we process",
+        "body": "Your image in the area the cameras cover. If you stay at the hotel, a small photo of your face and a numeric template of it (biometric data) are also kept. If someone who is not staying at the hotel is detected, a picture of their face at that moment is kept as an alarm record."
+      },
+      "purpose": {
+        "title": "Purpose",
+        "body": "The safety of the hotel, its guests and its staff, and noticing when someone who is not registered comes in."
+      },
+      "basis": {
+        "title": "Legal basis",
+        "body": "Law no. 6698 on the Protection of Personal Data, art. 5/2(f): the controller's legitimate interest (safety of the hotel and its guests)."
+      },
+      "transfer": {
+        "title": "Transfer",
+        "local": "The data stays on the hotel's own computer and is not given to third parties.",
+        "telegram": "When an unregistered person is detected, a short alarm message is sent to the hotel's staff through Telegram. The message passes through Telegram servers abroad.",
+        "telegramPhoto": "The message also carries a picture of the detected person's face."
+      },
+      "retention": {
+        "title": "Retention",
+        "faceNow": "A guest's face data is deleted when the guest checks out.",
+        "faceDays_one": "A guest's face data is deleted {{count}} day after check-out.",
+        "faceDays_other": "A guest's face data is deleted {{count}} days after check-out.",
+        "alerts_one": "Pictures taken at an alarm are deleted after {{count}} day.",
+        "alerts_other": "Pictures taken at an alarm are deleted after {{count}} days.",
+        "final": "Deleted data cannot be recovered."
+      },
+      "staff": {
+        "title": "Staff",
+        "body": "Staff faces are not used to track working hours. The template of a staff member added so that no alarm is raised is kept for that purpose only and is deleted when the person leaves."
+      },
+      "rights": {
+        "title": "Your rights",
+        "body": "Under article 11 of Law no. 6698 you may find out whether your data is processed and ask for information about it, learn whether it is used for its purpose, ask for it to be corrected or deleted, object, and ask for damages to be made good. You can apply to: {{contact}}"
+      }
+    },
+    "privacy": {
+      "title": "Privacy and retention",
+      "help": "Privacy notice, deletion rules and staff who raise no alarm.",
+      "contact": "Address and phone for requests",
+      "contactHelp": "Written in the privacy notice as the contact. If you leave it empty, the e-mail address is used; with none, a blank is left to fill in by hand.",
+      "contactPlaceholder": "Address and phone",
+      "retentionHint": "Set how many days faces and alarm pictures are kept in the Alarms and retention section above."
+    },
+    "report": {
+      "title": "Deletion report",
+      "help": "How many faces and alarm pictures were deleted on the chosen days. It holds no names or pictures.",
+      "from": "From",
+      "to": "To",
+      "invalidRange": "The end date cannot be before the start date.",
+      "column": {
+        "what": "Deleted",
+        "count": "Count"
+      },
+      "rows": {
+        "checkout": "Guest faces deleted at check-out",
+        "retention": "Guest faces deleted after the keep time",
+        "manual": "Guest faces deleted by hand",
+        "staffRemoved": "Staff faces deleted when taken off the list",
+        "staffLeft": "Faces of staff who left",
+        "crops": "Alert pictures deleted after the keep time"
+      },
+      "total": "Total",
+      "none": "Nothing was deleted in this range.",
+      "held": {
+        "title": "Kept right now",
+        "guestFaces": "Guest faces",
+        "waiting": "Guest faces waiting to be deleted",
+        "staffFaces": "Staff faces",
+        "alarmCrops": "Alert pictures"
+      },
+      "policy": "Rules in force",
+      "print": "Print",
+      "printTitle": "Camera data deletion report",
+      "printRange": "{{from}} – {{to}}"
+    },
+    "staff": {
+      "title": "Staff who raise no alarm",
+      "help": "The cameras see staff too. No alarm is raised for a staff member you add here. Their face is taken from the camera and kept encrypted; no photo is kept and their name is not sent to the camera system. It is deleted when they leave or are taken off the list.",
+      "emptyTitle": "Nobody on the list",
+      "emptyBody": "To add a staff member who should raise no alarm, pick them below.",
+      "faces_one": "{{count}} face",
+      "faces_other": "{{count}} faces",
+      "pick": "Pick a staff member",
+      "pickLabel": "Staff member to add",
+      "pickEmpty": "There is nobody else to add.",
+      "take": "Take face from camera",
+      "takeAnother": "Take another face",
+      "takeHint": "Ask the staff member to look at the camera, then press the button.",
+      "hostOnly": "A face can only be taken from the window on the hotel's main computer.",
+      "noKeyStore": "This computer has no key store; a face cannot be kept.",
+      "remove": "Take off the list",
+      "removeTitle": "Take {{name}} off the list?",
+      "removeBody": "Their face data is deleted and cannot be recovered. An alarm is raised again when this person enters the camera's view.",
+      "added": "Face taken",
+      "addFailed": "The face could not be taken",
+      "removed": "Taken off the list",
+      "removeFailed": "Could not take off the list"
+    }
+  },
+  "feesPanel": {
+    "title": "Fee lines and deposit",
+    "error": "The lines could not be loaded. Refresh and try again.",
+    "empty": "No fee lines or deposits yet.",
+    "addLate": "Add late check-out",
+    "takeDeposit": "Take deposit",
+    "voided": "Voided",
+    "void": "Void line",
+    "deposit": "Damage deposit",
+    "status": {
+      "held": "Held",
+      "refunded": "Given back",
+      "converted": "Turned into income"
+    },
+    "refund": "Give back",
+    "convert": "Turn into income",
+    "heldHint": "A held deposit is not income; give it back at check-out or turn it into income with a reason.",
+    "lateTitle": "Late check-out fee",
+    "lateHelp": "Enter the departure time and the amount; the amount follows the hotel's rule.",
+    "lateSave": "Add line",
+    "room": "Room",
+    "lateTime": "Departure time",
+    "amount": "Amount",
+    "note": "Note (optional)",
+    "takeTitle": "Take a damage deposit",
+    "takeHelp": "A deposit is not income and does not change the folio balance.",
+    "takeSave": "Save deposit",
+    "method": "Payment method",
+    "taken": "Deposit saved",
+    "refunded": "Deposit given back",
+    "converted": "Deposit turned into income",
+    "refundTitle": "Give the deposit back?",
+    "convertTitle": "Turn the deposit into income?",
+    "settleHelp": "This cannot be undone; the record stays in the audit log.",
+    "refundBody": "{{amount}} is given back to the guest ({{method}}).",
+    "convertBody": "{{amount}} is charged as a damage fee and counted as collected.",
+    "convertReason": "What was damaged? (required)",
+    "voidTitle": "Void this line?",
+    "voidHelp": "The line leaves the folio; the record is kept.",
+    "voidReason": "Reason",
+    "voidedToast": "Line voided",
+    "undo": "Undo",
+    "undoTitle": "Undo the conversion to income?",
+    "undoBody": "The damage charge and its payment of {{amount}} are voided and the deposit is held again.",
+    "undoneToast": "Conversion undone",
+    "noIdHint": "Do not write ID numbers."
+  },
+  "portfolio": {
+    "title": "Portfolio",
+    "description": "Tonight's occupancy, cash drawer, income and expenses and the calendar of all your hotels in one place.",
+    "source": {
+      "live": "Live · from the main computer",
+      "copy": "Read-only copy · last synced {{date}} {{time}}",
+      "copyNoTime": "Read-only copy"
+    },
+    "hotel": {
+      "active": "In use"
+    },
+    "noCopy": {
+      "title": "No copy of this hotel",
+      "body": "This computer has no read-only copy of this hotel yet. Connect to the hotel once and sign in as the owner; the copy is prepared by itself."
+    },
+    "failed": "This hotel's copy could not be read. Connect to the hotel and wait for the copy to refresh.",
+    "kpi": {
+      "tonight": "Occupancy tonight",
+      "tonightHint": "{{count}}/{{rooms}} rooms",
+      "drawer": "Cash that should be in the drawer",
+      "drawerHint": "Not yet collected by the owner",
+      "periodOccupancy": "Occupancy in period",
+      "periodOccupancyHint": "Sold nights",
+      "revenue": "Income",
+      "expenses": "Expenses",
+      "profit": "Profit",
+      "partial": "Some expense sections are hidden"
+    },
+    "currencyNote": "Amounts are in {{currency}}.",
+    "noHotels": {
+      "title": "No saved hotels",
+      "body": "Connect to a hotel's main computer from the connection screen; the hotel appears here."
+    },
+    "hostNote": {
+      "title": "The other hotel is not shown here",
+      "body": "This computer is the hotel's main computer, so only your own hotel is shown. To see the other hotel, connect to both hotels from your own device and open this screen there."
+    },
+    "totals": {
+      "title": "Totals (same currency)",
+      "line_one": "{{currency}} · {{count}} hotel",
+      "line_other": "{{currency}} · {{count}} hotels",
+      "figures": "Income {{revenue}} · Expenses {{expenses}} · Profit {{profit}}",
+      "mixed": "Hotels use different currencies, so no total is shown; amounts are never converted."
+    },
+    "calendar": {
+      "title": "Calendar",
+      "hotel": "Hotel",
+      "noRooms": "This hotel has no rooms yet.",
+      "readOnlyHint": "View only; connect to the hotel to make changes."
+    }
   }
 }

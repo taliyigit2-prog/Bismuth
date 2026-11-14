@@ -1,6 +1,6 @@
 // Every keyboard shortcut of the program, in one place (G-19, S-51): the global keys the shell listens to, the keys
 // of the calendar grid and of every form. The shortcut list (`?` / F1), the guide's shortcut table (`[[shortcuts]]`
-// in the guide text, docs/kullanim-kilavuzu.md through scripts/guide-docs-lib.ts) and the listeners read this list,
+// in the guide text, docs/otel/kullanim-kilavuzu.md through scripts/guide-docs-lib.ts) and the listeners read this list,
 // so what the list says is what the keys do. Pure data and pure functions: no React, no browser globals.
 
 export type ShortcutGroup = 'global' | 'calendar' | 'forms'
@@ -16,11 +16,16 @@ export type ShortcutLabelKey =
   | 'shortcuts.action.list'
   | 'shortcuts.action.lock'
   | 'shortcuts.action.sidebar'
+  | 'shortcuts.action.fullscreen'
+  | 'shortcuts.action.zoom'
+  | 'shortcuts.action.zoomReset'
   | 'shortcuts.calendar.move'
   | 'shortcuts.calendar.week'
   | 'shortcuts.calendar.today'
   | 'shortcuts.calendar.open'
   | 'shortcuts.calendar.new'
+  | 'shortcuts.calendar.select'
+  | 'shortcuts.calendar.menu'
   | 'shortcuts.forms.save'
   | 'shortcuts.forms.close'
   | 'shortcuts.forms.next'
@@ -97,6 +102,28 @@ export const SHORTCUTS: readonly ShortcutDef[] = [
     keys: ['mod+b'],
     whileTyping: true
   },
+  // Answered by the window itself (main/app/window-keys.ts, before the page sees the key): full screen and zoom.
+  {
+    id: 'fullscreen',
+    group: 'global',
+    labelKey: 'shortcuts.action.fullscreen',
+    keys: ['F11', 'mod+shift+f'],
+    whileTyping: true
+  },
+  {
+    id: 'zoom',
+    group: 'global',
+    labelKey: 'shortcuts.action.zoom',
+    keys: ['mod+plus', 'mod+-'],
+    whileTyping: true
+  },
+  {
+    id: 'zoom-reset',
+    group: 'global',
+    labelKey: 'shortcuts.action.zoomReset',
+    keys: ['mod+0'],
+    whileTyping: true
+  },
   // The calendar grid (features/calendar/calendar-grid.tsx), once a cell has the focus.
   {
     id: 'calendar-move',
@@ -113,6 +140,14 @@ export const SHORTCUTS: readonly ShortcutDef[] = [
   { id: 'calendar-today', group: 'calendar', labelKey: 'shortcuts.calendar.today', keys: ['Home'] },
   { id: 'calendar-open', group: 'calendar', labelKey: 'shortcuts.calendar.open', keys: ['Enter'] },
   { id: 'calendar-new', group: 'calendar', labelKey: 'shortcuts.calendar.new', keys: ['n'] },
+  // P17c: pick the stay under the cursor (Ctrl/Shift-click does the same with the mouse); the menu of its actions.
+  { id: 'calendar-select', group: 'calendar', labelKey: 'shortcuts.calendar.select', keys: [' '] },
+  {
+    id: 'calendar-menu',
+    group: 'calendar',
+    labelKey: 'shortcuts.calendar.menu',
+    keys: ['shift+F10', 'ContextMenu']
+  },
   // Every dialog and form (components/responsive-dialog.tsx, Radix dialogs; tests/unit/dialog-keys.test.tsx).
   { id: 'form-save', group: 'forms', labelKey: 'shortcuts.forms.save', keys: ['Enter'] },
   { id: 'form-close', group: 'forms', labelKey: 'shortcuts.forms.close', keys: ['Escape'] },
@@ -179,10 +214,13 @@ const KEY_CAPS: Record<string, string> = {
   ArrowDown: '↓',
   PageUp: 'Page Up',
   PageDown: 'Page Down',
+  plus: '+',
   Escape: 'Esc',
   Enter: 'Enter',
   Home: 'Home',
-  Tab: 'Tab'
+  Tab: 'Tab',
+  ' ': 'Space',
+  ContextMenu: 'Menu'
 }
 
 /** The caps of one combination: `mod+k` → ["Ctrl", "K"] (["⌘", "K"] on a Mac). */

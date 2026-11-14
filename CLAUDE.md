@@ -5,9 +5,10 @@ Küçük/orta oteller için masaüstü otel yönetim programı. Electron + React
 (Arapça ertelendi). Windows `Bismuth-Setup.exe` ve macOS `Bismuth.dmg` GitHub Actions'ta paketlenir. Ürün "bitmiş" olacak: v1.0
 sonrası bakım yok. İlk müşteri: 19 odalı (38 yataklı) bir İstanbul oteli; otele özgü her kural **ayar**dır. Günlük akış: `docs/plan/akislar.md`.
 
-Plan: `docs/plan/README.md` · Gereksinimler: `docs/plan/01-gereksinimler.md` (G-xx) · Mimari ve veri modeli:
+Belge haritası (kim neyi okur): `docs/README.md` · Plan: `docs/plan/README.md` · Gereksinimler: `docs/plan/01-gereksinimler.md` (G-xx) · Mimari ve veri modeli:
 `docs/plan/03-mimari.md` · Kararlar: `docs/plan/06-kararlar.md` (K-xx) · Sorular: `docs/plan/05-sorular.md` (S-xx) ·
-Faz durumu: `docs/plan/fazlar/DURUM.md` · Araştırmalar: `docs/plan/04-arastirma/`.
+Faz durumu: `docs/plan/fazlar/DURUM.md` · Yürütme (dalgalar): `docs/plan/fazlar/YURUTME.md` · Araştırmalar: `docs/plan/04-arastirma/` ·
+**Analiz raporları ve geliştirme planı (2026-11-12): `docs/analiz/`** (özet `00-ozet.md`, plan `08-gelistirme-plani.md`).
 
 ## Çalışma şekli
 
@@ -20,7 +21,7 @@ Faz durumu: `docs/plan/fazlar/DURUM.md` · Araştırmalar: `docs/plan/04-arastir
 
 ## Yasaklar (gerekçe G-xx; çoğu kancayla zorlanır)
 
-1. **Çevrimdışı veri girişi bozulamaz** (G-01/G-02). Ağ kodu yalnızca dört yerde: `src/main/network/` (isteğe bağlı dış veri: piyasa kuru, bayram doğrulama, hava durumu), `src/main/server/` (sunucu modu), `src/main/discovery/` (sunucu modunda yerel ağ duyurusu, mDNS), `src/renderer/lib/transport/` (istemci modu). Başka yerde `fetch`/`axios`/`WebSocket`/CDN bağlantısı yok. Dış veri 5 sn zaman aşımı, sessiz başarısızlık, `network.enabled=false` ile tamamen kapanır. Fontlar ve her kaynak paket içinde.
+1. **Çevrimdışı veri girişi bozulamaz** (G-01/G-02). Ağ kodu yalnızca beş yerde: `src/main/network/` (isteğe bağlı dış veri: piyasa kuru, bayram doğrulama, hava durumu; kamera alarmı Telegram bildirimi K-50), `src/main/server/` (sunucu modu), `src/main/discovery/` (sunucu modunda yerel ağ duyurusu, mDNS), `src/renderer/lib/transport/` (istemci modu), `src/main/camera/` (yalnız `127.0.0.1` yan süreç, `rtsp://` ve yerel ağ kamera keşfi; K-49). Başka yerde `fetch`/`axios`/`WebSocket`/CDN bağlantısı yok. Dış veri 5 sn zaman aşımı, sessiz başarısızlık, `network.enabled=false` ile tamamen kapanır. Fontlar ve her kaynak paket içinde.
 2. **OTA / kanal yöneticisi entegrasyonu yok** (G-05). Airbnb, Booking vb. yalnızca satış kanalı etiketidir.
 3. **Fatura kesme yok** (G-06): e-Fatura, e-Arşiv, yazarkasa, muhasebe entegrasyonu yazılmaz. Fatura **bilgisi** saklanır ve kopyalanır (G-191).
 4. **Bizim sunucumuz, telemetri, otomatik güncelleme, lisans sunucusu yok** (G-07). `electron-updater`, `@sentry/*`, `posthog`, `mixpanel`, `firebase`, `segment` ve benzerleri eklenmez. Bağımlılıklar `save-exact` ile sabitlenir ve `docs/plan/bagimliliklar.md`'ye yazılır. Uzaktan erişim sahibin kendi kuracağı özel ağ uygulamasıyla (K-19, K-31: NetBird Free); Bismuth bir bulut hesabına bağlanmaz — Drive'daki şifreli yedek/kutu için yalnızca eşitleme uygulamasının yerel klasörüne dosya yazar (K-32).
@@ -33,6 +34,8 @@ Faz durumu: `docs/plan/fazlar/DURUM.md` · Araştırmalar: `docs/plan/04-arastir
 11. **Veri silinmez**: ödeme/gider/rezervasyon `voided_at` veya durum değişikliği ile iptal edilir; `audit_log` her yazmayı kaydeder (G-24).
 12. `docs/plan/01-gereksinimler.md` yalnızca sahibin açık isteğiyle (`/requirement-change`) değişir.
 13. **Tek yazıcı**: yazma işlemleri yalnızca sunucu/tek‑bilgisayar makinesindeki servis katmanında; istemci modu yerel veritabanı açmaz (G-140/141).
+14. **Kamera/biyometrik veri depoya girmez** (K-51): yüz görüntüsü, yüz vektörü, alarm karesi, model ağırlığı, `.env`, RTSP şifresi ve Telegram token'ı commit edilemez (kanca: `camera-data-guard`). Python yan süreç dış servise bağlanmaz; **tek istisna** K-50: Bismuth, `camera.telegram.enabled` açıksa alarmı `src/main/network/telegram/` üzerinden Telegram'a da gönderir (5 sn zaman aşımı, sessiz başarısızlık, `network.enabled=false` ile kapanır). Modeller sahibin kararıyla mevcut (InsightFace + YOLO11n, K-57); kurallar `.claude/rules/camera.md`.
+15. **GitHub Actions ajanlar tarafından tetiklenmez** (dakika kotası): `gh workflow run`, `gh run rerun`, `gh release create`, `git tag v*` yasak (kanca: `workflow-guard`); tüm kontroller Codespace içinde koşar; sürüm etiketini sahip atar.
 
 ## Kod kuralları
 
@@ -44,7 +47,7 @@ Faz durumu: `docs/plan/fazlar/DURUM.md` · Araştırmalar: `docs/plan/04-arastir
 - Dosya ekleri yalnızca `userData/attachments/`; DB'de yol + sha256 (K-25).
 - İsimler: tablolar `snake_case`, TS `camelCase`, bileşenler `PascalCase`, dosyalar `kebab-case.ts(x)`.
 - Test adları davranışı anlatır; iş kuralı testleri Excel'den doğrulanmış örnekleri kullanır (`03-mimari.md` §6).
-- Yol bazlı ek kurallar: `.claude/rules/db.md`, `ui.md`, `ipc.md`, `testing.md`.
+- Yol bazlı ek kurallar: `.claude/rules/db.md`, `ui.md`, `ipc.md`, `testing.md`, `camera.md`.
 
 ## Komutlar
 
@@ -52,13 +55,32 @@ Faz durumu: `docs/plan/fazlar/DURUM.md` · Araştırmalar: `docs/plan/04-arastir
 
 ## Ajanlar ve beceriler
 
-- `/phase-runner NN` fazı ritüelle uygular. `/parallel-build` işi bağımsız paketlere bölüp worktree ajanlarına aynı anda dağıtır ve birleştirir. `/owner-review` sahibin ekran onay sayfasını hazırlar ve kararları okur. `/qa` tüm kontrolleri ayrı bağlamda koşar. `/add-migration` yeni migrasyon açar. `/ui-screen` yeni ekran iskeleti. `/release` sürüm. `/requirement-change` gereksinim değişikliği.
-- Yapan ajanlar: `feature-builder` (sonnet, medium; kendi worktree'sinde kod + test + i18n spec + görüntü, commit/push ana oturumda), `feature-builder-lite` (haiku, medium; küçük/mekanik işler), `researcher` (haiku, medium; kaynaklı alan araştırması).
-- Kontrol ajanları: `bug-hunter` (sonnet, high; modül başına hata/mantık/çelişki avı), `flow-tester` (opus, medium; her düğme/form gerçek uygulamada), `decision-auditor` (opus, medium; kod ↔ karar/gereksinim), `db-reviewer`, `ui-reviewer` (opus, medium), `security-reviewer` (sonnet, high), `turkish-ui-copy`, `requirements-tracer` (haiku, medium). UI değişen her maddeden sonra metin + arayüz; birden fazlası gerekiyorsa tek mesajda paralel.
-- Token ekonomisi: ajan dağıtmadan önce `/token-economy`; kodda arama/etki analizi için önce `/code-graph` (graphify, `graphify-out/` depoya girmez).
-- Kesintisiz yürütme (K-39): `docs/plan/fazlar/YURUTME.md` — dalgalar, paketler, durum; bağlam sıkıştırmasından sonra önce o okunur.
+- **Otonom yürütme:** `/orkestra` — `YURUTME.md`'den sıradaki dalgayı alır, paketleri ajanlara dağıtır, birleştirir,
+  kontrolleri ve kontrol ajanlarını koşturur, durma koşullarında (`/orkestra` §5) sahibe `❓ SORULARIM` ile sorar.
+  Tek faz için `/phase-runner NN`; dağıtım ayrıntısı `/parallel-build`; kontroller `/qa`; token kuralları `/token-economy`;
+  arama `/code-graph`. Diğerleri: `/owner-review`, `/add-migration`, `/ui-screen`, `/release`, `/requirement-change`;
+  başvuru: `/electron-security` (Electron/HTTP güvenlik listesi), `/tr-copy-guide` (arayüz metni sözlüğü ve tonu);
+  sadeleştirme: `/ponytail` (dietrichgebert/ponytail 5.3.3 sabit kopya; proje kuralları önce gelir; `/orkestra` §3 adım 5a).
+- **Yapan ajanlar** (model/çaba ajan dosyasında sabit; `docs/analiz/09-ajan-sistemi.md` §2): `feature-builder` (sonnet),
+  `calendar-specialist` (sonnet/high; takvim, rezervasyon, iptal/iade, gündüz kullanımı), `db-migration-builder`
+  (sonnet/high; şema + migrasyon), `camera-integrator` (sonnet/high; Python yan süreç + Kamera sekmesi), `packager`
+  (sonnet; electron-builder, iş akışı dosyaları, kurulum belgeleri), `feature-builder-lite` (haiku; küçük/mekanik),
+  `researcher` (haiku; hukuk/lisans için sonnet), `rust-shell-builder` (sonnet/high; Faz 22 Tauri 2 prototipi ve ölçüm).
+- **Kontrol ajanları:** `bug-hunter`, `flow-tester`, `security-reviewer`, `db-reviewer` (sonnet/high); `ui-reviewer`,
+  `screen-auditor` (çözünürlük/ölçek/tam ekran), `privacy-auditor` (KVKK) (sonnet/medium); `decision-auditor`
+  (opus/medium); `turkish-ui-copy`, `requirements-tracer` (haiku). Her ajan raporunu `.tmp/<ad>/REPORT.md`'ye yazar,
+  ana oturuma ≤15 satır döner. UI değişen her maddeden sonra metin + arayüz; birden fazlası gerekiyorsa tek mesajda paralel.
+- Makine 4 çekirdek, 15 GB: aynı anda en çok 3 kodlayan ajan (birbirine dokunmayan paketler); ağır iş (tam test, e2e, build, paketleme) aynı anda tek. Yük ortalaması (`uptime`) > 5 ise yeni ajan başlatma, 2 ajanla sürdür. Kontrol ajanları kodlayanlar bittikten sonra, en çok 3 paralel.
 - Sözleşme ve işleyiciler modül dosyalarında: `src/shared/contract/procedures/<modül>.ts`, `src/main/api/handlers/<modül>.ts`.
 - i18n anahtarları paralel çalışmada `npm run i18n:add -- <spec.json>` ile eklenir; üç json dosyası elle düzenlenmez.
+
+## Opus için "nereden başlarım"
+
+1. `docs/analiz/OPUS-BASLANGIC.md` (devir notu) → `docs/analiz/00-ozet.md` → `docs/plan/fazlar/YURUTME.md` (dalgalar).
+2. Sahip sorularının cevapları `docs/plan/06-kararlar.md` "Sahip cevapları"nda; yoksa `05-sorular.md` varsayılanı.
+3. `/orkestra` ile sıradaki dalgayı başlat. Bağlam sıkıştırmasından sonra önce `YURUTME.md` okunur (kanca özetler).
+4. Kamera modülü: `.claude/rules/camera.md` ve `docs/analiz/06-kamera-entegrasyonu.md`; başlatıcı
+   `node tools/ajan/ajan.mjs --model claude-opus-5-5 --butce <tutar>` (AskUserQuestion yok; sorular mesaj sonunda).
 
 ## Git
 

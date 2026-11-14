@@ -31,11 +31,15 @@ export default tseslint.config(
       'coverage/**',
       'drizzle/**',
       'docs/**',
-      'prototypes/**',
+      'tools/**',
       '.claude/**',
       'playwright-report/**',
       'test-results/**',
-      '.tmp/**'
+      '.tmp/**',
+      // The Python camera project (own toolchain: ruff/pytest); its venv holds third-party JS.
+      'otel-kamera/**',
+      // The Tauri prototype (Faz 22 P22c): not part of the product package; its sidecar listens on 127.0.0.1 only.
+      'shell-tauri/**'
     ]
   },
   js.configs.recommended,
@@ -75,7 +79,8 @@ export default tseslint.config(
   },
   {
     // The three network folders of CLAUDE.md yasak 1; src/main/discovery is the server mode's local-network
-    // announcement (mDNS, never the internet, faz-13 madde 1). Tests and scripts start fake servers.
+    // announcement (mDNS, never the internet, faz-13 madde 1). src/main/camera is the camera sidecar's bridge: only
+    // 127.0.0.1 and rtsp:// (K-49; the `no-network-guard` hook checks the targets). Tests and scripts start fake servers.
     files: [
       'src/main/network/**',
       'src/main/server/**',
@@ -85,6 +90,30 @@ export default tseslint.config(
       'scripts/**'
     ],
     rules: { 'no-restricted-globals': 'off', 'no-restricted-imports': 'off' }
+  },
+  {
+    // The camera bridge needs only fetch (loopback HTTP to the sidecar) and node:net (free port); other network
+    // modules stay forbidden there (K-49).
+    files: ['src/main/camera/**'],
+    rules: { 'no-restricted-globals': 'off' }
+  },
+  {
+    // The one file that opens UDP sockets: the camera search of the setup wizard (ONVIF WS-Discovery, Hikvision SADP; P20g,
+    // K-49, K-59). It starts only on request and keeps to the computer's private interfaces and private answer addresses.
+    files: ['src/main/camera/discovery.ts', 'src/main/camera/discovery.test.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: ['http', 'https', 'http2', 'net', 'tls', 'dns'].flatMap((m) =>
+            [m, `node:${m}`].map((name) => ({
+              name,
+              message: 'Only UDP (node:dgram) is allowed in the camera search.'
+            }))
+          )
+        }
+      ]
+    }
   },
   {
     files: ['src/renderer/**/*.{ts,tsx}', 'tests/unit/setup-dom.ts'],
@@ -196,6 +225,23 @@ export default tseslint.config(
           selector: `CallExpression[callee.name='parseFloat'], CallExpression[callee.property.name=/^(parseFloat|toFixed)$/]`,
           message: 'Para için kayan sayı yok: parseMoney / formatMoney kullanın (CLAUDE.md yasak 6).'
         }
+      ]
+    }
+  },
+  {
+    // The preload bridge (window.bismuth) is touched only by lib/shell/electron.ts and the IPC transport; screens use
+    // `shell` (lib/shell) and the lib/api hooks (faz-22 P22b).
+    files: ['src/renderer/**/*.{ts,tsx}'],
+    ignores: ['src/renderer/lib/shell/electron.ts', 'src/renderer/lib/transport/**', '**/*.test.{ts,tsx}'],
+    rules: {
+      'no-restricted-properties': [
+        'error',
+        ...['window', 'globalThis', 'self'].map((object) => ({
+          object,
+          property: 'bismuth',
+          message:
+            'Köprüye yalnız lib/shell/electron.ts ve lib/transport dokunur; shell kullanın (faz-22 P22b).'
+        }))
       ]
     }
   },

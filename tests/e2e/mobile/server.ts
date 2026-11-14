@@ -13,7 +13,8 @@ import { createServices } from '../../../src/main/services'
 import { createApiApp, type ApiEnv } from '../../../src/main/api/app'
 import { createHandlers } from '../../../src/main/api/handlers'
 import { startServer } from './plain-server'
-import { systemCtx } from '../../../src/main/services/context'
+import { createCameraRuntime } from '../../../src/main/camera'
+import { localOwnerCtx, systemCtx } from '../../../src/main/services/context'
 import { ctxForUser } from '../../../src/main/services/users-service'
 import { createDesktopSessions } from '../../../src/main/session/desktop-sessions'
 import { setReplicaHostRuntime } from '../../../src/main/server/remote-service'
@@ -25,6 +26,8 @@ import { draftFrom } from '../setup-draft.mjs'
 const WINDOW = 1
 
 async function main(): Promise<void> {
+  // Never look at (or write into) the real Google Drive folder of whoever runs the tests.
+  process.env['BISMUTH_DRIVE_HOME'] ||= mkdtempSync(join(tmpdir(), 'bismuth-e2e-drive-'))
   const port = Number(process.env['E2E_PORT'] ?? 47373)
   const root = resolve(__dirname, '../../..')
   const handle = await openDatabase({ file: ':memory:', migrationsFolder: resolve(root, 'drizzle') })
@@ -92,6 +95,28 @@ async function main(): Promise<void> {
       env()
     )
     if (tour.status !== 200) throw new Error(`settings failed: ${tour.status} ${await tour.text()}`)
+  }
+
+  // The Kamera screen's phone spec (Faz 20 P20b): the Node stand-in for the Python sidecar runs behind the services, as the
+  // hotel computer's main process would run it; the phone only ever reads the alarm list from it.
+  if (process.env['E2E_CAMERA'] === '1') {
+    const camera = createCameraRuntime({
+      scriptDir: root,
+      dataDir: mkdtempSync(join(tmpdir(), 'bismuth-e2e-camera-')),
+      settings: () => services.settings.get(localOwnerCtx()),
+      source: () => 'rtsp://camera.invalid/stream',
+      python: process.execPath,
+      script: resolve(root, 'tests/fixtures/fake-sidecar.mjs')
+    })
+    services.camera.attach(camera)
+    await services.settings.set(localOwnerCtx(), { 'camera.enabled': true, 'camera.location': 'Merdiven' })
+    await camera.apply()
+    // P20c: the main process takes the sidecar's alarms into Bismuth's table every few seconds; so does the harness.
+    const round = setInterval(() => void services.camera.tick(systemCtx()).catch(() => undefined), 1_000)
+    round.unref()
+    process.on('exit', () => void camera.stop())
+    for (const signal of ['SIGINT', 'SIGTERM'] as const)
+      process.on(signal, () => void camera.stop().finally(() => process.exit(0)))
   }
 
   const server = await startServer({

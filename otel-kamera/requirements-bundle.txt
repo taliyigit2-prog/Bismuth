@@ -1,0 +1,6 @@
+# Yalnız kamera eki paketlenirken eklenir: `node scripts/camera-lock.mjs` bunu requirements.txt ile birlikte çözüp
+# hash'li kilit dosyalarını (requirements-bundle.lock ...) yazar; ek kilitten kurulur (scripts/camera-bundle.mjs).
+# ultralytics'in istediği PyTorch'u sabitler. Windows ve macOS için PyPI tekerleği kullanılır (PyPI'nin Windows torch'u
+# CPU sürümüdür; CUDA yok, ikinci paket dizini yok). Sürümler 2026-11-14'te tekerlek dosyalarının indirilmesiyle doğrulandı.
+torch==2.15.0
+torchvision==0.29.2

@@ -2,7 +2,7 @@
 ; the hotel's main computer in server mode. Only private networks (home / work; NetBird's adapter too), never public
 ; ones (cafe Wi-Fi), and only for Bismuth.exe. The installer is per-user (no administrator prompt): when Windows does
 ; not allow the rule from here, nothing breaks; Windows then asks once, the first time the server starts ("Allow
-; access on private networks"), as docs/uzaktan-erisim.md describes. The uninstaller removes the rule.
+; access on private networks"), as docs/otel/uzaktan-erisim.md describes. The uninstaller removes the rule.
 
 !macro customInstall
   nsExec::ExecToLog 'netsh advfirewall firewall delete rule name="Bismuth"'

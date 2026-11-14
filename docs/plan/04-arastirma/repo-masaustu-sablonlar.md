@@ -254,7 +254,7 @@ npm create @quick-start/electron@1.0.30 bismuth -- --template react-ts --skip   
 
 > **Dikkat:** `--skip` ile `shouldOverwrite = true` olur (create-electron `index.js` doğrulandı) — hedef klasör varsa içeriği
 > silinir. Mevcut `Hotel-CRM` deposunun içine doğrudan **üretme**; geçici bir klasöre üret, dosyaları depoya kopyala
-> (`docs/`, `.claude/`, `CLAUDE.md`, `prototypes/` korunur).
+> (`docs/`, `.claude/`, `CLAUDE.md`, `prototypes/` (arşiv etiketi `archive/faz0`) korunur).
 
 Şablonun `src/renderer/index.html` + `src/renderer/src/*` düzeni bizim `src/renderer/{features,components/ui,lib,i18n,layouts}`
 düzenine şöyle uyarlanır: `index.html` içindeki `<script src="/src/main.tsx">` → `/main.tsx`, kod `src/renderer/` köküne taşınır;
