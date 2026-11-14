@@ -1,7 +1,7 @@
 // Launch the built app with a throw-away data folder (idea from electron-db e2e fixtures, MIT). A fresh data folder
 // starts in the setup wizard (Faz 4): by default `launch()` sets the hotel up through the API with a small draft
 // and signs the owner in; `{ signIn: false }` leaves the window signed out, `{ setup: false }` leaves the wizard.
-import { mkdtempSync, rmSync } from 'node:fs'
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { test as base, _electron, type ElectronApplication, type Page } from '@playwright/test'
@@ -42,8 +42,11 @@ export const test = base.extend<AppFixtures>({
     await use(dir)
     rmSync(dir, { recursive: true, force: true })
   },
-  launch: async ({ userData }, use) => {
+  launch: async ({ userData }, use, testInfo) => {
     const apps: ElectronApplication[] = []
+    /** The app's own output (main-process log lines, Chromium warnings): attached when a test fails. */
+    const output: string[] = []
+    const dirs: string[] = []
     await use(async (options = {}) => {
       const opts: LaunchOptions = typeof options === 'string' ? { dir: options } : options
       const app = await _electron.launch({
@@ -62,6 +65,13 @@ export const test = base.extend<AppFixtures>({
         cwd: root
       })
       apps.push(app)
+      dirs.push(opts.dir ?? userData)
+      const keep = (chunk: Buffer) => {
+        output.push(chunk.toString())
+        if (output.length > 2000) output.shift()
+      }
+      app.process().stdout?.on('data', keep)
+      app.process().stderr?.on('data', keep)
       const page = await app.firstWindow()
       const requests: string[] = []
       page.on('request', (r) => requests.push(r.url()))
@@ -77,7 +87,30 @@ export const test = base.extend<AppFixtures>({
       }
       return { app, page, requests, recoveryCodes }
     })
-    for (const app of apps) await app.close().catch(() => undefined)
+    if (testInfo.status !== testInfo.expectedStatus) {
+      // A failure on a machine we cannot reach (CI) needs the main process's side of the story.
+      await testInfo.attach('app-output.txt', { body: output.join(''), contentType: 'text/plain' })
+      for (const dir of new Set(dirs)) {
+        const logs = join(dir, 'logs')
+        if (!existsSync(logs)) continue
+        for (const name of readdirSync(logs))
+          await testInfo.attach(`app-log-${name}`, {
+            body: readFileSync(join(logs, name)),
+            contentType: 'text/plain'
+          })
+      }
+    }
+    for (const app of apps) {
+      // A main process stuck on a native box (or a dead page) must not take the whole worker down with it.
+      const closed = await Promise.race([
+        app.close().then(
+          () => true,
+          () => true
+        ),
+        new Promise<boolean>((done) => setTimeout(() => done(false), 15_000))
+      ])
+      if (!closed) app.process().kill('SIGKILL')
+    }
   }
 })
 

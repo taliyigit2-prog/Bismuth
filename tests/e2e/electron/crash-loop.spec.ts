@@ -4,7 +4,14 @@
 // page object does not survive a renderer crash).
 import { expect, test } from './fixtures'
 
-type G = { qaAsked: number; qaGone: number; qaWc: Electron.WebContents }
+type G = {
+  qaAsked: number
+  qaGone: number
+  qaReasons: string[]
+  qaTitles: string[]
+  qaErrors: string[]
+  qaWc: Electron.WebContents
+}
 
 test('pencere bir dakikada iki kez çökerse ikincisinde soru sorulmadan yeniden açılır', async ({
   launch
@@ -18,10 +25,19 @@ test('pencere bir dakikada iki kez çökerse ikincisinde soru sorulmadan yeniden
     const g = globalThis as unknown as G
     g.qaAsked = 0
     g.qaGone = 0
+    g.qaReasons = []
+    g.qaTitles = []
+    g.qaErrors = []
     g.qaWc = BrowserWindow.getAllWindows()[0]!.webContents
-    electronApp.on('render-process-gone', () => g.qaGone++)
-    ;(dialog as unknown as { showMessageBox: unknown }).showMessageBox = async () => {
+    electronApp.on('render-process-gone', (_e, _wc, details) => {
+      g.qaGone++
+      g.qaReasons.push(details.reason)
+    })
+    process.on('uncaughtException', (error) => g.qaErrors.push(String(error)))
+    ;(dialog as unknown as { showMessageBox: unknown }).showMessageBox = async (...args: unknown[]) => {
       g.qaAsked++
+      const box = args.find((a) => typeof a === 'object' && a !== null && 'title' in a) as { title?: string }
+      g.qaTitles.push(box?.title ?? '')
       return { response: 0, checkboxChecked: false }
     }
   })
@@ -31,20 +47,31 @@ test('pencere bir dakikada iki kez çökerse ikincisinde soru sorulmadan yeniden
       setTimeout(() => g.qaWc.forcefullyCrashRenderer(), 10)
     })
   const status = () =>
-    app.evaluate(() => {
+    app.evaluate(({ BrowserWindow }) => {
       const g = globalThis as unknown as G
-      return { asked: g.qaAsked, gone: g.qaGone, crashed: g.qaWc.isCrashed() }
+      return {
+        asked: g.qaAsked,
+        gone: g.qaGone,
+        crashed: g.qaWc.isCrashed(),
+        // Shown in the failure message when a step does not come (CI is the only place it ever failed).
+        reasons: g.qaReasons,
+        titles: g.qaTitles,
+        errors: g.qaErrors,
+        windows: BrowserWindow.getAllWindows().length
+      }
     })
 
   await crash()
-  await expect.poll(async () => (await status()).asked, { timeout: 15_000 }).toBe(1)
-  await expect.poll(async () => (await status()).crashed, { timeout: 15_000 }).toBe(false)
+  // First the page must really be gone, then the question must come: the failure says which step did not happen.
+  await expect.poll(status, { timeout: 15_000 }).toMatchObject({ gone: 1 })
+  await expect.poll(status, { timeout: 15_000 }).toMatchObject({ asked: 1 })
+  await expect.poll(status, { timeout: 15_000 }).toMatchObject({ crashed: false })
   // Let the reloaded page settle, then the same page fails again (or the weak computer runs out of memory again).
   await new Promise((r) => setTimeout(r, 3_000))
   await crash()
-  await expect.poll(async () => (await status()).gone, { timeout: 15_000 }).toBe(2)
-  await expect.poll(async () => (await status()).crashed, { timeout: 15_000 }).toBe(false)
-  expect((await status()).asked).toBe(1)
+  await expect.poll(status, { timeout: 15_000 }).toMatchObject({ gone: 2 })
+  await expect.poll(status, { timeout: 15_000 }).toMatchObject({ crashed: false })
+  expect(await status()).toMatchObject({ asked: 1 })
   // The page is the program again (the app's own markup is back).
   await expect
     .poll(
