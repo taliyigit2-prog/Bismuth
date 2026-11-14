@@ -25,11 +25,15 @@ export const lateCheckoutInputSchema = z
     stayId: idSchema,
     time: clockTime,
     amountMinor: amountSchema.positive(),
-    note: z.string().trim().max(200).optional()
+    note: z.string().trim().max(200).optional(),
+    /** G-72: the reason to write into a closed day (needs `ledger.locked`). */
+    dayClosedReason: reasonText.optional()
   })
   .strict()
 
-export const feeVoidSchema = z.object({ chargeId: idSchema, reason: reasonText }).strict()
+export const feeVoidSchema = z
+  .object({ chargeId: idSchema, reason: reasonText, dayClosedReason: reasonText.optional() })
+  .strict()
 
 export const folioLineSchema = z.object({
   id: idSchema,
@@ -66,15 +70,17 @@ export const depositTakeSchema = z
     reservationId: idSchema,
     amountMinor: amountSchema.positive(),
     methodId: idSchema,
-    note: z.string().trim().max(200).optional()
+    note: z.string().trim().max(200).optional(),
+    dayClosedReason: reasonText.optional()
   })
   .strict()
 export const depositSettleSchema = z
   .object({
     id: idSchema,
-    action: z.enum(['refund', 'convert']),
-    /** Required for `convert` (what was damaged). */
-    reason: z.string().trim().max(200).optional()
+    action: z.enum(['refund', 'convert', 'undoConvert']),
+    /** Required for `convert` (what was damaged) and `undoConvert` (why it is taken back). */
+    reason: z.string().trim().max(200).optional(),
+    dayClosedReason: reasonText.optional()
   })
   .strict()
   .refine((v) => v.action === 'refund' || (v.reason?.length ?? 0) >= 3, { path: ['reason'] })

@@ -1,7 +1,6 @@
 // "Doluluk ve KPI" (faz-10 madde 4): occupancy (sold ÷ sellable room-nights; blocks out of the denominator; same-day
 // and hourly stays always count; a stay-type filter), ADR, RevPAR, average stay, the weekday heat map (Saturday effect), occupancy by month, revenue
 // by room type and room, repeat guests and — with the finance and guest permissions — the guests who brought most.
-import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   BanIcon,
@@ -324,13 +323,23 @@ function OccupancyView({
   )
 }
 
-export function OccupancyTab({ period, compare }: { period: Period; compare: Period | null }) {
-  const [stayKind, setStayKind] = useState<StayKind>('all')
+export function OccupancyTab({
+  period,
+  compare,
+  stayKind,
+  onStayKind
+}: {
+  period: Period
+  compare: Period | null
+  /** Lifted to the page: the export button carries the same filter as the screen. */
+  stayKind: StayKind
+  onStayKind: (kind: StayKind) => void
+}) {
   const kpis = useSummaryKpis(period, compare, stayKind)
   const report = useApiQuery('reports.occupancy', stayKind === 'all' ? period : { ...period, stayKind })
   return (
     <div className="grid gap-4">
-      <StayKindFilter value={stayKind} onChange={setStayKind} />
+      <StayKindFilter value={stayKind} onChange={onStayKind} />
       <ReportQuery query={report}>
         {(r) => (
           <ReportQuery query={kpis.current}>

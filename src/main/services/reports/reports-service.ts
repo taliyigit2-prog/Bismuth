@@ -231,7 +231,7 @@ export function createReportsService(deps: ReportsDeps) {
   function summaryOf(ctx: Ctx, p: Period, kind?: StayKind): ReportSummary {
     const n = nights(p, kind)
     const t = n.view(n.total)
-    const lengths = stayLengths(db, p)
+    const lengths = stayLengths(db, p, kind)
     const base = baseCurrencyOf(db)
     let finance: ReportSummary['finance'] = null
     if (can(ctx, 'reports.finance')) {
@@ -404,7 +404,7 @@ export function createReportsService(deps: ReportsDeps) {
       })
       .filter((t) => t.rooms > 0)
       .map(({ rooms: _rooms, ...t }) => t)
-    const g = repeatGuests(db, p)
+    const g = repeatGuests(db, p, kind)
     const outcomes = outcomeFacts(db, p, (iso) => localDateOf(new Date(iso)))
     let topGuests: OccupancyReport['topGuests'] = null
     if (finance && can(ctx, 'guests')) {
@@ -978,7 +978,7 @@ export function createReportsService(deps: ReportsDeps) {
       switch (data.report) {
         case 'summary': {
           const p = needPeriod()
-          report = { kind: 'summary', data: service.summary(ctx, p) }
+          report = { kind: 'summary', data: service.summary(ctx, { ...p, stayKind: data.stayKind }) }
           break
         }
         case 'monthly':
@@ -988,7 +988,10 @@ export function createReportsService(deps: ReportsDeps) {
           report = { kind: 'yearly', data: service.yearly(ctx, { years: data.years ?? [data.year ?? 0] }) }
           break
         case 'occupancy':
-          report = { kind: 'occupancy', data: service.occupancy(ctx, needPeriod()) }
+          report = {
+            kind: 'occupancy',
+            data: service.occupancy(ctx, { ...needPeriod(), stayKind: data.stayKind })
+          }
           break
         case 'cash':
           report = { kind: 'cash', data: service.cash(ctx, needPeriod()) }

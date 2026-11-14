@@ -2,7 +2,7 @@
 // night report. Fee rules are hotel settings (`fees.*`). Fee lines are ordinary folio charges (voided, never
 // deleted); a damage deposit is money held, not income: it is given back or, with a reason, turned into a damage
 // charge plus a payment (the only moment it becomes income).
-import { and, asc, eq, gte, inArray, isNull, lte, ne, or, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, gte, inArray, isNull, lte, ne, or, sql } from 'drizzle-orm'
 import {
   depositSettleSchema,
   depositTakeSchema,
@@ -45,7 +45,7 @@ import {
   type Tx
 } from './kit'
 import type { PaymentsService } from './payments-service'
-import { assertDayWritable } from './expenses-service'
+import { assertDayWritable, staffMoneyFilter } from './expenses-service'
 import { readSetting } from './settings-service'
 
 type Reader = Pick<Tx, 'select'>
@@ -183,14 +183,14 @@ export function createFeesService(deps: ServiceDeps, parts: { payments: Payments
         if (!stay) throw notFound('reservation_room', data.stayId)
         if (stay.status !== 'in_house' && stay.status !== 'done') throw invalid('errors.feeStayNotStarted')
         const day = today(now)
-        assertDayWritable(tx, ctx, day, undefined)
+        const closedReason = assertDayWritable(tx, ctx, day, data.dayClosedReason)
         insertFeeCharge(tx, audit, ctx, now, {
           reservationId: stay.reservationId,
           code: 'late_checkout',
           date: day,
           amountMinor: data.amountMinor,
           suffix: data.time,
-          ...(data.note ? { reason: data.note } : {})
+          ...((closedReason ?? data.note) ? { reason: closedReason ?? data.note } : {})
         })
         return { reservationId: stay.reservationId }
       })
@@ -212,7 +212,7 @@ export function createFeesService(deps: ServiceDeps, parts: { payments: Payments
         // The damage line of a deposit turned into income goes with its payment: it is not voided alone.
         if (tx.select().from(damageDeposits).where(eq(damageDeposits.convertedChargeId, row.id)).get())
           throw invalid('errors.feeNotVoidable')
-        assertDayWritable(tx, ctx, row.date, undefined)
+        assertDayWritable(tx, ctx, row.date, data.dayClosedReason ?? data.reason)
         tx.update(charges)
           .set({ voidedAt: now.toISOString(), voidReason: data.reason, updatedAt: now.toISOString() })
           .where(eq(charges.id, row.id))
@@ -266,7 +266,7 @@ export function createFeesService(deps: ServiceDeps, parts: { payments: Payments
         const r = tx.select().from(reservations).where(eq(reservations.id, data.reservationId)).get()
         if (!r) throw notFound('reservation', data.reservationId)
         if (r.status === 'cancelled' || r.status === 'no_show') throw invalid('errors.reservationClosed')
-        assertDayWritable(tx, ctx, today(now), undefined)
+        const closedReason = assertDayWritable(tx, ctx, today(now), data.dayClosedReason)
         const folio = folioOfReservation(tx, r.id)
         if (!tx.select().from(paymentMethods).where(eq(paymentMethods.id, data.methodId)).get())
           throw notFound('payment_method', data.methodId)
@@ -283,23 +283,86 @@ export function createFeesService(deps: ServiceDeps, parts: { payments: Payments
           ...stamps(now)
         }
         tx.insert(damageDeposits).values(row).run()
-        audit({ entity: 'damage_deposit', entityId: row.id, action: 'create', after: row })
+        audit({
+          entity: 'damage_deposit',
+          entityId: row.id,
+          action: 'create',
+          after: row,
+          ...(closedReason ? { reason: closedReason } : {})
+        })
         return { reservationId: r.id }
       })
     },
 
-    /** Gives the deposit back, or turns it into a damage charge + payment on the folio (needs a reason). */
+    /**
+     * Gives the deposit back, turns it into a damage charge + payment on the folio (needs a reason), or takes such a
+     * conversion back (`undoConvert`: charge and payment voided together, the deposit is held again).
+     */
     settleDeposit(ctx: Ctx, input: unknown): { reservationId: string } {
       const data = parseInput(depositSettleSchema, input)
       requirePermission(ctx, data.action === 'refund' ? 'payments.refund' : 'payments', 'edit')
       // Turning a deposit into income also writes a damage charge line.
-      if (data.action === 'convert') requirePermission(ctx, 'extras', 'edit')
+      if (data.action !== 'refund') requirePermission(ctx, 'extras', 'edit')
+      if (data.action === 'undoConvert') requirePermission(ctx, 'payments.void', 'edit')
       return inTransaction(deps, ctx, (tx, audit, now) => {
         const before = tx.select().from(damageDeposits).where(eq(damageDeposits.id, data.id)).get()
         if (!before) throw notFound('damage_deposit', data.id)
-        if (before.status !== 'held') throw invalid('errors.depositSettled')
         const day = today(now)
-        assertDayWritable(tx, ctx, day, undefined)
+        if (data.action === 'undoConvert') {
+          if (before.status !== 'converted' || !before.convertedChargeId)
+            throw invalid('errors.depositNotConverted')
+          const charge = tx.select().from(charges).where(eq(charges.id, before.convertedChargeId)).get()
+          if (!charge) throw notFound('charge', before.convertedChargeId)
+          const folio = folioOfReservation(tx, before.reservationId)
+          const payment = tx
+            .select()
+            .from(payments)
+            .where(
+              and(
+                eq(payments.folioId, folio.id),
+                eq(payments.kind, 'payment'),
+                eq(payments.methodId, before.methodId),
+                eq(payments.amountMinor, before.amountMinor),
+                eq(payments.currency, before.currency),
+                eq(payments.date, before.settledDate ?? day),
+                isNull(payments.voidedAt)
+              )
+            )
+            .orderBy(desc(payments.createdAt))
+            .get()
+          const reason = data.reason ?? ''
+          const closedReason = assertDayWritable(tx, ctx, charge.date, data.dayClosedReason ?? reason)
+          if (!charge.voidedAt)
+            tx.update(charges)
+              .set({ voidedAt: now.toISOString(), voidReason: reason, updatedAt: now.toISOString() })
+              .where(eq(charges.id, charge.id))
+              .run()
+          if (payment) parts.payments.voidIn(ctx, tx, audit, now, payment.id, reason)
+          audit({ entity: 'charge', entityId: charge.id, action: 'void', before: charge, reason })
+          tx.update(damageDeposits)
+            .set({
+              status: 'held',
+              settledDate: null,
+              settledAt: null,
+              settledBy: null,
+              settleNote: null,
+              convertedChargeId: null,
+              updatedAt: now.toISOString()
+            })
+            .where(eq(damageDeposits.id, before.id))
+            .run()
+          audit({
+            entity: 'damage_deposit',
+            entityId: before.id,
+            action: 'update',
+            before,
+            after: { status: 'held', undoneChargeId: charge.id },
+            reason: closedReason ?? reason
+          })
+          return { reservationId: before.reservationId }
+        }
+        if (before.status !== 'held') throw invalid('errors.depositSettled')
+        const closedReason = assertDayWritable(tx, ctx, day, data.dayClosedReason)
         let chargeId: string | null = null
         if (data.action === 'convert') {
           chargeId = insertFeeCharge(tx, audit, ctx, now, {
@@ -316,7 +379,8 @@ export function createFeesService(deps: ServiceDeps, parts: { payments: Payments
             methodId: before.methodId,
             amountMinor: before.amountMinor,
             currency: before.currency,
-            note: data.reason ?? null
+            note: data.reason ?? null,
+            ...(data.dayClosedReason ? { dayClosedReason: data.dayClosedReason } : {})
           })
         }
         tx.update(damageDeposits)
@@ -337,7 +401,7 @@ export function createFeesService(deps: ServiceDeps, parts: { payments: Payments
           action: 'update',
           before,
           after: { status: data.action === 'refund' ? 'refunded' : 'converted', chargeId },
-          ...(data.reason ? { reason: data.reason } : {})
+          ...((closedReason ?? data.reason) ? { reason: closedReason ?? data.reason } : {})
         })
         return { reservationId: before.reservationId }
       })
@@ -518,7 +582,7 @@ export function createFeesService(deps: ServiceDeps, parts: { payments: Payments
           for (const e of db
             .select()
             .from(expenses)
-            .where(and(eq(expenses.date, date), isNull(expenses.voidedAt)))
+            .where(and(eq(expenses.date, date), isNull(expenses.voidedAt), staffMoneyFilter(ctx)))
             .all())
             if (open.has(e.sectionId)) of(e.currency).expenseMinor += e.amountMinor
         }

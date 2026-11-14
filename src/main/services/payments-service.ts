@@ -241,6 +241,30 @@ export function createPaymentsService(deps: ServiceDeps) {
     return paymentOf(tx, row.id)
   }
 
+  function voidIn(
+    ctx: Ctx,
+    tx: Tx,
+    audit: (entry: AuditEntry) => void,
+    now: Date,
+    id: string,
+    reason: string
+  ): PaymentRow {
+    requirePermission(ctx, 'payments.void', 'edit')
+    const before = paymentOf(tx, id)
+    if (before.voidedAt) throw invalid('errors.paymentVoided')
+    if (before.collectedAt) throw conflict('errors.paymentCollected')
+    if (before.kind === 'refund') requirePermission(ctx, 'payments.refund', 'edit')
+    else assertCollectionKeepsRefunds(tx, before.folioId, before.id, 0)
+    guardDay(tx, ctx, before.date, reason.trim())
+    tx.update(payments)
+      .set({ voidedAt: now.toISOString(), voidReason: reason.trim(), updatedAt: now.toISOString() })
+      .where(eq(payments.id, id))
+      .run()
+    const after = paymentOf(tx, id)
+    audit({ entity: 'payment', entityId: id, action: 'void', before, after, reason })
+    return after
+  }
+
   return {
     create(ctx: Ctx, input: PaymentCreateInput): PaymentRow {
       const data = parsePayment(input)
@@ -307,22 +331,11 @@ export function createPaymentsService(deps: ServiceDeps) {
     void(ctx: Ctx, id: string, reason: string): PaymentRow {
       requirePermission(ctx, 'payments.void', 'edit')
       if (!reason?.trim()) throw invalid('errors.reasonRequired')
-      return inTransaction(deps, ctx, (tx, audit, now) => {
-        const before = paymentOf(tx, id)
-        if (before.voidedAt) throw invalid('errors.paymentVoided')
-        if (before.collectedAt) throw conflict('errors.paymentCollected')
-        if (before.kind === 'refund') requirePermission(ctx, 'payments.refund', 'edit')
-        else assertCollectionKeepsRefunds(tx, before.folioId, before.id, 0)
-        guardDay(tx, ctx, before.date, reason.trim())
-        tx.update(payments)
-          .set({ voidedAt: now.toISOString(), voidReason: reason.trim(), updatedAt: now.toISOString() })
-          .where(eq(payments.id, id))
-          .run()
-        const after = paymentOf(tx, id)
-        audit({ entity: 'payment', entityId: id, action: 'void', before, after, reason })
-        return after
-      })
+      return inTransaction(deps, ctx, (tx, audit, now) => voidIn(ctx, tx, audit, now, id, reason))
     },
+
+    /** The same void inside a transaction the caller owns (a deposit conversion taken back). */
+    voidIn,
 
     listForFolio(ctx: Ctx, folioId: string): PaymentRow[] {
       requirePermission(ctx, 'payments', 'view')

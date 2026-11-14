@@ -490,7 +490,9 @@ export const reportExportInputSchema = z
     to: localDateSchema.optional(),
     years: z.array(yearSchema).min(1).max(2).optional(),
     year: yearSchema.optional(),
-    month: z.number().int().min(1).max(12).optional()
+    month: z.number().int().min(1).max(12).optional(),
+    /** The "Konaklama türü" filter of the screen (summary and occupancy files carry the same numbers). */
+    stayKind: z.enum(STAY_KINDS).optional()
   })
   .strict()
   .refine((v) => v.format === 'xlsx' || !!v.table, { path: ['table'], message: 'csv needs one table' })

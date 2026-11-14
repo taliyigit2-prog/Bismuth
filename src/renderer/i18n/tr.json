@@ -1787,7 +1787,10 @@
     "feeStayNotStarted": "Bu oda için henüz giriş yapılmadı. Önce odaya yerleştirin.",
     "feeNotVoidable": "Bu kalem buradan iptal edilemez.",
     "depositSettled": "Bu depozito zaten iade edilmiş ya da gelire çevrilmiş.",
-    "portfolioNoCopy": "Bu otelin kopyası bu bilgisayarda yok. Otele bir kez bağlanıp oturum açın."
+    "portfolioNoCopy": "Bu otelin kopyası bu bilgisayarda yok. Otele bir kez bağlanıp oturum açın.",
+    "depositNotConverted": "Bu depozito gelire çevrilmemiş.",
+    "dayInFuture": "Henüz başlamamış bir gün kapatılamaz.",
+    "dateTooFar": "Gider tarihi en fazla bir yıl sonrası olabilir."
   },
   "common": {
     "close": "Kapat",
@@ -7638,7 +7641,11 @@
     "voidTitle": "Kalem iptal edilsin mi?",
     "voidHelp": "Kalem hesaptan düşer; kayıt silinmez.",
     "voidReason": "İptal nedeni",
-    "voidedToast": "Kalem iptal edildi"
+    "voidedToast": "Kalem iptal edildi",
+    "undo": "Geri al",
+    "undoTitle": "Gelire çevirme geri alınsın mı?",
+    "undoBody": "{{amount}} tutarındaki hasar bedeli ve ödemesi iptal edilir; depozito yeniden elde tutulur.",
+    "undoneToast": "Gelire çevirme geri alındı"
   },
   "portfolio": {
     "title": "Portföy",

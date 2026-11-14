@@ -478,7 +478,9 @@ export function nightFacts(db: Reader, p: Period, kind?: StayKind): NightFact[] 
 }
 
 /** Overnight stays checking in in the period: count and Σ nights (average length of stay). */
-export function stayLengths(db: Reader, p: Period): { stays: number; nights: number } {
+export function stayLengths(db: Reader, p: Period, kind?: StayKind): { stays: number; nights: number } {
+  // Hourly (same-day) sales have no length of stay: the "hourly" filter shows none.
+  if (kind === 'hourly') return { stays: 0, nights: 0 }
   const row = db
     .select({
       stays: sql<number>`count(*)`,
@@ -499,8 +501,19 @@ export function stayLengths(db: Reader, p: Period): { stays: number; nights: num
 }
 
 /** Guests with a stay checking in in the period, and how many of them had stayed before or twice in it. */
-export function repeatGuests(db: Reader, p: Period): { total: number; repeat: number } {
-  const live = and(ne(reservationRooms.status, 'cancelled'), inArray(reservations.status, [...LIVE_STATUSES]))
+export function repeatGuests(db: Reader, p: Period, kind?: StayKind): { total: number; repeat: number } {
+  // The stay kind narrows the stays counted (overnight = out after in, hourly = same-day), before or inside the period.
+  const stayKindWhere =
+    kind === 'overnight'
+      ? sql`${reservationRooms.checkOut} > ${reservationRooms.checkIn}`
+      : kind === 'hourly'
+        ? sql`${reservationRooms.checkOut} = ${reservationRooms.checkIn}`
+        : undefined
+  const live = and(
+    ne(reservationRooms.status, 'cancelled'),
+    inArray(reservations.status, [...LIVE_STATUSES]),
+    stayKindWhere
+  )
   const inside = db
     .select({ guestId: reservations.primaryGuestId, n: sql<number>`count(distinct ${reservations.id})` })
     .from(reservationRooms)

@@ -143,8 +143,13 @@ export function createTourismStatsService(deps: ServiceDeps) {
           lt(reservationRooms.checkIn, periodEnd(period))
         )
       )
-      .all())
-      out[plannedDepartureKey(s.number, s.checkIn as LocalDate)] = s.checkOut as LocalDate
+      .all()) {
+      // A same-day (hourly) sale and a night of the same room and arrival day share the key: the later departure
+      // (the overnight stay) wins, so it never takes the hourly sale's departure.
+      const key = plannedDepartureKey(s.number, s.checkIn as LocalDate)
+      const known = out[key]
+      if (!known || s.checkOut > known) out[key] = s.checkOut as LocalDate
+    }
     return out
   }
 

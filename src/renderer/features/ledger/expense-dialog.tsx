@@ -144,6 +144,9 @@ function ExpenseForm({
   const [rates, setRates] = useState<RateTexts>(EMPTY_RATES)
   const needs = useRateNeeds(amount.currency, null)
   const mayWriteClosed = useMayWriteClosedDay()
+  // The form's own day may differ from the screen's (a row moved into a closed day): the service answers it.
+  const [closedHit, setClosedHit] = useState(false)
+  const showClosed = closed || closedHit
   const [closedReason, setClosedReason] = useState('')
   const [tried, setTried] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -160,7 +163,8 @@ function ExpenseForm({
     onSuccess: onDone,
     onError: (e: { messageKey: string }) => {
       if (e.messageKey === 'errors.dayClosed') {
-        setError(t('errors.dayClosed'))
+        setClosedHit(true)
+        setError(t(mayWriteClosed ? 'ledger.closed.reasonNeeded' : 'ledger.closed.lockedHint'))
         return true
       }
       return false
@@ -198,8 +202,8 @@ function ExpenseForm({
     if (!itemsOk) return setError(t('errors.expenseItemsExceedAmount'))
     const typed = typedRates(needs, rates)
     if (typed === 'bad') return setError(t('ledger.pay.badRate'))
-    if (closed && !mayWriteClosed) return setError(t('ledger.closed.lockedHint'))
-    if (closed && closedReason.trim().length < 3) return setError(t('ledger.closed.reasonNeeded'))
+    if (showClosed && !mayWriteClosed) return setError(t('ledger.closed.lockedHint'))
+    if (showClosed && closedReason.trim().length < 3) return setError(t('ledger.closed.reasonNeeded'))
     setError(null)
     const fields = {
       sectionId,
@@ -214,7 +218,7 @@ function ExpenseForm({
         unitPriceMinor: unitMinor(it) as number
       })),
       ...(typed.manualRateMicro ? { manualRateMicro: typed.manualRateMicro } : {}),
-      ...(closed ? { reason: closedReason.trim() } : {})
+      ...(showClosed ? { reason: closedReason.trim() } : {})
     }
     if (editing) update.mutate({ id: editing.id, patch: { ...fields, date } })
     else add.mutate({ ...fields, date })
@@ -414,7 +418,7 @@ function ExpenseForm({
           </div>
         </fieldset>
       ) : null}
-      {closed ? <ClosedDayReason value={closedReason} onChange={setClosedReason} /> : null}
+      {showClosed ? <ClosedDayReason value={closedReason} onChange={setClosedReason} /> : null}
       {error ? (
         <p role="alert" className="text-destructive text-sm" data-testid="ledger-expense-error">
           {error}

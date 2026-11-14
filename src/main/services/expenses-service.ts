@@ -17,6 +17,7 @@ import {
   type ExpenseUpdateInput,
   type ExpenseVoidInput
 } from '@shared/contract/expenses'
+import { addDays, localDateOf } from '@shared/date'
 import { convert, needsNewRate, RATE_SCALE } from '@shared/domain/fx'
 import { descriptionKey } from '@shared/domain/normalize'
 import { money, multiplyRatio, sum } from '@shared/money'
@@ -147,6 +148,13 @@ export function assertDayWritable(db: Reader, ctx: Ctx, date: string, reason?: s
   if (day?.status !== 'closed') return reason
   if (!ctx.can('ledger.locked', 'edit') || !reason) throw conflict('errors.dayClosed', { date })
   return reason
+}
+
+/** An expense is dated at most a year ahead (a typo such as 2099 is refused, not stored). */
+export const EXPENSE_MAX_DAYS_AHEAD = 366
+
+function assertExpenseDateNear(date: string, now: Date): void {
+  if (date > addDays(localDateOf(now), EXPENSE_MAX_DAYS_AHEAD)) throw invalid('errors.dateTooFar')
 }
 
 interface FxFields {
@@ -406,6 +414,7 @@ export function createExpensesService(deps: ServiceDeps) {
       const data = parseInput(expenseCreateSchema, input)
       return inTransaction(deps, ctx, (tx, audit, now) => {
         sectionForWrite(tx, ctx, data.sectionId)
+        assertExpenseDateNear(data.date, now)
         const reason = assertDayWritable(tx, ctx, data.date, data.reason)
         checkExpenseRefs(tx, data)
         const drafts = draftItems(tx, data.items, data.amountMinor, data.currency)
@@ -433,8 +442,10 @@ export function createExpensesService(deps: ServiceDeps) {
         const before = editable(tx, ctx, id)
         if (data.sectionId && data.sectionId !== before.sectionId) sectionForWrite(tx, ctx, data.sectionId)
         let reason = assertDayWritable(tx, ctx, before.date, data.reason)
-        if (data.date && data.date !== before.date)
+        if (data.date && data.date !== before.date) {
+          assertExpenseDateNear(data.date, now)
           reason = assertDayWritable(tx, ctx, data.date, data.reason)
+        }
         checkExpenseRefs(tx, data)
         assertDrawerAllowed(
           tx,

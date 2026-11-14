@@ -141,6 +141,8 @@ function PaymentForm({
   const [note, setNote] = useState(editing?.note ?? '')
   const [rates, setRates] = useState<RateTexts>(EMPTY_RATES)
   const [forceRate, setForceRate] = useState(false)
+  // The form's own day may differ from the screen's (a row moved into a closed day): the service answers it.
+  const [closedHit, setClosedHit] = useState(false)
   const [closedReason, setClosedReason] = useState('')
   const [error, setError] = useState<string | null>(null)
   // Extra service sale.
@@ -166,6 +168,7 @@ function PaymentForm({
       : (reservation?.currency ?? null)
   const needs = useRateNeeds(shownCurrency, folioCurrency, { force: forceRate })
   const mayWriteClosed = useMayWriteClosedDay()
+  const showClosed = closed || closedHit
   const success = t(target === 'sale' && !editing ? 'ledger.pay.saleSaved' : 'ledger.pay.saved')
   const done = { success, onSuccess: onDone, onError: (e: { messageKey: string }) => showError(e.messageKey) }
   const add = useLedgerMutation('ledger.addPayment', done)
@@ -187,7 +190,8 @@ function PaymentForm({
       return true
     }
     if (key === 'errors.dayClosed') {
-      setError(t('errors.dayClosed'))
+      setClosedHit(true)
+      setError(t(mayWriteClosed ? 'ledger.closed.reasonNeeded' : 'ledger.closed.lockedHint'))
       return true
     }
     return false
@@ -199,9 +203,9 @@ function PaymentForm({
     setTried(true)
     const typed = typedRates(needs, rates)
     if (typed === 'bad') return setError(t('ledger.pay.badRate'))
-    if (closed && !mayWriteClosed) return setError(t('ledger.closed.lockedHint'))
-    if (closed && closedReason.trim().length < 3) return setError(t('ledger.closed.reasonNeeded'))
-    const reason = closed ? { dayClosedReason: closedReason.trim() } : {}
+    if (showClosed && !mayWriteClosed) return setError(t('ledger.closed.lockedHint'))
+    if (showClosed && closedReason.trim().length < 3) return setError(t('ledger.closed.reasonNeeded'))
+    const reason = showClosed ? { dayClosedReason: closedReason.trim() } : {}
     const channel = !channelId || channelId === NONE ? directChannelId : channelId
     if (target === 'sale' && !editing) {
       if (!service) return setError(t('ledger.sale.needService'))
@@ -492,7 +496,7 @@ function PaymentForm({
           {t('ledger.pay.futureDay')}
         </p>
       ) : null}
-      {closed ? <ClosedDayReason value={closedReason} onChange={setClosedReason} /> : null}
+      {showClosed ? <ClosedDayReason value={closedReason} onChange={setClosedReason} /> : null}
       {error ? (
         <p role="alert" className="text-destructive text-sm" data-testid="ledger-payment-error">
           {error}

@@ -1787,7 +1787,10 @@
     "feeStayNotStarted": "This room has not been checked in yet. Check the guest in first.",
     "feeNotVoidable": "This line cannot be voided here.",
     "depositSettled": "This deposit has already been given back or turned into income.",
-    "portfolioNoCopy": "This computer has no copy of this hotel. Connect to the hotel once and sign in."
+    "portfolioNoCopy": "This computer has no copy of this hotel. Connect to the hotel once and sign in.",
+    "depositNotConverted": "This deposit was not turned into income.",
+    "dayInFuture": "A day that has not started cannot be closed.",
+    "dateTooFar": "An expense can be dated at most one year ahead."
   },
   "common": {
     "close": "Close",
@@ -7638,7 +7641,11 @@
     "voidTitle": "Void this line?",
     "voidHelp": "The line leaves the folio; the record is kept.",
     "voidReason": "Reason",
-    "voidedToast": "Line voided"
+    "voidedToast": "Line voided",
+    "undo": "Undo",
+    "undoTitle": "Undo the conversion to income?",
+    "undoBody": "The damage charge and its payment of {{amount}} are voided and the deposit is held again.",
+    "undoneToast": "Conversion undone"
   },
   "portfolio": {
     "title": "Portfolio",

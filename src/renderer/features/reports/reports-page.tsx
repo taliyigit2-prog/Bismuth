@@ -6,7 +6,7 @@ import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSearch } from '@tanstack/react-router'
 import { ChartColumnIcon, PrinterIcon } from 'lucide-react'
-import type { ReportKind } from '@shared/contract/procedures/reports'
+import type { ReportKind, StayKind } from '@shared/contract/procedures/reports'
 import type { LocalDate } from '@shared/date'
 import {
   COMPARE_MODES,
@@ -231,6 +231,7 @@ function ReportsScreen({ today, firstDay }: { today: LocalDate; firstDay: LocalD
   const years = yearsBetween(firstDay, today)
   const [year, setYear] = useState(Number(today.slice(0, 4)))
   const [other, setOther] = useState<number | null>(null)
+  const [stayKind, setStayKind] = useState<StayKind>('all')
   const [nightDate, setNightDate] = useState<LocalDate>(today)
   const print = usePrint()
 
@@ -253,7 +254,12 @@ function ReportsScreen({ today, firstDay }: { today: LocalDate; firstDay: LocalD
       ? { report: 'yearly', years: other ? [year, other] : [year] }
       : tab === 'staff'
         ? { report: 'staff', year }
-        : { report: TAB_REPORT[tab], from: period.from, to: period.to }
+        : {
+            report: TAB_REPORT[tab],
+            from: period.from,
+            to: period.to,
+            ...(tab === 'occupancy' && stayKind !== 'all' ? { stayKind } : {})
+          }
 
   const content = (which: ReportTab): ReactNode => {
     switch (which) {
@@ -262,7 +268,7 @@ function ReportsScreen({ today, firstDay }: { today: LocalDate; firstDay: LocalD
       case 'yearly':
         return <YearlyTab year={year} other={other} today={today} />
       case 'occupancy':
-        return <OccupancyTab period={period} compare={compare} />
+        return <OccupancyTab period={period} compare={compare} stayKind={stayKind} onStayKind={setStayKind} />
       case 'cash':
         return <CashTab period={period} />
       case 'expenses':

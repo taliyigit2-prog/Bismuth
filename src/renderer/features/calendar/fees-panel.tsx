@@ -12,12 +12,14 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import { ClosedDayReason, useMayWriteClosedDay } from '@/components/closed-day-reason'
 import { MoneyInput, type MoneyValue } from '@/components/money-input'
 import { ResponsiveDialog } from '@/components/responsive-dialog'
 import { deferForPendingAmount } from '@/features/settings/use-admin'
 import { useFormat } from '@/hooks/use-format'
 import { useApiQuery, useSettings } from '@/lib/api/hooks'
 import { useCan } from '@/lib/view-as'
+import { toast } from 'sonner'
 import { localName, useBookingMutation, useBookingOptions, type BookingView } from './booking-api'
 
 const FEE_CODES = ['late_checkout', 'no_show_fee', 'damage_fee']
@@ -44,7 +46,10 @@ export function FeesSection({ view }: { view: BookingView }) {
   const lines = useApiQuery('booking.folioLines', { id: view.reservation.id })
   const [lateOpen, setLateOpen] = useState(false)
   const [takeOpen, setTakeOpen] = useState(false)
-  const [settle, setSettle] = useState<{ deposit: DepositView; action: 'refund' | 'convert' } | null>(null)
+  const [settle, setSettle] = useState<{
+    deposit: DepositView
+    action: 'refund' | 'convert' | 'undoConvert'
+  } | null>(null)
   const [voiding, setVoiding] = useState<string | null>(null)
   const eligible = view.stays.filter((s) => s.status === 'in_house' || s.status === 'done')
   const mayExtras = can('extras', 'edit')
@@ -151,6 +156,16 @@ export function FeesSection({ view }: { view: BookingView }) {
                   </Button>
                 </span>
               ) : null}
+              {d.status === 'converted' && mayDeposit && can('payments.void', 'edit') && mayExtras ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setSettle({ deposit: d, action: 'undoConvert' })}
+                  data-testid="deposit-undo-convert"
+                >
+                  {t('feesPanel.undo')}
+                </Button>
+              ) : null}
             </li>
           ))}
         </ul>
@@ -171,6 +186,31 @@ export function FeesSection({ view }: { view: BookingView }) {
       {voiding ? <VoidDialog chargeId={voiding} onClose={() => setVoiding(null)} /> : null}
     </section>
   )
+}
+
+/** G-72: the service says the day is closed -> ask for a reason (or say the day is locked for this person). */
+function useClosedDay() {
+  const { t } = useTranslation()
+  const may = useMayWriteClosedDay()
+  const [closed, setClosed] = useState(false)
+  const [reason, setReason] = useState('')
+  return {
+    closed,
+    reason,
+    setReason,
+    /** For `useBookingMutation({ onError })`: true when the error was the closed day. */
+    onError: (e: { messageKey?: string }): boolean => {
+      if (e.messageKey !== 'errors.dayClosed') return false
+      setClosed(true)
+      toast.error(t(may ? 'ledger.closed.reasonNeeded' : 'ledger.closed.lockedHint'))
+      return true
+    },
+    /** Spread into the mutation input once the field is shown. */
+    extra: closed && reason.trim().length >= 3 ? { dayClosedReason: reason.trim() } : {},
+    /** The closed-day reason is still missing: the form must not be sent. */
+    missing: closed && reason.trim().length < 3,
+    field: closed ? <ClosedDayReason value={reason} onChange={setReason} /> : null
+  }
 }
 
 function nowClock(): string {
@@ -195,9 +235,11 @@ function LateDialog({ view, onClose }: { view: BookingView; onClose: () => void 
     amountMinor: quote.data && quote.data.suggestedMinor > 0 ? quote.data.suggestedMinor : null,
     currency
   }
+  const day = useClosedDay()
   const add = useBookingMutation('booking.addLateCheckout', {
     success: t('booking.lateCheckout.added'),
-    onSuccess: onClose
+    onSuccess: onClose,
+    onError: day.onError
   })
   const form = 'late-checkout-form'
   return (
@@ -214,12 +256,13 @@ function LateDialog({ view, onClose }: { view: BookingView; onClose: () => void 
         onSubmit={(e) => {
           e.preventDefault()
           if (deferForPendingAmount(e.currentTarget)) return
-          if (!stayId || !isClock(time) || !shown.amountMinor || shown.amountMinor <= 0) return
+          if (!stayId || !isClock(time) || !shown.amountMinor || shown.amountMinor <= 0 || day.missing) return
           add.mutate({
             stayId,
             time,
             amountMinor: shown.amountMinor,
-            ...(note.trim() ? { note: note.trim() } : {})
+            ...(note.trim() ? { note: note.trim() } : {}),
+            ...day.extra
           })
         }}
       >
@@ -262,6 +305,7 @@ function LateDialog({ view, onClose }: { view: BookingView; onClose: () => void 
           <Label htmlFor="late-note">{t('feesPanel.note')}</Label>
           <Textarea id="late-note" value={note} maxLength={200} onChange={(e) => setNote(e.target.value)} />
         </div>
+        {day.field}
       </form>
     </ResponsiveDialog>
   )
@@ -278,9 +322,11 @@ function TakeDialog({ view, onClose }: { view: BookingView; onClose: () => void 
   const [amount, setAmount] = useState<MoneyValue | null>(null)
   const preset = settings.data?.['fees.damageDepositMinor'] ?? 0
   const shown: MoneyValue = amount ?? { amountMinor: preset > 0 ? preset : null, currency }
+  const day = useClosedDay()
   const take = useBookingMutation('booking.takeDeposit', {
     success: t('feesPanel.taken'),
-    onSuccess: onClose
+    onSuccess: onClose,
+    onError: day.onError
   })
   const form = 'deposit-form'
   const method = methodId || methods[0]?.id || ''
@@ -298,11 +344,12 @@ function TakeDialog({ view, onClose }: { view: BookingView; onClose: () => void 
         onSubmit={(e) => {
           e.preventDefault()
           if (deferForPendingAmount(e.currentTarget)) return
-          if (!method || !shown.amountMinor || shown.amountMinor <= 0) return
+          if (!method || !shown.amountMinor || shown.amountMinor <= 0 || day.missing) return
           take.mutate({
             reservationId: view.reservation.id,
             amountMinor: shown.amountMinor,
-            methodId: method
+            methodId: method,
+            ...day.extra
           })
         }}
       >
@@ -327,6 +374,7 @@ function TakeDialog({ view, onClose }: { view: BookingView; onClose: () => void 
             </SelectContent>
           </Select>
         </div>
+        {day.field}
       </form>
     </ResponsiveDialog>
   )
@@ -339,7 +387,7 @@ function SettleDialog({
   onClose
 }: {
   deposit: DepositView
-  action: 'refund' | 'convert'
+  action: 'refund' | 'convert' | 'undoConvert'
   label: string
   onClose: () => void
 }) {
@@ -347,30 +395,51 @@ function SettleDialog({
   const f = useFormat()
   const [reason, setReason] = useState('')
   const [tried, setTried] = useState(false)
+  const day = useClosedDay()
   const settle = useBookingMutation('booking.settleDeposit', {
-    success: action === 'refund' ? t('feesPanel.refunded') : t('feesPanel.converted'),
-    onSuccess: onClose
+    success:
+      action === 'refund'
+        ? t('feesPanel.refunded')
+        : action === 'undoConvert'
+          ? t('feesPanel.undoneToast')
+          : t('feesPanel.converted'),
+    onSuccess: onClose,
+    onError: day.onError
   })
   const form = 'deposit-settle-form'
-  const needsReason = action === 'convert'
+  const needsReason = action !== 'refund'
   const bad = needsReason && reason.trim().length < 3
   const body: ReactNode = (
     <p className="text-sm">
       {action === 'refund'
         ? t('feesPanel.refundBody', { amount: f.money(deposit.amountMinor, deposit.currency), method: label })
-        : t('feesPanel.convertBody', { amount: f.money(deposit.amountMinor, deposit.currency) })}
+        : action === 'undoConvert'
+          ? t('feesPanel.undoBody', { amount: f.money(deposit.amountMinor, deposit.currency) })
+          : t('feesPanel.convertBody', { amount: f.money(deposit.amountMinor, deposit.currency) })}
     </p>
   )
   return (
     <ResponsiveDialog
       open
       onOpenChange={(o) => !o && onClose()}
-      title={action === 'refund' ? t('feesPanel.refundTitle') : t('feesPanel.convertTitle')}
+      title={
+        action === 'refund'
+          ? t('feesPanel.refundTitle')
+          : action === 'undoConvert'
+            ? t('feesPanel.undoTitle')
+            : t('feesPanel.convertTitle')
+      }
       description={t('feesPanel.settleHelp')}
       footer={
         <Buttons
           form={form}
-          label={action === 'refund' ? t('feesPanel.refund') : t('feesPanel.convert')}
+          label={
+            action === 'refund'
+              ? t('feesPanel.refund')
+              : action === 'undoConvert'
+                ? t('feesPanel.undo')
+                : t('feesPanel.convert')
+          }
           onCancel={onClose}
         />
       }
@@ -381,11 +450,12 @@ function SettleDialog({
         onSubmit={(e) => {
           e.preventDefault()
           setTried(true)
-          if (bad) return
+          if (bad || day.missing) return
           settle.mutate({
             id: deposit.id,
             action,
-            ...(reason.trim() ? { reason: reason.trim() } : {})
+            ...(reason.trim() ? { reason: reason.trim() } : {}),
+            ...day.extra
           })
         }}
       >
@@ -407,6 +477,7 @@ function SettleDialog({
             </p>
           ) : null}
         </div>
+        {day.field}
       </form>
     </ResponsiveDialog>
   )
@@ -416,9 +487,11 @@ function VoidDialog({ chargeId, onClose }: { chargeId: string; onClose: () => vo
   const { t } = useTranslation()
   const [reason, setReason] = useState('')
   const [tried, setTried] = useState(false)
+  const day = useClosedDay()
   const voidFee = useBookingMutation('booking.voidFee', {
     success: t('feesPanel.voidedToast'),
-    onSuccess: onClose
+    onSuccess: onClose,
+    onError: day.onError
   })
   const bad = reason.trim().length < 3
   return (
@@ -435,7 +508,7 @@ function VoidDialog({ chargeId, onClose }: { chargeId: string; onClose: () => vo
         onSubmit={(e) => {
           e.preventDefault()
           setTried(true)
-          if (!bad) voidFee.mutate({ chargeId, reason: reason.trim() })
+          if (!bad && !day.missing) voidFee.mutate({ chargeId, reason: reason.trim(), ...day.extra })
         }}
       >
         <Label htmlFor="fee-void-reason">{t('feesPanel.voidReason')}</Label>
@@ -451,6 +524,7 @@ function VoidDialog({ chargeId, onClose }: { chargeId: string; onClose: () => vo
             {t('errors.reasonRequired')}
           </p>
         ) : null}
+        {day.field}
       </form>
     </ResponsiveDialog>
   )
