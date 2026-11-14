@@ -3,6 +3,7 @@
 // the check-in day turns the first night into that day's day-use), park with a reason (G-39), restore a parked
 // reservation onto a room and dates, cancel with a reason, cancel one room, no-show (G-42). Nothing is deleted: the
 // service keeps history.
+import { clockOf } from '@shared/domain/stays'
 import { useId, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AlertTriangleIcon } from 'lucide-react'
@@ -97,10 +98,7 @@ export function CheckoutDialog({
   const showDayUse = plan.kind === 'sameDay' && sameDay !== null
   // P21d: leaving after the hotel's late check-out hour offers the fee line (the desk can change or untick it).
   const can = useCan()
-  const [nowTime] = useState(() => {
-    const d = new Date()
-    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
-  })
+  const [nowTime] = useState(() => clockOf(new Date()))
   const lateQuote = useApiQuery(
     'booking.feeQuote',
     { kind: 'lateCheckout', stayId: stay.id, time: nowTime },

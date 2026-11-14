@@ -129,7 +129,10 @@ export const groupViewSchema = z.object({
     .object({
       currency: z.string(),
       chargesMinor: minorSchema,
-      balanceMinor: minorSchema.nullable()
+      /** Cancelled / no-show rooms are left out. */
+      balanceMinor: minorSchema.nullable(),
+      /** What one group payment may cover (Σ open balances of payable rooms); null without payment rights. */
+      payableMinor: minorSchema.nullable()
     })
     .nullable(),
   notes: z.array(z.object({ id: idSchema, reservationId: idSchema, text: z.string(), createdAt: z.string() }))

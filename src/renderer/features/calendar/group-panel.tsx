@@ -188,8 +188,8 @@ function Group({
             </Button>
             {can('payments', 'edit') &&
             view.folioMode === 'single' &&
-            view.totals?.balanceMinor &&
-            view.totals.balanceMinor > 0 ? (
+            view.totals?.payableMinor &&
+            view.totals.payableMinor > 0 ? (
               <Button
                 size="sm"
                 variant="outline"
@@ -296,11 +296,11 @@ function Group({
 
       <GroupNoteDialog groupId={view.id} open={noteOpen} onOpenChange={setNoteOpen} />
       <GroupCancelDialog groupId={view.id} open={cancelOpen} onOpenChange={setCancelOpen} />
-      {payOpen && view.totals?.balanceMinor ? (
+      {payOpen && view.totals?.payableMinor ? (
         <GroupPayDialog
           groupId={view.id}
           currency={view.totals.currency}
-          balanceMinor={view.totals.balanceMinor}
+          balanceMinor={view.totals.payableMinor}
           onOpenChange={setPayOpen}
         />
       ) : null}

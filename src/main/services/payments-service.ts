@@ -138,6 +138,24 @@ export function createPaymentsService(deps: ServiceDeps) {
       folioRateMicro: data.manualFolioRateMicro
     })
     if (data.kind === 'refund') assertRefundCovered(tx, folio.id, conv.amountFolioMinor)
+    // A cancelled / no-show reservation only takes what is still owed (a fee line); more is refused.
+    if (data.kind === 'payment' && folio.reservationId) {
+      const status = tx
+        .select({ s: reservations.status })
+        .from(reservations)
+        .where(eq(reservations.id, folio.reservationId))
+        .get()?.s
+      if (status === 'cancelled' || status === 'no_show') {
+        let owed = -folioNet(tx, folio.id)
+        for (const c of tx
+          .select({ a: charges.amountMinor })
+          .from(charges)
+          .where(and(eq(charges.folioId, folio.id), isNull(charges.voidedAt)))
+          .all())
+          owed += c.a
+        if (conv.amountFolioMinor > Math.max(0, owed)) throw invalid('errors.reservationClosed')
+      }
+    }
     const id = newId(now)
     const row = {
       id,

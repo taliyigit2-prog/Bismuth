@@ -78,7 +78,7 @@ describe('grup rezervasyonu oluşturma', () => {
     expect(g.name).toBe('Örnek tur grubu')
     expect(new Set(g.rooms.map((r) => r.reservationId)).size).toBe(3)
     expect(g.rooms.every((r) => r.stays.length === 1 && r.chargesMinor === 400_000)).toBe(true)
-    expect(g.totals).toEqual({ currency: 'TRY', chargesMinor: 1_200_000, balanceMinor: 1_200_000 })
+    expect(g.totals).toEqual({ currency: 'TRY', chargesMinor: 1_200_000, balanceMinor: 1_200_000, payableMinor: 1_200_000 })
     const rows = handle.db.select().from(reservations).where(eq(reservations.groupId, g.id)).all()
     expect(rows).toHaveLength(3)
   })

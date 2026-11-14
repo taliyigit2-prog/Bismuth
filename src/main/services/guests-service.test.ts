@@ -325,7 +325,7 @@ describe('misafir birleştirme (G-51)', () => {
     handle.db.update(guests).set({ mergedIntoId: dup.id }).where(eq(guests.id, third.id)).run()
 
     const result = guestsSvc.merge(manager, keep.id, dup.id)
-    expect(result.moved).toEqual({ reservations: 1, occupants: 1, blacklist: 1, mergedGuests: 1, tags: 0 })
+    expect(result.moved).toEqual({ reservations: 1, occupants: 1, blacklist: 1, groupLeaders: 0, mergedGuests: 1, tags: 0 })
     expect(result.guest).toMatchObject({
       id: keep.id,
       phone: '0532 123 45 67',

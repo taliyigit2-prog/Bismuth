@@ -54,12 +54,15 @@ import {
   type ReservationUpdateInput
 } from '@shared/contract/booking'
 import { insertFeeCharge } from './fees-service'
+import { assertDayWritable } from './expenses-service'
 import { checkoutPlan, suggestStayPrices } from '@shared/domain/booking'
 import { addDays, diffDays, localDate, localDateOf, weekday, type LocalDate } from '@shared/date'
 import {
   allocatePayments,
   creditedTotal,
   folioTotals,
+  groupPayableMinor,
+  isGroupPayableStatus,
   type NightPayStatus
 } from '@shared/domain/payment-allocation'
 import { normalizeName, normalizePhone } from '@shared/domain/normalize'
@@ -222,9 +225,24 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
     audit: AuditFn
   ): string {
     if ('id' in guest) {
-      if (!tx.select({ id: guests.id }).from(guests).where(eq(guests.id, guest.id)).get())
-        throw notFound('guest', guest.id)
-      return guest.id
+      const found = tx
+        .select({ id: guests.id, mergedIntoId: guests.mergedIntoId })
+        .from(guests)
+        .where(eq(guests.id, guest.id))
+        .get()
+      if (!found) throw notFound('guest', guest.id)
+      // A merged card is gone: the reservation goes to the card it was merged into.
+      let target = found
+      for (let i = 0; i < 10 && target.mergedIntoId; i += 1) {
+        const next = tx
+          .select({ id: guests.id, mergedIntoId: guests.mergedIntoId })
+          .from(guests)
+          .where(eq(guests.id, target.mergedIntoId))
+          .get()
+        if (!next) break
+        target = next
+      }
+      return target.id
     }
     const id = newId(now)
     const row = {
@@ -1283,7 +1301,16 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
           ? {
               currency,
               chargesMinor: details.reduce((sum, d) => sum + d.folio.chargesMinor, 0),
-              balanceMinor: showPayments ? details.reduce((sum, d) => sum + d.folio.balanceMinor, 0) : null
+              balanceMinor: showPayments
+                ? details
+                    .filter((d) => isGroupPayableStatus(d.reservation.status))
+                    .reduce((sum, d) => sum + d.folio.balanceMinor, 0)
+                : null,
+              payableMinor: showPayments
+                ? groupPayableMinor(
+                    details.map((d) => ({ status: d.reservation.status, balanceMinor: d.folio.balanceMinor }))
+                  )
+                : null
             }
           : null,
       notes: details
@@ -1634,6 +1661,7 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
       const settle: SettleFn | undefined =
         feeMinor > 0
           ? (tx, audit, now) => {
+              assertDayWritable(tx, ctx, today(now), undefined)
               insertFeeCharge(tx, audit, ctx, now, {
                 reservationId: id,
                 code: 'no_show_fee',
@@ -2154,10 +2182,12 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
         // One payment on one account only exists in a single-folio group; a per-room group is paid room by room.
         if (group.folioMode !== 'single') throw invalid('errors.groupPayPerRoom')
         const open = groupMembers(tx, data.groupId)
-          .filter((m) => m.status === 'tentative' || m.status === 'confirmed' || m.status === 'checked_in')
+          .filter((m) => isGroupPayableStatus(m.status))
           .map((m) => ({ id: m.id, folio: detail(tx, m.id).folio }))
         if (open.some((m) => m.folio.currency !== data.currency)) throw invalid('errors.groupPayCurrency')
-        const due = open.reduce((sum, m) => sum + Math.max(0, m.folio.balanceMinor), 0)
+        const due = groupPayableMinor(
+          open.map((m) => ({ status: 'confirmed', balanceMinor: m.folio.balanceMinor }))
+        )
         if (data.amountMinor > due) throw invalid('errors.groupPayExceeds', { balanceMinor: due })
         let left = data.amountMinor
         const parts: { reservationId: string; amountMinor: number }[] = []

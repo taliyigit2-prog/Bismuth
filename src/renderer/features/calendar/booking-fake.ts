@@ -352,7 +352,8 @@ export function bookingTransport(
       totals: {
         currency: 'TRY',
         chargesMinor: rooms.reduce((sum, v) => sum + v.folio.chargesMinor, 0),
-        balanceMinor: rooms.reduce((sum, v) => sum + (v.folio.balanceMinor ?? 0), 0)
+        balanceMinor: rooms.reduce((sum, v) => sum + (v.folio.balanceMinor ?? 0), 0),
+        payableMinor: rooms.reduce((sum, v) => sum + Math.max(0, v.folio.balanceMinor ?? 0), 0)
       },
       notes: group.notes.map((text, n) => ({
         id: `note-${n}`,
