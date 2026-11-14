@@ -108,8 +108,8 @@ Harcama sütunu: başlatıcının yazdığı `$` (dalga toplamı, gerçek).
 | 11 | P21b İstemci çoklu ana bilgisayar (K-54: kayıtlı otel listesi) | 21 | remote | feature-builder | $8–12 | ~$15 | ✅ |
 | 12 | P21c Portföy özeti (iki otelin takvimi, gelir-gider, doluluk, kasa) | 21 | portfolio | feature-builder | $8–12 | ~$20 | ✅ |
 | 12 | P21d Geç çıkış, no-show bedeli, hasar depozitosu kalemi, gece raporu | 21 | booking, reports | feature-builder | $6–9 | ~$18 | ✅ |
-| 13 | P21e Orta/Düşük bulgular (02 + 04 listesi, faz-21) | 21 | bulguya göre | feature-builder-lite / feature-builder | $4–6 | | ⬜ |
-| 13 | P21a Profil altyapısı (isteğe bağlı; tek makinede iki otel) | 21 | main/app/paths, auth, settings | feature-builder | $10–15 | | ⬜ |
+| 13 | P21e Orta/Düşük bulgular (02 + 04 listesi, faz-21) | 21 | bulguya göre | feature-builder-lite / feature-builder | $4–6 | | 🔄 |
+| 13 | P21a Profil altyapısı (isteğe bağlı; tek makinede iki otel) | 21 | main/app/paths, auth, settings | feature-builder | $10–15 | | ⏭ atlandı (otonom varsayılan) |
 | 14 | P22a Ölç ve hafiflet (perf betiği, Electron denemeleri, hafif mod) | 22 | scripts, main/windows, main/app | feature-builder | $15–30 | | ⬜ |
 | 14 | P22b Kabuk soyutlaması `lib/shell` (Electron + tarayıcı) | 22 | renderer/lib/shell, preload | feature-builder | $20–40 | | ⬜ |
 | 15 | P22c Tauri 2 prototipi + aynı ölçümle karşılaştırma + sahip karar sayfası (**durma noktası**) | 22 | shell-tauri/ (ürün dışı) | rust-shell-builder | $60–120 | | ⬜ |
@@ -362,3 +362,7 @@ QA2b, akış testleri C/D) bu plana **Son** satırında katılır; ayrı yürüt
   P21e'ye: portföyde telefonda alt boşluk, ücret kartı `SelectTrigger` tam genişlik, `fees-panel` hata durumunda "Tekrar dene", gece raporu
   dolu görüntü + yazdırma görüntüsü, `damage_deposits.method_id` dizini, gece raporu N+1 bakiye sorgusu, `connect-page` onay metni kalıbı.
   **Dalga 12 bitti.**
+- 2026-11-14: Dalga 12 sadeleştirme dalga 13 ile birlikte. Dalga 13 başladı: P21e iki pakete bölündü (A arayüz feature-builder,
+  B servis/güvenlik camera-integrator; liste `faz-21` "P21e iş listesi"). **P21a atlandı (otonom varsayılan):** sahip her otelin
+  ayrı bilgisayarı olduğunu söyledi (S-115, K-54); faz belgesi "bütçe yetmezse atlanır, öncelik düşük" diyor; tek makinede çoklu
+  profil ileride gerekirse ayrı faz.

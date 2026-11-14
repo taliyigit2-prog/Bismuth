@@ -32,6 +32,23 @@ takvim, gelir-gider, bugünkü doluluk, kasa; ortak personel yok. K-54 kesin.
    "sık kullanılan" sekmesi; akış testi 2. oturum Orta/Düşük maddeleri (02 §2 "P21e": H-20 denetim paneli etiketleri,
    H-22, H-23, H-26, H-27, H-29, H-30, H-31, H-32; 2. grup: H-37…H-43, H-45…H-47).
 
+### P21e iş listesi (dalga 13; dalga 5–12 kontrol notlarından toplandı, 2026-11-14)
+**P21e-A (arayüz, `feature-builder`):** 02 raporundaki P21e maddeleri H-13, H-20, H-22, H-23, H-26, H-27, H-29, H-30, H-31,
+H-32, H-37…H-43, H-45…H-47 (H-16 çürütüldü); 04 §3: mükerrer misafir kartı uyarısı (ad yazılınca mevcut kart önerisi), Ayarlar
+"sık kullanılan" sekmesi; P18b masaüstü cila #1, #2 (takvimde üç kaydırma çubuğu, panel genişliği), #3, #5, #6 (`docs/analiz/05-*`);
+Kamera: telefonda durum kartında boş sarmalayıcı, alarm filtre sekmeleri 2×2 kenarlık, "Gördüm/Hallettim" düğme dili
+("Görüldü"/"Halledildi" işaretleme), `settings/camera-section` `numberInvalid` ondalık sınırları `format.ts` ile, ru `camera.crashedBody`
+çoğul anahtarları (`_one/_few/_many/_other`), P20d'nin üç ayarı (`camera.uncertainMargin`, `camera.idleFaceScanEvery`,
+`camera.streamMaxWidth`) için "Tanıma ayarları"nda alan, canlı görüntü etiket yazı boyutu, personel satırı düğmeleri telefonda tam genişlik;
+Portföy: telefonda alt boşluk (alt gezinme); Ücretler kartı `SelectTrigger` `w-full`; `fees-panel` hata durumunda "Tekrar dene";
+`connect-page` kaldırma onayı metni kalıbı ("{{name}} listeden kaldırılsın mı?", test ile).
+**P21e-B (servis/güvenlik, `camera-integrator`):** `src/main/backup/drive.ts` Windows'ta yalnız sabit/çıkarılabilir sürücü ya da
+asenkron tarama (eşlenmiş ağ sürücüsü bekletmesin); `camera-service` `saveAlertAsGuest` tek transaction; `camera-sync.ts` saklama yorumu;
+probe: RTSP adresi `rtsp://host:port/path` olarak yeniden kurulur, ffmpeg yönlendirmesi kapalı; Python `probe_camera.py` özel IP listesi
+TS ile aynı; RTSP kullanıcı adında CR/LF/`"` reddi; `discovery.ts` paket/sonuç sınırı + aynı anda tek tarama kilidi; önizleme
+`image` zod `.max()` + boyut üst sınırı; `camera.staff` `desktopOnly`; Telegram sohbet sayısı/toplam süre üst sınırı; gece raporu
+bakiye sorgusu N+1 → tek sorgu; `.claude/hooks/stop-gate.mjs` kapsamına `package-lock.json`, `electron-builder.yml`, `.github/`.
+
 ## Kabul ölçütleri
 - [ ] (P21a yapılırsa) tek otel kurulumu veri kaybı olmadan `hotels/<kod>/` altına taşınır; iki profil arasında geçiş ≤ 3 sn; veri sızmaz.
 - [x] İstemci iki ana bilgisayar kaydı tutar; yanlış parmak izinde bağlanmaz (mevcut QA3d testi iki kayıtla). — `tests/unit/hotel-list.test.ts` «oteller arasında geçince…yanlış parmak izinde bağlanmaz», e2e `tests/e2e/electron/hotels.spec.ts`
