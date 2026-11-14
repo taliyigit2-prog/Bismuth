@@ -132,6 +132,10 @@ function writeSmokeResult(result: Record<string, unknown>): void {
 async function start(): Promise<void> {
   if (process.platform === 'win32') app.setAppUserModelId('com.bismuth.hotel')
   await app.whenReady()
+  // Installed builds carry build/icon.png in the .icns/.exe; running from source (npm run dev) would show Electron's
+  // own icon in the macOS Dock, so set the Bismuth crystal there too.
+  if (!app.isPackaged && process.platform === 'darwin')
+    app.dock?.setIcon(join(app.getAppPath(), 'build/icon.png'))
 
   const paths = dataPaths()
   setUpErrorLog(log, paths.logs)
