@@ -420,3 +420,9 @@ QA2b, akış testleri C/D) bu plana **Son** satırında katılır; ayrı yürüt
   bakım/arıza çıkıştan sonra blok açıyor, kamera alarmı/kopma bildirimi Bugün kartında (`camera.todayNotice`, K-50), personel tarih
   doğrulamaları + ay içinde ayrılan panelde, yasal turizm görevi tek giriş (tik = bildirildi), alan sınırları, ad tekrarı reddi,
   kapanmış çamaşır ayı kilidi. Bırakılan (ürün kararı): avansın maaşı aşma eşiği, kapanmış çamaşır ayını yeniden açma.
+- 2026-11-14: Son/G4 ✅ — `bug-hunter` G4 (sistem): 12 bulgu (1 Yüksek, 2 Orta). Düzeltme 6f64c06: defter içe aktarmada dolu ama
+  okunamayan tarih satır hatası (önceki güne yazılmıyordu); bozuk `connection.json` istemciyi yerel moda düşürmüyor (yasak 13);
+  istemci modunda `forgetHost`/`leaveClient`/`acceptHostIdentity` yetki + kilit denetimi; dışa aktarmaya 7 veri kümesi (depozito,
+  maaş dönemi/kuralları `staff.salary` ile, listeler; G-122); CSV koruması telefonlara `'` eklemiyor; kurulum geri almada saat
+  dilimi, oda no harf duyarsız tekil, denetim kaydında para satırları `payments` yetkisine bağlı, ödeme tarihi ≤ 1 yıl ileri.
+  Bırakılan: pasif oda tipine oda ekleme, ağ zaman aşımının toplam 5 sn olması (gerekçeler `.tmp/son/fix-g4.md`).
