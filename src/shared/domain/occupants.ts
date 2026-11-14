@@ -126,7 +126,7 @@ export const pendingArrivals = (
 
 /**
  * Stays that should have left: check-out day before today, or today after the hotel's check-out time
- * (Pandora 12:00 — a setting), still not checked out.
+ * (Lale 12:00 — a setting), still not checked out.
  */
 export function overdueCheckouts(
   stays: readonly StayRoomLike[],

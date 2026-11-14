@@ -57,7 +57,7 @@
 | S-31 | Banka kontrol işareti ayrı mı? | Aynı (x) | ✅ Aynı (x) |
 | S-32 | Döviz çevrimi: işlem günü kuru mu, ay kuru mu? | İşlem günü | ✅ Kaydın yazıldığı dakika; değişirse değiştirildiği an |
 | S-33 | Gider kategorileri listesi | Öneri listesi | ✅ Gerek yok (serbest açıklama + otomatik tamamlama) |
-| S-34 | Mesai ücreti türü? | İkisi de; %50 | ✅ İşletme belirler; Sahip + Müdür ayarlar; Pandora'da ek mesai ücreti yok |
+| S-34 | Mesai ücreti türü? | İkisi de; %50 | ✅ İşletme belirler; Sahip + Müdür ayarlar; Lale'da ek mesai ücreti yok |
 | S-35 | Bayram mesaisi çarpanı? | 2× | ✅ Sahip + Müdür ayarlar (S-34 ile birlikte) |
 | S-36 | Prim tabanı? | Yüzde, tüm oda geliri | ✅ Sahip + Müdür belirler |
 | S-37 | İzin devreder mi? | Devretmez, ödenir | ✅ Devretmez, ödenir |

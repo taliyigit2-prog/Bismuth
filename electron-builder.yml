@@ -94,3 +94,18 @@ linux:
 dmg:
   artifactName: ${productName}-${arch}.${ext}
   sign: false
+  # The window shows the one step (npm run dmg:background → build/background.png + @2x): the Bismuth icon on the left,
+  # the Applications shortcut on the right, an arrow and "drag" text between them.
+  title: Bismuth
+  iconSize: 112
+  window:
+    width: 540
+    height: 380
+  contents:
+    - x: 140
+      y: 196
+      type: file
+    - x: 400
+      y: 196
+      type: link
+      path: /Applications

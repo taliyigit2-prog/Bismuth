@@ -125,7 +125,7 @@ for (const lang of ['tr', 'ru'] as const) {
     await expect(heading(page, text.steps[4])).toBeVisible()
     await page.locator('[id^="setup-price-"][id$="-base"]').first().fill(text.price)
     await next(page)
-    // 6. Odalar: 5 floors × 4 rooms, one removed (Pandora, S-78).
+    // 6. Odalar: 5 floors × 4 rooms, one removed (Lale, S-78).
     await expect(heading(page, text.steps[5])).toBeVisible()
     await page.getByTestId('setup-floors').fill('5')
     await page.getByTestId('setup-per-floor').fill('4')

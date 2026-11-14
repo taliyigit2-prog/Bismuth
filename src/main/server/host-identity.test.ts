@@ -30,7 +30,7 @@ function fakeHost(who: () => ReturnType<typeof hostIdentity> | 'replay') {
           : { key: id.publicKey, proof: id.prove(nonce) }
       if (id !== 'replay') lastProof = identity.proof
       return Response.json(
-        { app: 'bismuth', version: '0.1.0', schemaVersion: 11, hotelName: 'Pandora', identity },
+        { app: 'bismuth', version: '0.1.0', schemaVersion: 11, hotelName: 'Lale', identity },
         { headers }
       )
     }

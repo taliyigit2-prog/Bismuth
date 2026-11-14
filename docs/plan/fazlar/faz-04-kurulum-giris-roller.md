@@ -17,8 +17,8 @@ hesabıyla girsin; sahip **rolleri kendisi tanımlasın** — ekran listesi × "
    5. Oda tipleri (gruplu uzun liste, arama, çoklu seçim, özel tip) + **tip başına varsayılan fiyat ve hafta sonu farkı** (G-48).
    6. Odalar (hızlı üretim, tip atama, **yatak sayısı**, satılabilir) + toplam oda/yatak özeti (bakanlık doluluk oranı için; K-27). Ayarlar → Odalar'da sonradan oda/yatak ekleme‑çıkarma **geçerlilik tarihiyle**.
    7. Ödeme yöntemleri, satış kanalları, ek hizmetler.
-   8. Personel politikası (izin, bölen, saat; ek mesai ücreti yok/saatlik/oran — Pandora: yok; bayram oranı; prim; **kasadan avans**) — oranları Sahip + Müdür sonradan değiştirir (K-38).
-   8b. **Vardiya düzeni** (Pandora: Gündüz 09:00–21:00, Gece 21:00–09:00) + **örnek görev önerileri** (seçmeli; G-94).
+   8. Personel politikası (izin, bölen, saat; ek mesai ücreti yok/saatlik/oran — Lale: yok; bayram oranı; prim; **kasadan avans**) — oranları Sahip + Müdür sonradan değiştirir (K-38).
+   8b. **Vardiya düzeni** (Lale: Gündüz 09:00–21:00, Gece 21:00–09:00) + **örnek görev önerileri** (seçmeli; G-94).
    9. Çalışanlar (isteğe bağlı) + kullanıcı hesabı + rol.
    10. Takvim: vurgulu günler (varsayılan cumartesi + pazar; S-24), bayramlar (ülkeye göre otomatik, önizleme), yasal hatırlatıcılar (TR tohumu açık/kapalı); gün kapatma açık/kapalı (G-72).
    11. Sahip hesabı: kullanıcı adı, şifre/PIN, kurtarma kodu.

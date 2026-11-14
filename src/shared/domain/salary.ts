@@ -382,7 +382,7 @@ export function computeSalaryPeriod(input: SalaryPeriodInput): SalaryPeriod {
     )
   }
 
-  // Overtime: hours are entered only by Müdür/Sahip (K-38); Pandora pays none.
+  // Overtime: hours are entered only by Müdür/Sahip (K-38); Lale pays none.
   const work = input.work.filter((w) => inMonth(w.date))
   const overtimeMinutes = work.reduce(
     (acc, w) => acc + nonNegativeInt(w.overtimeMinutes, 'overtimeMinutes'),

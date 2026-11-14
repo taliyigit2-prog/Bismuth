@@ -51,7 +51,7 @@ const work = (
   overtimeMinutes
 })
 
-/** Input fields to change; `policy` is merged over the Pandora defaults. */
+/** Input fields to change; `policy` is merged over the Lale defaults. */
 type Overrides = Partial<Omit<SalaryPeriodInput, 'policy'>> & { policy?: Partial<PayPolicy> }
 
 function period(overrides: Overrides = {}): SalaryPeriodInput {
@@ -293,7 +293,7 @@ describe('computeSalaryPeriod · izin politikası', () => {
 describe('computeSalaryPeriod · mesai, bayram ve prim', () => {
   const overtime = [work('2026-09-03', 480, 60), work('2026-09-04', 480, 60), work('2026-08-31', 480, 600)]
 
-  it('Pandora (overtime_mode=none): ek mesai saati girilse bile ücret 0', () => {
+  it('Lale (overtime_mode=none): ek mesai saati girilse bile ücret 0', () => {
     const r = computeSalaryPeriod(denizEylul({ work: overtime }))
     expect(r.overtimeMinutes).toBe(120)
     expect(r.overtimePay).toBe(0)

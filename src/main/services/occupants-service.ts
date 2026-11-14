@@ -127,7 +127,7 @@ export interface DayStay {
 export interface DayLists {
   at: string
   today: LocalDate
-  /** Hotel wall clock "HH:MM" and the check-out time setting (Pandora 12:00). */
+  /** Hotel wall clock "HH:MM" and the check-out time setting (Lale 12:00). */
   nowTime: string
   checkoutTime: string
   /** Rooms that can be sold, and rooms with a stay tonight (occupancy). */

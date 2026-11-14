@@ -92,12 +92,12 @@ describe('yerel ağ duyurusu (bonjour)', () => {
         name: 'Bismuth (OTEL-PC)',
         addresses: ['85.105.1.2', '100.64.0.2', '192.168.1.20'],
         port: 7373,
-        txt: { v: '0.1.0', h: 'Pandora' }
+        txt: { v: '0.1.0', h: 'Lale' }
       } as never)
     ).toEqual({
       name: 'Bismuth (OTEL-PC)',
       url: 'http://192.168.1.20:7373',
-      hotelName: 'Pandora',
+      hotelName: 'Lale',
       version: '0.1.0'
     })
     expect(foundHostOf({ name: 'x', addresses: ['85.105.1.2'], port: 7373, txt: {} } as never)).toBeNull()
@@ -106,7 +106,7 @@ describe('yerel ağ duyurusu (bonjour)', () => {
   it('duyuru _bismuth._tcp türüyle, veri sürümü ve otel adıyla yapılır (program sürümü yok); arama süre sonunda biter', async () => {
     const published: unknown[] = []
     const services = [
-      { name: 'Bismuth (OTEL-PC)', addresses: ['192.168.1.20'], port: 7373, txt: { h: 'Pandora' } }
+      { name: 'Bismuth (OTEL-PC)', addresses: ['192.168.1.20'], port: 7373, txt: { h: 'Lale' } }
     ]
     const fake = {
       publish: (o: unknown) => {
@@ -125,18 +125,18 @@ describe('yerel ağ duyurusu (bonjour)', () => {
       name: 'Bismuth (OTEL-PC)',
       port: 7373,
       schemaVersion: 11,
-      hotelName: 'Pandora'
+      hotelName: 'Lale'
     })
     expect(published[0]).toMatchObject({
       type: 'bismuth',
       port: 7373,
-      txt: { s: '11', h: 'Pandora' }
+      txt: { s: '11', h: 'Lale' }
     })
     // N-6: the program's full version is not announced to the Wi-Fi.
     expect((published[0] as { txt: Record<string, unknown> }).txt).not.toHaveProperty('v')
     expect(discovery.published()).toBe(true)
     expect(await discovery.browse(10)).toEqual([
-      { name: 'Bismuth (OTEL-PC)', url: 'http://192.168.1.20:7373', hotelName: 'Pandora', version: null }
+      { name: 'Bismuth (OTEL-PC)', url: 'http://192.168.1.20:7373', hotelName: 'Lale', version: null }
     ])
     await discovery.unpublish()
     expect(discovery.published()).toBe(false)
@@ -199,7 +199,7 @@ describe('ana bilgisayar bağlantısı', () => {
     app: 'bismuth' as const,
     version: '0.1.0',
     schemaVersion: 11,
-    hotelName: 'Pandora',
+    hotelName: 'Lale',
     key: hostIdentity(Buffer.alloc(32, 1)).publicKey
   }
   const make = (fetch: (url: string, init: RequestInit) => Promise<Response>) =>

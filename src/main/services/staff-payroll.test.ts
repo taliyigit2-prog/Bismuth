@@ -26,16 +26,16 @@ async function setup(start = '2026-01-01') {
   const clock = testClock('2026-12-31T09:00:00.000Z')
   const deps = depsOf(handle, clock)
   const staff = createStaffService(deps)
-  const kenan = staff.createEmployee(owner, {
-    firstName: 'Kenan',
+  const kerem = staff.createEmployee(owner, {
+    firstName: 'Kerem',
     lastName: 'Örnek',
     position: 'Resepsiyon',
     startDate: start,
-    userId: 'u-kenan',
+    userId: 'u-kerem',
     salary: { monthlyMinor: 3_000_000, currency: 'TRY', validFrom: start }
   })
-  const kenanSelf = roleCtx('employee', 'u-kenan')
-  return { clock, deps, staff, kenan, kenanSelf }
+  const keremSelf = roleCtx('employee', 'u-kerem')
+  return { clock, deps, staff, kerem, keremSelf }
 }
 
 const mm = (m: number): string => String(m).padStart(2, '0')
@@ -58,9 +58,9 @@ describe('12 aylık maaş tablosu servis üzerinden (Excel formülü, maaş geç
   ]
 
   it('Ocak eski maaşla (30.000), Eylül yeni maaşla (40.000); her ay net Excel ile aynı', async () => {
-    const { staff, kenan } = await setup()
+    const { staff, kerem } = await setup()
     staff.addSalary(accountant, {
-      employeeId: kenan.id,
+      employeeId: kerem.id,
       validFrom: '2026-09-01',
       monthlyMinor: 4_000_000,
       currency: 'TRY'
@@ -68,14 +68,14 @@ describe('12 aylık maaş tablosu servis üzerinden (Excel formülü, maaş geç
     for (const [month, advance, used] of YEAR) {
       if (used > 0)
         staff.addLeaveDays(manager, {
-          employeeId: kenan.id,
+          employeeId: kerem.id,
           from: `2026-${mm(month)}-02`,
           days: used,
           kind: 'rest_day'
         })
       if (advance > 0)
         staff.addTransaction(accountant, {
-          employeeId: kenan.id,
+          employeeId: kerem.id,
           date: `2026-${mm(month)}-15`,
           kind: 'advance',
           amountMinor: advance
@@ -99,7 +99,7 @@ describe('12 aylık maaş tablosu servis üzerinden (Excel formülü, maaş geç
         net
       })
     }
-    expect(staff.salaryHistory(accountant, kenan.id).map((s) => s.monthlyMinor)).toEqual([
+    expect(staff.salaryHistory(accountant, kerem.id).map((s) => s.monthlyMinor)).toEqual([
       3_000_000, 4_000_000
     ])
   })
@@ -107,55 +107,55 @@ describe('12 aylık maaş tablosu servis üzerinden (Excel formülü, maaş geç
 
 describe('mesai: çalışılan saatten öneri, müdür onayı, kurala göre tutar (S-34, S-39, K-38)', () => {
   it('10 saat çalışan (8 standart) için 2 saat öneri; müdür onaylayınca kurala göre ödenir', async () => {
-    const { clock, staff, kenan, kenanSelf } = await setup()
+    const { clock, staff, kerem, keremSelf } = await setup()
     staff.addSalary(owner, {
-      employeeId: kenan.id,
+      employeeId: kerem.id,
       validFrom: '2026-09-01',
       monthlyMinor: 4_000_000,
       currency: 'TRY'
     })
     // QA2a: one's own hours are written on the day (or a few days after), not months later.
     clock.set('2026-09-03T09:00:00.000Z')
-    staff.recordWork(kenanSelf, { date: '2026-09-02', startTime: '08:00', endTime: '18:00' })
+    staff.recordWork(keremSelf, { date: '2026-09-02', startTime: '08:00', endTime: '18:00' })
     clock.set('2026-12-31T09:00:00.000Z')
-    const [day] = staff.listWork(manager, { employeeId: kenan.id, from: '2026-09-01', to: '2026-09-30' })
+    const [day] = staff.listWork(manager, { employeeId: kerem.id, from: '2026-09-01', to: '2026-09-30' })
     expect(day).toMatchObject({ minutesWorked: 600, overtimeMinutes: 0, suggestedOvertimeMinutes: 120 })
     // Only Müdür/Sahip turn the suggestion into overtime.
-    expect(() => staff.recordWork(kenanSelf, { date: '2026-09-02', overtimeMinutes: 120 })).toThrow(
+    expect(() => staff.recordWork(keremSelf, { date: '2026-09-02', overtimeMinutes: 120 })).toThrow(
       /PERMISSION_DENIED/
     )
     staff.recordWork(manager, {
-      employeeId: kenan.id,
+      employeeId: kerem.id,
       date: '2026-09-02',
       overtimeMinutes: day!.suggestedOvertimeMinutes
     })
-    const pay = () => staff.salaryPeriod(owner, { employeeId: kenan.id, year: 2026, month: 9 })
-    expect(pay()).toMatchObject({ overtimeMinutes: 120, overtimePay: 0 }) // Pandora: no overtime pay
+    const pay = () => staff.salaryPeriod(owner, { employeeId: kerem.id, year: 2026, month: 9 })
+    expect(pay()).toMatchObject({ overtimeMinutes: 120, overtimePay: 0 }) // Lale: no overtime pay
     staff.setPolicy(manager, { values: { overtimeMode: 'multiplier', overtimeMultiplier: '1.5' } })
     expect(pay().overtimePay).toBe(53_333) // 2 × 40.000 ÷ 225 × 1,5
     staff.setPolicy(owner, { values: { overtimeMode: 'hourly_fixed', overtimeHourlyMinor: 25_000 } })
     expect(pay().overtimePay).toBe(50_000) // 2 × 250
     // A longer standard day of this employee leaves no overtime to suggest.
-    staff.setPolicy(manager, { employeeId: kenan.id, values: { standardHoursPerDay: 10 } })
+    staff.setPolicy(manager, { employeeId: kerem.id, values: { standardHoursPerDay: 10 } })
     expect(
-      staff.listWork(manager, { employeeId: kenan.id, from: '2026-09-02', to: '2026-09-02' })[0]
+      staff.listWork(manager, { employeeId: kerem.id, from: '2026-09-02', to: '2026-09-02' })[0]
         ?.suggestedOvertimeMinutes
     ).toBe(0)
   })
 
   it('bayram gününde (29 Ekim, takvimden) çalışılan saate bayram çarpanı uygulanır', async () => {
-    const { clock, staff, kenan, kenanSelf } = await setup()
+    const { clock, staff, kerem, keremSelf } = await setup()
     staff.addSalary(owner, {
-      employeeId: kenan.id,
+      employeeId: kerem.id,
       validFrom: '2026-10-01',
       monthlyMinor: 4_000_000,
       currency: 'TRY'
     })
     clock.set('2026-10-30T09:00:00.000Z')
-    staff.recordWork(kenanSelf, { date: '2026-10-29', startTime: '08:00', endTime: '18:00' })
-    staff.recordWork(kenanSelf, { date: '2026-10-28', startTime: '08:00', endTime: '18:00' })
+    staff.recordWork(keremSelf, { date: '2026-10-29', startTime: '08:00', endTime: '18:00' })
+    staff.recordWork(keremSelf, { date: '2026-10-28', startTime: '08:00', endTime: '18:00' })
     clock.set('2026-12-31T09:00:00.000Z')
-    const oct = () => staff.salaryPeriod(accountant, { employeeId: kenan.id, year: 2026, month: 10 })
+    const oct = () => staff.salaryPeriod(accountant, { employeeId: kerem.id, year: 2026, month: 10 })
     // 10 h × 40.000 ÷ 225 × (2 − 1) = 1.777,78
     expect(oct()).toMatchObject({ holidayDays: 1, holidayMinutes: 600, holidayPay: 177_778 })
     staff.setPolicy(owner, { values: { holidayMultiplier: '2.5' } })
@@ -167,7 +167,7 @@ describe('mesai: çalışılan saatten öneri, müdür onayı, kurala göre tuta
 
 describe('prim tabanı raporla aynı rakam (S-36)', () => {
   it('yüzde prim seçilen tabandan hesaplanır; satırdaki taban revenueBase ile aynı', async () => {
-    const { staff, kenan, deps } = await setup()
+    const { staff, kerem, deps } = await setup()
     const standard = handle.db.select().from(roomTypes).where(eq(roomTypes.code, 'standard')).get()!
     const room = createRoomsService(deps).createRoom(owner, {
       number: '501',
@@ -182,7 +182,7 @@ describe('prim tabanı raporla aynı rakam (S-36)', () => {
       stays: [{ roomId: room.id, checkIn: '2026-09-25', checkOut: '2026-10-05', nightlyPriceMinor: 250_000 }]
     })
     staff.setPolicy(owner, { values: { commissionMode: 'pct', commissionPct: '2' } })
-    const sept = staff.salaryPeriod(accountant, { employeeId: kenan.id, year: 2026, month: 9 })
+    const sept = staff.salaryPeriod(accountant, { employeeId: kerem.id, year: 2026, month: 9 })
     const base = revenueBase(handle.db, {
       base: 'room_revenue_all',
       from: '2026-09-01',
@@ -193,7 +193,7 @@ describe('prim tabanı raporla aynı rakam (S-36)', () => {
     expect(sept.commissionBaseMinor).toBe(base)
     expect(sept.commission).toBe(30_000)
     staff.setPolicy(owner, { values: { commissionMode: 'fixed', commissionFixedMinor: 100_000 } })
-    expect(staff.salaryPeriod(accountant, { employeeId: kenan.id, year: 2026, month: 9 })).toMatchObject({
+    expect(staff.salaryPeriod(accountant, { employeeId: kerem.id, year: 2026, month: 9 })).toMatchObject({
       commission: 100_000,
       commissionBaseMinor: null
     })
@@ -202,11 +202,11 @@ describe('prim tabanı raporla aynı rakam (S-36)', () => {
 
 describe('avans iptali ve ay kilidi (G-69, G-88)', () => {
   it('avans defterde gider olur; iptal edilince gider de iptal olur ve maaş tablosu eski hâline döner', async () => {
-    const { staff, kenan, deps } = await setup()
+    const { staff, kerem, deps } = await setup()
     const ledger = createLedgerService(deps)
     const before = staff.salaryTable(accountant, 2026, 10).rows[0]!.net
     const advance = staff.addTransaction(accountant, {
-      employeeId: kenan.id,
+      employeeId: kerem.id,
       date: '2026-10-05',
       kind: 'advance',
       amountMinor: 500_000,
@@ -225,7 +225,7 @@ describe('avans iptali ve ay kilidi (G-69, G-88)', () => {
   })
 
   it('ay kilidi bütün satırları dondurur ve denetim kaydına yazar; açmak gerekçe ister', async () => {
-    const { staff, kenan } = await setup()
+    const { staff, kerem } = await setup()
     const other = staff.createEmployee(owner, {
       firstName: 'Ayşe',
       lastName: 'Deneme',
@@ -233,7 +233,7 @@ describe('avans iptali ve ay kilidi (G-69, G-88)', () => {
       salary: { monthlyMinor: 3_500_000, currency: 'TRY' }
     })
     staff.addTransaction(accountant, {
-      employeeId: kenan.id,
+      employeeId: kerem.id,
       date: '2026-09-30',
       kind: 'salary_payment',
       amountMinor: 2_000_000
@@ -242,7 +242,7 @@ describe('avans iptali ve ay kilidi (G-69, G-88)', () => {
     expect(staff.lockMonth(accountant, 2026, 9)).toEqual({ locked: 2 })
     const table = staff.salaryTable(owner, 2026, 9)
     expect(table.rows.every((r) => r.locked && r.lockedBy === 'user-accountant')).toBe(true)
-    expect(table.rows.find((r) => r.employeeId === kenan.id)).toMatchObject({
+    expect(table.rows.find((r) => r.employeeId === kerem.id)).toMatchObject({
       paid: 2_000_000,
       remaining: 1_400_000
     })
@@ -274,14 +274,14 @@ describe('avans iptali ve ay kilidi (G-69, G-88)', () => {
 
 describe('izin günleri, son ay, hesap bağlantısı', () => {
   it('birkaç günlük izin tek seferde yazılır; bir gün doluysa hiçbiri yazılmaz', async () => {
-    const { staff, kenan } = await setup()
-    staff.addLeave(manager, { employeeId: kenan.id, date: '2026-10-07', kind: 'rest_day' })
+    const { staff, kerem } = await setup()
+    staff.addLeave(manager, { employeeId: kerem.id, date: '2026-10-07', kind: 'rest_day' })
     expect(() =>
-      staff.addLeaveDays(manager, { employeeId: kenan.id, from: '2026-10-05', days: 3, kind: 'annual' })
+      staff.addLeaveDays(manager, { employeeId: kerem.id, from: '2026-10-05', days: 3, kind: 'annual' })
     ).toThrow(/leaveExists/)
     expect(staff.leaveBetween(manager, { from: '2026-10-01', to: '2026-10-31' })).toHaveLength(1)
     const rows = staff.addLeaveDays(manager, {
-      employeeId: kenan.id,
+      employeeId: kerem.id,
       from: '2026-10-08',
       days: 3,
       kind: 'sick'
@@ -294,14 +294,14 @@ describe('izin günleri, son ay, hesap bağlantısı', () => {
       /PERMISSION_DENIED/
     )
     expect(() =>
-      staff.addLeaveDays(reception, { employeeId: kenan.id, from: '2026-11-01', days: 1, kind: 'sick' })
+      staff.addLeaveDays(reception, { employeeId: kerem.id, from: '2026-11-01', days: 1, kind: 'sick' })
     ).toThrow(/PERMISSION_DENIED/)
   })
 
   it('15 Ekim’de ayrılan çalışanın son ayı gün payıyla hesaplanır; sonraki ayın tablosunda yoktur', async () => {
-    const { staff, kenan } = await setup()
-    staff.updateEmployee(owner, kenan.id, { endDate: '2026-10-15', active: false })
-    const oct = staff.salaryPeriod(accountant, { employeeId: kenan.id, year: 2026, month: 10 })
+    const { staff, kerem } = await setup()
+    staff.updateEmployee(owner, kerem.id, { endDate: '2026-10-15', active: false })
+    const oct = staff.salaryPeriod(accountant, { employeeId: kerem.id, year: 2026, month: 10 })
     // 30.000 ÷ 30 × 15 = 15.000; rest days 4 × 15/31 → 1, unused → paid 1.000.
     expect(oct).toMatchObject({
       employedDays: 15,
@@ -314,7 +314,7 @@ describe('izin günleri, son ay, hesap bağlantısı', () => {
   })
 
   it('kart bağlı hesabın adını ve rolünü gösterir; bağlanabilecek hesaplar yalnız boştakiler', async () => {
-    const { staff, kenan, deps } = await setup()
+    const { staff, kerem, deps } = await setup()
     const receptionRole = handle.db.select().from(roles).where(eq(roles.code, 'reception')).get()!
     const usersService = createUsersService(deps)
     const selin = usersService.createUser(owner, {
@@ -325,7 +325,7 @@ describe('izin günleri, son ay, hesap bağlantısı', () => {
     })
     expect(staff.linkableUsers(owner).map((u) => u.displayName)).toContain('Selin Deneme')
     expect(() => staff.linkableUsers(manager)).toThrow(/PERMISSION_DENIED/)
-    const linked = staff.updateEmployee(owner, kenan.id, { userId: selin.id })
+    const linked = staff.updateEmployee(owner, kerem.id, { userId: selin.id })
     expect(linked.account).toMatchObject({ displayName: 'Selin Deneme', roleCode: 'reception', active: true })
     expect(staff.linkableUsers(accountant).map((u) => u.id)).not.toContain(selin.id)
   })

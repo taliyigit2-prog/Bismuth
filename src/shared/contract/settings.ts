@@ -129,7 +129,7 @@ export const settingsShape = {
   /** Currencies offered in amount fields (Excel: TL, Euro, Dolar, Sterlin, Ruble). */
   'hotel.currencies': z.array(currencyCode).min(1).max(MAX_ACCEPTED_CURRENCIES),
   'hotel.checkinTime': clockTime,
-  /** After this time an unchecked-out stay is "overdue" (Pandora 12:00; akislar.md). */
+  /** After this time an unchecked-out stay is "overdue" (Lale 12:00; akislar.md). */
   'hotel.checkoutTime': clockTime,
   /** Highlighted weekdays in the calendar, 0 = Sunday (S-24: Saturday + Sunday). */
   'calendar.highlightWeekdays': z.array(z.number().int().min(0).max(6)).max(7),

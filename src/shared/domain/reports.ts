@@ -135,7 +135,8 @@ export function guestHistorySummary(stays: readonly HistoryStay[], today: LocalD
   const sums = new Map<CurrencyCode, { total: number; n: number }>()
   const totalSpent: Record<CurrencyCode, number> = {}
   for (const s of sorted)
-    if (s.status !== 'cancelled' || s.paidMinor > 0) totalSpent[s.currency] = (totalSpent[s.currency] ?? 0) + s.paidMinor
+    if (s.status !== 'cancelled' || s.paidMinor > 0)
+      totalSpent[s.currency] = (totalSpent[s.currency] ?? 0) + s.paidMinor
   let totalNights = 0
   for (const s of counted) {
     for (const n of s.nights) {

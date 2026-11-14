@@ -2,7 +2,7 @@
 // The installers themselves are built and smoke-tested in CI (.github/workflows/ci.yml "package", release.yml);
 // these tests keep the settings that decide what the owner downloads from drifting.
 import { execFileSync } from 'node:child_process'
-import { mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
@@ -165,6 +165,25 @@ describe('iş akışları', () => {
     for (const name of ['Bismuth-Setup.exe', 'Bismuth-Setup-arm64.exe', 'Bismuth.dmg', 'Bismuth-Intel.dmg']) {
       expect(publish).toContain(name)
     }
+  })
+
+  it('sahip sürümü "Sürümü yayınla" kutusuyla yayınlar: yalnız main, aynı sürüm iki kez yayınlanmaz', () => {
+    expect(release.on.workflow_dispatch.inputs.publish.type).toBe('boolean')
+    expect(release.on.workflow_dispatch.inputs.publish.default).toBe(false)
+    expect(release.jobs.publish.if).toContain('inputs.publish')
+    const guard = steps(release.jobs.version)
+    expect(guard).toContain('refs/heads/main')
+    expect(guard).toContain('gh release view')
+    // The release tag comes from package.json, never from the branch name.
+    expect(steps(release.jobs.publish)).toContain(`TAG="v$(node -p "require('./package.json').version")"`)
+  })
+
+  it('DMG penceresi sürükleme görselini ve Uygulamalar kısayolunu gösterir', () => {
+    expect(builder.dmg.contents).toEqual(
+      expect.arrayContaining([expect.objectContaining({ type: 'link', path: '/Applications' })])
+    )
+    expect(existsSync(join(root, 'build/background.png'))).toBe(true)
+    expect(existsSync(join(root, 'build/background@2x.png'))).toBe(true)
   })
 })
 

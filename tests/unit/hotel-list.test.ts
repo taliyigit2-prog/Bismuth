@@ -120,15 +120,15 @@ type HotelView = { code: string; name: string; url: string; fingerprint: string 
 describe('kayıtlı oteller', () => {
   it('bağlanılan her otel listeye girer; ad ana bilgisayarın bildirdiği addır, parmak izi tutulur', async () => {
     const net = network()
-    net.hosts.set(A, { seed: 1, name: 'Pandora', behaviour: 'ok' })
+    net.hosts.set(A, { seed: 1, name: 'Lale', behaviour: 'ok' })
     net.hosts.set(B, { seed: 2, name: 'Bosphorus Inn', behaviour: 'ok' })
     const c = client(net)
     expect((await c.call('remote.connect', { url: A })).status).toBe(202)
     expect((await c.call('remote.connect', { url: B })).status).toBe(202)
     const list = (await c.call<HotelView[]>('remote.hotels')).body
-    expect(list.map((h) => h.name).sort()).toEqual(['Bosphorus Inn', 'Pandora'])
+    expect(list.map((h) => h.name).sort()).toEqual(['Bosphorus Inn', 'Lale'])
     expect(list.find((h) => h.name === 'Bosphorus Inn')).toMatchObject({ active: true, url: B })
-    expect(list.find((h) => h.name === 'Pandora')?.fingerprint).toBe(
+    expect(list.find((h) => h.name === 'Lale')?.fingerprint).toBe(
       hostIdentity(Buffer.alloc(32, 1)).fingerprint
     )
     expect(list.every((h) => /^[a-z0-9-]+$/.test(h.code))).toBe(true)
@@ -137,7 +137,7 @@ describe('kayıtlı oteller', () => {
 
   it('oteller arasında geçince her otelin cihaz çerezi ve kimliği ayrı kalır; yanlış parmak izinde bağlanmaz', async () => {
     const net = network()
-    net.hosts.set(A, { seed: 1, name: 'Pandora', behaviour: 'ok' })
+    net.hosts.set(A, { seed: 1, name: 'Lale', behaviour: 'ok' })
     net.hosts.set(B, { seed: 2, name: 'Bosphorus Inn', behaviour: 'ok' })
     const c = client(net)
     await c.call('remote.connect', { url: A })
@@ -175,10 +175,10 @@ describe('kayıtlı oteller', () => {
 
   it('aynı ana bilgisayar yeni adresle bağlanınca yeni otel eklenmez, adresi güncellenir', async () => {
     const net = network()
-    net.hosts.set(A, { seed: 1, name: 'Pandora', behaviour: 'ok' })
+    net.hosts.set(A, { seed: 1, name: 'Lale', behaviour: 'ok' })
     const c = client(net)
     await c.call('remote.connect', { url: A })
-    net.hosts.set(B, { seed: 1, name: 'Pandora', behaviour: 'ok' })
+    net.hosts.set(B, { seed: 1, name: 'Lale', behaviour: 'ok' })
     await c.call('remote.connect', { url: B })
     const list = (await c.call<HotelView[]>('remote.hotels')).body
     expect(list).toHaveLength(1)
@@ -187,20 +187,20 @@ describe('kayıtlı oteller', () => {
 
   it('ad değişir, kullanımdaki otelin adresi değişmez, başka otelin adresi çakışırsa reddedilir', async () => {
     const net = network()
-    net.hosts.set(A, { seed: 1, name: 'Pandora', behaviour: 'ok' })
+    net.hosts.set(A, { seed: 1, name: 'Lale', behaviour: 'ok' })
     net.hosts.set(B, { seed: 2, name: 'Bosphorus Inn', behaviour: 'ok' })
     const c = client(net)
     await c.call('remote.connect', { url: A })
     await c.call('remote.connect', { url: B })
-    const [pandora] = (await c.call<HotelView[]>('remote.hotels')).body.filter((h) => h.url === A)
+    const [lale] = (await c.call<HotelView[]>('remote.hotels')).body.filter((h) => h.url === A)
     const inUse = (await c.call<HotelView[]>('remote.hotels')).body.find((h) => h.active)!
     const renamed = await c.call<HotelView[]>('remote.hotelUpdate', {
-      code: pandora!.code,
-      name: 'Pandora Kadıköy'
+      code: lale!.code,
+      name: 'Lale Beyoğlu'
     })
-    expect(renamed.body.find((h) => h.code === pandora!.code)?.name).toBe('Pandora Kadıköy')
+    expect(renamed.body.find((h) => h.code === lale!.code)?.name).toBe('Lale Beyoğlu')
     const clash = await c.call<{ error: { messageKey: string } }>('remote.hotelUpdate', {
-      code: pandora!.code,
+      code: lale!.code,
       url: B
     })
     expect(clash.body.error.messageKey).toBe('errors.hotelExists')
@@ -209,18 +209,18 @@ describe('kayıtlı oteller', () => {
       url: 'http://100.64.0.30:7373'
     })
     expect(moving.body.error.messageKey).toBe('errors.hotelInUse')
-    const bad = await c.call('remote.hotelUpdate', { code: pandora!.code, url: 'http://:99999' })
+    const bad = await c.call('remote.hotelUpdate', { code: lale!.code, url: 'http://:99999' })
     expect(bad.status).toBe(400)
     const moved = await c.call<HotelView[]>('remote.hotelUpdate', {
-      code: pandora!.code,
+      code: lale!.code,
       url: 'http://100.64.0.40:7373'
     })
-    expect(moved.body.find((h) => h.code === pandora!.code)?.url).toBe('http://100.64.0.40:7373')
+    expect(moved.body.find((h) => h.code === lale!.code)?.url).toBe('http://100.64.0.40:7373')
   })
 
   it('oteli kaldırınca listeden, bekleyen kimlik bilgilerinden ve kopyasından gider; kullanımdaki kaldırılırsa bağlantı kesilir', async () => {
     const net = network()
-    net.hosts.set(A, { seed: 1, name: 'Pandora', behaviour: 'ok' })
+    net.hosts.set(A, { seed: 1, name: 'Lale', behaviour: 'ok' })
     net.hosts.set(B, { seed: 2, name: 'Bosphorus Inn', behaviour: 'ok' })
     const c = client(net)
     await c.call('remote.connect', { url: A })
@@ -241,7 +241,7 @@ describe('kayıtlı oteller', () => {
 
   it('"başka ana bilgisayar seç" oteli listede bırakır ve kimlik bilgilerini bekletir', async () => {
     const net = network()
-    net.hosts.set(A, { seed: 1, name: 'Pandora', behaviour: 'ok' })
+    net.hosts.set(A, { seed: 1, name: 'Lale', behaviour: 'ok' })
     const c = client(net)
     await c.call('remote.connect', { url: A })
     c.config.update({ device: 'deviceA.mac' })
@@ -279,9 +279,9 @@ describe('kayıtlı oteller', () => {
     const file = join(dir, 'connection.json')
     const store = createConfigStore(file)
     store.update({ mode: 'client' })
-    const a = store.addHotel('Pandora', A)
-    const b = store.addHotel('Pandora', B)
-    expect([a, b]).toEqual(['pandora', 'pandora-2'])
+    const a = store.addHotel('Lale', A)
+    const b = store.addHotel('Lale', B)
+    expect([a, b]).toEqual(['lale', 'lale-2'])
     store.activate(a)
     const replica = { token: 'T'.repeat(24), userId: 'u1', userName: 'Sahip', folder: null }
     store.update({ replica })
@@ -301,7 +301,7 @@ describe('nedenli bağlantı hatası (H-33)', () => {
   ]
   it.each(cases)('%s → %s %s', async (behaviour, status, key) => {
     const net = network()
-    net.hosts.set(A, { seed: 1, name: 'Pandora', behaviour })
+    net.hosts.set(A, { seed: 1, name: 'Lale', behaviour })
     const c = client(net)
     const answer = await c.call<{ error: { messageKey: string } }>('remote.connect', { url: A })
     expect(answer.status).toBe(status)
@@ -330,7 +330,7 @@ describe('nedenli bağlantı hatası (H-33)', () => {
 
   it('yeni ya da başka bir adres sorulurken cihaz çerezi ve bilgisayar adı gitmez; yanıt boyutu sınırlıdır', async () => {
     const net = network()
-    net.hosts.set(A, { seed: 1, name: 'Pandora', behaviour: 'ok' })
+    net.hosts.set(A, { seed: 1, name: 'Lale', behaviour: 'ok' })
     net.hosts.set(B, { seed: 2, name: 'Bosphorus Inn', behaviour: 'ok' })
     net.hosts.set('http://100.64.0.99:7373', { seed: 3, name: 'Huge', behaviour: 'huge' })
     const c = client(net)
@@ -363,19 +363,19 @@ describe('nedenli bağlantı hatası (H-33)', () => {
 
   it('oturum açık pencerede otel listesini değiştirmek remote.settings düzenleme yetkisi ister; oturumsuz bağlan ekranı açıktır', async () => {
     const net = network()
-    net.hosts.set(A, { seed: 1, name: 'Pandora', behaviour: 'ok' })
+    net.hosts.set(A, { seed: 1, name: 'Lale', behaviour: 'ok' })
     net.hosts.set(B, { seed: 2, name: 'Bosphorus Inn', behaviour: 'ok' })
     const c = client(net)
     // No sign-in yet: the connection screen works.
     expect((await c.call('remote.connect', { url: A })).status).toBe(202)
     expect((await c.call('remote.connect', { url: B })).status).toBe(202)
-    const [pandora] = (await c.call<HotelView[]>('remote.hotels')).body.filter((h) => h.url === A)
+    const [lale] = (await c.call<HotelView[]>('remote.hotels')).body.filter((h) => h.url === A)
     // Signed in at the hotel in use, role without the right: refused.
     await c.call('auth.signIn', { username: 'u', password: 'p' })
     net.session.level = 'view'
     for (const [name, body] of [
-      ['remote.hotelRemove', { code: pandora!.code }],
-      ['remote.hotelUpdate', { code: pandora!.code, name: 'X' }],
+      ['remote.hotelRemove', { code: lale!.code }],
+      ['remote.hotelUpdate', { code: lale!.code, name: 'X' }],
       ['remote.connect', { url: A }],
       ['remote.forgetHost', {}],
       ['remote.leaveClient', {}],
@@ -388,16 +388,16 @@ describe('nedenli bağlantı hatası (H-33)', () => {
     expect(c.config.hotels().length).toBe(2)
     // With the right (and not locked) it works.
     net.session.level = 'edit'
-    expect((await c.call('remote.hotelUpdate', { code: pandora!.code, name: 'X' })).status).toBe(202)
+    expect((await c.call('remote.hotelUpdate', { code: lale!.code, name: 'X' })).status).toBe(202)
     net.session.locked = true
-    expect((await c.call('remote.hotelRemove', { code: pandora!.code })).status).toBe(403)
+    expect((await c.call('remote.hotelRemove', { code: lale!.code })).status).toBe(403)
     net.session.locked = false
-    expect((await c.call('remote.hotelRemove', { code: pandora!.code })).status).toBe(202)
+    expect((await c.call('remote.hotelRemove', { code: lale!.code })).status).toBe(202)
   })
 
   it('oturum varken ana bilgisayar kimin açık olduğunu söyleyemezse otel listesi değiştirilemez', async () => {
     const net = network()
-    net.hosts.set(A, { seed: 1, name: 'Pandora', behaviour: 'ok' })
+    net.hosts.set(A, { seed: 1, name: 'Lale', behaviour: 'ok' })
     const c = client(net)
     expect((await c.call('remote.connect', { url: A })).status).toBe(202)
     await c.call('auth.signIn', { username: 'u', password: 'p' })

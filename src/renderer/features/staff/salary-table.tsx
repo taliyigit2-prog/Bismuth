@@ -1,6 +1,6 @@
 // Monthly salary table (G-81, G-84…G-88): the owner's Excel columns — maaş, avans, izin (kullanılan/hak, kalan),
 // izin parası, ek mesai, bayram mesaisi, prim, kesinti, net ödenecek, ödenen, kalan borç — as the staff service
-// computes them (shared/domain/salary.ts). Columns that are zero for everybody this month stay hidden (Pandora pays
+// computes them (shared/domain/salary.ts). Columns that are zero for everybody this month stay hidden (Lale pays
 // no overtime). A locked row is read-only; locking and opening a month is for roles with `staff.salary` edit.
 // Desktop: one dense table with totals; phone: one card per employee.
 import { useTranslation } from 'react-i18next'

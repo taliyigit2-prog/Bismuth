@@ -46,7 +46,7 @@ test('iki otel: bağlan ekranında liste, otel değiştirince oturum ve veri kar
   launch
 }) => {
   test.setTimeout(300_000)
-  const hostA = await startHost(launch, PORT_A, 'Pandora Kadıköy')
+  const hostA = await startHost(launch, PORT_A, 'Lale Beyoğlu')
   const hostB = await startHost(launch, PORT_B, 'Bosphorus Inn')
 
   const client = await launch({ dir: fresh(), setup: false })
@@ -68,7 +68,7 @@ test('iki otel: bağlan ekranında liste, otel değiştirince oturum ve veri kar
   await page.getByTestId('connect-address').fill(`127.0.0.1:${PORT_A}`)
   await page.getByTestId('connect-submit').click()
   await signInAt(page)
-  expect(await hotelName(page)).toBe('Pandora Kadıköy')
+  expect(await hotelName(page)).toBe('Lale Beyoğlu')
 
   // To the connection screen from the settings; the hotel in use is in the list.
   const leaveHotel = async (): Promise<void> => {
@@ -78,7 +78,7 @@ test('iki otel: bağlan ekranında liste, otel değiştirince oturum ve veri kar
   }
   await leaveHotel()
   await expect(page.getByTestId('hotel-row')).toHaveCount(1)
-  await expect(page.getByTestId('hotel-row').first()).toContainText('Pandora Kadıköy')
+  await expect(page.getByTestId('hotel-row').first()).toContainText('Lale Beyoğlu')
   await expect(page.getByTestId('hotel-fingerprint').first()).toHaveText(/^[0-9A-F]{4}(-[0-9A-F]{4}){3}$/)
 
   // The second hotel: its own sign-in and its own data.
@@ -92,13 +92,9 @@ test('iki otel: bağlan ekranında liste, otel değiştirince oturum ve veri kar
   await expect(page.getByTestId('hotel-row')).toHaveCount(2)
   if (process.env['HOTELS_SHOTS'])
     await page.screenshot({ path: `${process.env['HOTELS_SHOTS']}/connect-list.png` })
-  await page
-    .getByTestId('hotel-row')
-    .filter({ hasText: 'Pandora Kadıköy' })
-    .getByTestId('hotel-connect')
-    .click()
+  await page.getByTestId('hotel-row').filter({ hasText: 'Lale Beyoğlu' }).getByTestId('hotel-connect').click()
   await signInAt(page)
-  expect(await hotelName(page)).toBe('Pandora Kadıköy')
+  expect(await hotelName(page)).toBe('Lale Beyoğlu')
 
   // Renaming a hotel from the list.
   await leaveHotel()
@@ -132,6 +128,6 @@ test('iki otel: bağlan ekranında liste, otel değiştirince oturum ve veri kar
   await page.getByTestId('hotel-row').filter({ hasText: 'Boğaz Oteli' }).getByTestId('hotel-remove').click()
   await page.getByTestId('hotel-remove-confirm').click()
   await expect(page.getByTestId('hotel-row')).toHaveCount(1)
-  await expect(page.getByTestId('hotel-row')).toContainText('Pandora Kadıköy')
+  await expect(page.getByTestId('hotel-row')).toContainText('Lale Beyoğlu')
   await hostA.app.close()
 })

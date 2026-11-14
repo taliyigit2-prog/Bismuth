@@ -22,16 +22,17 @@ açılışta ne göreceğinizi ve bir sorun olursa ne yapacağınızı adım ad�
 
 ## Hangi dosyayı indireceğim?
 
-Dosyalar GitHub'daki **Releases** (sürümler) sayfasında, en yeni sürümün altındaki **Assets** (dosyalar) listesindedir.
+Tablodaki dosya adına tıklamak en yeni sürümü doğrudan indirir (GitHub hesabı gerekmez). Bütün sürümler ve notları GitHub'daki
+[**Releases**](https://github.com/taliyigit2-prog/Bismuth/releases) (sürümler) sayfasında, her sürümün **Assets** (dosyalar) listesindedir.
 Dosya adları her sürümde aynıdır; sürüm numarası (örneğin `v1.0.0`) sayfanın başlığında ve kurduktan sonra programın
 **Hakkında** ekranında yazar.
 
 | Bilgisayar | İndirilecek dosya | Nasıl anlarım? |
 |---|---|---|
-| Windows 10 ya da 11 (çoğu bilgisayar, otel bilgisayarı) | `Bismuth-Setup.exe` | Başlat → Ayarlar → Sistem → Hakkında → **Sistem türü**: "64 bit işletim sistemi, x64 tabanlı işlemci" |
-| Windows, ARM işlemcili (az rastlanır) | `Bismuth-Setup-arm64.exe` | Aynı yerde "ARM tabanlı işlemci" yazar |
-| Mac, Apple çipli (M1, M2, M3, M4) | `Bismuth.dmg` | Sol üstte Apple simgesi → **Bu Mac Hakkında** → **Çip: Apple M…** |
-| Mac, Intel işlemcili | `Bismuth-Intel.dmg` | Aynı yerde **İşlemci: Intel …** yazar |
+| Windows 10 ya da 11 (çoğu bilgisayar, otel bilgisayarı) | [`Bismuth-Setup.exe`](https://github.com/taliyigit2-prog/Bismuth/releases/latest/download/Bismuth-Setup.exe) | Başlat → Ayarlar → Sistem → Hakkında → **Sistem türü**: "64 bit işletim sistemi, x64 tabanlı işlemci" |
+| Windows, ARM işlemcili (az rastlanır) | [`Bismuth-Setup-arm64.exe`](https://github.com/taliyigit2-prog/Bismuth/releases/latest/download/Bismuth-Setup-arm64.exe) | Aynı yerde "ARM tabanlı işlemci" yazar |
+| Mac, Apple çipli (M1, M2, M3, M4) | [`Bismuth.dmg`](https://github.com/taliyigit2-prog/Bismuth/releases/latest/download/Bismuth.dmg) | Sol üstte Apple simgesi → **Bu Mac Hakkında** → **Çip: Apple M…** |
+| Mac, Intel işlemcili | [`Bismuth-Intel.dmg`](https://github.com/taliyigit2-prog/Bismuth/releases/latest/download/Bismuth-Intel.dmg) | Aynı yerde **İşlemci: Intel …** yazar |
 
 Emin değilseniz Windows için `Bismuth-Setup.exe`'yi, Mac için yukarıdaki tabloya göre seçin. Yanlış dosya açılmaz ama zarar
 vermez; doğrusunu indirip yeniden deneyin.

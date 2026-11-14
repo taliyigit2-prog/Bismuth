@@ -112,8 +112,8 @@ describe('uzaktan erişim ayarları — yetki', () => {
     const ctx = localOwnerCtx()
     for (const call of [
       () => handlers['remote.hotels'](ctx, {}, env),
-      () => handlers['remote.hotelUpdate'](ctx, { code: 'pandora', name: 'X' }, env),
-      () => handlers['remote.hotelRemove'](ctx, { code: 'pandora' }, env)
+      () => handlers['remote.hotelUpdate'](ctx, { code: 'lale', name: 'X' }, env),
+      () => handlers['remote.hotelRemove'](ctx, { code: 'lale' }, env)
     ])
       expect(call).toThrow(expect.objectContaining({ messageKey: 'errors.notClientMode' }))
   })

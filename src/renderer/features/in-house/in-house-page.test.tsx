@@ -84,7 +84,9 @@ describe('otelde kalanlar', () => {
     expect(within(pending).getByTestId('pending-no-entry')).toHaveTextContent(
       'KBS girişi de işaretlenmemiş; düğme ikisini birlikte işaretler.'
     )
-    expect(within(pending).getByRole('button', { name: 'KBS çıkışı yapıldı olarak işaretle' })).toBeInTheDocument()
+    expect(
+      within(pending).getByRole('button', { name: 'KBS çıkışı yapıldı olarak işaretle' })
+    ).toBeInTheDocument()
   })
 
   it('otel KBS kontrollerini kapatınca işaretsiz kişi kırmızı değildir (P9fix #14)', async () => {
@@ -179,7 +181,9 @@ describe('otelde kalanlar', () => {
     const state = sampleState()
     await renderWithProviders(<InHousePage />, { transport: withP9c(state) })
     await screen.findByTestId('in-house-room-101')
-    expect(screen.queryByRole('button', { name: "KBS'ye bildirildi olarak işaretle" })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: "KBS'ye bildirildi olarak işaretle" })
+    ).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Kişi ekle' })).not.toBeInTheDocument()
   })
 

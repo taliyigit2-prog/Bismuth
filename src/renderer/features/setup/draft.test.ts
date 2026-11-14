@@ -29,8 +29,8 @@ function fiveByFour(d: WizardDraft): WizardDraft {
   return d
 }
 
-/** Pandora-sized (S-78): 19 rooms on 5 floors, 38 beds, one room of the hotel's own type. */
-function pandora(): WizardDraft {
+/** Lale-sized (S-78): 19 rooms on 5 floors, 38 beds, one room of the hotel's own type. */
+function lale(): WizardDraft {
   const d = fresh()
   d.hotel.name = 'Martı Otel'
   d.roomTypes.custom.push({
@@ -158,11 +158,11 @@ describe('kurulum taslağı: denetimler', () => {
     })
     d.rooms = generateRooms(d)
     expect(firstInvalidStep(d, SETUP_OPTIONS)?.step).toBe('owner')
-    expect(firstInvalidStep(pandora(), SETUP_OPTIONS)).toBeNull()
+    expect(firstInvalidStep(lale(), SETUP_OPTIONS)).toBeNull()
   })
 
   it('odalar: aynı numara, yatak 1–50, seçilmemiş tip işaretlenir', () => {
-    const d = pandora()
+    const d = lale()
     const [a, b, c] = d.rooms
     b!.number = ' 101 '
     c!.beds = '0'
@@ -175,7 +175,7 @@ describe('kurulum taslağı: denetimler', () => {
   })
 
   it('ödeme: nakit yöntem kapalıysa uyarır', () => {
-    const d = pandora()
+    const d = lale()
     d.lists.paymentMethods = ['pm-card']
     expect(validateStep('money', d, SETUP_OPTIONS)).toEqual({
       [ids.cashMethod]: { key: 'errors.cashMethodRequired' }
@@ -183,7 +183,7 @@ describe('kurulum taslağı: denetimler', () => {
   })
 
   it('personel: kat sayı olmalı, bölen 1–31 (ayın gün sayısı seçiliyse aranmaz), saatlik ücret yazılmalı', () => {
-    const d = pandora()
+    const d = lale()
     d.staff.holidayMultiplier = 'iki'
     d.staff.dailyDivisor = '0'
     d.staff.overtimeMode = 'hourly_fixed'
@@ -199,7 +199,7 @@ describe('kurulum taslağı: denetimler', () => {
   })
 
   it('prim: yüzde seçilince oran, sabit tutar seçilince tutar istenir', () => {
-    const d = pandora()
+    const d = lale()
     d.staff.commissionMode = 'pct'
     expect(validateStep('staff', d, SETUP_OPTIONS)).toEqual({
       [ids.commissionPct]: { key: 'setup.errors.decimal' }
@@ -216,7 +216,7 @@ describe('kurulum taslağı: denetimler', () => {
 
   it('çalışan hesabı: Sahip rolü verilemez; kullanıcı adı sahipten ve birbirinden farklı olmalı', () => {
     expect(employeeRoles(SETUP_OPTIONS).map((r) => r.code)).toEqual(['manager', 'reception'])
-    const d = pandora()
+    const d = lale()
     const deniz = { ...newEmployee('2026-10-01', 'role-owner'), firstName: 'Deniz', lastName: 'Arslan' }
     deniz.hasAccount = true
     deniz.username = 'SAHİP'
@@ -233,8 +233,8 @@ describe('kurulum taslağı: denetimler', () => {
 })
 
 describe('kurulum taslağı: gönderilen veri ve ara kayıt', () => {
-  it('Pandora taslağı setupDraftSchema ile geçerli; özel tipli oda geçici anahtarla bağlanır', () => {
-    const d = pandora()
+  it('Lale taslağı setupDraftSchema ile geçerli; özel tipli oda geçici anahtarla bağlanır', () => {
+    const d = lale()
     d.rooms[18]!.roomType = { tempKey: 'aile' }
     d.rooms[18]!.beds = '4'
     d.shifts[0]!.name = 'Sabah'
@@ -284,7 +284,7 @@ describe('kurulum taslağı: gönderilen veri ve ara kayıt', () => {
   })
 
   it('kendi görevler taslakla gider (başlık kırpılmış, kural olduğu gibi); ara kayıttan geri gelir', () => {
-    const d = pandora()
+    const d = lale()
     d.tasks.custom = [
       { key: 'k1', title: ' Lobideki çiçekleri sula ', recurrence: { kind: 'daily', time: '08:30' } },
       {
@@ -307,7 +307,7 @@ describe('kurulum taslağı: gönderilen veri ve ara kayıt', () => {
   })
 
   it('kendi görevlerden önceki ara kayıt ya da bozuk liste: seçilen öneriler korunur, liste boş başlar', () => {
-    const d = pandora()
+    const d = lale()
     d.tasks.suggestions = ['tt-call']
     const older = { ...savedDraft(d), tasks: { suggestions: ['tt-call'], legalReminders: false } }
     expect(restoreDraft(JSON.parse(JSON.stringify(older)), fresh()).tasks).toEqual({
@@ -331,7 +331,7 @@ describe('kurulum taslağı: gönderilen veri ve ara kayıt', () => {
   })
 
   it('prim kuralı taslakla gider: yüzde oranı noktalı, sabit tutar kuruş olarak', () => {
-    const d = pandora()
+    const d = lale()
     d.staff.commissionMode = 'pct'
     d.staff.commissionPct = '2,5'
     d.staff.commissionFixedMinor = 99_900
@@ -346,7 +346,7 @@ describe('kurulum taslağı: gönderilen veri ve ara kayıt', () => {
   })
 
   it('primden önceki ara kayıt: personel cevapları korunur, prim varsayılandan başlar', () => {
-    const d = pandora()
+    const d = lale()
     d.staff.leaveDaysPerMonth = '6'
     const { commissionMode: _mode, commissionPct: _pct, commissionFixedMinor: _fixed, ...older } = d.staff
     const back = restoreDraft(JSON.parse(JSON.stringify({ ...savedDraft(d), staff: older })), fresh())
@@ -354,7 +354,7 @@ describe('kurulum taslağı: gönderilen veri ve ara kayıt', () => {
   })
 
   it('ara kayıtta şifre, tekrar ve PIN yok; geri okununca bozuk bölümler varsayılana döner', () => {
-    const d = pandora()
+    const d = lale()
     d.employees = [{ ...newEmployee('2026-10-01', 'role-reception'), password: 'gecici-sifre-1' }]
     const saved = savedDraft(d)
     expect(JSON.stringify(saved)).not.toMatch(/cok-gizli|gecici-sifre|2468|"password"|"repeat"|"pin"/)
@@ -374,7 +374,7 @@ describe('kurulum taslağı: gönderilen veri ve ara kayıt', () => {
   })
 
   it('artık sunulmayan kayıtlar ara kayıttan atılır; üretici kalan ilk tipe geçer', () => {
-    const d = pandora()
+    const d = lale()
     d.roomTypes.selected = [
       { id: 'rt-gone', basePriceMinor: null, weekendPriceMinor: null, hourlyPriceMinor: null },
       { id: 'rt-twin', basePriceMinor: 270_000, weekendPriceMinor: null, hourlyPriceMinor: null }
@@ -390,7 +390,7 @@ describe('kurulum taslağı: gönderilen veri ve ara kayıt', () => {
   })
 
   it('sunucunun reddi doğru adıma ve alana gider', () => {
-    const d = pandora()
+    const d = lale()
     expect(
       locateServerError({ messageKey: 'errors.roomNumberTaken', details: { number: '203' } }, d)
     ).toEqual({

@@ -189,7 +189,7 @@ describe('Ayarlar → Uzaktan erişim', () => {
       mode: 'client',
       hostUrl: 'http://192.168.1.20:7373',
       state: 'connected',
-      host: { app: 'bismuth', version: '0.1.0', schemaVersion: 11, hotelName: 'Pandora' },
+      host: { app: 'bismuth', version: '0.1.0', schemaVersion: 11, hotelName: 'Lale' },
       mine: { version: '0.1.0', schemaVersion: 11 },
       lastContactAt: null,
       identity: { known: 'AB12-CD34-EF56-7890', offered: null }

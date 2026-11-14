@@ -424,7 +424,7 @@ export function createStaffService(deps: ServiceDeps) {
     if (other && other.id !== exceptId) throw conflict('errors.userHasEmployee', { employeeId: other.id })
   }
 
-  /** Unused rest days carried into `year-month` when the policy carries leave over (S-37: Pandora does not). */
+  /** Unused rest days carried into `year-month` when the policy carries leave over (S-37: Lale does not). */
   const carriedLeave = (e: EmployeeRow, policy: ResolvedPayPolicy, year: number, month: number): number => {
     const target = monthBounds(year, month).from
     let y = Number(e.startDate.slice(0, 4))

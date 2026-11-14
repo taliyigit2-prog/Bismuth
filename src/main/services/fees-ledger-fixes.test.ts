@@ -8,7 +8,14 @@ import { depsOf, roleCtx, testClock } from '../../../tests/factories/ctx'
 import { seededDatabase } from '../../../tests/factories/db'
 import { kbsWorkbookBuffer } from '../../../tests/factories/kbs'
 import type { DatabaseHandle } from '../db/client'
-import { damageDeposits, expenseSections, payments, paymentMethods, roomTypes, salesChannels } from '../db/schema'
+import {
+  damageDeposits,
+  expenseSections,
+  payments,
+  paymentMethods,
+  roomTypes,
+  salesChannels
+} from '../db/schema'
 import { createServices } from './index'
 import { insertExpenseTx } from './expenses-service'
 

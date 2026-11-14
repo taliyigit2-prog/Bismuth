@@ -1,4 +1,4 @@
-// Demo hotel for development and screenshots (faz-02 madde 5): a Pandora-like 19-room / 38-bed hotel with a year
+// Demo hotel for development and screenshots (faz-02 madde 5): a Lale-like 19-room / 38-bed hotel with a year
 // of reservations, payments, expenses, staff, laundry and daily operations — every name and amount invented.
 // Everything is written through the services (permissions, transactions, audit rows) with a moving clock, so the
 // data looks exactly like data typed by hand. Deterministic for a given seed (only ids differ between runs).
@@ -205,7 +205,7 @@ export async function seedDemo(handle: DatabaseHandle, opts: DemoOptions = {}): 
   const deepClean = db.select().from(taskTemplates).where(eq(taskTemplates.code, 'deep_clean_every_n')).get()
   if (deepClean) svc.tasks.updateTemplate(owner, deepClean.id, { firstDueAt: start })
 
-  // 19 rooms × 2 beds = 38 real beds (Pandora-like).
+  // 19 rooms × 2 beds = 38 real beds (Lale-like).
   const types = ['double', 'twin', 'double', 'twin']
   const rooms = ROOMS.map((number, i) =>
     svc.rooms.createRoom(owner, {

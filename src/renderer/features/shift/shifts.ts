@@ -1,4 +1,4 @@
-// The hotel's shift layout (shift_definitions, a setting — G-95; Pandora: Gündüz 09:00–21:00, Gece 21:00–09:00):
+// The hotel's shift layout (shift_definitions, a setting — G-95; Lale: Gündüz 09:00–21:00, Gece 21:00–09:00):
 // which shift is on duty at a wall-clock time and which one takes over. Another hotel has 3 × 8 hours or one shift.
 import type { ShiftView } from '../tasks/task-data'
 

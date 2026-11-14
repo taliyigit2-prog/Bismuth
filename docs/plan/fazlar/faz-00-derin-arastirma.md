@@ -49,7 +49,7 @@ Kanıt kodu `prototypes/` (arşiv etiketi `archive/faz0`) altında durur; Faz 1 
 
 ### A0.9 Otel alanı doğrulaması ve günlük akış (K-09)
 - Sahiple 30 dk "günlük akış" görüşmesi → `docs/plan/akislar.md` (sabah/misafir geliş/çıkış/akşam/ay sonu; çamaşırhane kağıdı akışı; su teslimi; arıza bildirimi; bakanlık bildirimi).
-- Oda tipi, ödeme yöntemi, kanal, hizmet, çamaşır türü, ürün kategorisi, gider kategorisi tohum listelerini sahiple gözden geçir; Pandora'nın 19 odasını örnek kurulum verisi yap.
+- Oda tipi, ödeme yöntemi, kanal, hizmet, çamaşır türü, ürün kategorisi, gider kategorisi tohum listelerini sahiple gözden geçir; Lale'nın 19 odasını örnek kurulum verisi yap.
 
 ### A0.10 Claude Code çalışma düzeni (K-10)
 - `.claude/` kancalarını (zaten test edilmiş) Faz 1 komutlarıyla genişlet (pre-commit-gate, format-file, i18n-literal-warn); kalan ajan/becerileri yaz; her kancayı `test-hooks.mjs` ile doğrula.

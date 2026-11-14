@@ -218,7 +218,7 @@ const MONTHS: Record<string, number> = {
   december: 12
 }
 
-/** "Pandora Rezervasyon 2026 - Ekim.csv" → '2026-10'. */
+/** "Lale Rezervasyon 2026 - Ekim.csv" → '2026-10'. */
 export function monthFromName(text: string): string | null {
   const words = normalizeName(text).split(' ')
   const year = words.find((w) => /^20\d\d$/.test(w))

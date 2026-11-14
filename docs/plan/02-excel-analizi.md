@@ -5,7 +5,7 @@
 > davranışları birebir karşılamak zorundadır; sahibin alışkanlıkları ürünün kullanılabilirlik ölçütüdür.
 > Rakamlar örnektir; sahibin gerçek gelir/gideri bizi ilgilendirmez, yalnızca **yapı** önemlidir.
 
-## 1. Dosya 1: "Pandora Defter 2026" (kasa ve muhasebe)
+## 1. Dosya 1: "Lale Defter 2026" (kasa ve muhasebe)
 
 Sayfalar: `Ocak … Aralık` (aylık defter), `Eylül Özet` (kilitli), `Yıllık Özet` (kilitli), `Maaşlar` (kilitli).
 Kilitli sayfalar = çalışanların görmemesi gereken sayfalar → programda **rol yetkisi** ile karşılanır.
@@ -14,7 +14,7 @@ Kilitli sayfalar = çalışanların görmemesi gereken sayfalar → programda **
 
 Her gün bir **mavi başlık bandı** ile başlar (`01.10.2026`). Bandın solunda bir **onay kutusu** var:
 tıklanınca o günün satırlarını **nakit → havale → kredi kartı** sırasına dizer (sahibin açıklaması).
-Bandın sağındaki boş hücreye **gün notu** yazılır (örn. kırmızı italik "Nilüfer izin kullandı").
+Bandın sağındaki boş hücreye **gün notu** yazılır (örn. kırmızı italik "Nermin izin kullandı").
 
 **Gelir sütunları (turuncu başlık):**
 
@@ -29,8 +29,8 @@ Bandın sağındaki boş hücreye **gün notu** yazılır (örn. kırmızı ital
 | Platform | Açılır liste: **---, Airbnb, Booking, Expedia, Ostrovok, Bounce** (Bounce = bavul emaneti aracısı) |
 
 **Gider sütunları (lacivert başlık):** Kasa (`x` = kasadan ödendi/teslim edildi) · Gider · Birim · Gider Açıklaması.
-Örnek açıklamalar: "iş güvenliği", "Lider İlkyardım Eğitim Sağlık", "kenan maaş", "kenan 4 izin parası",
-"selvinaz 3 izin parası", "emil maaş", "Emil ocak ayı" → **maaşlar parça parça gider olarak yazılıyor.**
+Örnek açıklamalar: "iş güvenliği", "Lider İlkyardım Eğitim Sağlık", "kerem maaş", "kerem 4 izin parası",
+"sevim 3 izin parası", "ekin maaş", "Ekin ocak ayı" → **maaşlar parça parça gider olarak yazılıyor.**
 
 **Gözlemler (programın karşılaması gereken durumlar):**
 
@@ -48,7 +48,7 @@ Bandın sağındaki boş hücreye **gün notu** yazılır (örn. kırmızı ital
 1. **KASA DURUMU (Net)** — satırlar para birimi (TL, Euro, Dolar, Sterlin, Ruble), sütunlar Nakit / Kredi Kartı / İban; yanında Platform (Airbnb, Booking, Expedia, Ostrovok, Bounce) toplamları.
    Nakit sütunu ₺0 görünür çünkü nakitler `x`lenmiş (teslim alınmış). Kredi kartı yüksek çünkü henüz `x`lenmemiş.
    → Programda panel = **teslim alınmamış tutarlar** (para birimi × yöntem) + kanal toplamları.
-2. **PERSONEL DURUMU** — Personel · Avans · İzin Hak · Kul. İzin · Kalan (ör. Kenan ₺12.500 avans, 4/1/3).
+2. **PERSONEL DURUMU** — Personel · Avans · İzin Hak · Kul. İzin · Kalan (ör. Kerem ₺12.500 avans, 4/1/3).
 3. **HIZLI GÜN MENÜSÜ** — 1…31 bağlantıları.
 
 **Doğrulanan hesap:** Ekim: KK 26.300 + İban 1.000 + x'li nakit 10.000 = 37.300 = Yıllık Özet'teki Ekim cirosu.
@@ -79,11 +79,11 @@ Doğrulanan formüller:
 - Ay uzunluğu ne olursa olsun bölen **30**.
 - Avans maaşı aşabilir (35.000 − 35.005 + 2.333 = 2.328).
 
-Diğer: personel yıl içinde değişmiş (Selvinaz → Nilüfer, Eylül); maaş yıl içinde artmış (Ocak'ta Kenan 30.000 → 40.000;
-Ocak defterindeki "kenan 4 izin parası = 4.000" bunu doğrular); Kasım–Aralık tabloları önceden doldurulmuş.
-"Emil" ve "Elmir" **iki ayrı çalışan**.
+Diğer: personel yıl içinde değişmiş (Sevim → Nermin, Eda); maaş yıl içinde artmış (Ocak'ta Kerem 30.000 → 40.000;
+Ocak defterindeki "kerem 4 izin parası = 4.000" bunu doğrular); Kasım–Aralık tabloları önceden doldurulmuş.
+"Ekin" ve "Erol" **iki ayrı çalışan**.
 
-## 2. Dosya 2: "Pandora Rezervasyon 2026" (oda doluluğu)
+## 2. Dosya 2: "Lale Rezervasyon 2026" (oda doluluğu)
 
 Sayfalar: `Ocak … Aralık`. Yapı: **satır = oda, sütun = gün**. İlk iki sütun (ODA NO, ODA ÖZELLİĞİ) **dondurulmuş**.
 
@@ -131,7 +131,7 @@ Sahip: **"renkleri kullanıcı ayarlardan değiştirebilmeli; ben sadece kendime
 
 ### 2.4.1 Turizm Bakanlığı "Konaklama Bildirimi" paneli (is.kultur.gov.tr)
 
-- Başlık: "Konaklama Bildirimi - PANDORA SUIT OTEL - 2026 - EYLÜL". Menü: Konaklama Veri İşlemleri → Güncel Bilgi Formu, Eski Bilgi Formları, Kimsenin Gelmediği Aylar, Tesis Bilgileri ve Dönem Düzenleme; Hitit Kültür ve Turizm Sistemi → Tesis SGK Bilgileri.
+- Başlık: "Konaklama Bildirimi - LALE SUIT OTEL - 2026 - EYLÜL". Menü: Konaklama Veri İşlemleri → Güncel Bilgi Formu, Eski Bilgi Formları, Kimsenin Gelmediği Aylar, Tesis Bilgileri ve Dönem Düzenleme; Hitit Kültür ve Turizm Sistemi → Tesis SGK Bilgileri.
 - Form: **Ülke** (açılır liste, örn. "Özbekistan"), **Toplam Giriş**, **Toplam Geceleme** → Kaydet. Alt tablo: No · Ülke · Toplam Giriş · Toplam Geceleme · İşlemler (düzenle). Sağ üstte Toplam Giriş, Toplam Geceleme, **Doluluk Oranı** (% 0,24 — panel kendisi hesaplıyor). "Tesisimize Bu Ay Kimse Gelmedi" düğmesi.
 - Yasal dayanak metni: 5429 sayılı kanun, resmi istatistik; isim istenmiyor.
 - Sahibin notları: her ayın **1–10'u arasında** bildirilir; **aynı gün giriş‑çıkış = 1 geceleme**; **Türkler dahil**.
@@ -164,7 +164,7 @@ Tek sayfa `EGM_Konaklayan_Listesi`, 607 satır (Eylül). Sütunlar (harf → ba�
 
 ### 2.4.3 Su teslim fişi (tedarik takibi örneği)
 
-"TESLİM FİŞİ" — sucu firması (Altıyol‑Kadıköy), SAYIN: Pandora Suit, TARİH. Satırlar: ADET · AÇIKLAMA · B. FİYATI · TUTARI. Örnek: **40 × Munzur 0,5 PET su × 60 = 2.400**; diğer ürün satırları (1,5 L, 5 L, 10 L, 19 L damacana, maden suyu, buz) boş. Toplam 2.400.
+"TESLİM FİŞİ" — sucu firması (Altıyol‑Kadıköy), SAYIN: Lale Suit, TARİH. Satırlar: ADET · AÇIKLAMA · B. FİYATI · TUTARI. Örnek: **40 × Munzur 0,5 PET su × 60 = 2.400**; diğer ürün satırları (1,5 L, 5 L, 10 L, 19 L damacana, maden suyu, buz) boş. Toplam 2.400.
 → Tedarik kaydı alanları: tedarikçi, tarih, kalem (ürün, adet, birim fiyat, tutar), toplam, fiş fotoğrafı (isteğe bağlı). Sahibin derdi: **zam fark edilmiyor** → fiyat geçmişi ve uyarı.
 
 ### 2.4.4 Firma kaşesi (fatura bilgileri örneği)
@@ -173,7 +173,7 @@ Kaşe: unvan ("… PROJE MÜŞAVİRLİK MÜH. İNŞ. SAN. TİC. LTD. ŞTİ."), a
 
 ### 2.4.5 Çamaşırhane "Temiz Fişi" (üçüncü tur görseli)
 
-Başlık: çamaşırhane adı ("… Çamaşırhane & Ütü Evi"), **Temiz Fişi**, **Fiş No: RC10746**, **Tarih: 21.09.2026**, "Sayın PANDORA SUİT". Tablo: **Ürün Adı · Miktar · Lekeli**.
+Başlık: çamaşırhane adı ("… Çamaşırhane & Ütü Evi"), **Temiz Fişi**, **Fiş No: RC10746**, **Tarih: 21.09.2026**, "Sayın LALE SUİT". Tablo: **Ürün Adı · Miktar · Lekeli**.
 
 | Ürün Adı | Miktar | Lekeli |
 |---|---|---|
@@ -191,7 +191,7 @@ Başlık: çamaşırhane adı ("… Çamaşırhane & Ütü Evi"), **Temiz Fişi*
 
 ### 2.4.6 Bakanlık panelinden doluluk formülü çıkarımı
 
-Panel: Toplam Giriş 1, Toplam Geceleme 2, Doluluk Oranı %0,24 (Eylül = 30 gün). 2 ÷ (19 oda × 30) = %0,35 ✗; 2 ÷ (28 × 30) = %0,238 ≈ **%0,24** ✓ → panel **yatak sayısı × gün** kullanıyor; Pandora ≈ 28 yatak (S-78 ile teyit). Sahip de "bakanlık oda ve yatak sayısını biliyor" dedi.
+Panel: Toplam Giriş 1, Toplam Geceleme 2, Doluluk Oranı %0,24 (Eylül = 30 gün). 2 ÷ (19 oda × 30) = %0,35 ✗; 2 ÷ (28 × 30) = %0,238 ≈ **%0,24** ✓ → panel **yatak sayısı × gün** kullanıyor; Lale ≈ 28 yatak (S-78 ile teyit). Sahip de "bakanlık oda ve yatak sayısını biliyor" dedi.
 
 ## 3. Sahibin ek açıklamalarından çıkan kurallar
 

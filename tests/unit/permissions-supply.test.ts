@@ -175,7 +175,10 @@ describe('tedarik ve çamaşırhane yetkileri', () => {
     expect(settle.status).toBe(200)
     expect(JSON.parse(settle.body).settled.expenseId).toBeTruthy()
     // S-127: reopening the month is owner / manager only, even though the accountant may close days.
-    expect(defaultPermissions('accountant')).toMatchObject({ 'business_day.close': 'edit', 'laundry.reopen': 'none' })
+    expect(defaultPermissions('accountant')).toMatchObject({
+      'business_day.close': 'edit',
+      'laundry.reopen': 'none'
+    })
     const reopen = await env.call(
       'laundry.reopenMonth',
       { contactId: ids.laundry.id, year: 2026, month: 7, reason: 'fatura yanlış' },

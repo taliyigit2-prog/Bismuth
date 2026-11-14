@@ -3,9 +3,9 @@
 > Sahip Faz 0 sonunda otelin bir gününü ve ay sonunu anlattı. Bu belge her adımı **programdaki karşılığıyla** eşler;
 > ekran tasarımı (Faz 3), Bugün ekranı ve vardiya devri (Faz 9), görevler (Faz 9) ve kılavuz (Faz 15) buna dayanır.
 > Kişisel veri yoktur: WhatsApp görüntüsündeki adlar ve telefon numaraları bilerek yazılmadı.
-> **Pandora'ya özgü** olanlar (saatler, 2 resepsiyon × 12 saat, çamaşırhane saatleri) **ayardır** (G-09); başka otel farklı kurar.
+> **Lale'ya özgü** olanlar (saatler, 2 resepsiyon × 12 saat, çamaşırhane saatleri) **ayardır** (G-09); başka otel farklı kurar.
 
-## 1. Bir gün (Pandora örneği)
+## 1. Bir gün (Lale örneği)
 
 | Saat | Ne oluyor (sahibin anlatımı) | Bismuth'ta karşılığı |
 |---|---|---|
@@ -36,10 +36,10 @@ arıza Bismuth'ta tutulur; resepsiyon WhatsApp'tan gelen bilgiyi işler (S-97: s
 
 ## 3. Genelleme (ayar olanlar)
 
-- **Vardiya düzeni**: Pandora 2 resepsiyon × 12 saat (09:00–21:00, 21:00–09:00); başka otel 3 × 8 saat ya da tek kişi (`shift_definitions`).
+- **Vardiya düzeni**: Lale 2 resepsiyon × 12 saat (09:00–21:00, 21:00–09:00); başka otel 3 × 8 saat ya da tek kişi (`shift_definitions`).
 - **Çıkış saati** (12:00), **çamaşırhane saatleri**, **örnek görevler**: ilk kurulumda öneri, otel değiştirir/siler.
-- **Gün kapatma**: Pandora'da az kullanılır, başka otellerde gece kapanışı yaygın → ayar (G-72).
-- **Kasadan avans**, **ek mesai ücreti**: Pandora'da avans var, ek mesai ücreti yok → ayar (G-69, G-84).
+- **Gün kapatma**: Lale'da az kullanılır, başka otellerde gece kapanışı yaygın → ayar (G-72).
+- **Kasadan avans**, **ek mesai ücreti**: Lale'da avans var, ek mesai ücreti yok → ayar (G-69, G-84).
 
 ## 4. Rezervasyonun yaşamı: giriş, çıkış, iptal, iade (programdaki karşılığı)
 

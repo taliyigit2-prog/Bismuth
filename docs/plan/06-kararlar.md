@@ -33,7 +33,7 @@
 | K-26 | Tema: açık / koyu / sistem; sahibin renkleri `<style id="user-theme">` | **kesin** (S-07 ek) |
 | K-27 | **Kapasite geçmişi**: `room_capacity_changes` (oda, geçerlilik tarihi, satılabilir, yatak sayısı) — doluluk ve bakanlık oranı tarihteki kapasiteyle hesaplanır | **kesin** (sahip: tadilatla oda/yatak değişir) |
 | K-28 | **Çamaşırhane fiyatları**: tür × çamaşırhane × geçerlilik tarihli birim fiyat tablosu; fişte fiyat varsa satırda saklanır, yoksa tablodan; lekeli adet ayrı alan; **giden (kirli) / gelen (temiz) ayrı kayıt, tür bazında eksik devri** | **kesin** (sahip cevabı 9, S-95) |
-| K-29 | **Bakanlık istatistiği kuralları**: tüm geceler giriş ayına (**sonraki aya sarkan geceler dahil**); aynı gün = 1; çocuk ayrı değil (KBS satırı); doluluk = geceleme ÷ (yatak × gün); **gerçek** yatak sayısı (Pandora 38; Eylül %73,7) — bakanlıkta kayıtlı sayı (28) kullanılmaz, ayrı ayar yok | **kesin** (sahip bakanlıkla teyit etti; S-78, S-81, S-99) |
+| K-29 | **Bakanlık istatistiği kuralları**: tüm geceler giriş ayına (**sonraki aya sarkan geceler dahil**); aynı gün = 1; çocuk ayrı değil (KBS satırı); doluluk = geceleme ÷ (yatak × gün); **gerçek** yatak sayısı (Lale 38; Eylül %73,7) — bakanlıkta kayıtlı sayı (28) kullanılmaz, ayrı ayar yok | **kesin** (sahip bakanlıkla teyit etti; S-78, S-81, S-99) |
 | K-30 | **2026 verisi taşınacak** (Faz 14 içe aktarma sihirbazı zorunlu; renkler ödeme durumuna eşlenir) | **kesin** (S-08) |
 | K-31 | **Ücretsiz özel ağ = NetBird Cloud Free** (5 kullanıcı / 100 makine; ücretsiz planda ticari kullanım yasağı yok — "bireyler ve küçük ekipler"); ağın sahibi **otelin Gmail hesabı**, sahip kendi hesabıyla **davetli kullanıcı**; otel PC'de Windows servisi + kurulum anahtarı (setup key), oturum süresi dolması kapalı; telefonda NetBird uygulaması. Tailscale Personal "yalnız ticari olmayan kullanım" → varsayılan değil (sahip isterse çalışır); ZeroTier ücretsiz planı ticari değil → hayır; Cloudflare Zero Trust ücretsiz ama WARP 2025'te Türkiye'de engellendi → yedek seçenek. **Bismuth ağ programından bağımsızdır** (yalnız adres bilir). | **kesin** (S-82: "ücretsiz bir yol bul") — Faz 13 spike S-A NetBird ile |
 | K-32 | **Yedek**: program klasörü + otelin Google Drive klasörü (Drive masaüstü uygulaması eşitler; Bismuth buluta bağlanmaz, dosya yazar); günlük; **30 gün** saklama, yeni gelince en eskisi silinir; zayıf PC için düşük öncelik, **parça parça** (ör. 4 MB bloklar arası bekleme), sessiz saat (varsayılan 04:00) + kapanışta; Drive kopyası şifreli (K-05) | **kesin** (S-42, S-62) |
@@ -42,7 +42,7 @@
 | K-35 | **Giderler**: hazır kategori yok; `description` serbest + normalize edilmiş anahtar (otomatik tamamlama ve "en çok harcama" gruplaması); görünürlük `expense_sections` (Genel / Yönetici; yeniden adlandırılabilir); tedarik = gider + `expense_items` (ürün satırları; ayrı `purchases` tablosu yok) | **kesin** (S-33, S-74) |
 | K-36 | **KBS uyruk eşleme ve otelde kalanlar**: anahtar normalizasyonu (Türkçe büyük harf, aksan/noktalama), takma adlar (TR, KKTC, GKRY…), İngilizce + Türkçe ülke adları dizini, **harf hatalı yazımda tek en yakın aday → öneri + kullanıcı onayı**, belirsiz ("KIBRIS") ve hassas ("CYPRUS") değerler otomatik eşlenmez; onaylanan eşleme `country_map`'te kalıcı. Otelde kalanlar: Bismuth'ta aynı oda + giriş günü rezervasyonunun **planlı çıkışına** kadar, yoksa içe alma gününe kadar (işaretli, düzeltilebilir) | **kesin** (S-81, S-91; prototip: `prototypes/kbs-stats` (arşiv etiketi `archive/faz0`), 15 test) |
 | K-37 | **Açılış ekranı Takvim** (kullanıcı başına değiştirilebilir); Bugün ekranı menüde | **kesin** (S-11) |
-| K-38 | **Personel yetkileri**: teslim alma (x) Sahip + Müdür; ek mesai saati yalnız Müdür/Sahip; çalışan kendi geliş/çıkış saatini girer (`work_records.start_time/end_time`); mesai, bayram ve prim oranlarını Sahip + Müdür belirler (Pandora: ek mesai ücreti kapalı); kasadan avans ayarı | **kesin** (S-30, S-34…S-39) |
+| K-38 | **Personel yetkileri**: teslim alma (x) Sahip + Müdür; ek mesai saati yalnız Müdür/Sahip; çalışan kendi geliş/çıkış saatini girer (`work_records.start_time/end_time`); mesai, bayram ve prim oranlarını Sahip + Müdür belirler (Lale: ek mesai ücreti kapalı); kasadan avans ayarı | **kesin** (S-30, S-34…S-39) |
 | K-39 | **Kesintisiz faz yürütme**: Faz 5–16 ara onaysız; cevapsız soru = varsayılan; tek onay paketi en sonda | **kesin** (sahip, 2026-10-04) |
 | K-40 | Kılavuz metni dil başına Markdown dosyalarında | varsayılan (2026-10-05) |
 | K-41 | Bismuth anahtarının kâğıt biçimi 11×5 harf-rakam + QR | varsayılan (2026-10-05) |
@@ -284,7 +284,7 @@ sunmaz (yalnız Sahip/Müdür). (9) Firma: VKN 10 hane, TCKN algoritma, IBAN mod
 | S-81 | KBS'den seçilen tarih aralığının Excel'i alınıyor; "kurumlar arası iletişimi böyle yapmışlar, değiştiremeyiz; **sonraki aya sarkabilir**, kurumlar böyle kabul etmiş" | K-29, K-36: tüm geceler giriş ayına; otelde kalanlar planlı çıkışa kadar |
 | S-90 | "Biraz **görselleştirerek** göster; yağmurlu bulut simgesi vs." | K-13: Yr simgeleri, haftalık, mm |
 | S-91 | Panelde açılır liste yok, **yazdıkça geliyor**; listeyi biz ayarlayalım. KBS'de bazen **Türkiye ve Kuzey Kıbrıs yazım hataları** olur (son zamanlarda görmüyor) — önlem alınsın | K-36 (bulanık eşleme + onay; Eylül dosyasında "KUZEY KIBRIS TURK" örneği) |
-| — | Günlük akış anlatıldı (09:00 gündüz resepsiyon … 21:00 gece devri; ay sonu kontrolleri); 2 resepsiyon × 12 saat Pandora'ya özel | `akislar.md`; G-09, G-95 |
+| — | Günlük akış anlatıldı (09:00 gündüz resepsiyon … 21:00 gece devri; ay sonu kontrolleri); 2 resepsiyon × 12 saat Lale'ya özel | `akislar.md`; G-09, G-95 |
 | — | **Yeni istek:** Görevler sekmesi; gece/gündüz resepsiyonlarının birbirine ve kendilerine not yazabildiği sekme | G-94, G-95, K-34 |
 | S-10 | Kapora/kısmen ödendi için **ayrı renk** olabilir | G-32 |
 | S-11 | Açılış ekranı **Takvim** | G-47, K-37 |
@@ -308,10 +308,10 @@ sunmaz (yalnız Sahip/Müdür). (9) Firma: VKN 10 hane, TCKN algoritma, IBAN mod
 | S-31 | Banka kontrolü: **aynı x** | G-64 (G-65 kaldırıldı) |
 | S-32 | Kur: işlem günü, **yazıldığı dakika**; değişirse değiştirildiği an | G-70, G-112, K-15 |
 | S-33 | Gider kategorileri listesi **gerek yok** | G-66, K-35 |
-| S-34, S-35 | Mesai ücretini işletmeler belirler; Pandora'da **ek mesai ücreti yok**; oranı **Sahip ve Müdür** belirler | G-84, G-85, K-38 |
+| S-34, S-35 | Mesai ücretini işletmeler belirler; Lale'da **ek mesai ücreti yok**; oranı **Sahip ve Müdür** belirler | G-84, G-85, K-38 |
 | S-36 | Prim tabanını Sahip ve Müdür belirler | G-86 |
 | S-37 | İzin **devretmez, ödenir** | G-82 |
-| S-38 | Çalışanlar **kasadan avans** alabilir (Pandora; her otelde değil) | G-69, G-87 (ayar) |
+| S-38 | Çalışanlar **kasadan avans** alabilir (Lale; her otelde değil) | G-69, G-87 (ayar) |
 | S-39 | Ek mesaiyi **yalnız Müdür** yazar; normal mesaide çalışan kendi **geliş/çıkış saatini** yazabilir | G-84, K-38 |
 | S-64 | Arızaya **fotoğraf** eklensin; giderilince silinebilir; eski kayıtlar uzun tutulmasın, yedek büyümesin | G-180, K-25 |
 | S-76 | Maliyet alanı **gerekmez** (deftere zaten yazılıyor) | G-180 |
