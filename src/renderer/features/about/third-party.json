@@ -156,6 +156,11 @@
       "license": "MIT"
     },
     {
+      "name": "yaml",
+      "version": "2.9.1",
+      "license": "ISC"
+    },
+    {
       "name": "zod",
       "version": "4.6.5",
       "license": "MIT"
