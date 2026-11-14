@@ -17,7 +17,7 @@ import {
 } from './sidecar'
 import { buildSidecarConfig } from './config'
 import { removeLegacyCameraFiles } from './legacy'
-import { redactSecrets } from './redact'
+import { clearSecretValues, redactSecrets } from './redact'
 import { SIDECAR_SETTING_KEYS } from './config'
 
 const FIXTURE = fileURLToPath(new URL('../../../tests/fixtures/fake-sidecar.mjs', import.meta.url))
@@ -406,5 +406,16 @@ describe('yan sürecin okuduğu ayarlar', () => {
       'camera.enabled'
     ])
       expect(SIDECAR_SETTING_KEYS).not.toContain(k)
+  })
+
+  it('bilinen şifre ve belirteç, URL kalıbı dışında da birebir maskelenir', () => {
+    clearSecretValues()
+    const store = createSecretStore(null, null)
+    store.set('camera.source', 'rtsp:' + '//admin:Zq9-pass@10.0.0.2/x')
+    store.set('telegram.token', '777888:AAbbCCddEEffGG-token')
+    const out = redactSecrets('login failed with Zq9-pass; token 777888:AAbbCCddEEffGG-token rejected')
+    expect(out).not.toContain('Zq9-pass')
+    expect(out).not.toContain('AAbbCCddEEffGG')
+    clearSecretValues()
   })
 })

@@ -16,7 +16,7 @@ Sol menüde **Günlük işler → Otelde kalanlar**'ı açın. Ekran şu an otel
 ## KBS'ye bildirildi işareti {#kbs-mark}
 
 1. Kişiyi KBS'ye girin (her zamanki gibi).
-2. Bismuth'ta o kişinin satırındaki **KBS'ye bildirdim** düğmesine basın.
+2. Bismuth'ta o kişinin satırındaki **KBS'ye bildirildi olarak işaretle** düğmesine basın.
 3. Satırda "KBS'ye bildirildi" ile saat ve adınız görünür.
 
 Yanlış işaretlediyseniz **İşareti geri al**'a basın. Bildirilmemiş kişi kırmızıyla görünür; Bugün ekranında ve takvimdeki çubukta da **KBS eksik** uyarısı çıkar.
@@ -37,7 +37,7 @@ Kimlik numarası Bismuth'ta sorulmaz ve saklanmaz.
 
 ## Çıkışta KBS çıkışı {#kbs-checkout}
 
-Misafir çıkarken KBS'den çıkışını da yapın. Rezervasyonda **Çıkış yap**'a bastığınızda açılan pencerede KBS çıkışı yapılan kişileri işaretlersiniz. İşaretlenmeyenler bu ekranın altındaki **KBS çıkışı bekleyenler** listesinde kalır: KBS'de çıkışı yapıp burada **KBS çıkışını yaptım**'a basın.
+Misafir çıkarken KBS'den çıkışını da yapın. Rezervasyonda **Çıkış yap**'a bastığınızda açılan pencerede KBS çıkışı yapılan kişileri işaretlersiniz. İşaretlenmeyenler bu ekranın altındaki **KBS çıkışı bekleyenler** listesinde kalır: KBS'de çıkışı yapıp burada **KBS çıkışı yapıldı olarak işaretle**'a basın.
 
 Kişi rezervasyon bitmeden ayrıldıysa rezervasyon panelinde **Kişiler** sekmesinden **Kişi işlemleri → Ayrıldı olarak işaretle**'yi seçin.
 

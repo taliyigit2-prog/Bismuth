@@ -84,7 +84,7 @@ describe('otelde kalanlar', () => {
     expect(within(pending).getByTestId('pending-no-entry')).toHaveTextContent(
       'KBS girişi de işaretlenmemiş; düğme ikisini birlikte işaretler.'
     )
-    expect(within(pending).getByRole('button', { name: 'KBS çıkışını yaptım' })).toBeInTheDocument()
+    expect(within(pending).getByRole('button', { name: 'KBS çıkışı yapıldı olarak işaretle' })).toBeInTheDocument()
   })
 
   it('otel KBS kontrollerini kapatınca işaretsiz kişi kırmızı değildir (P9fix #14)', async () => {
@@ -121,7 +121,7 @@ describe('otelde kalanlar', () => {
     await renderWithProviders(<InHousePage />, { transport })
     const user = userEvent.setup()
     const elif = await screen.findByTestId('occupant-o-2')
-    await user.click(within(elif).getByRole('button', { name: "KBS'ye bildirdim" }))
+    await user.click(within(elif).getByRole('button', { name: "KBS'ye bildirildi olarak işaretle" }))
     await waitFor(() => expect(screen.getByTestId('occupant-o-2')).toHaveAttribute('data-kbs', 'ok'))
     expect(screen.getByTestId('occupant-o-2')).toHaveTextContent('Otel Sahibi')
     expect(transport.calls).toContainEqual({
@@ -129,7 +129,7 @@ describe('otelde kalanlar', () => {
       input: { occupantId: 'o-2', mark: 'reported' }
     })
     const pending = screen.getByTestId('in-house-checkout-pending')
-    await user.click(within(pending).getByRole('button', { name: 'KBS çıkışını yaptım' }))
+    await user.click(within(pending).getByRole('button', { name: 'KBS çıkışı yapıldı olarak işaretle' }))
     await waitFor(() => expect(screen.queryByTestId('in-house-checkout-pending')).not.toBeInTheDocument())
   })
 
@@ -179,7 +179,7 @@ describe('otelde kalanlar', () => {
     const state = sampleState()
     await renderWithProviders(<InHousePage />, { transport: withP9c(state) })
     await screen.findByTestId('in-house-room-101')
-    expect(screen.queryByRole('button', { name: "KBS'ye bildirdim" })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: "KBS'ye bildirildi olarak işaretle" })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Kişi ekle' })).not.toBeInTheDocument()
   })
 

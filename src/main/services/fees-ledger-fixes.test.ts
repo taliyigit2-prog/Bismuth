@@ -8,7 +8,7 @@ import { depsOf, roleCtx, testClock } from '../../../tests/factories/ctx'
 import { seededDatabase } from '../../../tests/factories/db'
 import { kbsWorkbookBuffer } from '../../../tests/factories/kbs'
 import type { DatabaseHandle } from '../db/client'
-import { damageDeposits, expenseSections, paymentMethods, roomTypes, salesChannels } from '../db/schema'
+import { damageDeposits, expenseSections, payments, paymentMethods, roomTypes, salesChannels } from '../db/schema'
 import { createServices } from './index'
 import { insertExpenseTx } from './expenses-service'
 
@@ -138,6 +138,18 @@ describe('depozito gelire çevirmeyi geri alma', () => {
     // It can be settled again afterwards.
     svc.fees.settleDeposit(owner, { id, action: 'refund' })
     expect(handle.db.select().from(damageDeposits).get()!.status).toBe('refunded')
+  })
+  it('eşleşen ödeme bulunamazsa geri alma hiçbir şeyi iptal etmeden hata verir', async () => {
+    const { svc, book, cash } = await setup()
+    const b = book(0, '2026-10-15', '2026-10-17')
+    svc.fees.takeDeposit(reception, { reservationId: b.reservation.id, amountMinor: 30_000, methodId: cash })
+    const id = svc.fees.folioLines(owner, b.reservation.id).deposits![0]!.id
+    svc.fees.settleDeposit(owner, { id, action: 'convert', reason: 'kirik' })
+    handle.db.update(payments).set({ amountMinor: 1 }).where(eq(payments.kind, 'payment')).run()
+    expect(() => svc.fees.settleDeposit(owner, { id, action: 'undoConvert', reason: 'yanlis' })).toThrow(
+      /not.?found/i
+    )
+    expect(handle.db.select().from(damageDeposits).get()!.status).toBe('converted')
   })
   it('geri alma ödeme iptal yetkisi ister', async () => {
     const { svc, book, cash } = await setup()

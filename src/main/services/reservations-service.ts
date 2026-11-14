@@ -2239,10 +2239,10 @@ export function createReservationsService(deps: ServiceDeps & { hooks?: Reservat
         if (group.folioMode !== 'single') throw invalid('errors.groupPayPerRoom')
         const open = groupMembers(tx, data.groupId)
           .filter((m) => isGroupPayableStatus(m.status))
-          .map((m) => ({ id: m.id, folio: detail(tx, m.id).folio }))
+          .map((m) => ({ id: m.id, status: m.status, folio: detail(tx, m.id).folio }))
         if (open.some((m) => m.folio.currency !== data.currency)) throw invalid('errors.groupPayCurrency')
         const due = groupPayableMinor(
-          open.map((m) => ({ status: 'confirmed', balanceMinor: m.folio.balanceMinor }))
+          open.map((m) => ({ status: m.status, balanceMinor: m.folio.balanceMinor }))
         )
         if (data.amountMinor > due) throw invalid('errors.groupPayExceeds', { balanceMinor: due })
         let left = data.amountMinor

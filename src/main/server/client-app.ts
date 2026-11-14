@@ -245,14 +245,19 @@ export function createClientApp(deps: ClientAppDeps): Hono<ApiEnv> {
    * Who may change the hotel list from this window (G-23, P21bfix). Before any sign-in (first set-up, choosing a
    * hotel on the connection screen) the screen is open: the list is only a convenience of this computer and every
    * real right is the hotel's own. A window signed in at its hotel needs `remote.settings` (edit) there, and is
-   * not locked. When the main computer cannot say who is signed in, the window is let through: the connection
-   * screen is the only way out of that state.
+   * not locked. When a session exists but the main computer cannot say who is signed in (error or any answer other
+   * than 200/203), the change is refused (fail closed).
    */
   async function mayChangeHotels(windowId: number): Promise<boolean> {
     if (!link.hasSession(windowId)) return true
-    const answer = await forward('auth.state', '{}', windowId)
-    if (answer.status !== 200 && answer.status !== 203) return true
-    const session = (JSON.parse(answer.body) as AuthState).session
+    let session: AuthState['session']
+    try {
+      const answer = await forward('auth.state', '{}', windowId)
+      if (answer.status !== 200 && answer.status !== 203) return false
+      session = (JSON.parse(answer.body) as AuthState).session
+    } catch {
+      return false
+    }
     if (!session) return true
     return !session.locked && levelAllows(session.permissions['remote.settings'] ?? 'none', 'edit')
   }

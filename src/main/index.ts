@@ -11,6 +11,7 @@ import { setMainLocale, tMain } from './app/i18n'
 import { chromiumLangSwitch, uiLocaleFile, writeUiLocale } from './app/chromium-lang'
 import { installCrashHandlers, offerRecoveryRestore, setUpErrorLog } from './app/crash-wiring'
 import { displayFollows } from './app/display-follow'
+import { setDrivePackaged } from './backup/drive'
 import { isDamagedDatabaseError } from './backup/startup-recovery'
 import { buildMenu } from './app/menu'
 import { browserUrl, keepRunningWithoutWindow, lightModeWanted } from './app/light-mode'
@@ -55,6 +56,7 @@ import { Hono } from 'hono'
 import type { ApiEnv } from './api/app'
 
 applyDataDirOverride()
+setDrivePackaged(app.isPackaged)
 // Built-in controls follow the program's language, not the computer's (faz-15 madde 11; read before `ready`).
 const chromiumLang = chromiumLangSwitch(uiLocaleFile(app.getPath('userData')))
 if (chromiumLang) app.commandLine.appendSwitch('lang', chromiumLang)

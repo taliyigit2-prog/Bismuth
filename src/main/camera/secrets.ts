@@ -5,6 +5,7 @@
 // can read (0600). Written atomically; never copied into a backup, a log or a window.
 import { chmodSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import type { Sealer } from '../network/state'
+import { registerSecretValues } from './redact'
 
 export const SECRET_IDS = ['camera.source', 'telegram.token', 'telegram.chatIds'] as const
 export type SecretId = (typeof SECRET_IDS)[number]
@@ -30,6 +31,18 @@ const isId = (id: string): id is SecretId => (SECRET_IDS as readonly string[]).i
 export function createSecretStore(file: string | null, sealer: Sealer | null): SecretStore {
   let values: Partial<Record<SecretId, string>> | null = null
 
+  /** The secrets themselves (token, the camera's password) join the verbatim mask list of `redactSecrets`. */
+  const remember = (id: SecretId, value: string): void => {
+    if (id === 'telegram.token') registerSecretValues([value])
+    else if (id === 'camera.source') {
+      for (const m of value.matchAll(/:\/\/([^\s@]*)@/g)) {
+        const userinfo = m[1] ?? ''
+        const at = userinfo.indexOf(':')
+        if (at >= 0) registerSecretValues([userinfo.slice(at + 1)])
+      }
+    }
+  }
+
   const load = (): Partial<Record<SecretId, string>> => {
     if (values) return values
     values = {}
@@ -47,6 +60,7 @@ export function createSecretStore(file: string | null, sealer: Sealer | null): S
     } catch {
       values = {}
     }
+    for (const [id, v] of Object.entries(values)) if (isId(id) && v) remember(id, v)
     return values
   }
 
@@ -72,7 +86,10 @@ export function createSecretStore(file: string | null, sealer: Sealer | null): S
     set(id, value) {
       const all = load()
       if (value === null || value === '') delete all[id]
-      else all[id] = value
+      else {
+        all[id] = value
+        remember(id, value)
+      }
       write()
     }
   }

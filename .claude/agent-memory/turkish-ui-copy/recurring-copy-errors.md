@@ -115,3 +115,15 @@ Ajan notu: bu oturumda `.tmp/` altına rapor dosyası yazma isteği araç taraf�
 
 **Why:** Dalga 12 json incelemesi ve düzeltmeleri; yeni anahtar eklenmedi.
 **How to apply:** Oda durumu adları room-status sözlüğüyle aynı olmalı; ru'da sayıyla birlikte isim kullanılmıyorsa isimsiz biçim tercih et.
+
+## Son dalga (kbs, elle kur, gün/ay yeniden açma, depozito geri alma) incelemesinden
+
+- "Gelmedi" yine tarih için kullanıldı (`pay.futureDay`): "henüz gelmedi" yerine "henüz başlamadı".
+- Alan etiketi "Neden" (`close.reopenBody`) ile "Gerekçe" karışıyor; gerekçe kalıbı tek.
+- Birinci tekil geçmiş düğmeler ("KBS'ye bildirdim", `occupants.markIn`) yine var; işaret ya da emir kipi.
+- KBS terim kayması: "bilgisi" / "bildirimi" / "bildirilmedi" aynı kavram için; önerilen "KBS bildirimi eksik".
+- Rozet biçimi: "{{count}} KBS eksik" tek kalıp (`gapBadge`); `kbs.badge` ayrı.
+- Toast noktası: "yeniden açıldı." noktalı; toast'lar noktasız.
+
+**Why:** Son dalga metin incelemesi (kbs/elle kur/depozito); bulgular `.tmp/son/copy.md`.
+**How to apply:** Yeni kbs/gün-ay yeniden açma metinlerinde yukarıdaki kalıpları ilk taramada kontrol et. Kabul: "Elle kur", "Kur ... (internet yoksa)", "Hasar nedir?" yerine "Hasar açıklaması".

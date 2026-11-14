@@ -136,11 +136,11 @@ test('tam gün: kurulum → rezervasyon → giriş/KBS → ödeme (TL, döviz) �
   await panel.getByTestId('panel-check-in').click()
   await expect(panel.getByTestId('panel-check-out')).toBeVisible()
   await panel.getByRole('tab', { name: /Kişiler/ }).click()
-  await panel.getByRole('button', { name: "KBS'ye bildirdim" }).first().click()
+  await panel.getByRole('button', { name: "KBS'ye bildirildi olarak işaretle" }).first().click()
   await panel.getByTestId('person-name').fill('Bora Yıldırım')
   await panel.getByRole('button', { name: 'Kişi ekle' }).click()
   await expect(panel.getByTestId('panel-kbs-warning')).toHaveText('KBS eksik: 1')
-  await panel.getByRole('button', { name: "KBS'ye bildirdim" }).click()
+  await panel.getByRole('button', { name: "KBS'ye bildirildi olarak işaretle" }).click()
   await expect(panel.getByTestId('panel-kbs-warning')).toHaveCount(0)
 
   // 4a. Ödeme (TL): the dialog suggests the balance; the night turns "ödendi", the balance is zero.

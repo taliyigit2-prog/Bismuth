@@ -202,7 +202,7 @@ describe('bileşenler (ekran)', () => {
     )
     expect(await screen.findByText('KBS girişi eksik')).toBeInTheDocument()
     expect(screen.getByText('kızıl saçlı')).toBeInTheDocument()
-    await userEvent.setup().click(screen.getByRole('button', { name: "KBS'ye bildirdim" }))
+    await userEvent.setup().click(screen.getByRole('button', { name: "KBS'ye bildirildi olarak işaretle" }))
     expect(onMark).toHaveBeenCalledWith('o1', 'in')
   })
 

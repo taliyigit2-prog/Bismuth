@@ -30,7 +30,7 @@ function network() {
   /** Every request that went out (address, path, headers). */
   const sent: Array<{ origin: string; path: string; headers: Record<string, string> }> = []
   /** What `auth.state` says the signed-in person may do (`remote.settings`). */
-  const session = { level: 'edit', locked: false }
+  const session = { level: 'edit', locked: false, stateStatus: 200 }
   const fetchLike = async (input: string, init: RequestInit): Promise<Response> => {
     const url = new URL(input)
     sent.push({
@@ -42,6 +42,8 @@ function network() {
     if (!host || host.behaviour === 'refused') throw new TypeError('fetch failed')
     if (url.pathname === '/api/auth.signIn')
       return new Response('{}', { status: 200, headers: { 'set-cookie': 'bismuth_session=abc123; Path=/' } })
+    if (url.pathname === '/api/auth.state' && session.stateStatus !== 200)
+      return new Response('{}', { status: session.stateStatus })
     if (url.pathname === '/api/auth.state')
       return new Response(
         JSON.stringify({
@@ -391,5 +393,17 @@ describe('nedenli bağlantı hatası (H-33)', () => {
     expect((await c.call('remote.hotelRemove', { code: pandora!.code })).status).toBe(403)
     net.session.locked = false
     expect((await c.call('remote.hotelRemove', { code: pandora!.code })).status).toBe(202)
+  })
+
+  it('oturum varken ana bilgisayar kimin açık olduğunu söyleyemezse otel listesi değiştirilemez', async () => {
+    const net = network()
+    net.hosts.set(A, { seed: 1, name: 'Pandora', behaviour: 'ok' })
+    const c = client(net)
+    expect((await c.call('remote.connect', { url: A })).status).toBe(202)
+    await c.call('auth.signIn', { username: 'u', password: 'p' })
+    net.session.stateStatus = 500
+    expect((await c.call('remote.connect', { url: A })).status).toBe(403)
+    net.session.stateStatus = 200
+    expect((await c.call('remote.connect', { url: A })).status).toBe(202)
   })
 })

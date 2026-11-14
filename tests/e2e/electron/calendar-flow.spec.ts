@@ -250,7 +250,7 @@ test('ikinci kişi KBS işaretsizse ızgaradaki çubukta uyarı simgesi çıkar,
   await panel.getByTestId('panel-check-in').click()
   await expect(panel.getByTestId('panel-check-out')).toBeVisible()
   await panel.getByRole('tab', { name: /Kişiler/ }).click()
-  await panel.getByRole('button', { name: "KBS'ye bildirdim" }).first().click()
+  await panel.getByRole('button', { name: "KBS'ye bildirildi olarak işaretle" }).first().click()
   await expect(panel.getByTestId('panel-kbs-warning')).toHaveCount(0)
   await closePanel(page)
   const kerem = bar(page, 'Kerem Aksoy', '102')
@@ -269,7 +269,7 @@ test('ikinci kişi KBS işaretsizse ızgaradaki çubukta uyarı simgesi çıkar,
 
   await kerem.click()
   await panel.getByRole('tab', { name: /Kişiler/ }).click()
-  await panel.getByRole('button', { name: "KBS'ye bildirdim" }).click()
+  await panel.getByRole('button', { name: "KBS'ye bildirildi olarak işaretle" }).click()
   await expect(panel.getByTestId('panel-kbs-warning')).toHaveCount(0)
   await closePanel(page)
   await expect(kerem).not.toHaveAttribute('data-icons', /\bkbs\b/)

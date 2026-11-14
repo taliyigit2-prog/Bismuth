@@ -80,6 +80,7 @@ const CATALOG = {
   room_issues: ['operations', [E, E, E, N, E, N]],
   contacts: ['operations', [E, E, E, V, V, N]],
   supplies: ['operations', [E, E, E, E, N, N]],
+  'laundry.reopen': ['operations', [E, E, N, N, N, N]], // S-127: reopening a settled month is owner/manager only (the accountant edits laundry but may not reopen)
   laundry: ['operations', [E, E, E, E, V, N]], // faz-12 madde 5: Muhasebeci edits (invoice, "Ödendi")
   camera: ['operations', [E, E, V, N, N, N]], // Faz 20 (K-49…K-53): view = status and alarms, edit = settings and secrets
   'camera.enroll': ['operations', [E, E, E, N, N, N]], // K-51: take a guest's face from the camera (biometric)

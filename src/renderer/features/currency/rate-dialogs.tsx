@@ -2,6 +2,7 @@
 // whether guests are told that rate; "Misafire göster" (G-110): the conversion in large type for the guest.
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { TriangleAlertIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import type { FxOverview } from '@shared/contract/external'
 import { rateDeviates } from '@shared/money'
@@ -142,7 +143,12 @@ export function HotelRateDialog({
           </p>
         </div>
         {farOff && lastKnown ? (
-          <p role="alert" className="text-warning text-xs" data-testid="hotel-rate-deviation">
+          <p
+            role="alert"
+            className="text-warning flex items-start gap-1.5 text-sm"
+            data-testid="hotel-rate-deviation"
+          >
+            <TriangleAlertIcon className="mt-0.5 size-4 shrink-0" aria-hidden />
             {t('currency.hotelRate.deviates', {
               percent: warnPercent,
               rate: f.number(rateNumber(lastKnown), 4)

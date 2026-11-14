@@ -419,7 +419,7 @@
       }
     },
     "kbsGaps": {
-      "title": "KBS details are missing for some rooms",
+      "title": "KBS reports are missing for some rooms",
       "body": "KBS reporting is incomplete in these rooms: {{rooms}}. You can still check out and finish the KBS steps afterwards.",
       "go": "Check out anyway"
     }
@@ -2021,8 +2021,8 @@
     "left": "Left",
     "kbsMissingIn": "KBS check-in missing",
     "kbsMissingOut": "KBS check-out missing",
-    "markIn": "Reported to KBS",
-    "markOut": "KBS check-out done"
+    "markIn": "Mark as reported to KBS",
+    "markOut": "Mark KBS check-out as done"
   },
   "attachments": {
     "hint": "Drop photos or PDFs — up to {{maxMb}} MB, {{max}} files per record.",
@@ -2394,7 +2394,8 @@
       "audit_log": "Audit log",
       "booking_undoCheckIn": "Taking a check-in back",
       "camera": "Camera",
-      "camera_enroll": "Face capture from the camera"
+      "camera_enroll": "Face capture from the camera",
+      "laundry_reopen": "Reopen laundry month"
     }
   },
   "setup": {
@@ -4014,7 +4015,7 @@
       "body": "The invoice figures of the month are cleared and its expense, if paid, is voided. Fix the slips, then enter the invoice again. The reason is recorded.",
       "reason": "Reason",
       "confirm": "Reopen",
-      "saved": "{{month}} reopened."
+      "saved": "{{month}} reopened"
     }
   },
   "contacts": {
@@ -4288,7 +4289,7 @@
       "overTitle": "Take more than the balance?",
       "overBody": "The balance is {{balance}} and {{amount}} is being taken. The extra {{over}} stays as money owed to the guest.",
       "overConfirm": "Save anyway",
-      "futureDay": "This day has not come yet. The payment is still recorded on it."
+      "futureDay": "This day has not started yet. The payment is still recorded on it."
     },
     "sale": {
       "service": "Service",
@@ -4854,6 +4855,12 @@
       "keyRemove": "Remove key",
       "keySaved": "Key saved",
       "keyRemoved": "Key removed"
+    },
+    "warnPercent": {
+      "label": "Typed-rate warning threshold (%)",
+      "hint": "A warning shows when a typed rate is this many percent away from the last known rate; saving stays possible.",
+      "invalid": "Type a whole number from 1 to 1000.",
+      "saved": "Warning threshold saved"
     }
   },
   "monthEnd": {
@@ -7692,7 +7699,8 @@
     "undo": "Undo",
     "undoTitle": "Undo the conversion to income?",
     "undoBody": "The damage charge and its payment of {{amount}} are voided and the deposit is held again.",
-    "undoneToast": "Conversion undone"
+    "undoneToast": "Conversion undone",
+    "noIdHint": "Do not write ID numbers."
   },
   "portfolio": {
     "title": "Portfolio",

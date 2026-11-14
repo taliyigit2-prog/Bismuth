@@ -146,7 +146,7 @@ describe('rezervasyon paneli', () => {
     )
     expect(within(panel).getByTestId('panel-check-out')).toBeInTheDocument()
     await user.click(within(panel).getByRole('tab', { name: /Kişiler/ }))
-    await user.click(within(panel).getByRole('button', { name: "KBS'ye bildirdim" }))
+    await user.click(within(panel).getByRole('button', { name: "KBS'ye bildirildi olarak işaretle" }))
     await waitFor(() => expect(within(panel).queryByTestId('panel-kbs-warning')).not.toBeInTheDocument())
     expect(transport.callsTo('booking.markKbs')).toEqual([{ occupantId: 'o-2', mark: 'reported' }])
   })

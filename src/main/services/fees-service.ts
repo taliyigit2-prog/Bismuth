@@ -330,6 +330,8 @@ export function createFeesService(deps: ServiceDeps, parts: { payments: Payments
             )
             .orderBy(desc(payments.createdAt))
             .get()
+          // No guessing past a missing payment: nothing is voided half way.
+          if (!payment) throw notFound('payment', before.id)
           const reason = data.reason ?? ''
           const closedReason = assertDayWritable(tx, ctx, charge.date, data.dayClosedReason ?? reason)
           if (!charge.voidedAt)
@@ -337,7 +339,7 @@ export function createFeesService(deps: ServiceDeps, parts: { payments: Payments
               .set({ voidedAt: now.toISOString(), voidReason: reason, updatedAt: now.toISOString() })
               .where(eq(charges.id, charge.id))
               .run()
-          if (payment) parts.payments.voidIn(ctx, tx, audit, now, payment.id, reason)
+          parts.payments.voidIn(ctx, tx, audit, now, payment.id, reason)
           audit({ entity: 'charge', entityId: charge.id, action: 'void', before: charge, reason })
           tx.update(damageDeposits)
             .set({

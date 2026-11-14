@@ -280,10 +280,20 @@ export function purgeExpired(tx: Writer, audit: AuditFn, now: Date): PurgeResult
     )
     .run().changes
   // KVKK: an event with no sealed picture left keeps no link to a guest either (the row stays, the field is cleared).
-  tx.update(cameraEvents)
+  const unlinked = tx
+    .update(cameraEvents)
     .set({ guestId: null, updatedAt: iso })
     .where(and(isNull(cameraEvents.cropEnc), isNotNull(cameraEvents.guestId)))
-    .run()
+    .run().changes
+  // One summary entry: only the count, never the sealed bytes (K-52).
+  if (unlinked > 0)
+    audit({
+      entity: 'camera_event',
+      entityId: 'retention-unlink',
+      action: 'update',
+      after: { unlinked },
+      reason: 'retention'
+    })
   if (crops > 0)
     audit({
       entity: 'camera_event',

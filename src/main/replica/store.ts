@@ -6,8 +6,9 @@
 // comes from (the "Yedek kopya · 14:32" badge, write buttons closed).
 // No Electron here (the main process passes paths and version in; tests use a temporary folder).
 import { existsSync, mkdirSync, renameSync, rmSync } from 'node:fs'
-import { join } from 'node:path'
+import { join, resolve, sep } from 'node:path'
 import { isProcedureName, type ProcedureName } from '@shared/contract'
+import { hotelCodeSchema } from '@shared/contract/remote'
 import { createApiApp } from '../api/app'
 import { createHandlers } from '../api/handlers'
 import { MigrationError, openReplicaDatabase, type ReplicaDatabase } from '../db/client'
@@ -143,7 +144,10 @@ export function createReplicaStore(options: ReplicaStoreOptions) {
     },
     /** A hotel left the list: its copy goes (it is only a copy; the hotel's own data is untouched). */
     removeCopy(hotel: string): void {
+      // Never delete anything outside the copies root, whatever the caller passes.
+      if (!hotelCodeSchema.safeParse(hotel).success) return
       const target = copyFolder(options.root, hotel)
+      if (!resolve(target).startsWith(resolve(options.root) + sep)) return
       if (target === folder) drop()
       rmSync(target, { recursive: true, force: true })
     },

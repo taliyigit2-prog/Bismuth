@@ -188,6 +188,6 @@ describe('Defter: erken hata avı düzeltmeleri', { timeout: 30_000 }, () => {
     await user.click(screen.getByRole('button', { name: 'Sonraki gün' }))
     await user.click(await screen.findByTestId('add-payment'))
     dialog = await screen.findByRole('dialog', { name: 'Ödeme ekle' })
-    expect(within(dialog).getByTestId('ledger-payment-future')).toHaveTextContent('henüz gelmedi')
+    expect(within(dialog).getByTestId('ledger-payment-future')).toHaveTextContent('henüz başlamadı')
   })
 })

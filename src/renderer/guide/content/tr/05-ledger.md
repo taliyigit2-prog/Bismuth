@@ -61,4 +61,4 @@ Bazı oteller her gece günü kapatır; kapanan güne sonradan kimse habersiz ka
 2. Basınca "… kapatılsın mı?" diye sorar; onaylayın.
 3. Gün **Kapalı gün** olarak işaretlenir.
 
-Kapalı bir güne kayıt eklemek ya da değiştirmek için yetki gerekir ve **Kapalı gün gerekçesi** yazılır; her değişiklik denetim kaydına girer. Yetkili kişi **Günü aç** ile günü yeniden açabilir.
+Kapalı bir güne kayıt eklemek ya da değiştirmek için yetki gerekir ve **Kapalı gün gerekçesi** yazılır; her değişiklik denetim kaydına girer. Yetkili kişi **Günü yeniden aç** ile günü yeniden açabilir.

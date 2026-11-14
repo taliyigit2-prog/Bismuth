@@ -552,17 +552,21 @@ export function createLaundryService(deps: ServiceDeps) {
      */
     reopenMonth(ctx: Ctx, input: LaundryReopenInput): LaundryMonth {
       requirePermission(ctx, 'laundry', 'edit')
-      requirePermission(ctx, 'business_day.close', 'edit')
+      // S-127 says owner / manager. `business_day.close` is not the right gate: the accountant holds it by default,
+      // so a dedicated key (owner + manager by default) keeps the accountant out; the owner can still hand it out.
+      requirePermission(ctx, 'laundry.reopen', 'edit')
       const data = parseInput(laundryReopenInputSchema, input)
       return inTransaction(deps, ctx, (tx, audit, now) => {
         laundryOf(tx, data.contactId)
         const before = settlementRow(tx, data.contactId, data.year, data.month)
         if (!before) throw conflict('errors.laundryMonthNotSettled')
         const iso = now.toISOString()
+        // Reopening rewrites the month's books: the last day of the month must be writable even when no expense exists.
+        const { last } = monthBounds(data.year, data.month)
+        assertDayWritable(tx, ctx, last, data.reason)
         if (before.expenseId) {
           requirePermission(ctx, 'expenses', 'edit')
-          const { last } = monthBounds(data.year, data.month)
-          assertDayWritable(tx, ctx, last, data.reason)
+          const expenseBefore = tx.select().from(expenses).where(eq(expenses.id, before.expenseId)).get()
           tx.update(expenses)
             .set({ voidedAt: iso, voidReason: 'laundry_reopened', updatedAt: iso })
             .where(and(eq(expenses.id, before.expenseId), isNull(expenses.voidedAt)))
@@ -571,6 +575,8 @@ export function createLaundryService(deps: ServiceDeps) {
             entity: 'expense',
             entityId: before.expenseId,
             action: 'void',
+            before: expenseBefore,
+            after: { ...expenseBefore, voidedAt: iso, voidReason: 'laundry_reopened' },
             reason: `laundry_reopened: ${data.reason}`
           })
         }

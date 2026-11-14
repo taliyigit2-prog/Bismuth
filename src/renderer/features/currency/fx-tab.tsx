@@ -446,6 +446,63 @@ function HistoryCard({ overview }: { overview: FxOverview }) {
   )
 }
 
+/** S-125: how far (in percent) a typed rate may be from the last known one before the dialog warns. */
+function WarnPercentCard() {
+  const { t } = useTranslation()
+  const settings = useSettings()
+  const update = useUpdateSettings()
+  const failed = useErrorToast()
+  const saved = settings.data?.['fx.manualRateWarnPercent'] ?? 20
+  const [text, setText] = useState<string | null>(null)
+  const shown = text ?? String(saved)
+  const value = /^\d{1,4}$/.test(shown.trim()) ? Number(shown.trim()) : null
+  const valid = value !== null && value >= 1 && value <= 1000
+  const changed = valid && value !== saved
+  return (
+    <Card className="py-3" data-testid="fx-warn-percent">
+      <CardContent className="px-4">
+        <form
+          className="grid gap-1.5"
+          onSubmit={(e) => {
+            e.preventDefault()
+            if (!changed) return
+            update.mutate(
+              { 'fx.manualRateWarnPercent': value },
+              { onError: failed, onSuccess: () => toast.success(t('currency.warnPercent.saved')) }
+            )
+          }}
+        >
+          <Label htmlFor="fx-warn-percent">{t('currency.warnPercent.label')}</Label>
+          <div className="flex flex-wrap items-center gap-2">
+            <Input
+              id="fx-warn-percent"
+              inputMode="numeric"
+              dir="ltr"
+              autoComplete="off"
+              maxLength={4}
+              value={shown}
+              aria-invalid={!valid}
+              aria-describedby="fx-warn-percent-hint"
+              onChange={(e) => setText(e.target.value)}
+              className="w-28 tabular-nums max-md:text-base"
+            />
+            <Button type="submit" variant="outline" size="sm" disabled={!changed || update.isPending}>
+              {t('common.save')}
+            </Button>
+          </div>
+          <p
+            id="fx-warn-percent-hint"
+            role={valid ? undefined : 'alert'}
+            className={cn('text-sm', valid ? 'text-muted-foreground' : 'text-destructive')}
+          >
+            {valid ? t('currency.warnPercent.hint') : t('currency.warnPercent.invalid')}
+          </p>
+        </form>
+      </CardContent>
+    </Card>
+  )
+}
+
 function FxView({ overview }: { overview: FxOverview }) {
   const { t } = useTranslation()
   const when = useWhen()
@@ -620,6 +677,7 @@ function FxView({ overview }: { overview: FxOverview }) {
           ) : null}
         </>
       )}
+      {canEdit ? <WarnPercentCard /> : null}
       {editing ? <HotelRateDialog open={editing} onOpenChange={setEditing} overview={overview} /> : null}
       <SourcesDialog open={sources} onOpenChange={setSources} />
       <GuestViewDialog

@@ -52,12 +52,18 @@ const fsProbe: Pick<DriveProbe, 'isDir' | 'list'> = {
   }
 }
 
+let packagedBuild = false
+/** The main process says once at start-up that this is a packaged build: test hooks in the environment are then ignored. */
+export function setDrivePackaged(packaged: boolean): void {
+  packagedBuild = packaged
+}
+
 const realProbe = (): DriveProbe => {
   let network: Set<string> | null = null
   return {
     platform: process.platform,
     // BISMUTH_DRIVE_HOME: test hook so e2e/screenshot runs never see (or write into) the owner's real Drive folder.
-    home: process.env['BISMUTH_DRIVE_HOME'] || homedir(),
+    home: (!packagedBuild && process.env['BISMUTH_DRIVE_HOME']) || homedir(),
     skipRoot: (root) => {
       if (process.platform !== 'win32') return false
       network ??= mappedNetworkLetters()

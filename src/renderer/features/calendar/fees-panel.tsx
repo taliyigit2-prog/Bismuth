@@ -480,6 +480,7 @@ function SettleDialog({
             onChange={(e) => setReason(e.target.value)}
             aria-invalid={(tried && bad) || undefined}
           />
+          <p className="text-muted-foreground text-sm">{t('feesPanel.noIdHint')}</p>
           {tried && bad ? (
             <p role="alert" className="text-destructive text-sm">
               {t('errors.reasonRequired')}

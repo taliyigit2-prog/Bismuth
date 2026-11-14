@@ -330,7 +330,7 @@ export function createDataImportService(deps: DataImportDeps) {
     code: ImportErrorCode,
     value: string
   ): void => {
-    list.push({ row, column, code, value: value.slice(0, 120) })
+    list.push({ row, column, code, value: value.slice(0, code === 'badDate' ? 40 : 120) })
   }
 
   // ------------------------------------------------------------------------------------------- reservation grid

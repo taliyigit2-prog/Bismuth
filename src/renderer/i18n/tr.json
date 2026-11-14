@@ -419,7 +419,7 @@
       }
     },
     "kbsGaps": {
-      "title": "Bazı odaların KBS bilgisi eksik",
+      "title": "Bazı odalarda KBS bildirimi eksik",
       "body": "Şu odalarda KBS bildirimi eksik: {{rooms}}. Çıkış yine de yapılabilir; KBS işlemlerini sonra tamamlayın.",
       "go": "Yine de çıkış yap"
     }
@@ -2021,8 +2021,8 @@
     "left": "Ayrıldı",
     "kbsMissingIn": "KBS girişi eksik",
     "kbsMissingOut": "KBS çıkışı eksik",
-    "markIn": "KBS'ye bildirdim",
-    "markOut": "KBS çıkışını yaptım"
+    "markIn": "KBS'ye bildirildi olarak işaretle",
+    "markOut": "KBS çıkışı yapıldı olarak işaretle"
   },
   "attachments": {
     "hint": "Fotoğraf ya da PDF sürükleyin — en çok {{maxMb}} MB, kayıt başına {{max}} dosya.",
@@ -2394,7 +2394,8 @@
       "audit_log": "Denetim kaydı",
       "booking_undoCheckIn": "Girişi geri alma",
       "camera": "Kamera",
-      "camera_enroll": "Kameradan yüz alma"
+      "camera_enroll": "Kameradan yüz alma",
+      "laundry_reopen": "Çamaşırhane ayını yeniden açma"
     }
   },
   "setup": {
@@ -4014,7 +4015,7 @@
       "body": "Faturası girilmiş ay açılır: fatura bilgisi silinir, ödendiyse gideri iptal edilir. Fişleri düzelttikten sonra faturayı yeniden girin. Gerekçe kayda geçer.",
       "reason": "Gerekçe",
       "confirm": "Yeniden aç",
-      "saved": "{{month}} yeniden açıldı."
+      "saved": "{{month}} yeniden açıldı"
     }
   },
   "contacts": {
@@ -4288,7 +4289,7 @@
       "overTitle": "Bakiyeden fazla ödeme alınsın mı?",
       "overBody": "Bakiye {{balance}}, alınan {{amount}}. Fazlası ({{over}}) misafire borç olarak kalır.",
       "overConfirm": "Yine de kaydet",
-      "futureDay": "Bu gün henüz gelmedi. Ödeme yine de bu güne yazılır."
+      "futureDay": "Bu gün henüz başlamadı. Ödeme yine de bu güne yazılır."
     },
     "sale": {
       "service": "Hizmet",
@@ -4326,9 +4327,9 @@
       "body": "Kapatılan güne yalnız yetkili kişi gerekçe yazarak değişiklik yapabilir; her değişiklik denetim kaydına girer.",
       "done": "Gün kapatıldı",
       "closedBadge": "Kapalı gün",
-      "reopen": "Günü aç",
+      "reopen": "Günü yeniden aç",
       "reopenTitle": "{{date}} yeniden açılsın mı?",
-      "reopenBody": "Gün yeniden değiştirilebilir olur. Neden denetim kaydına yazılır.",
+      "reopenBody": "Gün yeniden değiştirilebilir olur. Gerekçe denetim kaydına yazılır.",
       "reopened": "Gün yeniden açıldı"
     },
     "month": {
@@ -4854,6 +4855,12 @@
       "keyRemove": "Anahtarı kaldır",
       "keySaved": "Anahtar kaydedildi",
       "keyRemoved": "Anahtar kaldırıldı"
+    },
+    "warnPercent": {
+      "label": "Elle kur uyarı eşiği (%)",
+      "hint": "Yazılan kur son bilinen kurdan bu kadar yüzde uzaksa uyarı çıkar; kayıt yine yapılabilir.",
+      "invalid": "1 ile 1000 arasında bir tam sayı yazın.",
+      "saved": "Uyarı eşiği kaydedildi"
     }
   },
   "monthEnd": {
@@ -7684,15 +7691,16 @@
     "settleHelp": "Bu işlem geri alınamaz; kayıt denetim günlüğünde kalır.",
     "refundBody": "{{amount}} misafire iade edilir ({{method}}).",
     "convertBody": "{{amount}} hasar bedeli olarak hesaba yazılır ve tahsil edilmiş sayılır.",
-    "convertReason": "Hasar nedir? (zorunlu)",
+    "convertReason": "Hasar açıklaması (zorunlu)",
     "voidTitle": "Kalem iptal edilsin mi?",
     "voidHelp": "Kalem hesaptan düşer; kayıt silinmez.",
     "voidReason": "İptal nedeni",
     "voidedToast": "Kalem iptal edildi",
     "undo": "Geri al",
     "undoTitle": "Gelire çevirme geri alınsın mı?",
-    "undoBody": "{{amount}} tutarındaki hasar bedeli ve ödemesi iptal edilir; depozito yeniden elde tutulur.",
-    "undoneToast": "Gelire çevirme geri alındı"
+    "undoBody": "{{amount}} tutarındaki hasar bedeli ve ödemesi iptal edilir; depozito yeniden tutulur.",
+    "undoneToast": "Gelire çevirme geri alındı",
+    "noIdHint": "Kimlik numarası yazmayın."
   },
   "portfolio": {
     "title": "Portföy",

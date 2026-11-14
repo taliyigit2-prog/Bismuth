@@ -475,6 +475,13 @@ beforeAll(async () => {
       level: 'edit',
       run: (c) => svc.laundry.createItemType(c, 'Örtü')
     },
+    {
+      name: 'çamaşır ayını yeniden aç',
+      permission: 'laundry.reopen',
+      level: 'edit',
+      run: (c) =>
+        svc.laundry.reopenMonth(c, { contactId: 'yok', year: 2026, month: 9, reason: 'fatura yanlış' })
+    },
     { name: 'arızalar', permission: 'room_issues', level: 'view', run: (c) => svc.roomIssues.list(c) },
     {
       name: 'arıza bildir',
