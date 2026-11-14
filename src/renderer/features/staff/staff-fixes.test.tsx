@@ -134,4 +134,15 @@ describe('Personel: erken hata avı düzeltmeleri', { timeout: 30_000 }, () => {
       })
     )
   })
+
+  it('Gün ekle: saat ve ek mesai boşken kaydedilmez, hata görünür (H-39)', async () => {
+    const user = userEvent.setup()
+    const { transport } = await render()
+    await user.click(await screen.findByRole('tab', { name: 'Mesai' }))
+    await user.click(await screen.findByRole('button', { name: 'Gün ekle' }))
+    const dialog = await screen.findByRole('dialog')
+    await user.click(within(dialog).getByRole('button', { name: 'Kaydet' }))
+    expect(await within(dialog).findByText('Geliş ve çıkış saatini 09:00 gibi girin.')).toBeInTheDocument()
+    expect(transport.staffCalls.find((c) => c.name === 'staff.recordWork')).toBeUndefined()
+  })
 })

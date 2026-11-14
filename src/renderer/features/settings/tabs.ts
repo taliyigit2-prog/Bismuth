@@ -5,6 +5,7 @@ import type { PermissionKey, PermissionLevel } from '@shared/permissions'
 
 export const SETTINGS_SECTIONS = [
   'general',
+  'frequent',
   'hotel',
   'rooms',
   'lists',
@@ -46,6 +47,8 @@ export const sectionOf = (tab: SettingsTab | undefined): SettingsSection =>
  */
 const SECTION_NEEDS: Record<SettingsSection, readonly PermissionKey[]> = {
   general: [],
+  // Shortcuts to the sections used most; open to whoever may open one of them.
+  frequent: ['settings', 'settings.rooms', 'settings.lists', 'settings.users', 'settings.backup'],
   hotel: ['settings'],
   rooms: ['settings.rooms'],
   lists: ['settings.lists'],

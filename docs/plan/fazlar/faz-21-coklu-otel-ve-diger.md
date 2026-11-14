@@ -131,3 +131,18 @@ Merkezi bulut veritabanı; oteller arası ortak misafir kartı (ileride öneri);
 - **Ölçümler:** ui:shot metrik: yatay taşma 0, 44 px altı hedef 0 (tr+ru, açık+koyu, masaüstü+telefon).
 - **Kalan (sahip onay paketine):** gerçek iki otelde (NetBird) iki kopya ile deneme. İki ana bilgisayarlı istemci e2e senaryosu
   birim testlerle (`portfolio.test.ts`, `portfolio-wiring.test.ts`) karşılandı.
+
+### P21e-A — Arayüz bulguları (2026-11-14)
+- **Yapıldı:** H-13 (telefon gün listesinde "Çıkış yaptı" rozeti), H-20 (denetim alan etiketleri), H-22 (`void` = "Geçersiz kıldı"), H-23/H-32/H-47
+  (toast süresi 4 sn, en çok 3, dışa aktarma toast'ı yalnız dosya adı, Turizm indirmesi aynı toast, Defter toast'ları tek kimlik),
+  H-26 (döviz çevirici eksi/ondalık/büyük tutar hatası), H-27 (Ay sonu "Doluluk (ayın tamamı)", otonom varsayılan), H-30 (devir bir kez
+  kaydedilir + boş not ipucu), H-31 (gelecek güne ödeme uyarısı, otonom varsayılan: uyar, engelleme), H-37, H-38, H-39, H-40 (1–5),
+  H-41, H-42 (kapanırken kaydeder), H-43, H-45 (hatırlatma görevi), H-46; mükerrer misafir kartı önerisi; Ayarlar "Sık kullanılan";
+  05 #2 (panel genişliği), #3 (≥1800 px gün sütunu 4,5 rem), #5 (menü grupları katlanır), #6 (yedek uyarısı tek satır), #1 kısmen
+  (başlık açıklaması ve boşluklar sıkıştı, ızgara yüksekliği `100dvh−15rem`; lejant/Park alanı altta kaldığından sayfa kaydırması sürer);
+  Kamera: boş durum kartı gövdesi, alarm süzgeci 2×2, "Görüldü/Halledildi olarak işaretle", `numberInvalid` biçimli sınırlar, ana süreç
+  `tFor` çoğul desteği + `main.camera.crashedBody` çoğul anahtarları, üç P20d ayarı alanı, canlı görüntü etiket boyutu, personel satırı
+  düğmeleri; `fees-panel` "Yeniden dene"; `connect` kaldırma başlığı.
+- **Zaten çözülmüş / üretilemedi:** H-29 (aria-label zaten 40 karakter), Ücretler kartı `SelectTrigger` (zaten `w-full`), Portföy telefon alt
+  boşluğu (`pb-24` var; telefon tarayıcısı bu makinede olmadığından üretilemedi).
+- **Kalanlar:** H-30 "kendi devrin Okunmamış" (servis tarafı), H-20 kimlik yerine ad/oda (servis), 05 #1 tam çözüm, H-43 için jsdom'da grafik testi yok.

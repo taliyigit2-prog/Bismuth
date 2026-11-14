@@ -23,6 +23,7 @@ import {
   ListIcon,
   ShieldCheckIcon,
   SlidersHorizontalIcon,
+  StarIcon,
   TagIcon,
   UsersRoundIcon,
   type LucideIcon
@@ -42,6 +43,7 @@ import { CalendarSection } from './calendar-section'
 import { CameraSection } from './camera-section'
 import { GeneralSection, IdleLockCard } from './general-section'
 import { FeesCard } from './fees-card'
+import { FrequentSection } from './frequent-section'
 import { HotelSection } from './hotel-section'
 import { ListsSection } from './lists-section'
 import { AboutNote, CurrencyNote } from './note-sections'
@@ -68,6 +70,7 @@ import { VIEW_ONLY_FIELDS, ViewOnlyNote } from './view-only'
 
 const ICONS: Record<SettingsSection, LucideIcon> = {
   general: SlidersHorizontalIcon,
+  frequent: StarIcon,
   hotel: Building2Icon,
   rooms: BedDoubleIcon,
   lists: ListIcon,
@@ -144,6 +147,8 @@ export function SettingsPage() {
             <IdleLockCard values={values} onSave={save} />
           </div>
         )
+      case 'frequent':
+        return <FrequentSection sections={sections} icons={ICONS} />
       case 'hotel':
         return (
           <div className="grid gap-6">

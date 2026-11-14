@@ -24,7 +24,8 @@ export function FaceBoxes({
   boxes: readonly CameraBox[]
 }) {
   const { t } = useTranslation()
-  const size = Math.max(12, Math.round(frame.height / 34))
+  // The picture is shown smaller than its pixels (a phone, the 960 px stream): the label is sized for that.
+  const size = Math.max(16, Math.round(frame.height / 24))
   return (
     <svg
       viewBox={`0 0 ${frame.width} ${frame.height}`}

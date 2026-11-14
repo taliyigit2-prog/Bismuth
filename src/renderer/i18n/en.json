@@ -546,7 +546,8 @@
       "users": "Users and roles",
       "about": "About",
       "guide": "Guide",
-      "camera": "Camera"
+      "camera": "Camera",
+      "frequent": "Frequently used"
     },
     "tags": {
       "autoTitle": "Automatic statuses",
@@ -928,7 +929,8 @@
         "summaryFailed": "Could not be written",
         "never": "Not yet",
         "term": "Main computer term",
-        "summaryPlace": "The summary is Drive/Bismuth/ozet.pdf; open it with the Drive app on the phone."
+        "summaryPlace": "The summary is Drive/Bismuth/ozet.pdf; open it with the Drive app on the phone.",
+        "runBlocked": "First choose the Drive folder and create the key."
       },
       "replaced": {
         "title": "This computer is no longer the main computer",
@@ -1293,7 +1295,8 @@
       "ownHoursToday": "Today only",
       "ownHoursDays_one": "{{count}} day back",
       "ownHoursDays_other": "{{count}} days back",
-      "numberRange": "Enter a whole number from {{min}} to {{max}}."
+      "numberRange": "Enter a whole number from {{min}} to {{max}}.",
+      "rateRange": "Enter a rate between {{min}} and {{max}}."
     },
     "calendar": {
       "highlight": "Highlighted days",
@@ -1424,7 +1427,13 @@
         "processEveryN": "Check every how many frames",
         "processEveryNHelp": "Raising it eases the computer but slows the reaction.",
         "verifiedTtl": "Recognised person time (seconds)",
-        "verifiedTtlHelp": "A recognised person is not checked again for this long."
+        "verifiedTtlHelp": "A recognised person is not checked again for this long.",
+        "uncertainMargin": "Uncertain recognition margin",
+        "uncertainMarginHelp": "Matches this close to the threshold are not counted as sure and are checked again. 0 = off.",
+        "idleFaceScanEvery": "Idle face scan (frames)",
+        "idleFaceScanEveryHelp": "How many frames pass between face checks while nothing moves. Higher eases the computer. 0 = no check while idle.",
+        "streamMaxWidth": "Live view width (pixels)",
+        "streamMaxWidthHelp": "Largest width of the live view. Smaller eases the local network and phones."
       },
       "advancedTitle": "Recognition settings",
       "advancedHelp": "Leave these alone unless you know what you are doing; the defaults suit most hotels.",
@@ -1456,6 +1465,18 @@
       "depositAmount": "Default amount",
       "depositHelp": "Leave it empty or zero to type the amount each time.",
       "save": "Save fees"
+    },
+    "frequent": {
+      "title": "Frequently used settings",
+      "help": "Jump to the settings that change over time. The rest is in the list on the side.",
+      "hint": {
+        "hotel": "Hotel name, times, taxes and fee items",
+        "rooms": "Rooms, room types and nightly rates",
+        "lists": "Payment methods, sales channels and extra services",
+        "staff": "Day-off, pay and overtime rules",
+        "users": "Users, roles and permissions",
+        "backup": "Backup, restore and export"
+      }
     }
   },
   "status": {
@@ -1877,7 +1898,9 @@
       "alertBody": "At {{time}}. Open the Camera screen.",
       "alertBodyAt": "At {{time}}, {{location}}. Open the Camera screen.",
       "alertTelegram": "Bismuth: an unregistered person is at the camera. At {{time}}.",
-      "alertTelegramAt": "Bismuth: an unregistered person is at the camera. At {{time}}, {{location}}."
+      "alertTelegramAt": "Bismuth: an unregistered person is at the camera. At {{time}}, {{location}}.",
+      "crashedBody_one": "The camera system stopped {{count}} time; it is restarting by itself.",
+      "crashedBody_other": "The camera system stopped {{count}} times; it is restarting by itself."
     }
   },
   "companies": {
@@ -4224,7 +4247,8 @@
       "voided": "Payment voided",
       "overTitle": "Take more than the balance?",
       "overBody": "The balance is {{balance}} and {{amount}} is being taken. The extra {{over}} stays as money owed to the guest.",
-      "overConfirm": "Save anyway"
+      "overConfirm": "Save anyway",
+      "futureDay": "This day has not come yet. The payment is still recorded on it."
     },
     "sale": {
       "service": "Service",
@@ -4829,7 +4853,7 @@
       "revenue": "Revenue",
       "expenses": "Expenses",
       "profit": "Profit",
-      "occupancy": "Occupancy",
+      "occupancy": "Occupancy (whole month)",
       "vsPrevious": "vs previous month",
       "margin": "Margin {{value}}",
       "nights": "{{sold}}/{{sellable}} room-nights"
@@ -5372,7 +5396,8 @@
       "placeholder": "Anything to add to the summary, e.g. 503 arrives late, leave the door open.",
       "save": "Save handover",
       "saved": "Handover saved",
-      "noShift": "No shifts are set up. Enter the hours in Settings → Shifts."
+      "noShift": "No shifts are set up. Enter the hours in Settings → Shifts.",
+      "emptyHint": "If you write no note, only the automatic summary is saved."
     },
     "auto": {
       "title": "Automatic summary",
@@ -5589,7 +5614,9 @@
       "changed": "Last change: {{name}} · {{when}}",
       "system": "The program",
       "occupied": "The room is occupied.",
-      "closedNoBlock": "No block on the calendar: the room is occupied tonight."
+      "closedNoBlock": "No block on the calendar: the room is occupied tonight.",
+      "reminderTitle": "Room {{room}}: set the status again after the guest leaves",
+      "reminderBody": "“{{state}}” was chosen but no block was opened because the room is occupied. Choose the status again when the guest leaves."
     },
     "noMatchBody": "Pick another status.",
     "statusSaved": "Room {{room}} marked as “{{state}}”",
@@ -5870,7 +5897,18 @@
       "startTime": "Start time",
       "endTime": "End time",
       "status": "Status",
-      "remoteAccess": "Remote sign-in"
+      "remoteAccess": "Remote sign-in",
+      "method": "Method",
+      "password": "Password",
+      "expiresAt": "Expires at",
+      "folioId": "Folio",
+      "titleI18n": "Title",
+      "reservationId": "Reservation",
+      "guestId": "Guest",
+      "roomId": "Room",
+      "date": "Date",
+      "phone": "Phone",
+      "email": "Email"
     },
     "importReason": "Import",
     "setting": {
@@ -5991,7 +6029,9 @@
       "firstName": "First name",
       "lastName": "Last name",
       "phone": "Phone",
-      "email": "Email"
+      "email": "Email",
+      "similar": "A guest with a similar name is already saved. If it is the same person, use that card instead of a new one.",
+      "useCard": "Use this card"
     },
     "issues": {
       "title": "Room {{room}} has an open issue",

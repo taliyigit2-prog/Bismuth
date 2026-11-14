@@ -39,6 +39,19 @@ describe('Drive klasörünü bulma (yerel tarama)', () => {
     expect(findMyDrive(probe)).toBe(mine)
   })
 
+  it('Windows: eşlenmiş ağ sürücüsüne hiç dokunmaz (tarama donmaz)', () => {
+    const touched: string[] = []
+    const probe = probeOf([join('H:\\', 'My Drive')], {
+      isDir: (p) => {
+        touched.push(p)
+        return p === join('H:\\', 'My Drive')
+      },
+      skipRoot: (root) => root === 'G:\\' || root === 'D:\\'
+    })
+    expect(findMyDrive(probe)).toBe(join('H:\\', 'My Drive'))
+    expect(touched.some((p) => p.startsWith('G:') || p.startsWith('D:'))).toBe(false)
+  })
+
   it('Drive yoksa null döner ve hiçbir klasör oluşturmaz', () => {
     expect(findMyDrive(probeOf([]))).toBeNull()
     expect(prepareDriveBackupDir(probeOf([]))).toBeNull()

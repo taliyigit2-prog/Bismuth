@@ -85,7 +85,7 @@ export function ReservationPanel({
         side={isMobile ? 'bottom' : 'right'}
         className={cn(
           'gap-0 overflow-y-auto',
-          isMobile ? 'max-h-[92dvh] rounded-t-xl' : 'w-full sm:max-w-2xl'
+          isMobile ? 'max-h-[92dvh] rounded-t-xl' : 'w-full sm:max-w-[clamp(26rem,45vw,35rem)]'
         )}
         data-testid="reservation-panel"
       >

@@ -78,11 +78,14 @@ function BackupAlert() {
     <Alert className="border-warning/60" data-testid="today-backup">
       <DatabaseBackupIcon aria-hidden />
       <AlertTitle>{t('today.backupTitle')}</AlertTitle>
-      <AlertDescription className="grid gap-2">
-        {messages.map((m) => (
-          <p key={m}>{t(`backup.warning.${m}`)}</p>
-        ))}
-        <Button asChild size="sm" variant="outline" className="justify-self-start">
+      {/* 05 #6: one line on a wide screen (message, then the button); several warnings stack in the first part. */}
+      <AlertDescription className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <div className="grid min-w-0 flex-1 basis-64 gap-1">
+          {messages.map((m) => (
+            <p key={m}>{t(`backup.warning.${m}`)}</p>
+          ))}
+        </div>
+        <Button asChild size="sm" variant="outline" className="max-md:w-full">
           <Link to="/settings" search={{ tab: 'backup' }}>
             {t('today.backupOpen')}
           </Link>

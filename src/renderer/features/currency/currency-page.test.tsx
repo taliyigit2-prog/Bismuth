@@ -220,6 +220,24 @@ describe('Döviz ekranı', { timeout: 20_000 }, () => {
   })
 })
 
+describe('çevirici tutar denetimi', () => {
+  it('eksi, fazla ondalıklı ve çok büyük tutar açıklamalı hata verir (H-26)', async () => {
+    const user = userEvent.setup()
+    await render()
+    const converter = await screen.findByTestId('converter')
+    const input = within(converter).getByLabelText('Tutar')
+    for (const [text, message] of [
+      ['-5', /sıfırdan küçük/],
+      ['1.000,555', /sayı olmalı/],
+      ['99999999999999999', /çok büyük/]
+    ] as const) {
+      await user.clear(input)
+      await user.type(input, text)
+      expect(await within(converter).findByText(message)).toBeInTheDocument()
+    }
+  })
+})
+
 describe('Hava ve Bayramlar sekmeleri', { timeout: 20_000 }, () => {
   it('Hava sekmesi: konum, şimdi, saatlik ve haftalık tahmin, kaynak atfı', async () => {
     const user = userEvent.setup()

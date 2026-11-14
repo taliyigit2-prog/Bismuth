@@ -297,6 +297,8 @@ export const CAMERA_PROBE_REASONS = [
   'unavailable',
   'noAddon'
 ] as const
+/** The wizard picture (≤ 640 px wide JPEG, base64 data address) is a few hundred KB at most; a bigger one is not ours. */
+export const MAX_PROBE_IMAGE_CHARS = 1_000_000
 export const cameraProbeSchema = z.object({
   ok: z.boolean(),
   /** Why no picture came: timeout, unreachable (nothing answers there), auth (user or password), path, noFrame
@@ -304,7 +306,7 @@ export const cameraProbeSchema = z.object({
    *  computer cannot run the camera part; noAddon: the camera add-on is not installed). */
   reason: z.enum(CAMERA_PROBE_REASONS).nullable(),
   /** `data:image/jpeg;base64,…` of the picture. */
-  image: z.string().nullable(),
+  image: z.string().max(MAX_PROBE_IMAGE_CHARS).nullable(),
   width: z.number().int().min(0),
   height: z.number().int().min(0)
 })

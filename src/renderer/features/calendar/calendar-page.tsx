@@ -118,7 +118,8 @@ export function CalendarPage() {
   return (
     <Page
       title={t('calendar.title')}
-      description={t('calendar.description')}
+      description={isMobile ? t('calendar.description') : undefined}
+      className="md:gap-3"
       wide={!isMobile}
       actions={actions}
     >

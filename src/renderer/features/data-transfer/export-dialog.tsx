@@ -40,7 +40,7 @@ export function ExportDialog({
     onSuccess: (file) => {
       if (file.delivery === 'canceled') return
       if (file.delivery === 'download') saveExport(file)
-      toast.success(t('dataTransfer.export.done', { name: file.savedPath ?? file.fileName }))
+      toast.success(t('dataTransfer.export.done', { name: file.fileName }), { id: 'data-export' })
     },
     onError: (error) =>
       toast.error(t('dataTransfer.export.failed'), {

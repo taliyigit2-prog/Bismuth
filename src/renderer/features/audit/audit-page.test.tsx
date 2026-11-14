@@ -26,7 +26,7 @@ describe('Denetim kaydı', () => {
     await screen.findByTestId('audit-list', {}, { timeout: 5000 })
     expect(rows()).toHaveLength(50)
     expect(within(rows()[0]!).getByText('Ödeme')).toBeInTheDocument()
-    expect(within(rows()[0]!).getByText('İptal etti')).toBeInTheDocument()
+    expect(within(rows()[0]!).getByText('Geçersiz kıldı')).toBeInTheDocument()
     expect(within(rows()[0]!).getByText('Resepsiyon bilgisayarı')).toBeInTheDocument()
     expect(screen.getByText('50 kayıt gösteriliyor')).toBeInTheDocument()
     await user.click(screen.getByTestId('audit-more'))

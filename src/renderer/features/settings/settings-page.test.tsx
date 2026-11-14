@@ -37,6 +37,7 @@ describe('Ayarlar', () => {
         .map((link) => link.textContent)
     ).toEqual([
       'Genel',
+      'Sık kullanılan',
       'Otel',
       'Odalar ve tipler',
       'Listeler',
@@ -53,6 +54,10 @@ describe('Ayarlar', () => {
       'Kılavuz',
       'Hakkında'
     ])
+    await openTab('Sık kullanılan')
+    expect(await screen.findByTestId('settings-frequent')).toBeInTheDocument()
+    await userEvent.setup().click(screen.getByTestId('frequent-rooms'))
+    expect(await screen.findByTestId('room-table')).toBeInTheDocument()
     await openTab('Otel')
     expect(await screen.findByLabelText('Otel adı')).toBeInTheDocument()
     await openTab('Odalar ve tipler')

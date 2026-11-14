@@ -81,6 +81,9 @@ const RANGES: Partial<Record<keyof Draft, readonly [number, number]>> = {
 }
 const rangeOf = (key: keyof Draft): readonly [number, number] => RANGES[key] ?? [0, 31]
 
+/** Rates with a sensible range (H-40): a holiday multiplier of 0 or 99 would wreck the salary table. */
+const RATE_LIMITS: Partial<Record<keyof Draft, readonly [number, number]>> = { holidayMultiplier: [1, 5] }
+
 const RATE = /^\d{1,6}(?:[.,]\d{1,6})?$/
 type Bad = Partial<Record<keyof Draft, true>>
 
@@ -96,7 +99,9 @@ function valuesOf(d: Draft): { values: PayPolicyValues; bad: Bad } {
     return Number(text)
   }
   const rate = (key: keyof Draft, text: string): string | undefined => {
-    if (!RATE.test(text.trim())) {
+    const limits = RATE_LIMITS[key]
+    const n = Number(text.trim().replace(',', '.'))
+    if (!RATE.test(text.trim()) || (limits && (n < limits[0] || n > limits[1]))) {
       bad[key] = true
       return undefined
     }
@@ -195,7 +200,9 @@ function TextField({
   const id = `${form.prefix}-${name}`
   const error = form.bad[name]
     ? kind === 'rate'
-      ? t('settings.staffPolicy.rateInvalid')
+      ? RATE_LIMITS[name]
+        ? t('settings.staffPolicy.rateRange', { min: RATE_LIMITS[name][0], max: RATE_LIMITS[name][1] })
+        : t('settings.staffPolicy.rateInvalid')
       : t('settings.staffPolicy.numberRange', { min: rangeOf(name)[0], max: rangeOf(name)[1] })
     : null
   return (

@@ -108,7 +108,7 @@ Harcama sütunu: başlatıcının yazdığı `$` (dalga toplamı, gerçek).
 | 11 | P21b İstemci çoklu ana bilgisayar (K-54: kayıtlı otel listesi) | 21 | remote | feature-builder | $8–12 | ~$15 | ✅ |
 | 12 | P21c Portföy özeti (iki otelin takvimi, gelir-gider, doluluk, kasa) | 21 | portfolio | feature-builder | $8–12 | ~$20 | ✅ |
 | 12 | P21d Geç çıkış, no-show bedeli, hasar depozitosu kalemi, gece raporu | 21 | booking, reports | feature-builder | $6–9 | ~$18 | ✅ |
-| 13 | P21e Orta/Düşük bulgular (02 + 04 listesi, faz-21) | 21 | bulguya göre | feature-builder-lite / feature-builder | $4–6 | | 🔄 |
+| 13 | P21e Orta/Düşük bulgular (02 + 04 listesi, faz-21) | 21 | bulguya göre | feature-builder-lite / feature-builder | $4–6 | ~$25 | ✅ |
 | 13 | P21a Profil altyapısı (isteğe bağlı; tek makinede iki otel) | 21 | main/app/paths, auth, settings | feature-builder | $10–15 | | ⏭ atlandı (otonom varsayılan) |
 | 14 | P22a Ölç ve hafiflet (perf betiği, Electron denemeleri, hafif mod) | 22 | scripts, main/windows, main/app | feature-builder | $15–30 | | ⬜ |
 | 14 | P22b Kabuk soyutlaması `lib/shell` (Electron + tarayıcı) | 22 | renderer/lib/shell, preload | feature-builder | $20–40 | | ⬜ |
@@ -366,3 +366,13 @@ QA2b, akış testleri C/D) bu plana **Son** satırında katılır; ayrı yürüt
   B servis/güvenlik camera-integrator; liste `faz-21` "P21e iş listesi"). **P21a atlandı (otonom varsayılan):** sahip her otelin
   ayrı bilgisayarı olduğunu söyledi (S-115, K-54); faz belgesi "bütçe yetmezse atlanır, öncelik düşük" diyor; tek makinede çoklu
   profil ileride gerekirse ayrı faz.
+- 2026-11-14: P21e ✅ — A (arayüz): H-13, H-20 (alan etiketleri; ad/oda gösterimi servis tarafı kaldı), H-22, H-23, H-26, H-27 (Ay
+  sonunda "ayın tamamı" etiketi, otonom varsayılan), H-30 (tek kayıt + boş not ipucu; "kendi devrin okunmamış" kaldı), H-31 (gelecek güne
+  ödemede yalnız uyarı, otonom varsayılan), H-32/H-47, H-37…H-43, H-45, H-46; H-29 zaten çözülmüş; mükerrer misafir kartı önerisi;
+  Ayarlar "Sık kullanılan"; 05 cila #2, #3, #5, #6 (#1 kısmen: takvim sayfasında lejant/Park için kaydırma sürüyor); kamera arayüz
+  maddeleri (ru çoğul için ana süreç `tFor` çoğul desteği), `fees-panel` "Tekrar dene", bağlan ekranı onay metni. B (servis/güvenlik):
+  Drive taramasında eşlenmiş ağ sürücüleri atlanır, `saveAlertAsGuest` tek transaction, probe adresi parçalardan yeniden kurulur +
+  ffmpeg `protocol_whitelist`, Python özel IP listesi TS ile aynı, RTSP kullanıcı adında denetim karakteri reddi, keşifte 400 paket/200
+  sonuç + tek tarama, önizleme 1 MB sınırı, `camera.staff` yalnız ana pencere (arayüz de yalnız orada listeler), Telegram 5 sohbet / 12 sn,
+  gece raporu tek seferde 3 sorgu, `stop-gate` kapsamı. Telefon e2e bu turda koşulamadı (Playwright chromium yolu yok) → Son dalgada.
+  **Dalga 13 bitti. Faz 21 kodu tamam (P21a atlandı).**

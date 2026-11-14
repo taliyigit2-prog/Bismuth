@@ -83,6 +83,9 @@ for (const dir of [pStopDocs, pStopPkg]) {
   g("commit", "-q", "-m", "init");
 }
 write(join(pStopPkg, "package.json"), JSON.stringify({ name: "stop-pkg", private: true, scripts: { ...allScripts, extra: ok } }, null, 2));
+const pStopLock = project("stop-lock", { scripts: allScripts, git: true, files: { "package-lock.json": "{}\n" } });
+const pStopBuilder = project("stop-builder", { scripts: allScripts, git: true, files: { "electron-builder.yml": "asar: true\n" } });
+const pStopGh = project("stop-gh", { scripts: allScripts, git: true, files: { ".github/workflows/ci.yml": "name: ci\n" } });
 const pNpmrc = project("npmrc", { scripts: allScripts, files: { ".npmrc": "save-exact=true\n" } });
 const pFmt = project("fmt", {
   scripts: allScripts,
@@ -249,6 +252,9 @@ const cases = [
   { hook: "stop-gate.mjs", env: { CLAUDE_PROJECT_DIR: pStop }, input: { cwd: pStop, hook_event_name: "Stop", stop_hook_active: false }, expect: 0, stdout: /"decision":"block".*src\/app\.ts.*npm run check/, note: "untracked src file, no marker: block" },
   { hook: "stop-gate.mjs", env: { CLAUDE_PROJECT_DIR: pStopDrizzle }, input: { cwd: pStopDrizzle, hook_event_name: "Stop", stop_hook_active: false }, expect: 0, stdout: /"decision":"block".*drizzle\/0001_x\.sql/, note: "drizzle/ change: block" },
   { hook: "stop-gate.mjs", env: { CLAUDE_PROJECT_DIR: pStopPkg }, input: { cwd: pStopPkg, hook_event_name: "Stop", stop_hook_active: false }, expect: 0, stdout: /"decision":"block".*package\.json/, note: "package.json change: block" },
+  { hook: "stop-gate.mjs", env: { CLAUDE_PROJECT_DIR: pStopLock }, input: { cwd: pStopLock, hook_event_name: "Stop", stop_hook_active: false }, expect: 0, stdout: /"decision":"block".*package-lock\.json/, note: "package-lock.json change: block" },
+  { hook: "stop-gate.mjs", env: { CLAUDE_PROJECT_DIR: pStopBuilder }, input: { cwd: pStopBuilder, hook_event_name: "Stop", stop_hook_active: false }, expect: 0, stdout: /"decision":"block".*electron-builder\.yml/, note: "electron-builder.yml change: block" },
+  { hook: "stop-gate.mjs", env: { CLAUDE_PROJECT_DIR: pStopGh }, input: { cwd: pStopGh, hook_event_name: "Stop", stop_hook_active: false }, expect: 0, stdout: /"decision":"block".*\.github\/workflows\/ci\.yml/, note: ".github/ change: block" },
   {
     hook: "stop-gate.mjs", env: { CLAUDE_PROJECT_DIR: pStop }, input: { cwd: pStop, hook_event_name: "Stop", stop_hook_active: false }, expect: 0, stdout: /^$/, note: "marker newer than changes: pass",
     before: () => {

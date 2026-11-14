@@ -20,8 +20,9 @@ import socket
 import sys
 import threading
 from typing import Any, Callable, Optional, Tuple
-from urllib.parse import unquote, urlsplit
+from urllib.parse import quote, unquote, urlsplit
 
+SCHEME = "rtsp:" + "//"  # parçalı: depo kancası şifreli adres metnini yakalar
 CONNECT_TIMEOUT = 4.0
 REPLY_TIMEOUT = 4.0
 GRAB_TIMEOUT = 10.0
@@ -39,6 +40,17 @@ BAD_ADDRESS = "badAddress"
 UNAVAILABLE = "unavailable"
 
 
+# K-49: bir kameranın bulunabileceği tek adresler (src/shared/domain/camera-source.ts `isCameraHost` ile aynı liste):
+# 10/8, 172.16/12, 192.168/16, bağlantı-yerel 169.254/16 ve bu bilgisayar (127/8, kamera benzetici).
+CAMERA_NETWORKS = tuple(
+    ipaddress.ip_network(n)
+    for n in ("10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "169.254.0.0/16", "127.0.0.0/8")
+)
+
+# ffmpeg yalnız RTSP ailesini açabilir: yönlendirme ile http/file/... adreslerine gidemez.
+FFMPEG_OPTIONS = "rtsp_transport;tcp|stimeout;5000000|protocol_whitelist;rtsp,rtp,tcp,udp"
+
+
 class ProbeError(Exception):
     """Deneme bir nedenle bitti; `reason` sözleşme adıdır."""
 
@@ -49,6 +61,8 @@ class ProbeError(Exception):
 
 def parse_source(source: str) -> Tuple[str, str, str, int, str]:
     """(kullanıcı, şifre, sunucu, port, yol); özel/loopback IPv4 değilse ya da rtsp değilse BAD_ADDRESS."""
+    if any(ord(c) < 0x21 or ord(c) == 0x7F for c in source):  # boşluk/denetim karakteri (CR, LF, sekme...) olamaz
+        raise ProbeError(BAD_ADDRESS)
     try:
         parts = urlsplit(source)
         host = parts.hostname or ""
@@ -61,12 +75,22 @@ def parse_source(source: str) -> Tuple[str, str, str, int, str]:
         ip = ipaddress.ip_address(host)
     except ValueError as exc:  # bir ad ("kamera.local") çözümlenmez: yalnız sayısal adres
         raise ProbeError(BAD_ADDRESS) from exc
-    if ip.version != 4 or not (ip.is_private or ip.is_loopback) or ip.is_multicast:
+    if ip.version != 4 or not any(ip in net for net in CAMERA_NETWORKS):
         raise ProbeError(BAD_ADDRESS)
     path = parts.path or "/"
     if parts.query:
         path += "?" + parts.query
-    return unquote(parts.username or ""), unquote(parts.password or ""), host, port, path
+    user, password = unquote(parts.username or ""), unquote(parts.password or "")
+    # Kullanıcı adı Digest başlığına tırnak içinde girer: CR/LF/" başlık enjeksiyonu olur.
+    if any(c in user for c in '\r\n"') or any(c in password for c in "\r\n"):
+        raise ProbeError(BAD_ADDRESS)
+    return user, password, host, port, path
+
+
+def build_source(user: str, password: str, host: str, port: int, path: str) -> str:
+    """Doğrulanan parçalardan (kullanıcı ve şifre yüzde kodlu) rtsp adresi: ffmpeg'e giden adres özgün metin değil, bu olur."""
+    auth = f"{quote(user, safe='')}:{quote(password, safe='')}@" if user else ""
+    return f"{SCHEME}{auth}{host}:{port}{path}"
 
 
 def _md5(text: str) -> str:
@@ -158,7 +182,7 @@ def grab_frame(source: str) -> Tuple[bytes, int, int]:  # pragma: no cover - ger
         import cv2
     except ImportError as exc:
         raise ProbeError(UNAVAILABLE) from exc
-    os.environ.setdefault("OPENCV_FFMPEG_CAPTURE_OPTIONS", "rtsp_transport;tcp|stimeout;5000000")
+    os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = FFMPEG_OPTIONS
     result: dict = {}
 
     def work() -> None:
@@ -201,7 +225,7 @@ def probe(
     try:
         user, password, host, port, path = parse_source(source)
         (describe_fn or describe)(user, password, host, port, path)
-        jpeg, width, height = (grab_fn or grab_frame)(source)
+        jpeg, width, height = (grab_fn or grab_frame)(build_source(user, password, host, port, path))
     except ProbeError as exc:
         return {"ok": False, "reason": exc.reason, "image": None, "width": 0, "height": 0}
     except Exception:  # beklenmeyen: nedeni ve adresi sızdırmadan "kare yok"

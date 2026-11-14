@@ -254,6 +254,49 @@ export function createCameraService(deps: CameraServiceDeps) {
     return { embedding, crop: crop && crop[0] === 0xff && crop[1] === 0xd8 ? crop : null, model }
   }
 
+  /** Seals and writes a face row for a guest who is in the house (inside the caller's transaction). */
+  function insertFace(
+    tx: Parameters<Parameters<typeof inTransaction>[2]>[0],
+    audit: Parameters<Parameters<typeof inTransaction>[2]>[1],
+    now: Date,
+    ctx: Ctx,
+    guestId: string,
+    face: { embedding: Buffer; crop: Buffer | null; model: string },
+    reason: string
+  ): void {
+    const inHouse = inHouseGuests(tx).find((g) => g.guestId === guestId)
+    if (!inHouse) throw conflict('errors.cameraGuestNotInHouse')
+    const have = tx
+      .select({ id: guestFaces.id })
+      .from(guestFaces)
+      .where(eq(guestFaces.guestId, guestId))
+      .all()
+    if (have.length >= MAX_FACES_PER_GUEST) throw conflict('errors.cameraFaceLimit')
+    const id = newId(now)
+    tx.insert(guestFaces)
+      .values({
+        id,
+        guestId,
+        reservationId: inHouse.reservationId,
+        embeddingEnc: faceCrypto.encrypt(face.embedding, faceContext('embedding', id)),
+        cropEnc: face.crop ? faceCrypto.encrypt(face.crop, faceContext('crop', id)) : null,
+        model: face.model,
+        enrolledAt: now.toISOString(),
+        enrolledBy: ctx.userId as string,
+        expiresAt: null,
+        ...stamps(now)
+      })
+      .run()
+    // The sealed bytes never go to the audit log (K-51): who, which guest, which model, why.
+    audit({
+      entity: 'guest_face',
+      entityId: id,
+      action: 'create',
+      after: { guestId, model: face.model, reservationId: inHouse.reservationId },
+      reason
+    })
+  }
+
   /** Seals and stores a face row for a guest who is in the house; the sidecar gets the new list at once. */
   async function storeFace(
     ctx: Ctx,
@@ -262,39 +305,7 @@ export function createCameraService(deps: CameraServiceDeps) {
     reason: string
   ): Promise<void> {
     try {
-      inTransaction(deps, ctx, (tx, audit, now) => {
-        const inHouse = inHouseGuests(tx).find((g) => g.guestId === guestId)
-        if (!inHouse) throw conflict('errors.cameraGuestNotInHouse')
-        const have = tx
-          .select({ id: guestFaces.id })
-          .from(guestFaces)
-          .where(eq(guestFaces.guestId, guestId))
-          .all()
-        if (have.length >= MAX_FACES_PER_GUEST) throw conflict('errors.cameraFaceLimit')
-        const id = newId(now)
-        tx.insert(guestFaces)
-          .values({
-            id,
-            guestId,
-            reservationId: inHouse.reservationId,
-            embeddingEnc: faceCrypto.encrypt(face.embedding, faceContext('embedding', id)),
-            cropEnc: face.crop ? faceCrypto.encrypt(face.crop, faceContext('crop', id)) : null,
-            model: face.model,
-            enrolledAt: now.toISOString(),
-            enrolledBy: ctx.userId as string,
-            expiresAt: null,
-            ...stamps(now)
-          })
-          .run()
-        // The sealed bytes never go to the audit log (K-51): who, which guest, which model, why.
-        audit({
-          entity: 'guest_face',
-          entityId: id,
-          action: 'create',
-          after: { guestId, model: face.model, reservationId: inHouse.reservationId },
-          reason
-        })
-      })
+      inTransaction(deps, ctx, (tx, audit, now) => insertFace(tx, audit, now, ctx, guestId, face, reason))
     } catch (error) {
       if (error instanceof FaceCryptoError) throw conflict('errors.cameraNoKeyStore')
       throw error
@@ -667,27 +678,34 @@ export function createCameraService(deps: CameraServiceDeps) {
       const face = res.status === 200 ? readFace(res.json) : null
       if (!face) throw conflict('errors.cameraNoFace')
       // The alarm's own picture is kept as the guest's crop (it is the face that was just read).
-      await storeFace(ctx, input.guestId, { ...face, crop: face.crop ?? jpeg }, 'alert')
-      inTransaction(deps, ctx, (tx, audit, now) => {
-        const iso = now.toISOString()
-        tx.update(cameraEvents)
-          .set({
-            guestId: input.guestId,
-            state: 'handled',
-            handledBy: ctx.userId,
-            handledAt: iso,
-            updatedAt: iso
+      // One transaction: the face row, the link and the audit rows stand or fall together.
+      try {
+        inTransaction(deps, ctx, (tx, audit, now) => {
+          insertFace(tx, audit, now, ctx, input.guestId, { ...face, crop: face.crop ?? jpeg }, 'alert')
+          const iso = now.toISOString()
+          tx.update(cameraEvents)
+            .set({
+              guestId: input.guestId,
+              state: 'handled',
+              handledBy: ctx.userId,
+              handledAt: iso,
+              updatedAt: iso
+            })
+            .where(eq(cameraEvents.id, input.id))
+            .run()
+          audit({
+            entity: 'camera_alert',
+            entityId: input.id,
+            action: 'update',
+            after: { state: 'handled', guestId: input.guestId },
+            reason: 'saved as guest'
           })
-          .where(eq(cameraEvents.id, input.id))
-          .run()
-        audit({
-          entity: 'camera_alert',
-          entityId: input.id,
-          action: 'update',
-          after: { state: 'handled', guestId: input.guestId },
-          reason: 'saved as guest'
         })
-      })
+      } catch (error) {
+        if (error instanceof FaceCryptoError) throw conflict('errors.cameraNoKeyStore')
+        throw error
+      }
+      await sync.pushNow()
     },
 
     // --- Staff exclusion list (S-107, K-58): staff are known to the sidecar as "staff", so they raise no alarm ---
@@ -695,6 +713,7 @@ export function createCameraService(deps: CameraServiceDeps) {
     /** Employed people, those on the list (a sealed face) and those who are not yet. */
     staffList(ctx: Ctx): CameraStaffList {
       requirePermission(ctx, 'camera.enroll', 'view')
+      desktopOnly(ctx)
       return staffListOf(deps.clock())
     },
 

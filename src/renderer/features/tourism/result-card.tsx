@@ -170,7 +170,10 @@ export function ResultCard({ table, editable }: { table: TourismTableView | unde
     exporter.mutate(
       { importId: table.import.id, format },
       {
-        onSuccess: (file) => saveBase64(file.fileName, file.mime, file.dataBase64),
+        onSuccess: (file) => {
+          saveBase64(file.fileName, file.mime, file.dataBase64)
+          toast.success(t('dataTransfer.export.done', { name: file.fileName }))
+        },
         onError: (error) =>
           toast.error(t('tourism.result.exportFailed'), { description: errorText(t, error) })
       }

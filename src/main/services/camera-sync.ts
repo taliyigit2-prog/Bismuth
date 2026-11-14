@@ -125,6 +125,10 @@ export function createCameraSync(deps: CameraSyncDeps, bridge: () => Bridge | nu
       const at = a.at ? new Date(a.at) : now
       const when = Number.isNaN(at.getTime()) ? now : at
       const id = ulid(now.getTime())
+      // Retention (K-52): the crop's keep time counts from the alarm's own time (`when`, the sidecar's clock), not from
+      // the moment Bismuth pulled it, and uses the setting as it is now; a later change of `camera.alertRetentionDays`
+      // does not move rows already written. The retention job (`purgeExpired`) deletes the sealed crop at `expiresAt`;
+      // the event row itself stays. A row with no crop has no `expiresAt`.
       const days = readSetting(tx, 'camera.alertRetentionDays')
       const sealed = a.crop ? seal(a.crop, eventCropContext(id)) : null
       tx.insert(cameraEvents)

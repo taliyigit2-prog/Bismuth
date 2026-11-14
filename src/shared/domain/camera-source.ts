@@ -52,12 +52,28 @@ export function buildHikvisionRtsp(form: HikvisionForm): string {
   )
 }
 
-/** The host of an `rtsp://` address, or null when it is not one (or does not parse). */
+/** A user or password that would break a request header: a control character (CR, LF …) or, for the user, a quote. */
+const unsafeCredential = (text: string, quote: boolean): boolean => {
+  let plain: string
+  try {
+    plain = decodeURIComponent(text)
+  } catch {
+    return true
+  }
+  // eslint-disable-next-line no-control-regex
+  return /[\u0000-\u001f\u007f]/.test(plain) || (quote && plain.includes('"'))
+}
+
+/**
+ * The host of an `rtsp://` address, or null when it is not one, does not parse or carries a user with a line break or
+ * a quote (it would end up in the Digest header of the camera test).
+ */
 export function rtspHost(source: string): string | null {
   if (!source.toLowerCase().startsWith(SCHEME)) return null
   try {
-    const host = new URL(source).hostname
-    return host || null
+    const url = new URL(source)
+    if (unsafeCredential(url.username, true) || unsafeCredential(url.password, false)) return null
+    return url.hostname || null
   } catch {
     return null
   }

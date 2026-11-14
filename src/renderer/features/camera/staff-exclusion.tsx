@@ -31,7 +31,9 @@ export function StaffExclusion() {
   const { t } = useTranslation()
   const can = useCan()
   const transport = useTransport()
-  const list = useApiQuery('camera.staff', {})
+  // The list (names) is the hotel computer's own window only, like taking a face (camera.staff is desktopOnly).
+  const host = transport.kind === 'ipc'
+  const list = useApiQuery('camera.staff', {}, { enabled: host })
   const [pick, setPick] = useState('')
   const [removing, setRemoving] = useState<CameraStaffPerson | null>(null)
   const canEdit = can('camera.enroll', 'edit')
@@ -67,102 +69,108 @@ export function StaffExclusion() {
         <h3 className="text-sm font-medium">{t('camera.staff.title')}</h3>
         <p className="text-muted-foreground text-xs">{t('camera.staff.help')}</p>
       </div>
-      <QueryView query={list}>
-        {(data) => (
-          <div className="grid gap-4">
-            {!data.keyStore ? (
-              <p className="text-muted-foreground text-xs" role="status">
-                {t('camera.staff.noKeyStore')}
-              </p>
-            ) : null}
-            {data.listed.length === 0 ? (
-              <EmptyState
-                compact
-                icon={UserRoundXIcon}
-                title={t('camera.staff.emptyTitle')}
-                body={t('camera.staff.emptyBody')}
-              />
-            ) : (
-              <ul className="grid gap-2" data-testid="camera-staff-list">
-                {data.listed.map((p) => (
-                  <li
-                    key={p.employeeId}
-                    className="flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2"
-                    data-testid="camera-staff-row"
-                  >
-                    <div className="grid min-w-0 flex-1 basis-40">
-                      <span className="truncate font-medium">{p.name}</span>
-                      {p.position ? (
-                        <span className="text-muted-foreground truncate text-xs">{p.position}</span>
+      {!host ? (
+        <p className="text-muted-foreground text-xs">{t('camera.staff.hostOnly')}</p>
+      ) : (
+        <QueryView query={list}>
+          {(data) => (
+            <div className="grid gap-4">
+              {!data.keyStore ? (
+                <p className="text-muted-foreground text-xs" role="status">
+                  {t('camera.staff.noKeyStore')}
+                </p>
+              ) : null}
+              {data.listed.length === 0 ? (
+                <EmptyState
+                  compact
+                  icon={UserRoundXIcon}
+                  title={t('camera.staff.emptyTitle')}
+                  body={t('camera.staff.emptyBody')}
+                />
+              ) : (
+                <ul className="grid gap-2" data-testid="camera-staff-list">
+                  {data.listed.map((p) => (
+                    <li
+                      key={p.employeeId}
+                      className="flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2"
+                      data-testid="camera-staff-row"
+                    >
+                      <div className="grid min-w-0 flex-1 basis-40">
+                        <span className="truncate font-medium">{p.name}</span>
+                        {p.position ? (
+                          <span className="text-muted-foreground truncate text-xs">{p.position}</span>
+                        ) : null}
+                      </div>
+                      <Badge variant="secondary">{t('camera.staff.faces', { count: p.faces })}</Badge>
+                      {canTake && p.faces < data.max && data.keyStore ? (
+                        <Button
+                          variant="outline"
+                          className="max-md:w-full"
+                          disabled={enroll.isPending}
+                          onClick={() => enroll.mutate({ employeeId: p.employeeId })}
+                          data-testid="camera-staff-another"
+                        >
+                          <CameraIcon aria-hidden />
+                          {t('camera.staff.takeAnother')}
+                        </Button>
                       ) : null}
-                    </div>
-                    <Badge variant="secondary">{t('camera.staff.faces', { count: p.faces })}</Badge>
-                    {canTake && p.faces < data.max && data.keyStore ? (
+                      {canEdit ? (
+                        <Button
+                          variant="ghost"
+                          className="max-md:w-full"
+                          onClick={() => setRemoving(p)}
+                          data-testid="camera-staff-remove"
+                        >
+                          {t('camera.staff.remove')}
+                        </Button>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {canEdit ? (
+                !canTake ? (
+                  <p className="text-muted-foreground text-xs">{t('camera.staff.hostOnly')}</p>
+                ) : data.others.length === 0 ? (
+                  <p className="text-muted-foreground text-xs">{t('camera.staff.pickEmpty')}</p>
+                ) : (
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="camera-staff-pick">{t('camera.staff.pickLabel')}</Label>
+                    <div className="flex flex-wrap items-start gap-2">
+                      <Select value={pick} onValueChange={setPick}>
+                        <SelectTrigger
+                          id="camera-staff-pick"
+                          className="w-72 max-md:w-full"
+                          data-testid="camera-staff-pick"
+                        >
+                          <SelectValue placeholder={t('camera.staff.pick')} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {data.others.map((p) => (
+                            <SelectItem key={p.employeeId} value={p.employeeId}>
+                              {p.position ? `${p.name} · ${p.position}` : p.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <Button
-                        variant="outline"
-                        disabled={enroll.isPending}
-                        onClick={() => enroll.mutate({ employeeId: p.employeeId })}
-                        data-testid="camera-staff-another"
+                        disabled={!pick || !data.keyStore || enroll.isPending}
+                        onClick={() => enroll.mutate({ employeeId: pick })}
+                        className="max-md:w-full"
+                        data-testid="camera-staff-take"
                       >
                         <CameraIcon aria-hidden />
-                        {t('camera.staff.takeAnother')}
+                        {t('camera.staff.take')}
                       </Button>
-                    ) : null}
-                    {canEdit ? (
-                      <Button
-                        variant="ghost"
-                        onClick={() => setRemoving(p)}
-                        data-testid="camera-staff-remove"
-                      >
-                        {t('camera.staff.remove')}
-                      </Button>
-                    ) : null}
-                  </li>
-                ))}
-              </ul>
-            )}
-            {canEdit ? (
-              !canTake ? (
-                <p className="text-muted-foreground text-xs">{t('camera.staff.hostOnly')}</p>
-              ) : data.others.length === 0 ? (
-                <p className="text-muted-foreground text-xs">{t('camera.staff.pickEmpty')}</p>
-              ) : (
-                <div className="grid gap-1.5">
-                  <Label htmlFor="camera-staff-pick">{t('camera.staff.pickLabel')}</Label>
-                  <div className="flex flex-wrap items-start gap-2">
-                    <Select value={pick} onValueChange={setPick}>
-                      <SelectTrigger
-                        id="camera-staff-pick"
-                        className="w-72 max-md:w-full"
-                        data-testid="camera-staff-pick"
-                      >
-                        <SelectValue placeholder={t('camera.staff.pick')} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {data.others.map((p) => (
-                          <SelectItem key={p.employeeId} value={p.employeeId}>
-                            {p.position ? `${p.name} · ${p.position}` : p.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Button
-                      disabled={!pick || !data.keyStore || enroll.isPending}
-                      onClick={() => enroll.mutate({ employeeId: pick })}
-                      className="max-md:w-full"
-                      data-testid="camera-staff-take"
-                    >
-                      <CameraIcon aria-hidden />
-                      {t('camera.staff.take')}
-                    </Button>
+                    </div>
+                    <p className="text-muted-foreground text-xs">{t('camera.staff.takeHint')}</p>
                   </div>
-                  <p className="text-muted-foreground text-xs">{t('camera.staff.takeHint')}</p>
-                </div>
-              )
-            ) : null}
-          </div>
-        )}
-      </QueryView>
+                )
+              ) : null}
+            </div>
+          )}
+        </QueryView>
+      )}
       {removing ? (
         <AlertDialog open onOpenChange={(open) => (open ? null : setRemoving(null))}>
           <AlertDialogContent>

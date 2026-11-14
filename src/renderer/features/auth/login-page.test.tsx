@@ -157,6 +157,13 @@ describe('şifremi unuttum', () => {
       'Kullanıcı adı ya da kurtarma kodu yanlış.'
     )
 
+    // H-46: the next attempt fails its own checks; the old "wrong code" message goes away.
+    await user.clear(screen.getByLabelText('Yeni şifre (tekrar)'))
+    await user.click(screen.getByTestId('recover-submit'))
+    expect(await screen.findByText('İki şifre aynı değil.')).toBeInTheDocument()
+    expect(screen.queryByTestId('recover-error')).not.toBeInTheDocument()
+    await user.type(screen.getByLabelText('Yeni şifre (tekrar)'), 'yepyeni-sifre')
+
     await user.clear(screen.getByLabelText('Kurtarma kodu'))
     await user.type(screen.getByLabelText('Kurtarma kodu'), FAKE_RECOVERY_CODE.toLowerCase())
     await user.click(screen.getByTestId('recover-submit'))

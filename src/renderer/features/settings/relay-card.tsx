@@ -95,16 +95,24 @@ export function RelayCard() {
                   onChange={(v) => update.mutate({ 'summary.enabled': v })}
                 />
                 {canEdit && !s.replaced ? (
-                  <Button
-                    variant="outline"
-                    className="justify-self-start max-md:w-full"
-                    disabled={run.isPending}
-                    onClick={() => run.mutate({})}
-                    data-testid="relay-run"
-                  >
-                    <SaveIcon aria-hidden />
-                    {t('settings.remote.box.runNow')}
-                  </Button>
+                  <div className="grid justify-items-start gap-1.5">
+                    <Button
+                      variant="outline"
+                      className="max-md:w-full"
+                      disabled={run.isPending || !s.box.folder || !s.keyExists}
+                      onClick={() => run.mutate({})}
+                      aria-describedby={!s.box.folder || !s.keyExists ? 'relay-run-blocked' : undefined}
+                      data-testid="relay-run"
+                    >
+                      <SaveIcon aria-hidden />
+                      {t('settings.remote.box.runNow')}
+                    </Button>
+                    {!s.box.folder || !s.keyExists ? (
+                      <p id="relay-run-blocked" className="text-muted-foreground text-xs">
+                        {t('settings.remote.box.runBlocked')}
+                      </p>
+                    ) : null}
+                  </div>
                 ) : null}
               </div>
             </div>

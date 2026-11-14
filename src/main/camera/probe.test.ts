@@ -3,6 +3,7 @@
 // an address outside the hotel's network never starts anything.
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
+import { MAX_PROBE_IMAGE_CHARS } from '@shared/contract/camera'
 import { probeCamera, readProbeOutput, type ProbeCommand } from './probe'
 
 const FIXTURE = fileURLToPath(new URL('../../../tests/fixtures/fake-probe.mjs', import.meta.url))
@@ -101,6 +102,11 @@ describe('sürecin çıktısı', () => {
     expect(readProbeOutput(json({ ok: true, image: '/9j/4AAQ', width: 'x', height: 1 })).reason).toBe(
       'noFrame'
     )
+  })
+
+  it('çok büyük görüntü "kare yok" sayılır (sözleşme sınırı)', () => {
+    const image = '/9j/' + 'A'.repeat(MAX_PROBE_IMAGE_CHARS)
+    expect(readProbeOutput(json({ ok: true, image, width: 1, height: 1 })).reason).toBe('noFrame')
   })
 
   it('bilinmeyen neden "kare yok", çıktı yoksa ya da JSON değilse "kullanılamıyor" olur', () => {

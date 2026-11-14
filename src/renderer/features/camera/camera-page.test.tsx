@@ -87,7 +87,7 @@ describe('Kamera ekranı: ana bilgisayar penceresi', () => {
     expect(screen.queryByTestId('camera-live-img')).toBeNull()
   })
 
-  it('alarmlar güne göre gruplanır; "Gördüm" ve "Hallettim" durumu değiştirir, "Yeniden aç" geri alır', async () => {
+  it('alarmlar güne göre gruplanır; "Görüldü olarak işaretle" ve "Halledildi olarak işaretle" durumu değiştirir, "Yeniden aç" geri alır', async () => {
     const transport = cameraTransport(withAlerts())
     await renderWithProviders(<CameraPage />, { transport })
     const row = await screen.findByTestId('camera-alert-9')
@@ -95,6 +95,8 @@ describe('Kamera ekranı: ana bilgisayar penceresi', () => {
     expect(screen.getByText('Bugün')).toBeInTheDocument()
     expect(screen.getByText('Dün')).toBeInTheDocument()
     const user = userEvent.setup()
+    expect(within(row).getByRole('button', { name: 'Görüldü olarak işaretle' })).toBeInTheDocument()
+    expect(within(row).getByRole('button', { name: 'Halledildi olarak işaretle' })).toBeInTheDocument()
     await user.click(screen.getByTestId('camera-alert-seen-9'))
     await waitFor(() => expect(screen.getByTestId('camera-alert-9')).toHaveAttribute('data-state', 'seen'))
     await user.click(screen.getByTestId('camera-alert-handled-9'))

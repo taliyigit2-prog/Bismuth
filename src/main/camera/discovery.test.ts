@@ -3,7 +3,15 @@
 import { EventEmitter } from 'node:events'
 import type { Socket } from 'node:dgram'
 import { describe, expect, it } from 'vitest'
-import { discoverCameras, mergeDevices, parseSadp, parseWsDiscovery, sadpProbe, wsProbe } from './discovery'
+import {
+  MAX_PACKETS,
+  discoverCameras,
+  mergeDevices,
+  parseSadp,
+  parseWsDiscovery,
+  sadpProbe,
+  wsProbe
+} from './discovery'
 
 const NS = 'xmlns:d="urn:example:discovery" xmlns:a="urn:example:addressing"'
 
@@ -216,6 +224,34 @@ describe('arama', () => {
     expect(new Set(net.sent.map((s) => s.address))).toEqual(new Set(['239.255.255.250']))
     // Every socket is closed again.
     expect([...net.closed].sort()).toEqual([0, 1, 2])
+  })
+
+  it('bir arama sürerken ikinci çağrı yeni soket açmaz, aynı sonucu alır; bitince yeni arama başlar', async () => {
+    const net = fakeNetwork([
+      { port: 3702, from: '192.168.1.64', text: wsAnswer('http://192.168.1.64/onvif/d') }
+    ])
+    const opts = { timeoutMs: 20, interfaces: () => ['192.168.1.10'], createSocket: net.make }
+    const [a, b] = await Promise.all([discoverCameras(opts), discoverCameras(opts)])
+    expect(b).toBe(a)
+    expect(net.sent).toHaveLength(2) // one ONVIF + one SADP probe, not four
+    await discoverCameras(opts)
+    expect(net.sent).toHaveLength(4)
+  })
+
+  it('bir aramada en çok MAX_PACKETS cevap okunur: ötesi atılır', async () => {
+    const answers = Array.from({ length: MAX_PACKETS }, () => ({
+      port: 3702,
+      from: '10.0.0.1',
+      text: wsAnswer('http://10.0.0.1/onvif/d')
+    }))
+    answers.push({ port: 3702, from: '10.0.0.2', text: wsAnswer('http://10.0.0.2/onvif/d') })
+    const net = fakeNetwork(answers)
+    const result = await discoverCameras({
+      timeoutMs: 30,
+      interfaces: () => ['192.168.1.10'],
+      createSocket: net.make
+    })
+    expect(result.devices.map((d) => d.ip)).toEqual(['10.0.0.1'])
   })
 
   it('özel adresli arayüz yoksa hiç soket açmadan ağ sorunu bildirir', async () => {

@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import { addDays, today as todayOf, type LocalDate } from '@shared/date'
 import { useShortcutAction } from '@/lib/shortcuts/actions'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState, ErrorState } from '@/components/states'
@@ -146,7 +147,11 @@ export function DayList({ onOpen }: { onOpen: (reservationId: string) => void })
                         <UsersIcon className="size-3.5" aria-hidden />
                       </span>
                     ) : null}
-                    {status ? (
+                    {s.reservationStatus === 'checked_out' ? (
+                      <Badge variant="outline" data-testid={`day-checked-out-${s.id}`}>
+                        {t('calendar.resStatus.checked_out')}
+                      </Badge>
+                    ) : status ? (
                       <StatusTagBadge
                         subject={{ kind: 'auto', code: status }}
                         label={t(`status.${status}`)}

@@ -2,7 +2,7 @@
 // night report. Fee rules are hotel settings (`fees.*`). Fee lines are ordinary folio charges (voided, never
 // deleted); a damage deposit is money held, not income: it is given back or, with a reason, turned into a damage
 // charge plus a payment (the only moment it becomes income).
-import { and, asc, eq, gte, inArray, isNull, lte, ne, or } from 'drizzle-orm'
+import { and, asc, eq, gte, inArray, isNull, lte, ne, or, sql } from 'drizzle-orm'
 import {
   depositSettleSchema,
   depositTakeSchema,
@@ -359,24 +359,49 @@ export function createFeesService(deps: ServiceDeps, parts: { payments: Payments
       requirePermission(ctx, 'reports.operations', 'view')
       const date = input.date as LocalDate
       const seeMoney = ctx.can('ledger', 'view') || ctx.can('cash', 'view')
-      const folioBalance = (reservationId: string): { balance: number | null; currency: string } => {
-        const f = db.select().from(folios).where(eq(folios.reservationId, reservationId)).get()
-        if (!f) return { balance: null, currency: '' }
-        if (!seeMoney) return { balance: null, currency: f.currency }
-        const c = db
-          .select({ a: charges.amountMinor })
-          .from(charges)
-          .where(and(eq(charges.folioId, f.id), isNull(charges.voidedAt)))
-          .all()
-          .reduce((s, r) => s + r.a, 0)
-        const p = db
-          .select({ k: payments.kind, a: payments.amountFolioMinor })
-          .from(payments)
-          .where(and(eq(payments.folioId, f.id), isNull(payments.voidedAt)))
-          .all()
-          .reduce((s, r) => s + (r.k === 'refund' ? -r.a : r.a), 0)
-        return { balance: c - p, currency: f.currency }
+      // Balances of every listed reservation in three queries (folios, charges, payments), not three per row.
+      const balances = new Map<string, { balance: number | null; currency: string }>()
+      const loadBalances = (reservationIds: string[]): void => {
+        if (reservationIds.length === 0) return
+        const folioRows = db.select().from(folios).where(inArray(folios.reservationId, reservationIds)).all()
+        const folioOf = new Map<string, (typeof folioRows)[number]>()
+        for (const f of folioRows)
+          if (f.reservationId && !folioOf.has(f.reservationId)) folioOf.set(f.reservationId, f)
+        const chargeSum = new Map<string, number>()
+        const paymentSum = new Map<string, number>()
+        if (seeMoney && folioOf.size > 0) {
+          const ids = [...folioOf.values()].map((f) => f.id)
+          for (const r of db
+            .select({ id: charges.folioId, total: sql<number>`coalesce(sum(${charges.amountMinor}), 0)` })
+            .from(charges)
+            .where(and(inArray(charges.folioId, ids), isNull(charges.voidedAt)))
+            .groupBy(charges.folioId)
+            .all())
+            chargeSum.set(r.id, Number(r.total))
+          for (const r of db
+            .select({
+              id: payments.folioId,
+              total: sql<number>`coalesce(sum(case when ${payments.kind} = 'refund' then -${payments.amountFolioMinor} else ${payments.amountFolioMinor} end), 0)`
+            })
+            .from(payments)
+            .where(and(inArray(payments.folioId, ids), isNull(payments.voidedAt)))
+            .groupBy(payments.folioId)
+            .all())
+            paymentSum.set(r.id, Number(r.total))
+        }
+        for (const id of reservationIds) {
+          const f = folioOf.get(id)
+          if (!f) balances.set(id, { balance: null, currency: '' })
+          else if (!seeMoney) balances.set(id, { balance: null, currency: f.currency })
+          else
+            balances.set(id, {
+              balance: (chargeSum.get(f.id) ?? 0) - (paymentSum.get(f.id) ?? 0),
+              currency: f.currency
+            })
+        }
       }
+      const folioBalance = (reservationId: string): { balance: number | null; currency: string } =>
+        balances.get(reservationId) ?? { balance: null, currency: '' }
       const line = (r: {
         res: typeof reservations.$inferSelect
         stay: typeof reservationRooms.$inferSelect
@@ -419,6 +444,7 @@ export function createFeesService(deps: ServiceDeps, parts: { payments: Payments
         )
         .all()
         .sort((a, b) => a.room.localeCompare(b.room, 'tr', { numeric: true }))
+      loadBalances([...new Set(stays.map((s) => s.res.id))])
       const arrivals = stays.filter(
         (s) => s.stay.checkIn === date && s.res.status !== 'no_show' && s.stay.checkOut >= date
       )

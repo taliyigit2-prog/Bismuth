@@ -72,7 +72,7 @@ describe('Ayarlar → Kamera', () => {
     const form = field.closest('form')!
     await user.clear(field)
     await user.type(field, '2')
-    expect(within(form).getByRole('alert')).toHaveTextContent('5 ile 3600 arasında bir sayı girin.')
+    expect(within(form).getByRole('alert')).toHaveTextContent('5 ile 3.600 arasında bir sayı girin.')
     expect(within(form).getByRole('button', { name: 'Kaydet' })).toBeDisabled()
     await user.clear(field)
     await user.type(field, '90')
@@ -89,6 +89,21 @@ describe('Ayarlar → Kamera', () => {
     await user.type(field, '0,5')
     await user.click(within(field.closest('form')!).getByRole('button', { name: 'Kaydet' }))
     expect(saved).toEqual([{ 'camera.similarityThreshold': 0.5 }])
+  })
+
+  it('P20d ayarları alan olarak vardır; sınır dışı değer biçimlenmiş sınırlarla hata verir, geçerli değer kaydedilir', async () => {
+    const { saved, user } = await open()
+    await user.click(screen.getByTestId('camera-advanced-toggle'))
+    const margin = await screen.findByTestId('camera-uncertainMargin')
+    await user.clear(margin)
+    await user.type(margin, '0,9')
+    expect(await screen.findByText('0,00 ile 0,50 arasında bir sayı girin.')).toBeInTheDocument()
+    await user.clear(margin)
+    await user.type(margin, '0,1')
+    await user.click(within(margin.closest('form')!).getByRole('button', { name: 'Kaydet' }))
+    expect(saved).toEqual([{ 'camera.uncertainMargin': 0.1 }])
+    expect(screen.getByTestId('camera-idleFaceScanEvery')).toBeInTheDocument()
+    expect(screen.getByTestId('camera-streamMaxWidth')).toBeInTheDocument()
   })
 
   it('kamera adresi yalnız yazılır: "Kayıtlı" der, değeri hiçbir yerde göstermez; kaydedince gönderir ve kutuyu boşaltır', async () => {

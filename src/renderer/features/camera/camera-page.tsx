@@ -62,6 +62,8 @@ function StatusCard({
   const showRestart = controls && canEdit && status.state !== 'unavailable' && status.enabled
   const showPause = controls && canEdit && view.key === 'running' && alarmsPaused !== null
   const showProblemLine = status.lastError && (view.tone === 'problem' || view.key === 'restarting')
+  // Nothing to show below the header (a role that cannot edit, a quiet system): no empty card body on the phone.
+  const hasBody = status.totalCrashes > 0 || Boolean(showProblemLine) || showPause || showRestart || canEdit
 
   return (
     <Card data-testid="camera-status" data-tone={view.tone} data-key={view.key}>
@@ -74,49 +76,53 @@ function StatusCard({
         </div>
         <CardDescription>{t(`camera.stateHelp.${view.key}`)}</CardDescription>
       </CardHeader>
-      <CardContent className="grid gap-4">
-        {status.totalCrashes > 0 ? (
-          <p className="text-muted-foreground text-sm">
-            {t('camera.status.crashes', { count: status.totalCrashes })}
-          </p>
-        ) : null}
-        {showProblemLine ? (
-          <p className="text-muted-foreground rounded-md border px-3 py-2 text-xs break-words" dir="ltr">
-            {status.lastError}
-          </p>
-        ) : null}
-        {showPause ? (
-          <SwitchRow
-            id="camera-pause"
-            label={t('camera.pause.label')}
-            help={t('camera.pause.help')}
-            checked={alarmsPaused}
-            disabled={pause.isPending}
-            onChange={(paused) => pause.mutate({ paused })}
-          />
-        ) : null}
-        <div className="flex flex-wrap gap-2 max-md:[&>*]:flex-1">
-          {showRestart ? (
-            <Button
-              variant="outline"
-              disabled={restart.isPending}
-              onClick={() => restart.mutate({})}
-              data-testid="camera-restart"
-            >
-              <RefreshCwIcon aria-hidden />
-              {t('camera.restart')}
-            </Button>
+      {hasBody ? (
+        <CardContent className="grid gap-4">
+          {status.totalCrashes > 0 ? (
+            <p className="text-muted-foreground text-sm">
+              {t('camera.status.crashes', { count: status.totalCrashes })}
+            </p>
           ) : null}
-          {canEdit ? (
-            <Button asChild variant="ghost">
-              <Link to="/settings" search={{ tab: 'camera' }}>
-                <SettingsIcon aria-hidden />
-                {t('camera.openSettings')}
-              </Link>
-            </Button>
+          {showProblemLine ? (
+            <p className="text-muted-foreground rounded-md border px-3 py-2 text-xs break-words" dir="ltr">
+              {status.lastError}
+            </p>
           ) : null}
-        </div>
-      </CardContent>
+          {showPause ? (
+            <SwitchRow
+              id="camera-pause"
+              label={t('camera.pause.label')}
+              help={t('camera.pause.help')}
+              checked={alarmsPaused}
+              disabled={pause.isPending}
+              onChange={(paused) => pause.mutate({ paused })}
+            />
+          ) : null}
+          {showRestart || canEdit ? (
+            <div className="flex flex-wrap gap-2 max-md:[&>*]:flex-1">
+              {showRestart ? (
+                <Button
+                  variant="outline"
+                  disabled={restart.isPending}
+                  onClick={() => restart.mutate({})}
+                  data-testid="camera-restart"
+                >
+                  <RefreshCwIcon aria-hidden />
+                  {t('camera.restart')}
+                </Button>
+              ) : null}
+              {canEdit ? (
+                <Button asChild variant="ghost">
+                  <Link to="/settings" search={{ tab: 'camera' }}>
+                    <SettingsIcon aria-hidden />
+                    {t('camera.openSettings')}
+                  </Link>
+                </Button>
+              ) : null}
+            </div>
+          ) : null}
+        </CardContent>
+      ) : null}
     </Card>
   )
 }

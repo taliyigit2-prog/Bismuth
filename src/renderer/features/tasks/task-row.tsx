@@ -110,15 +110,15 @@ export function TaskRow({
       </label>
       <div className="grid min-w-0 flex-1 gap-1">
         <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <label
-            htmlFor={id}
+          {/* H-37: the title is not a second checkbox label; only the box completes the task. */}
+          <span
             className={cn(
               'text-sm font-medium break-words max-md:text-base',
               done && 'text-muted-foreground'
             )}
           >
             {title}
-          </label>
+          </span>
           {task.kind === 'legal' ? (
             <Badge variant="outline" className="gap-1">
               <ScaleIcon aria-hidden />

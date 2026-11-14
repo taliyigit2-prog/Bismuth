@@ -56,7 +56,15 @@ export function FeesSection({ view }: { view: BookingView }) {
   const fees = (lines.data?.charges ?? []).filter((c) => c.code && FEE_CODES.includes(c.code))
   const deposits = lines.data?.deposits ?? []
   const closedRes = view.reservation.status === 'cancelled' || view.reservation.status === 'no_show'
-  if (lines.isError) return <p className="text-destructive text-sm">{t('feesPanel.error')}</p>
+  if (lines.isError)
+    return (
+      <div className="flex flex-wrap items-center gap-2" data-testid="fees-error">
+        <p className="text-destructive text-sm">{t('feesPanel.error')}</p>
+        <Button variant="outline" size="sm" onClick={() => void lines.refetch()}>
+          {t('errors.retry')}
+        </Button>
+      </div>
+    )
   return (
     <section className="grid gap-3" aria-label={t('feesPanel.title')} data-testid="fees-section">
       <div className="flex flex-wrap items-center gap-2">

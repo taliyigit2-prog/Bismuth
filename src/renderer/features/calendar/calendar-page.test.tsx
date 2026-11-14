@@ -641,6 +641,18 @@ describe('takvim telefonda (gün listesi)', () => {
     expect(hotel.reservations.some((r) => r.id === 'res-0432')).toBe(true)
   })
 
+  it('ücret kalemleri okunamazsa panel hata ve "Yeniden dene" gösterir', async () => {
+    phone()
+    const { booking } = await renderCalendar()
+    await aliasView(booking, 'res-0432', 'Maryam', 'Hosseini')
+    const list = await screen.findByTestId('day-list')
+    fireEvent.click(await within(list).findByRole('button', { name: /Maryam Hosseini/ }))
+    const panel = await screen.findByTestId('reservation-panel')
+    await userEvent.setup().click(await within(panel).findByRole('tab', { name: 'Para' }))
+    const error = await within(panel).findByTestId('fees-error')
+    expect(within(error).getByRole('button', { name: 'Yeniden dene' })).toBeInTheDocument()
+  })
+
   it('telefon listesinde gruba bağlı konaklama grup simgesiyle çıkar, grupsuzlarda çıkmaz (G-194)', async () => {
     phone()
     const hotel = demoHotel(DAY)
@@ -660,5 +672,24 @@ describe('takvim telefonda (gün listesi)', () => {
     expect(marks[0]!.className).toMatch(/ring-\(--group-[1-6]\)/)
     const rows = within(list).getAllByRole('button')
     expect(marks.length).toBeLessThan(rows.length)
+  })
+
+  it('telefon listesinde çıkışı yapılmış konaklama ödeme rozeti yerine "Çıkış yaptı" gösterir (H-13)', async () => {
+    phone()
+    const hotel = demoHotel(DAY)
+    await renderCalendar(hotel, {
+      grid: async ({ from, to }) => {
+        const page = gridFromDemo(hotel, from, to)
+        return {
+          ...page,
+          stays: page.stays.map((s) =>
+            s.reservationId === 'res-0432' ? { ...s, reservationStatus: 'checked_out' as const } : s
+          )
+        }
+      }
+    })
+    const list = await screen.findByTestId('day-list')
+    await within(list).findByRole('heading', { name: /^Gelenler/ })
+    expect(within(list).getAllByText('Çıkış yaptı').length).toBeGreaterThan(0)
   })
 })

@@ -219,7 +219,18 @@ export const AUDIT_FIELDS = [
   'value',
   'startTime',
   'endTime',
-  'status'
+  'status',
+  'method',
+  'password',
+  'expiresAt',
+  'folioId',
+  'titleI18n',
+  'reservationId',
+  'guestId',
+  'roomId',
+  'date',
+  'phone',
+  'email'
 ] as const
 export type AuditField = (typeof AUDIT_FIELDS)[number]
 export const isAuditField = (v: string): v is AuditField => (AUDIT_FIELDS as readonly string[]).includes(v)

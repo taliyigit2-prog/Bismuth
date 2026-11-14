@@ -45,26 +45,30 @@ export function RecoverPage() {
   })
   const errors = form.formState.errors
 
-  const submit = form.handleSubmit(async (v) => {
-    setFailure(null)
-    try {
-      await recover.mutateAsync({
-        username: v.username.trim(),
-        code: v.code.trim(),
-        newPassword: v.newPassword
-      })
-    } catch (e) {
-      if (e instanceof ApiError && e.messageKey === 'errors.samePassword') {
-        form.setError('newPassword', { message: 'errors.samePassword' }, { shouldFocus: true })
-        return
+  const submit = form.handleSubmit(
+    async (v) => {
+      setFailure(null)
+      try {
+        await recover.mutateAsync({
+          username: v.username.trim(),
+          code: v.code.trim(),
+          newPassword: v.newPassword
+        })
+      } catch (e) {
+        if (e instanceof ApiError && e.messageKey === 'errors.samePassword') {
+          form.setError('newPassword', { message: 'errors.samePassword' }, { shouldFocus: true })
+          return
+        }
+        setFailure(
+          e instanceof ApiError && e.messageKey === 'errors.invalidCredentials'
+            ? 'auth.recover.invalid'
+            : failureKey(e)
+        )
       }
-      setFailure(
-        e instanceof ApiError && e.messageKey === 'errors.invalidCredentials'
-          ? 'auth.recover.invalid'
-          : failureKey(e)
-      )
-    }
-  })
+      // H-46: a new attempt that fails its own checks must not keep the last attempt's "wrong code" next to them.
+    },
+    () => setFailure(null)
+  )
 
   if (recover.isSuccess)
     return (

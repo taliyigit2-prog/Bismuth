@@ -4,7 +4,7 @@
 // of it is logged or put into an error. The camera is reached by the Python process over rtsp:// inside the hotel's
 // own network (K-49); this file talks to nothing itself.
 import { spawn } from 'node:child_process'
-import { CAMERA_PROBE_REASONS, type CameraProbe } from '@shared/contract/camera'
+import { CAMERA_PROBE_REASONS, MAX_PROBE_IMAGE_CHARS, type CameraProbe } from '@shared/contract/camera'
 import { isCameraHost, rtspHost } from '@shared/domain/camera-source'
 
 export const PROBE_TIMEOUT_MS = 20_000
@@ -46,6 +46,7 @@ export function readProbeOutput(text: string): CameraProbe {
     const height = o['height']
     if (
       typeof image !== 'string' ||
+      image.length > MAX_PROBE_IMAGE_CHARS ||
       !/^[A-Za-z0-9+/]+=*$/.test(image) ||
       !Buffer.from(image.slice(0, 8), 'base64')
         .subarray(0, 2)

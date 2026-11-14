@@ -19,6 +19,9 @@ const WS_DISCOVERY_PORT = 3702
 const SADP_PORT = 37020
 const MAX_PACKET = 16_384
 const MAX_DEVICES = 50
+/** Answers read per search and answers kept before merging: a flood on the group cannot grow memory or burn CPU. */
+export const MAX_PACKETS = 400
+export const MAX_FOUND = 200
 
 // Namespace identifiers of the ONVIF/WS-Discovery message: names, not addresses anything connects to.
 const NS_SOAP = 'http://www.w3.org/2003/05/soap-envelope'
@@ -172,17 +175,33 @@ export interface DiscoverOptions {
   createSocket?: () => Socket
 }
 
+let running: Promise<CameraDiscovery> | null = null
+
 /**
  * Asks the network for cameras and collects the answers for `timeoutMs` (5 s). It never throws: a socket that cannot
  * open (a busy SADP port, a firewall) only means fewer answers. `problem: 'network'` = no private interface to ask from.
  */
 export function discoverCameras(opts: DiscoverOptions = {}): Promise<CameraDiscovery> {
+  // One search at a time: a second call while one runs gets that search's answer (SADP's port can be bound only once).
+  if (running) return running
+  const search = runSearch(opts).finally(() => {
+    running = null
+  })
+  running = search
+  return search
+}
+
+function runSearch(opts: DiscoverOptions): Promise<CameraDiscovery> {
   const timeoutMs = opts.timeoutMs ?? DISCOVERY_TIMEOUT_MS
   const addresses = (opts.interfaces ?? privateInterfaces)()
   if (addresses.length === 0) return Promise.resolve({ devices: [], problem: 'network' })
   const make = opts.createSocket ?? (() => createSocket({ type: 'udp4', reuseAddr: true }))
   const found: CameraDevice[] = []
   const sockets: Socket[] = []
+  let packets = 0
+  const keep = (devices: CameraDevice[]): void => {
+    for (const d of devices) if (found.length < MAX_FOUND) found.push(d)
+  }
 
   const open = (onText: (text: string, from: string) => void): Socket | null => {
     try {
@@ -191,6 +210,7 @@ export function discoverCameras(opts: DiscoverOptions = {}): Promise<CameraDisco
       socket.on('message', (message, rinfo) => {
         // A private sender, a small packet: anything else is not a camera of this network.
         if (message.length > MAX_PACKET || !isPrivateIpv4(rinfo.address)) return
+        if (++packets > MAX_PACKETS) return
         try {
           onText(message.toString('utf8'), rinfo.address)
         } catch {
@@ -213,7 +233,7 @@ export function discoverCameras(opts: DiscoverOptions = {}): Promise<CameraDisco
 
   // ONVIF: one socket per interface, answers come back to its own port.
   for (const address of addresses) {
-    const socket = open((text, from) => found.push(...parseWsDiscovery(text, from)))
+    const socket = open((text, from) => keep(parseWsDiscovery(text, from)))
     if (!socket) continue
     safely(() =>
       socket.bind(0, address, () =>
@@ -227,7 +247,7 @@ export function discoverCameras(opts: DiscoverOptions = {}): Promise<CameraDisco
   }
 
   // SADP: devices answer to the group at 37020, so one socket listens there on every interface.
-  const sadp = open((text) => found.push(...parseSadp(text)))
+  const sadp = open((text) => keep(parseSadp(text)))
   if (sadp)
     safely(() =>
       sadp.bind(SADP_PORT, () => {

@@ -3,6 +3,7 @@ import type { AddressInfo } from 'node:net'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { FetchLike } from '../http'
 import {
+  TELEGRAM_MAX_CHATS,
   TELEGRAM_TIMEOUT_MS,
   createTelegramClient,
   isValidChatId,
@@ -74,6 +75,33 @@ describe('Telegram istemcisi (K-50)', () => {
       text: 'Merdiven: kayıtsız giriş'
     })
     expect(seen[0]!.method).toBe('POST')
+  })
+
+  it('en çok TELEGRAM_MAX_CHATS sohbete gider; fazlası için istek çıkmaz', async () => {
+    const { fetch, seen } = recorder()
+    const many = Array.from({ length: TELEGRAM_MAX_CHATS + 7 }, (_, i) => String(100 + i))
+    const out = await client({ fetch, credentials: () => ({ token: TOKEN, chatIds: many }) }).sendAlert({
+      text: 'x'
+    })
+    expect(out).toEqual({ ok: true, sent: TELEGRAM_MAX_CHATS, failed: 0 })
+    expect(seen).toHaveLength(TELEGRAM_MAX_CHATS)
+  })
+
+  it('toplam süre dolunca kalan sohbetlere istek çıkmaz ve kuyruğa alınmaz', async () => {
+    let calls = 0
+    const slow: FetchLike = async () => {
+      calls++
+      await new Promise((r) => setTimeout(r, 40))
+      return new Response('{}', { status: 200 })
+    }
+    const chats = ['1', '2', '3', '4', '5']
+    const out = await client({
+      fetch: slow,
+      totalMs: 60,
+      credentials: () => ({ token: TOKEN, chatIds: chats })
+    }).sendAlert({ text: 'x' })
+    expect(calls).toBe(2) // 0 ms and 40 ms start; at 80 ms the 60 ms budget is gone
+    expect(out).toEqual({ ok: true, sent: 2, failed: 3 })
   })
 
   it('fotoğraf eki ayarı açıkken sendPhoto, kapalıyken ya da fotoğraf yokken sendMessage kullanılır', async () => {

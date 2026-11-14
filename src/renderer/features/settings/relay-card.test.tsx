@@ -23,7 +23,7 @@ const STATUS: RelayHostStatus = {
   replaced: null
 }
 
-function relayTransport(opts: { replaced?: boolean; kind?: 'ipc' | 'http' } = {}) {
+function relayTransport(opts: { replaced?: boolean; kind?: 'ipc' | 'http'; keyExists?: boolean } = {}) {
   const base = fakeTransport(SETTINGS_DEFAULTS)
   const calls: { name: ProcedureName; input: unknown }[] = []
   const epoch: EpochState = {
@@ -51,7 +51,7 @@ function relayTransport(opts: { replaced?: boolean; kind?: 'ipc' | 'http' } = {}
       switch (name) {
         case 'remote.relayStatus':
         case 'remote.relayRun':
-          return STATUS as never
+          return { ...STATUS, keyExists: opts.keyExists ?? false } as never
         case 'remote.epochState':
           return epoch as never
         case 'remote.conflicts':
@@ -89,7 +89,16 @@ describe('şifreli kutu ve PDF özet kartı', () => {
         input: { 'summary.enabled': false }
       })
     )
-    await user.click(screen.getByTestId('relay-run'))
+    // H-41: without the key "Şimdi yaz" is off and says why.
+    expect(screen.getByTestId('relay-run')).toBeDisabled()
+    expect(screen.getByText('Önce Drive klasörünü seçin ve anahtarı oluşturun.')).toBeInTheDocument()
+  })
+
+  it('klasör ve anahtar varken "Şimdi yaz" kutuyu yazar', async () => {
+    const transport = relayTransport({ keyExists: true })
+    const user = userEvent.setup()
+    await renderWithProviders(<RelayCard />, { transport })
+    await user.click(await screen.findByTestId('relay-run'))
     await waitFor(() => expect(transport.relayCalls.some((c) => c.name === 'remote.relayRun')).toBe(true))
   })
 })

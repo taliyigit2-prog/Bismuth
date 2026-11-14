@@ -217,6 +217,13 @@
   font-size: 125%;
 }
 
+/* 05 #3: on wide screens the day columns are wider, so a one- or two-night bar still shows a name. */
+@media (min-width: 1800px) {
+  :root:not([data-density='compact']) {
+    --tape-day: 4.5rem;
+  }
+}
+
 :root[data-density='compact'] {
   --density-row: 2rem;
   --tape-day: 2.75rem;

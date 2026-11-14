@@ -300,7 +300,7 @@ describe('bağlantı ekranı (istemci modu)', () => {
     await renderApp({ setup: 'needed', mode: 'client', signedIn: null, transport })
     const user = userEvent.setup()
     await user.click((await screen.findAllByTestId('hotel-remove'))[0]!)
-    expect(await screen.findByText('Listeden kaldırılsın mı: Pandora?')).toBeInTheDocument()
+    expect(await screen.findByText('Pandora listeden kaldırılsın mı?')).toBeInTheDocument()
     await user.click(screen.getByTestId('hotel-remove-confirm'))
     await waitFor(() => expect(screen.getAllByTestId('hotel-row')).toHaveLength(1))
     expect(screen.getByTestId('hotel-row')).toHaveTextContent('Bosphorus Inn')

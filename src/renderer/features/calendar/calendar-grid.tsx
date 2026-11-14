@@ -685,7 +685,7 @@ export const CalendarGrid = memo(function CalendarGrid({
       onContextMenuCapture={onContextCapture}
       onPointerDownCapture={onPointerDownCapture}
       onScroll={onScroll}
-      className="group/grid bg-card focus-visible:ring-ring/50 relative max-h-[calc(100dvh-16rem)] min-h-64 overflow-auto rounded-xl border outline-none focus-visible:ring-[3px]"
+      className="group/grid bg-card focus-visible:ring-ring/50 relative max-h-[calc(100dvh-15rem)] min-h-64 overflow-auto rounded-xl border outline-none focus-visible:ring-[3px]"
     >
       <p id="calendar-grid-help" className="sr-only">
         {t('calendar.grid.help')}

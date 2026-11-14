@@ -56,4 +56,12 @@ describe('Hikvision RTSP kalıbı (K-59)', () => {
     expect(rtspHost('http://192.168.1.64/x')).toBeNull()
     expect(rtspHost('0')).toBeNull()
   })
+
+  it('kullanıcı adında satır sonu, denetim karakteri ya da tırnak varsa adres reddedilir', () => {
+    for (const user of ['a%0d%0aX-Evil:%201', 'a%0a', 'a%00', 'a%22b', 'a"b', '%E0%A4%A'])
+      expect(rtspHost(S + user + ':pw@192.168.1.64/x')).toBeNull()
+    expect(rtspHost(S + 'admin:p%0d%0aw@192.168.1.64/x')).toBeNull()
+    // an ordinary quote-free user and a password with special characters stay valid
+    expect(rtspHost(S + 'ad%20min:p%22w@192.168.1.64/x')).toBe('192.168.1.64')
+  })
 })

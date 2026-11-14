@@ -24,7 +24,16 @@ import { useAdminMutation, useLocalName } from './use-admin'
 type Shift = ProcedureOutput<'shifts.list'>[number]
 const validTime = (v: string): boolean => settingsShape['hotel.checkinTime'].safeParse(v).success
 
-function ShiftDialog({ shift, onClose }: { shift: Shift | null; onClose: () => void }) {
+function ShiftDialog({
+  shift,
+  taken,
+  onClose
+}: {
+  shift: Shift | null
+  /** Names of the other shifts (compared without case, H-38). */
+  taken: readonly string[]
+  onClose: () => void
+}) {
   const { t } = useTranslation()
   const nameOf = useLocalName()
   const formId = useId()
@@ -32,7 +41,7 @@ function ShiftDialog({ shift, onClose }: { shift: Shift | null; onClose: () => v
   const [name, setName] = useState(initialName)
   const [start, setStart] = useState(shift?.startTime ?? '09:00')
   const [end, setEnd] = useState(shift?.endTime ?? '21:00')
-  const [errors, setErrors] = useState<{ name?: boolean; time?: boolean }>({})
+  const [errors, setErrors] = useState<{ name?: boolean; taken?: boolean; time?: boolean }>({})
   const create = useAdminMutation('shifts.create', {
     invalidate: ['shifts.list'],
     success: t('settings.shifts.added')
@@ -45,10 +54,14 @@ function ShiftDialog({ shift, onClose }: { shift: Shift | null; onClose: () => v
   const submit = (e: FormEvent): void => {
     e.preventDefault()
     const trimmed = name.trim()
-    const next = { name: !trimmed || trimmed.length > 60, time: !validTime(start) || !validTime(end) }
+    const next = {
+      name: !trimmed || trimmed.length > 60,
+      taken: taken.some((n) => n.toLocaleLowerCase('tr') === trimmed.toLocaleLowerCase('tr')),
+      time: !validTime(start) || !validTime(end)
+    }
     setErrors(next)
-    if (next.name || next.time) {
-      document.getElementById(`${formId}-${next.name ? 'name' : 'start'}`)?.focus()
+    if (next.name || next.taken || next.time) {
+      document.getElementById(`${formId}-${next.name || next.taken ? 'name' : 'start'}`)?.focus()
       return
     }
     if (!shift) {
@@ -78,7 +91,9 @@ function ShiftDialog({ shift, onClose }: { shift: Shift | null; onClose: () => v
           id={`${formId}-name`}
           label={t('settings.shifts.name')}
           help={shift?.code ? t('settings.seededRename') : undefined}
-          error={errors.name ? t('settings.shifts.nameRequired') : null}
+          error={
+            errors.name ? t('settings.shifts.nameRequired') : errors.taken ? t('errors.nameTaken') : null
+          }
         >
           <Input
             id={`${formId}-name`}
@@ -86,7 +101,7 @@ function ShiftDialog({ shift, onClose }: { shift: Shift | null; onClose: () => v
             maxLength={60}
             autoComplete="off"
             placeholder={t('settings.shifts.namePlaceholder')}
-            aria-invalid={errors.name || undefined}
+            aria-invalid={errors.name || errors.taken || undefined}
             aria-describedby={`${formId}-name-msg`}
             onChange={(e) => setName(e.target.value)}
             data-testid="shift-name"
@@ -215,7 +230,15 @@ export function ShiftsSection() {
           )}
         </QueryView>
       </CardContent>
-      {dialog ? <ShiftDialog shift={dialog.shift} onClose={() => setDialog(null)} /> : null}
+      {dialog ? (
+        <ShiftDialog
+          shift={dialog.shift}
+          taken={(query.data ?? [])
+            .filter((o) => o.id !== dialog.shift?.id)
+            .map((o) => nameOf(o.displayName, o.name))}
+          onClose={() => setDialog(null)}
+        />
+      ) : null}
     </Card>
   )
 }

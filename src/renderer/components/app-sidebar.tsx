@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import { Link, useRouterState } from '@tanstack/react-router'
+import { ChevronDownIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import {
   Sidebar,
@@ -19,10 +21,25 @@ import { NAV_GROUPS, visibleNav, type NavGroup, type NavItem } from '@/navigatio
 function NavSection({ group, items }: { group: NavGroup; items: readonly NavItem[] }) {
   const { t } = useTranslation()
   const pathname = useRouterState({ select: (s) => s.location.pathname })
+  // 05 #5: on a low screen the lower groups are folded away with one tap; the group of the open screen stays open
+  // and the icon-only sidebar always shows every icon.
+  const [folded, setFolded] = useState(false)
+  const hidden = folded && !items.some((i) => i.to === pathname)
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>{t(`nav.group.${group}`)}</SidebarGroupLabel>
-      <SidebarGroupContent>
+      <SidebarGroupLabel asChild>
+        <button
+          type="button"
+          aria-expanded={!hidden}
+          onClick={() => setFolded(!folded)}
+          className="w-full cursor-pointer justify-between text-start"
+          data-testid={`nav-group-${group}`}
+        >
+          {t(`nav.group.${group}`)}
+          <ChevronDownIcon className={hidden ? '-rotate-90 rtl:rotate-90' : undefined} aria-hidden />
+        </button>
+      </SidebarGroupLabel>
+      <SidebarGroupContent className={hidden ? 'hidden group-data-[collapsible=icon]:block' : undefined}>
         <SidebarMenu>
           {items.map((item) => (
             <SidebarMenuItem key={item.to}>

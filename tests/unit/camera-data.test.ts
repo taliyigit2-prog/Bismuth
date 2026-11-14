@@ -592,6 +592,20 @@ describe('alarm işaretleri ve "misafir olarak kaydet"', () => {
     expect(sidecar.s.puts.at(-1)!.faces.map((f) => f.name)).toEqual([GUEST_NAME])
   })
 
+  it('yüz sınırı dolmuşsa alarm bağlanmaz: yüz satırı da olay güncellemesi de yazılmaz (tek işlem)', async () => {
+    const { services, sidecar, owner, stay } = await setup()
+    const { guestId } = stay()
+    for (let i = 0; i < 5; i++) await services.camera.enrollFace(owner, { guestId })
+    sidecar.s.alerts = [sealedAlert()]
+    await services.camera.tick(systemCtx())
+    const id = events()[0]!.id
+    expect(await code(() => services.camera.saveAlertAsGuest(owner, { id, guestId }))).toBe(
+      'CONFLICT:errors.cameraFaceLimit'
+    )
+    expect(faces()).toHaveLength(5)
+    expect(events()[0]).toMatchObject({ guestId: null, state: 'new' })
+  })
+
   it('otelde olmayan misafire ya da silinmiş kırpmaya bağlanamaz', async () => {
     const { services, sidecar, owner, stay, clock } = await setup()
     const { guestId } = stay()
@@ -774,6 +788,10 @@ describe('personel dışlama listesi (S-107, K-58)', () => {
       'NOT_FOUND:errors.notFound'
     )
     expect(await code(() => services.camera.enrollStaff(phone, { employeeId: person.id }))).toBe(
+      'PERMISSION_DENIED:errors.remoteLocalOnly'
+    )
+    // the staff list (who is on the exclusion list) is biometric too: not served to a phone either
+    expect(await code(() => services.camera.staffList(phone))).toBe(
       'PERMISSION_DENIED:errors.remoteLocalOnly'
     )
     sidecar.s.captureStatus = 400

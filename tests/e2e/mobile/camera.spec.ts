@@ -24,7 +24,7 @@ test('telefonda Kamera: durum ve alarm listesi; canlı görüntü ve yönetim d�
 
   // Marking is the front desk's work: it goes over HTTP too and the 44 px buttons are real targets.
   const newest = alerts.first()
-  const seen = newest.getByRole('button', { name: 'Gördüm' })
+  const seen = newest.getByRole('button', { name: 'Görüldü olarak işaretle' })
   expect((await seen.boundingBox())!.height).toBeGreaterThanOrEqual(44)
   await seen.click()
   await expect(newest).toHaveAttribute('data-state', 'seen')

@@ -235,3 +235,53 @@ def test_ana_giriş_adresi_ortamdan_okur_ve_tek_satır_json_yazar(capsys, server
 def test_ana_giriş_adres_yoksa_adres_hatası_verir(capsys):
     assert pc.main(env={}) == 0
     assert json.loads(capsys.readouterr().out)["reason"] == "badAddress"
+
+
+def test_ffmpegye_giden_adres_doğrulanan_parçalardan_yeniden_kurulur(server):
+    fake = server("digest")
+    seen: list[str] = []
+
+    def spy(source: str):
+        seen.append(source)
+        return JPEG, 640, 360
+
+    assert pc.probe(src(fake.port), grab_fn=spy)["ok"] is True
+    assert seen == [SCHEME + f"{USER}:{PASSWORD}@127.0.0.1:{fake.port}/Streaming/Channels/101"]
+
+
+def test_yeniden_kurulan_adreste_özel_karakterli_şifre_yüzde_kodlanır():
+    assert pc.build_source("a", "p@ss:w/d", "192.168.1.5", 554, "/x?y=1") == SCHEME + "a:p%40ss%3Aw%2Fd@192.168.1.5:554/x?y=1"
+    assert pc.build_source("", "", "10.0.0.2", 8554, "/") == SCHEME + "10.0.0.2:8554/"
+
+
+def test_ffmpeg_yalnız_rtsp_ailesini_açabilir():
+    assert "protocol_whitelist;rtsp,rtp,tcp,udp" in pc.FFMPEG_OPTIONS
+
+
+@pytest.mark.parametrize(
+    "host",
+    ["0.0.0.1", "100.64.0.1", "192.0.0.1", "192.0.2.1", "198.18.0.1", "240.0.0.1", "172.32.0.1", "172.15.0.1", "255.255.255.255"],
+)
+def test_python_özel_saydığı_ama_typescript_listesinde_olmayan_adresler_reddedilir(host):
+    assert pc.probe(SCHEME + f"{host}/x", describe_fn=lambda *_a: None, grab_fn=grab_ok)["reason"] == "badAddress"
+
+
+@pytest.mark.parametrize("host", ["10.255.255.255", "172.16.0.1", "172.31.255.254", "192.168.0.1", "169.254.9.9", "127.0.0.1"])
+def test_typescript_listesindeki_adresler_kabul_edilir(host):
+    assert pc.parse_source(SCHEME + f"{host}/x")[2] == host
+
+
+@pytest.mark.parametrize("user", ["a%0d%0aX-Evil:%201", "a%0aB", "a%22b", "a%0d"])
+def test_kullanıcı_adında_satır_sonu_ya_da_tırnak_reddedilir(user):
+    calls: list[str] = []
+
+    def spy(*_a):
+        calls.append("describe")
+
+    out = pc.probe(SCHEME + f"{user}:x@192.168.1.5/Streaming/Channels/101", describe_fn=spy, grab_fn=grab_ok)
+    assert out["reason"] == "badAddress" and calls == []
+
+
+def test_adreste_boşluk_ya_da_denetim_karakteri_reddedilir():
+    for bad in (SCHEME + "192.168.1.5/x y", SCHEME + "192.168.1.5/x\r\nX: 1", SCHEME + "192.168.1.5/x\x00"):
+        assert pc.probe(bad, describe_fn=lambda *_a: None, grab_fn=grab_ok)["reason"] == "badAddress"

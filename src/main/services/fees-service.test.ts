@@ -187,7 +187,9 @@ describe('hasar depozitosu', () => {
       svc.fees.nightReport(owner, { date: '2026-10-01' }).cash!.byCurrency.find((c) => c.currency === 'TRY')
     ).toMatchObject({ incomeMinor: 100_000, depositHeldMinor: 0 })
     // The damage line goes with its payment: it is not voided alone.
-    const line = svc.fees.folioLines(reception, b.reservation.id).charges.find((c) => c.code === 'damage_fee')!
+    const line = svc.fees
+      .folioLines(reception, b.reservation.id)
+      .charges.find((c) => c.code === 'damage_fee')!
     expect(() => svc.fees.voidFee(owner, { chargeId: line.id, reason: 'yanlış' })).toThrow()
   })
 
@@ -218,6 +220,32 @@ describe('gece raporu', () => {
     expect(out.departures).toHaveLength(1)
     expect(out.staying).toHaveLength(0)
     expect(() => svc.fees.nightReport(housekeeping, { date: '2026-10-01' })).toThrow()
+  })
+
+  it('her satırın bakiyesi kalemler eksi ödemeler (iade ters) olarak gelir; ödemesiz rezervasyon tam borçludur', async () => {
+    const { svc, book, cash } = await setup()
+    const a = book('2026-10-01', '2026-10-03') // 2 nights x 2.000 = 4.000
+    const b = book('2026-10-03', '2026-10-04') // 1 night = 2.000, arrives the day the first one leaves
+    svc.reservations.checkIn(reception, a.stays[0]!.id)
+    for (const [kind, amountMinor] of [
+      ['payment', 150_000],
+      ['refund', 20_000]
+    ] as const)
+      svc.payments.create(reception, {
+        reservationId: a.reservation.id,
+        date: '2026-10-01',
+        kind,
+        methodId: cash,
+        amountMinor,
+        currency: 'TRY'
+      })
+    const rep = svc.fees.nightReport(owner, { date: '2026-10-03' })
+    const balanceOf = (id: string) => [...rep.departures, ...rep.arrivals].find((l) => l.reservationId === id)
+    expect(balanceOf(a.reservation.id)).toMatchObject({
+      balanceMinor: 400_000 - 150_000 + 20_000,
+      currency: 'TRY'
+    })
+    expect(balanceOf(b.reservation.id)).toMatchObject({ balanceMinor: 200_000, currency: 'TRY' })
   })
 
   it('gelmedi işaretlenen rezervasyon o günün "Gelmeyenler" listesinde görünür', async () => {

@@ -546,7 +546,8 @@
       "users": "Kullanıcılar ve roller",
       "about": "Hakkında",
       "guide": "Kılavuz",
-      "camera": "Kamera"
+      "camera": "Kamera",
+      "frequent": "Sık kullanılan"
     },
     "tags": {
       "autoTitle": "Otomatik durumlar",
@@ -928,7 +929,8 @@
         "summaryFailed": "Yazılamadı",
         "never": "Henüz yok",
         "term": "Ana bilgisayar dönemi",
-        "summaryPlace": "Özet Drive'ım/Bismuth/ozet.pdf dosyasıdır; telefonda Drive uygulamasıyla açılır."
+        "summaryPlace": "Özet Drive'ım/Bismuth/ozet.pdf dosyasıdır; telefonda Drive uygulamasıyla açılır.",
+        "runBlocked": "Önce Drive klasörünü seçin ve anahtarı oluşturun."
       },
       "replaced": {
         "title": "Bu bilgisayar artık ana bilgisayar değil",
@@ -1293,7 +1295,8 @@
       "ownHoursToday": "Yalnız bugün",
       "ownHoursDays_one": "{{count}} gün geriye",
       "ownHoursDays_other": "{{count}} gün geriye",
-      "numberRange": "{{min}} ile {{max}} arasında bir tam sayı yazın."
+      "numberRange": "{{min}} ile {{max}} arasında bir tam sayı yazın.",
+      "rateRange": "Oranı {{min}} ile {{max}} arasında yazın."
     },
     "calendar": {
       "highlight": "Vurgulu günler",
@@ -1424,7 +1427,13 @@
         "processEveryN": "Her kaç görüntüde bir inceleme",
         "processEveryNHelp": "Yükseltirseniz bilgisayar rahatlar ama tepki yavaşlar.",
         "verifiedTtl": "Tanınan kişi için bekleme (saniye)",
-        "verifiedTtlHelp": "Tanınan bir kişi bu süre boyunca yeniden sorgulanmaz."
+        "verifiedTtlHelp": "Tanınan bir kişi bu süre boyunca yeniden sorgulanmaz.",
+        "uncertainMargin": "Kararsız kalan tanıma payı",
+        "uncertainMarginHelp": "Eşiğe bu kadar yakın çıkan eşleşmeler kesin sayılmaz, tekrar sorgulanır. 0 = kapalı.",
+        "idleFaceScanEvery": "Boşta yüz taraması (görüntü)",
+        "idleFaceScanEveryHelp": "Hareket yokken kaç görüntüde bir yüz aranacağı. Yükseltirseniz bilgisayar rahatlar. 0 = hareket yokken aranmaz.",
+        "streamMaxWidth": "Canlı görüntü genişliği (piksel)",
+        "streamMaxWidthHelp": "Canlı görüntünün en büyük genişliği. Küçültürseniz yerel ağ ve telefon rahatlar."
       },
       "advancedTitle": "Tanıma ayarları",
       "advancedHelp": "Ne yaptığınızı bilmiyorsanız değiştirmeyin; varsayılanlar çoğu otel için uygundur.",
@@ -1456,6 +1465,18 @@
       "depositAmount": "Varsayılan tutar",
       "depositHelp": "Boş ya da sıfır bırakırsanız tutarı her seferinde siz yazarsınız.",
       "save": "Ücretleri kaydet"
+    },
+    "frequent": {
+      "title": "Sık kullanılan ayarlar",
+      "help": "Zamanla değişen ayarlara buradan geçin. Gerisi soldaki listede.",
+      "hint": {
+        "hotel": "Otel adı, saatler, vergiler ve ücret kalemleri",
+        "rooms": "Odalar, oda tipleri ve gecelik fiyatlar",
+        "lists": "Ödeme yöntemleri, satış kanalları ve ek hizmetler",
+        "staff": "İzin, ücret ve ek mesai kuralları",
+        "users": "Kullanıcılar, roller ve yetkiler",
+        "backup": "Yedek alma, geri yükleme ve dışa aktarma"
+      }
     }
   },
   "status": {
@@ -1877,7 +1898,9 @@
       "alertBody": "Saat {{time}}. Kamera ekranına bakın.",
       "alertBodyAt": "Saat {{time}}, {{location}}. Kamera ekranına bakın.",
       "alertTelegram": "Bismuth: kayıtsız biri kameraya girdi. Saat {{time}}.",
-      "alertTelegramAt": "Bismuth: kayıtsız biri kameraya girdi. Saat {{time}}, {{location}}."
+      "alertTelegramAt": "Bismuth: kayıtsız biri kameraya girdi. Saat {{time}}, {{location}}.",
+      "crashedBody_one": "Kamera sistemi {{count}} kez durdu; kendiliğinden yeniden başlatılıyor.",
+      "crashedBody_other": "Kamera sistemi {{count}} kez durdu; kendiliğinden yeniden başlatılıyor."
     }
   },
   "companies": {
@@ -4224,7 +4247,8 @@
       "voided": "Ödeme iptal edildi",
       "overTitle": "Bakiyeden fazla ödeme alınsın mı?",
       "overBody": "Bakiye {{balance}}, alınan {{amount}}. Fazlası ({{over}}) misafire borç olarak kalır.",
-      "overConfirm": "Yine de kaydet"
+      "overConfirm": "Yine de kaydet",
+      "futureDay": "Bu gün henüz gelmedi. Ödeme yine de bu güne yazılır."
     },
     "sale": {
       "service": "Hizmet",
@@ -4829,7 +4853,7 @@
       "revenue": "Ciro",
       "expenses": "Gider",
       "profit": "Kâr",
-      "occupancy": "Doluluk",
+      "occupancy": "Doluluk (ayın tamamı)",
       "vsPrevious": "önceki aya göre",
       "margin": "Kâr oranı {{value}}",
       "nights": "{{sold}}/{{sellable}} oda-gece"
@@ -5372,7 +5396,8 @@
       "placeholder": "Özete eklemek istedikleriniz: örn. 503 geç gelecek, kapıyı açık bırakın.",
       "save": "Devri kaydet",
       "saved": "Devir kaydedildi",
-      "noShift": "Vardiya tanımlı değil. Saatleri Ayarlar → Vardiyalar bölümünden girin."
+      "noShift": "Vardiya tanımlı değil. Saatleri Ayarlar → Vardiyalar bölümünden girin.",
+      "emptyHint": "Not yazmazsanız yalnız otomatik özet kaydedilir."
     },
     "auto": {
       "title": "Otomatik özet",
@@ -5589,7 +5614,9 @@
       "changed": "Son değişiklik: {{name}} · {{when}}",
       "system": "Program",
       "occupied": "Odada misafir var.",
-      "closedNoBlock": "Oda bu gece dolu olduğu için takvimde blok yok."
+      "closedNoBlock": "Oda bu gece dolu olduğu için takvimde blok yok.",
+      "reminderTitle": "Oda {{room}}: misafir çıkınca durumu yeniden seçin",
+      "reminderBody": "“{{state}}” seçildi ama oda dolu olduğu için takvimde blok açılmadı. Misafir çıkınca durumu yeniden seçin."
     },
     "noMatchBody": "Başka bir durum seçin.",
     "statusSaved": "Oda {{room}} “{{state}}” olarak işaretlendi",
@@ -5640,7 +5667,7 @@
       "name": "Otelin adı",
       "addressHelp": "Başka bir adres yazarsanız, oradaki ana bilgisayarın kimliği bağlanırken yeniden denetlenir.",
       "addressInUse": "Kullanımdaki otelin adresi değiştirilemez. Önce başka otele geçin.",
-      "removeTitle": "Listeden kaldırılsın mı: {{name}}?",
+      "removeTitle": "{{name}} listeden kaldırılsın mı?",
       "removeBody": "Otelin kendi kayıtları ana bilgisayarında kalır. Bu bilgisayardaki yedek kopyası silinir; sonra yeniden bağlanabilirsiniz.",
       "remove": "Listeden kaldır"
     },
@@ -5720,7 +5747,7 @@
     "action": {
       "create": "Ekledi",
       "update": "Değiştirdi",
-      "void": "İptal etti",
+      "void": "Geçersiz kıldı",
       "cancel": "İptal etti",
       "restore": "Geri aldı",
       "delete": "Kaldırdı",
@@ -5870,7 +5897,18 @@
       "startTime": "Başlangıç saati",
       "endTime": "Bitiş saati",
       "status": "Durum",
-      "remoteAccess": "Uzaktan oturum açma"
+      "remoteAccess": "Uzaktan oturum açma",
+      "method": "Yöntem",
+      "password": "Şifre",
+      "expiresAt": "Bitiş zamanı",
+      "folioId": "Hesap",
+      "titleI18n": "Başlık",
+      "reservationId": "Rezervasyon",
+      "guestId": "Misafir",
+      "roomId": "Oda",
+      "date": "Tarih",
+      "phone": "Telefon",
+      "email": "E-posta"
     },
     "importReason": "İçe aktarma",
     "setting": {
@@ -5991,7 +6029,9 @@
       "firstName": "Ad",
       "lastName": "Soyad",
       "phone": "Telefon",
-      "email": "E-posta"
+      "email": "E-posta",
+      "similar": "Bu ada benzer kayıtlı misafir var. Aynı kişiyse kartını kullanın; yeni kart açılmaz.",
+      "useCard": "Bu kartı kullan"
     },
     "issues": {
       "title": "Oda {{room}}: açık arıza var",
@@ -7382,8 +7422,8 @@
         "seen": "Görüldü",
         "handled": "Halledildi"
       },
-      "markSeen": "Gördüm",
-      "markHandled": "Hallettim",
+      "markSeen": "Görüldü olarak işaretle",
+      "markHandled": "Halledildi olarak işaretle",
       "reopen": "Yeniden aç",
       "markFailed": "Alarm işaretlenemedi",
       "emptyTitle": "Alarm yok",

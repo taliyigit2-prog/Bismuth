@@ -86,6 +86,24 @@ describe('yeni rezervasyon', () => {
     expect(input?.blacklistConfirmed).toBeUndefined()
   })
 
+  it('yeni misafir olarak yazılan ad kayıtlı bir kartla eşleşirse o kart önerilir ve seçilince kullanılır (mükerrer kart)', async () => {
+    const { user, transport, onCreated } = await open({
+      guests: [{ id: 'g-elif', firstName: 'Elif', lastName: 'Kaya', phone: '+90 555 000 11 22' } as never]
+    })
+    await typeGuest(user, 'Elif Kaya')
+    await user.click(await screen.findByText('Yeni misafir: Elif Kaya'))
+    const similar = await screen.findByTestId('similar-guests')
+    expect(similar).toHaveTextContent('Elif Kaya')
+    await user.click(within(similar).getByTestId('use-guest-g-elif'))
+    expect(screen.queryByTestId('new-guest-form')).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /^Çıkış/ }))
+    await user.click(await screen.findByRole('gridcell', { name: /^5 Ekim 2026/ }))
+    await user.click(screen.getByTestId('new-reservation-save'))
+    await waitFor(() => expect(onCreated).toHaveBeenCalled())
+    const [input] = transport.callsTo('booking.create') as { guest: unknown }[]
+    expect(input?.guest).toEqual({ id: 'g-elif' })
+  })
+
   it('giriş ve çıkış aynı gün seçilince saat aralığı istenir; saatsiz kayıt gitmez, saatlerle gider (S-103)', async () => {
     const { user, transport, onCreated } = await open()
     await typeGuest(user, 'Elif Kaya')

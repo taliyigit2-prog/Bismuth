@@ -211,6 +211,15 @@ function NewReservationForm({
     { q: debounced, limit: 8 },
     { enabled: debounced.length >= 2 && can('guests') }
   )
+  // 04 §3: a name typed for a new guest that already has a card is offered as that card (no double cards).
+  const typedName = guest?.kind === 'new' ? `${guest.firstName} ${guest.lastName}`.trim().slice(0, 100) : ''
+  const sameName = useDebounced(typedName)
+  const similar = useApiQuery(
+    'booking.searchGuests',
+    { q: sameName, limit: 3 },
+    { enabled: sameName.length >= 3 && guest?.kind === 'new' && can('guests') }
+  )
+  const similarGuests = guest?.kind === 'new' && sameName === typedName ? (similar.data ?? []) : []
   const comboGuests: ComboGuest[] = (search.data ?? []).map((g) => ({
     id: g.id,
     name: `${g.firstName} ${g.lastName}`.trim(),
@@ -510,6 +519,41 @@ function NewReservationForm({
                 ltr
                 error={guestErrors.email}
               />
+              {similarGuests.length ? (
+                <div
+                  className="bg-muted/50 grid gap-2 rounded-md p-2 text-sm sm:col-span-2"
+                  data-testid="similar-guests"
+                >
+                  <p className="text-muted-foreground text-xs">{t('booking.newGuest.similar')}</p>
+                  {similarGuests.map((g) => {
+                    const name = `${g.firstName} ${g.lastName}`.trim()
+                    return (
+                      <div key={g.id} className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="min-w-0 break-words">
+                          {name}
+                          {g.phone ? (
+                            <bdi className="text-muted-foreground ms-2 text-xs" dir="ltr">
+                              {g.phone}
+                            </bdi>
+                          ) : null}
+                        </span>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            changeGuest({ kind: 'existing', id: g.id, name })
+                            setStandingOk(false)
+                          }}
+                          data-testid={`use-guest-${g.id}`}
+                        >
+                          {t('booking.newGuest.useCard')}
+                        </Button>
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : null}
             </fieldset>
           ) : null}
         </div>

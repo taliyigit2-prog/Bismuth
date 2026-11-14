@@ -487,6 +487,11 @@ function PaymentForm({
           </div>
         ) : null}
       </div>
+      {date > options.today ? (
+        <p className="text-warning text-sm" data-testid="ledger-payment-future">
+          {t('ledger.pay.futureDay')}
+        </p>
+      ) : null}
       {closed ? <ClosedDayReason value={closedReason} onChange={setClosedReason} /> : null}
       {error ? (
         <p role="alert" className="text-destructive text-sm" data-testid="ledger-payment-error">

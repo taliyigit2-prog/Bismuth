@@ -3,6 +3,7 @@
 // set in Settings → Yedek, or found by itself: Drive for desktop shows "My Drive" / "Drive'ım" on a drive letter
 // (Windows, usually G:) or under ~/Library/CloudStorage/GoogleDrive-<account>/ (macOS). Copies go to
 // <My Drive>/Bismuth/yedekler. Nothing found → null: the copy is skipped quietly and the Today badge says so.
+import { execFileSync } from 'node:child_process'
 import { existsSync, mkdirSync, readdirSync, statSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { isAbsolute, join } from 'node:path'
@@ -15,11 +16,26 @@ export interface DriveProbe {
   home: string
   isDir(path: string): boolean
   list(path: string): string[]
+  /** Drive roots (`X:\\`) that must not be touched: mapped network drives can freeze a scan for many seconds. */
+  skipRoot?(root: string): boolean
 }
 
-const realProbe = (): DriveProbe => ({
-  platform: process.platform,
-  home: homedir(),
+/** Letters of the mapped network drives of this Windows user (HKCU\Network\<letter>); empty when unknown. */
+function mappedNetworkLetters(): Set<string> {
+  try {
+    const out = execFileSync('reg', ['query', 'HKCU\\Network'], {
+      encoding: 'utf8',
+      timeout: 2000,
+      windowsHide: true,
+      stdio: ['ignore', 'pipe', 'ignore']
+    })
+    return new Set([...out.matchAll(/\\Network\\([A-Za-z])\s*$/gm)].map((m) => (m[1] ?? '').toUpperCase()))
+  } catch {
+    return new Set()
+  }
+}
+
+const fsProbe: Pick<DriveProbe, 'isDir' | 'list'> = {
   isDir: (path) => {
     try {
       return statSync(path).isDirectory()
@@ -34,14 +50,32 @@ const realProbe = (): DriveProbe => ({
       return []
     }
   }
-})
+}
+
+const realProbe = (): DriveProbe => {
+  let network: Set<string> | null = null
+  return {
+    platform: process.platform,
+    home: homedir(),
+    skipRoot: (root) => {
+      if (process.platform !== 'win32') return false
+      network ??= mappedNetworkLetters()
+      return network.has(root.charAt(0).toUpperCase())
+    },
+    ...fsProbe
+  }
+}
 
 /** The "My Drive" folder of Drive for desktop on this computer, or null. */
 export function findMyDrive(probe: DriveProbe = realProbe()): string | null {
   const roots: string[] = []
   if (probe.platform === 'win32') {
     // G: first (the default), then the other letters.
-    for (const letter of 'GDEFHIJKLMNOPQRSTUVWXYZ') roots.push(`${letter}:\\`)
+    // Mapped network drives are skipped (they can block the scan); fixed, removable and Drive's virtual drive stay.
+    for (const letter of 'GDEFHIJKLMNOPQRSTUVWXYZ') {
+      const root = `${letter}:\\`
+      if (!probe.skipRoot?.(root)) roots.push(root)
+    }
   } else if (probe.platform === 'darwin') {
     const cloud = join(probe.home, 'Library', 'CloudStorage')
     for (const name of probe

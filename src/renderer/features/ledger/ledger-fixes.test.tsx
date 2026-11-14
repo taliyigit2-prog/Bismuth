@@ -177,4 +177,17 @@ describe('Defter: erken hata avı düzeltmeleri', { timeout: 30_000 }, () => {
       expect(info).toHaveBeenCalledWith('Ad değişti. Kapalı gündeki 1 satır eski adıyla kaldı.')
     )
   })
+
+  it('gelecek güne ödeme eklenirken uyarı görünür; bugün için görünmez (H-31)', async () => {
+    const user = userEvent.setup()
+    await render()
+    await user.click(await screen.findByTestId('add-payment'))
+    let dialog = await screen.findByRole('dialog', { name: 'Ödeme ekle' })
+    expect(within(dialog).queryByTestId('ledger-payment-future')).not.toBeInTheDocument()
+    await user.click(within(dialog).getByRole('button', { name: 'Vazgeç' }))
+    await user.click(screen.getByRole('button', { name: 'Sonraki gün' }))
+    await user.click(await screen.findByTestId('add-payment'))
+    dialog = await screen.findByRole('dialog', { name: 'Ödeme ekle' })
+    expect(within(dialog).getByTestId('ledger-payment-future')).toHaveTextContent('henüz gelmedi')
+  })
 })

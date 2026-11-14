@@ -26,6 +26,7 @@ import { Button } from '@/components/ui/button'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { EmptyState } from '@/components/states'
 import { useFormat } from '@/hooks/use-format'
+import { useIsMobile } from '@/hooks/use-mobile'
 import { useApiMutation } from '@/lib/api/hooks'
 import { useCan } from '@/lib/view-as'
 import { cn } from '@/lib/utils'
@@ -143,6 +144,7 @@ function AlertRow({
 export function AlertList({ data }: { data: CameraAlerts }) {
   const { t } = useTranslation()
   const can = useCan()
+  const isMobile = useIsMobile()
   const [filter, setFilter] = useState<Filter>('all')
   const [saving, setSaving] = useState<CameraAlert | null>(null)
   const mark = useApiMutation('camera.markAlert', {
@@ -182,6 +184,8 @@ export function AlertList({ data }: { data: CameraAlerts }) {
       <ToggleGroup
         type="single"
         variant="outline"
+        // Phone: a 2×2 grid of separate buttons (joined ones doubled the inner borders).
+        spacing={isMobile ? 2 : 0}
         value={filter}
         onValueChange={(v) => v && setFilter(v as Filter)}
         aria-label={t('camera.alerts.filter.label')}

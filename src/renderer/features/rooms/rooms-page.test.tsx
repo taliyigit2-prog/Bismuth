@@ -127,6 +127,35 @@ describe('oda durumu', () => {
     )
   })
 
+  it('dolu odaya blok açılamayınca yeniden seçmeyi hatırlatan görev yazılır (H-45)', async () => {
+    const user = userEvent.setup()
+    const { transport } = await render(defaultHousekeeping(), { soldTonight: true })
+    await user.click(await screen.findByTestId('plan-room-201'))
+    const sheet = await screen.findByTestId('room-sheet')
+    await user.click(within(sheet).getByRole('button', { name: 'Bakımda' }))
+    await vi.waitFor(() => expect(transport.calls.some((c) => c.name === 'tasks.create')).toBe(true))
+    expect(transport.calls.find((c) => c.name === 'tasks.create')?.input).toMatchObject({
+      title: 'Oda 201: misafir çıkınca durumu yeniden seçin',
+      roomId: 'room-201'
+    })
+  })
+
+  it('kaydedilmemiş not sayfa kapanırken kaybolmaz, bir kez kaydedilir (H-42)', async () => {
+    const user = userEvent.setup()
+    const { transport } = await render()
+    await user.click(await screen.findByTestId('plan-room-201'))
+    const sheet = await screen.findByTestId('room-sheet')
+    await user.type(within(sheet).getByLabelText('Not'), 'Perde sökük')
+    await user.keyboard('{Escape}')
+    await vi.waitFor(() =>
+      expect(transport.calls.filter((c) => c.name === 'housekeeping.setNote')).toHaveLength(1)
+    )
+    expect(transport.calls.find((c) => c.name === 'housekeeping.setNote')?.input).toEqual({
+      roomId: 'room-201',
+      note: 'Perde sökük'
+    })
+  })
+
   it('durumu değiştiremeyen rol durum düğmelerini görmez; blok yetkisi olmayan bakıma alamaz', async () => {
     const user = userEvent.setup()
     await render()

@@ -15,6 +15,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useTransport } from '@/lib/api/api-context'
+import { useFormat } from '@/hooks/use-format'
 import { useApiMutation, useApiQuery } from '@/lib/api/hooks'
 import { useCan } from '@/lib/view-as'
 import { PrivacySettings } from '../camera/privacy-settings'
@@ -39,6 +40,9 @@ type NumberKey =
   | 'camera.confirmationFrames'
   | 'camera.processEveryN'
   | 'camera.verifiedTtlSeconds'
+  | 'camera.uncertainMargin'
+  | 'camera.idleFaceScanEvery'
+  | 'camera.streamMaxWidth'
 
 type FieldName =
   | 'cooldown'
@@ -51,6 +55,9 @@ type FieldName =
   | 'confirmationFrames'
   | 'processEveryN'
   | 'verifiedTtl'
+  | 'uncertainMargin'
+  | 'idleFaceScanEvery'
+  | 'streamMaxWidth'
 
 interface NumberField extends NumberRule {
   key: NumberKey
@@ -71,7 +78,10 @@ const ADVANCED: readonly NumberField[] = [
   { key: 'camera.minFacePx', name: 'minFacePx', min: 20, max: 400, integer: true },
   { key: 'camera.confirmationFrames', name: 'confirmationFrames', min: 1, max: 20, integer: true },
   { key: 'camera.processEveryN', name: 'processEveryN', min: 1, max: 30, integer: true },
-  { key: 'camera.verifiedTtlSeconds', name: 'verifiedTtl', min: 5, max: 300, integer: true }
+  { key: 'camera.verifiedTtlSeconds', name: 'verifiedTtl', min: 5, max: 300, integer: true },
+  { key: 'camera.uncertainMargin', name: 'uncertainMargin', min: 0, max: 0.5, integer: false },
+  { key: 'camera.idleFaceScanEvery', name: 'idleFaceScanEvery', min: 0, max: 30, integer: true },
+  { key: 'camera.streamMaxWidth', name: 'streamMaxWidth', min: 320, max: 1920, integer: true }
 ]
 
 function NumberSetting({
@@ -86,6 +96,7 @@ function NumberSetting({
   onSave: (value: number) => void
 }) {
   const { t } = useTranslation()
+  const f = useFormat()
   const [text, setText] = useState(String(value))
   const valid = numberValid(text, field)
   const changed = parseNumber(text) !== value
@@ -117,7 +128,10 @@ function NumberSetting({
           />
           {valid ? null : (
             <p className="text-destructive text-xs" role="alert">
-              {t('settings.camera.numberInvalid', { min: field.min, max: field.max })}
+              {t('settings.camera.numberInvalid', {
+                min: f.number(field.min, field.integer ? 0 : 2),
+                max: f.number(field.max, field.integer ? 0 : 2)
+              })}
             </p>
           )}
         </div>
