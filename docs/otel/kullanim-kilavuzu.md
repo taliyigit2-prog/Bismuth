@@ -62,7 +62,7 @@ Program ilk kez açıldığında **kurulum sihirbazı** gelir. Otel sahibi bunu 
 11. **Sahip hesabı**: her şeyi gören ilk hesap; adınız, kullanıcı adınız, şifreniz ve isterseniz PIN.
 12. **Özet**: bilgileri kontrol edip **Kurulumu bitir**'e basarsınız.
 
-![Kurulum sihirbazı](../src/renderer/guide/img/tr/setup.jpg)
+![Kurulum sihirbazı](../../src/renderer/guide/img/tr/setup.jpg)
 
 > [!WARNING]
 > Kurulum bitince ekranda **kurtarma kodları** ile **Bismuth anahtarı** bir kez görünür. Bunları kâğıda yazın ya da kopyalayıp güvenli bir yerde saklayın. Şifrenizi unutursanız yeni şifreyi bu kodlardan biriyle belirlersiniz. **Kâğıda yazdım** kutusunu işaretlemeden programa geçilmez.
@@ -79,7 +79,7 @@ Herkes programa **kendi adıyla** girer. Böylece kim neyi yazdı, kim parayı t
 2. **PIN** ya da **Şifre** seçin. PIN'iniz varsa program önce PIN'i sorar.
 3. PIN'inizi ya da şifrenizi yazıp <kbd>Enter</kbd>'a basın ya da **Oturum aç** düğmesine tıklayın.
 
-![Oturum açma ekranı](../src/renderer/guide/img/tr/login.jpg)
+![Oturum açma ekranı](../../src/renderer/guide/img/tr/login.jpg)
 
 - Adınız listede yoksa **Kullanıcı adıyla oturum aç**'a basın; kullanıcı adınızı ve şifrenizi yazın.
 - Size yeni bir hesap açıldıysa ilk oturum açışta **Yeni şifre belirleyin** ekranı gelir: size verilen geçici şifreyi ve iki kez yeni şifrenizi yazın, **Şifreyi kaydet**'e basın.
@@ -130,7 +130,7 @@ Program Türkçe, İngilizce ve Rusça çalışır. Her kullanıcı kendi dilini
 2. **Dil** kutusundan dilinizi seçin. Menüler ve düğmeler hemen değişir.
 3. Aynı bölümde **Tema** (Açık, Koyu, Bilgisayarla aynı), **Yoğunluk** (Rahat, Sıkışık), **Kuruşları göster** ve **Açılış ekranı** (Takvim ya da Bugün) seçimleri de vardır.
 
-![Ayarlar, Genel bölümü](../src/renderer/guide/img/tr/settings-general.jpg)
+![Ayarlar, Genel bölümü](../../src/renderer/guide/img/tr/settings-general.jpg)
 
 <a id="menu"></a>
 
@@ -214,7 +214,7 @@ Telefonda menü ekranın altındadır: **Bugün · Takvim · Misafir · Kasa · 
 - **Bölümü yazdır** açık bölümü kâğıda basar.
 - İlk oturum açışta görünen kısa **tanıtım turunu** **Tanıtım turunu başlat** düğmesiyle yeniden izleyebilirsiniz.
 
-![Kılavuz ekranı](../src/renderer/guide/img/tr/guide.jpg)
+![Kılavuz ekranı](../../src/renderer/guide/img/tr/guide.jpg)
 
 <a id="today"></a>
 
@@ -228,7 +228,7 @@ Bugün ekranı günün özetidir: kim geliyor, kim çıkıyor, hangi oda kirli, 
 
 Sol menüde **Günlük işler** grubundan **Bugün**'e tıklayın. Telefonda alt menüdeki ilk düğmedir. Ayarlar'da açılış ekranınızı **Bugün** yaparsanız program her açılışta buradan başlar.
 
-![Bugün ekranı](../src/renderer/guide/img/tr/today.jpg)
+![Bugün ekranı](../../src/renderer/guide/img/tr/today.jpg)
 
 <a id="today-numbers"></a>
 
@@ -305,7 +305,7 @@ Rezervasyonlar **Takvim** ekranında yazılır ve izlenir. Bu bölüm takvimi ok
 
 Sol menüde **Günlük işler → Takvim**'i açın. Çoğu otelde program açılınca ilk bu ekran gelir.
 
-![Takvim ekranı](../src/renderer/guide/img/tr/calendar.jpg)
+![Takvim ekranı](../../src/renderer/guide/img/tr/calendar.jpg)
 
 - Her **satır** bir oda, her **sütun** bir gündür. Bugünün sütunu renkli bir çizgiyle işaretlidir; vurgulu günler (örneğin hafta sonu) farklı renktedir.
 - Her rezervasyon, girişten çıkışa uzanan bir **çubuktur**. Çıkış günü gece sayılmaz: 3 Mart girişli, 5 Mart çıkışlı rezervasyon 2 gecedir.
@@ -335,7 +335,7 @@ Gezinme:
 8. İsterseniz **Etiketler** (Grup, VIP…) ve **Not** (örneğin "geç gelecek, bebek yatağı") ekleyin.
 9. Alttaki özette gece sayısını ve toplamı kontrol edip **Kaydet**'e basın.
 
-![Yeni rezervasyon penceresi](../src/renderer/guide/img/tr/new-reservation.jpg)
+![Yeni rezervasyon penceresi](../../src/renderer/guide/img/tr/new-reservation.jpg)
 
 Rezervasyon takvimde hemen görünür; misafir kartı kendiliğinden açılır.
 
@@ -351,7 +351,7 @@ Rezervasyon takvimde hemen görünür; misafir kartı kendiliğinden açılır.
 
 Takvimde bir çubuğa tıklayın; rezervasyon **paneli** yanda açılır (telefonda alttan). Üstte misafirin adı, oda, tarihler ve şu düğmeler vardır: **Giriş yap**, **Çıkış yap**, **Ödeme ekle** ve **Diğer işlemler** (üç nokta).
 
-![Rezervasyon paneli](../src/renderer/guide/img/tr/reservation-panel.jpg)
+![Rezervasyon paneli](../../src/renderer/guide/img/tr/reservation-panel.jpg)
 
 Panelin dört sekmesi vardır:
 
@@ -499,7 +499,7 @@ Takvimin üstündeki **Toplu not ekle** aynı notu birçok güne ekler (örneği
 
 Telefonda takvim bir **gün listesidir**: **Gelenler**, **Gidenler**, **Kalanlar** ve boş oda sayısı. Oklarla gün değiştirirsiniz. Bir satıra dokununca rezervasyon paneli alttan açılır.
 
-![Telefonda takvim](../src/renderer/guide/img/tr/phone-calendar.jpg)
+![Telefonda takvim](../../src/renderer/guide/img/tr/phone-calendar.jpg)
 
 <a id="payments"></a>
 
@@ -521,7 +521,7 @@ En kolay yol, rezervasyonun kendi panelinden ödeme almaktır:
 6. Gerekirse **Açıklama** yazın (örneğin "fiş no 1234").
 7. **Kaydet**'e basın.
 
-![Ödeme penceresi](../src/renderer/guide/img/tr/payment-dialog.jpg)
+![Ödeme penceresi](../../src/renderer/guide/img/tr/payment-dialog.jpg)
 
 Kaydedince "Ödeme kaydedildi" yazar; takvimdeki çubuğun rengi değişir. Ödeme gecelere sırayla dağılır: önce ilk gece ödenmiş sayılır. Örneğin gecesi ₺2.000 olan 3 gecelik rezervasyonda ₺2.000 ödeme alınırsa ilk gece **Ödendi**, diğer ikisi **Ödenmedi** görünür.
 
@@ -592,7 +592,7 @@ Defterden rezervasyona ödeme de girebilirsiniz: **Ne için → Rezervasyon**'u 
 - **Platformlar**: bu ay Booking, Airbnb gibi platformlardan gelen ödemeler.
 - **Teslim geçmişi**: kim, ne zaman, ne kadar teslim aldı.
 
-![Kasa durumu](../src/renderer/guide/img/tr/cash-drawer.jpg)
+![Kasa durumu](../../src/renderer/guide/img/tr/cash-drawer.jpg)
 
 > [!TIP]
 > Vardiya sonunda kasayı sayın ve "Kasada olmalı" ile karşılaştırın. Fark varsa defterin **Gün notu**'na yazın.
@@ -627,7 +627,7 @@ Parayı teslim alma yetkisi yalnız sahip ve müdürdedir; diğer roller kasa du
 
 Sol menüde **Para → Defter ve kasa**'yı açın. Telefonda alt menüdeki **Kasa** düğmesidir. Ekran bugünle açılır.
 
-![Defter ve kasa](../src/renderer/guide/img/tr/ledger.jpg)
+![Defter ve kasa](../../src/renderer/guide/img/tr/ledger.jpg)
 
 - **Gün** ve **Ay** düğmeleri gün görünümüyle ay görünümü arasında geçer.
 - Oklarla önceki ya da sonraki güne gidin; tarihe tıklayıp bir gün seçin.
@@ -657,7 +657,7 @@ Kasadan ya da bankadan çıkan her parayı gider olarak yazın: market, fatura, 
 7. İsterseniz **Ürün satırları**'na ürün, miktar ve birim fiyat girin. Ürün girerseniz fiyat değişimleri ve "en çok harcama" ürün grubuna göre izlenir.
 8. **Kaydet**'e basın.
 
-![Gider penceresi](../src/renderer/guide/img/tr/expense-dialog.jpg)
+![Gider penceresi](../../src/renderer/guide/img/tr/expense-dialog.jpg)
 
 > [!TIP]
 > Tedarikçiden toplu alım yaptıysanız gideri **Tedarik** ekranındaki **Alım gir** ile yazın; ürün fiyatları da güncellenir. Maaş ve avanslar **Personel** ekranından, çamaşırhane faturası **Çamaşırhane** ekranından gelir; bunlar defterde kilit simgesiyle görünür ve kendi ekranlarından değiştirilir.
@@ -708,7 +708,7 @@ Her misafirin bir **kartı** vardır: iletişim bilgileri, geçmiş konaklamalar
 
 Sol menüde **Misafirler → Misafirler**'i açın (telefonda alt menüdeki **Misafir**).
 
-![Misafirler ekranı](../src/renderer/guide/img/tr/guests.jpg)
+![Misafirler ekranı](../../src/renderer/guide/img/tr/guests.jpg)
 
 1. Arama kutusuna ad, soyad, telefon ya da firma yazın. Türkçe harf farkı önemli değildir.
 2. **Filtre** ile listeyi daraltın: **Tekrar gelen**, **VIP**, **Sürekli notu olan**, **Firmalı**, **Olası çift kayıt**, **Kara listede**.
@@ -725,7 +725,7 @@ Satırlardaki simgeler: taç VIP misafiri, not simgesi sürekli notu, uyarı sim
 
 Kartın üstünde misafirin adı, telefonu (yanındaki düğmeyle kopyalanır), ilk geliş tarihi ve özet kutuları vardır: **Son konaklama**, **Son ödediği fiyat**, **Ortalama gecelik**, **Toplam ödenen**.
 
-![Misafir kartı](../src/renderer/guide/img/tr/guest-card.jpg)
+![Misafir kartı](../../src/renderer/guide/img/tr/guest-card.jpg)
 
 - **Geçmiş** sekmesi: gelecek rezervasyonlar ve geçmiş konaklamalar; her birinde oda, tarih, gecelik fiyat ve bakiye.
 - **Bilgiler** sekmesi: telefon, e‑posta, konuştuğu dil, uyruk, notlar. Kimlik bilgisini yalnız yetkisi olan görür.
@@ -796,7 +796,7 @@ Kopyalamak için firmadaki kopyalama düğmesine basın. **Kopyalama biçimi**: 
 
 Kontrol etmek için: **Misafirler → Kara liste**'yi açın, **Kontrol et** kutusuna ad soyad ya da telefon yazın. Yazdıkça karşılaştırılır; "Kara listede eşleşme yok" ya da eşleşen kişi görünür.
 
-![Kara liste](../src/renderer/guide/img/tr/blacklist.jpg)
+![Kara liste](../../src/renderer/guide/img/tr/blacklist.jpg)
 
 Eklemek için:
 
@@ -821,7 +821,7 @@ Otelde kalan her kişinin Kimlik Bildirim Sistemi'ne (**KBS**) bildirilmesi yasa
 
 Sol menüde **Günlük işler → Otelde kalanlar**'ı açın. Ekran şu an otelde kalanları oda oda gösterir: kişiler, tanıtıcı notlar, KBS durumu, çıkış tarihi ve bakiye.
 
-![Otelde kalanlar](../src/renderer/guide/img/tr/in-house.jpg)
+![Otelde kalanlar](../../src/renderer/guide/img/tr/in-house.jpg)
 
 Üstteki kutular: **Dolu oda**, **Otelde kişi**, **Bugün çıkacak**, **KBS eksiği**.
 
@@ -892,7 +892,7 @@ Her odanın bir durumu vardır:
 
 Sol menüde **Günlük işler → Oda durumu**'nu açın. Odalar kat kat kutular hâlinde görünür.
 
-![Oda durumu, kat planı](../src/renderer/guide/img/tr/rooms.jpg)
+![Oda durumu, kat planı](../../src/renderer/guide/img/tr/rooms.jpg)
 
 - Kutunun rengi ve yazısı durumu söyler; içinde odadaki misafir, **Bugün giriş**, **Bugün çıkış**, açık arıza sayısı ve **Satışa kapalı** bilgisi çıkar.
 - Üstteki süzgeçle yalnız bir durumdaki odaları görün (örneğin yalnız kirliler).
@@ -926,7 +926,7 @@ Odada ya da ortak alanda bir sorun görülünce (kırık klozet kapağı, akan m
 6. **Fotoğraflar**'a fotoğraf ekleyin (telefonla çekip ekleyebilirsiniz).
 7. Kaydedin.
 
-![Arıza bildir penceresi](../src/renderer/guide/img/tr/issue-dialog.jpg)
+![Arıza bildir penceresi](../../src/renderer/guide/img/tr/issue-dialog.jpg)
 
 Arıza resepsiyon ve sahip tarafından hemen görülür: Bugün ekranında, takvimde oda numarasının yanındaki anahtar simgesinde ve kat planında.
 
@@ -968,7 +968,7 @@ Oturum açınca **Bugün** ekranı gelir. **Kirli odalar** kutusu temizlenecek o
 
 **Oda durumu** ekranında odalar kat kat görünür: hangisi kirli, hangisinde misafir var, hangisine bugün giriş yapılacak. Bugün giriş yapılacak kirli odaları önce temizleyin.
 
-![Oda durumu](../src/renderer/guide/img/tr/rooms.jpg)
+![Oda durumu](../../src/renderer/guide/img/tr/rooms.jpg)
 
 <a id="hk-mark-clean"></a>
 
@@ -1026,7 +1026,7 @@ Bugün ekranındaki **Çalışma saatlerim** kutusunda **Bugünün saatlerini gi
 
 Sol menüde **Günlük işler → Görevler**'i açın.
 
-![Görevler ekranı](../src/renderer/guide/img/tr/tasks.jpg)
+![Görevler ekranı](../../src/renderer/guide/img/tr/tasks.jpg)
 
 - Üstteki düğmeler listeyi seçer: **Bugün**, **Geciken**, **Açık**, **Yaklaşan**, **Yapıldı**.
 - **Kime verilen** kutusu: **Bütün görevler** ya da **Bana verilenler**. **Oda** kutusuyla tek bir odanın görevlerini görürsünüz.
@@ -1070,7 +1070,7 @@ Düzenli işlerin tamamı **Ayarlar → Görev önerileri** bölümündedir; ken
 
 Sol menüde **İşletme → Bakım**'ı açın. Burada su deposu temizliği, klima filtresi, yangın tüpü dolumu gibi **tekrarlanan bakımlar** durur. Zamanı yaklaşan bakım bir hafta önceden Görevler'e düşer.
 
-![Bakım ekranı](../src/renderer/guide/img/tr/maintenance.jpg)
+![Bakım ekranı](../../src/renderer/guide/img/tr/maintenance.jpg)
 
 Hatırlatıcı eklemek için:
 
@@ -1099,7 +1099,7 @@ Vardiya değişirken giden kişi gelen kişiye neyin beklediğini söyler. Bismu
 
 Sol menüde **Günlük işler → Vardiya devri ve notlar**'ı açın. Ekranın üç sekmesi vardır: **Devir**, **Notlarım**, **Pano**.
 
-![Vardiya devri](../src/renderer/guide/img/tr/shift.jpg)
+![Vardiya devri](../../src/renderer/guide/img/tr/shift.jpg)
 
 <a id="write-handover"></a>
 
@@ -1156,7 +1156,7 @@ Vardiya saatleri **Ayarlar → Vardiyalar** bölümünde tanımlıdır (örneği
 
 Sol menüde **Personel → Personel**'i açın. Dört sekme vardır: **Çalışanlar**, **Maaş tablosu**, **İzin ve çizelge**, **Mesai**.
 
-![Personel ekranı](../src/renderer/guide/img/tr/staff.jpg)
+![Personel ekranı](../../src/renderer/guide/img/tr/staff.jpg)
 
 Üstteki kutular: çalışan sayısı ve bugün işte olanlar, **Bugün izinli**, bu ayın **Avans** toplamı, **Kalan maaş**, **Bu ay kullanılan izin**.
 
@@ -1256,7 +1256,7 @@ Bu bölüm otelin işletme ekranlarını anlatır: sık aranan numaralar (**Rehb
 
 Sol menüde **İşletme → Rehber**'i açın. Tedarikçi, çamaşırhane, tesisatçı, elektrikçi, taksi ve acil numaralar burada durur.
 
-![Rehber](../src/renderer/guide/img/tr/contacts.jpg)
+![Rehber](../../src/renderer/guide/img/tr/contacts.jpg)
 
 - Bir numaraya **tıklayınca kopyalanır**; telefonda dokununca aranır.
 - Üstteki kategori düğmeleriyle (Tedarikçi, Çamaşırhane, Tesisatçı…) listeyi daraltın; arama kutusuna ad, not ya da numara yazın.
@@ -1274,7 +1274,7 @@ Hızlı aramada (<kbd>Ctrl</kbd> + <kbd>K</kbd>) "rehber" yazıp bir ad yazarsan
 
 **İşletme → Tedarik** ekranı aldığınız ürünleri, son alış fiyatlarını ve zamları izler. Üç sekme vardır: **Ürünler**, **Alımlar**, **Aylık özet**.
 
-![Tedarik](../src/renderer/guide/img/tr/supply.jpg)
+![Tedarik](../../src/renderer/guide/img/tr/supply.jpg)
 
 Önce ürünleri ekleyin: **Ürün ekle** → **Ürün adı** (örneğin "Munzur 0,5 L"), **Birim** (adet, kg, lt, paket, çuval), **Kategori**, tedarikçi (rehberden). Fiyat burada yazılmaz; alımlardan gelir.
 
@@ -1295,7 +1295,7 @@ Alım deftere **tek gider satırı** olarak bir kez yazılır; ürünlerin fiyat
 
 **İşletme → Çamaşırhane** ekranı kirli giden ve temiz gelen çamaşırı tür tür sayar; eksik ve lekeli parçaları gösterir; ay sonunda faturayı fişlerle karşılaştırır.
 
-![Çamaşırhane](../src/renderer/guide/img/tr/laundry.jpg)
+![Çamaşırhane](../../src/renderer/guide/img/tr/laundry.jpg)
 
 Önce çamaşırhaneyi **Rehber**'e **Çamaşırhane** kategorisiyle ekleyin; ekranda çamaşırhaneyi seçin. Çamaşır türleri (çarşaf, nevresim, havlu…) **Ayarlar → Listeler → Çamaşır türleri**'ndedir.
 
@@ -1318,7 +1318,7 @@ Yanlış teslim kaydı **Teslim defteri**'nden **İptal et** ile iptal edilir.
 
 Misafirin unuttuğu eşyalar **Misafirler → Kayıp eşya** ekranında tutulur.
 
-![Kayıp eşya](../src/renderer/guide/img/tr/lost-items.jpg)
+![Kayıp eşya](../../src/renderer/guide/img/tr/lost-items.jpg)
 
 1. **Eşya kaydet**'e basın.
 2. **Eşya** (örneğin "siyah şarj aleti"), **Bulunduğu gün**, **Bulan** kişi.
@@ -1340,7 +1340,7 @@ Eşya sahibine verilince **Sahibine ver**'e basın; **Kime verildi**'yi ve gün�
 
 Sol menüde **Para → Döviz**'i açın. Üç sekme vardır: **Döviz**, **Hava durumu**, **Bayramlar**.
 
-![Döviz ekranı](../src/renderer/guide/img/tr/currency.jpg)
+![Döviz ekranı](../../src/renderer/guide/img/tr/currency.jpg)
 
 - Her döviz için bir kart: güncel kur, düne göre değişim, son 7 günün en düşük ve en yüksek değeri. Kaynağı **Piyasa orta kuru** ya da **Otel kuru** olarak yazar.
 - İnternet varken kurlar belli aralıklarla kendiliğinden yenilenir. Hemen yenilemek için **Şimdi güncelle**.
@@ -1385,7 +1385,7 @@ Otel misafire kendi sabit kurunu söylüyorsa (örneğin "1 € = ₺50"):
 
 Sol menüde **Günlük işler → Takvim notları**'nı açın. Resmî tatiller ve bayramlar her yıl için **kendiliğinden** eklenir; siz fuar, kongre, düğün gibi özel günleri ve notları eklersiniz. Bu günler takvimin başlığında ve Bugün ekranında görünür; özel günlerde rezervasyonda oda tipinin hafta sonu fiyatı önerilir. Hafta sonu fiyatının hangi gecelere uygulanacağı ayrıca **Ayarlar → Takvim → Hafta sonu fiyatı uygulanan geceler**'de seçilir (varsayılan cuma ve cumartesi geceleri); takvimdeki vurgulu günlerden bağımsızdır.
 
-![Takvim notları](../src/renderer/guide/img/tr/calendar-notes.jpg)
+![Takvim notları](../../src/renderer/guide/img/tr/calendar-notes.jpg)
 
 Not eklemek için:
 
@@ -1477,7 +1477,7 @@ Bismuth dosyadaki ad, kimlik numarası ve cinsiyeti okumaz ve saklamaz; yalnız 
 
 Sol menüde **Raporlar → Turizm istatistiği**'ni açın. Ayın 1–10'u arasında Bugün ekranındaki hatırlatmadan **Turizm ekranına git** ile de gelebilirsiniz.
 
-![Turizm istatistiği](../src/renderer/guide/img/tr/tourism.jpg)
+![Turizm istatistiği](../../src/renderer/guide/img/tr/tourism.jpg)
 
 **1. KBS listesini seçin.** Dosyayı ekrandaki alana sürükleyin ya da **Dosya seç**'e basıp seçin. Program dosyanın ayını, satır sayısını, aynı gün giriş‑çıkışları ve otelde kalanları gösterir.
 
@@ -1535,7 +1535,7 @@ Otelin bütün kayıtları ana bilgisayarda durur. Bilgisayar bozulursa ya da ç
 
 **Ayarlar → Yedek** bölümünü açın.
 
-![Yedek ayarları](../src/renderer/guide/img/tr/backup.jpg)
+![Yedek ayarları](../../src/renderer/guide/img/tr/backup.jpg)
 
 **Yedek durumu** kutusunda **Son yedek**, **Sonraki otomatik yedek** ve **Google Drive kopyası** durumu yazar. Otomatik yedek her gün otelin en sakin saatinde (varsayılan 04:00) ve program kapanırken alınır. O saatte program kapalıysa açıldıktan birkaç dakika sonra alınır.
 
@@ -1692,11 +1692,11 @@ Mac, ana bilgisayardaki bütün kayıtların salt okunur bir **yedek kopyasını
 3. Kullanıcı adınız ve şifrenizle oturum açın. PIN telefonda ve Mac'te kullanılmaz; PIN yalnız ana bilgisayarın kendi penceresinde geçerlidir.
 4. Tarayıcının menüsünden **Ana ekrana ekle**'yi seçin; Bismuth uygulama gibi açılır.
 
-![Telefonda Bugün ekranı](../src/renderer/guide/img/tr/phone-today.jpg)
+![Telefonda Bugün ekranı](../../src/renderer/guide/img/tr/phone-today.jpg)
 
 Telefonda alt menüde **Bugün · Takvim · Misafir · Kasa · Daha fazla** vardır. Telefondan ödeme girebilir, arıza açabilir, oda durumunu değiştirebilir, görevi yapıldı olarak işaretleyebilir, vardiya notlarını ve otelde kalanları görebilirsiniz.
 
-![Telefonda Daha fazla menüsü](../src/renderer/guide/img/tr/phone-more.jpg)
+![Telefonda Daha fazla menüsü](../../src/renderer/guide/img/tr/phone-more.jpg)
 
 <a id="remote-security"></a>
 
@@ -1813,7 +1813,7 @@ Herkes kendi adıyla oturum açar; kim ne yaptı denetim kaydında görünür. *
 
 Bir kullanıcı şifresini unutursa **Şifre sıfırla** ile yeni geçici şifre verin. İşten ayrılan kişi için **Hesabı kapat**; kayıtları ve geçmişi kalır, hesap istenirse yeniden açılır. Son sahip hesabı kapatılamaz.
 
-![Kullanıcılar ve roller](../src/renderer/guide/img/tr/settings-users.jpg)
+![Kullanıcılar ve roller](../../src/renderer/guide/img/tr/settings-users.jpg)
 
 <a id="roles"></a>
 

@@ -65,7 +65,7 @@ elle bölüm; 21st şartları §3.1 yazar kredisi ister).
 | `kedhareswer/open-slot-booking`, `cnippet-dev/v-calendar-15` ve diğer "booking calendar"lar | Randevu/tarih seçici; otel ızgarası değil. Telefon tarih seçici taşması (H-04) için mevcut `react-day-picker` düzeltmesi yeter |
 | `uvain/kanban-board` (26936) | MIT ama kat hizmetleri panosu bugün istenmedi; **isteğe bağlı** (P21e sonrası, sahip isterse "Oda durumu panosu") |
 | `shadcnstore/app-1`, `uniquesonu/dashboard-overview` | Lisans alanı kontrol edilmedi / genel SaaS şablonu; Bismuth'un 30 ekranı zaten var |
-| Temalar (`type: theme`) | Arama boş döndü; mevcut tema (`docs/tasarim.md`) korunur |
+| Temalar (`type: theme`) | Arama boş döndü; mevcut tema (`docs/gelistirici/tasarim.md`) korunur |
 
 ## 6. Opus için alım ve uyarlama adımları (her bileşen için)
 

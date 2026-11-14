@@ -1,7 +1,7 @@
 // "Uzaktan erişim" (faz-13 madde 1; G-140…G-146, K-19, K-31): how this computer works with others — alone, as the
 // hotel's main computer (other computers and phones connect) or using another one — the port, the addresses to
 // open (local network and the private network, found on the network cards: NetBird wt0 / Tailscale / 100.x) with a
-// QR code for phones, the private-network setup in short (the full guide: docs/uzaktan-erisim.md), "always on"
+// QR code for phones, the private-network setup in short (the full guide: docs/otel/uzaktan-erisim.md), "always on"
 // (start with the computer, G-146), the remote session length and the signed-in devices (devices-card.tsx).
 // K-45 (1): the hotel's Wi-Fi is served only when switched on here (with a warning: guests' Wi-Fi must be separate);
 // this computer's identity is shown so the owner can compare it with what a client computer shows.

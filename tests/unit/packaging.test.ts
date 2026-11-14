@@ -124,7 +124,7 @@ describe('dosya adları (G-03)', () => {
   })
 
   it('belgeler aynı adları kullanır', () => {
-    for (const doc of ['README.md', 'docs/kurulum.md']) {
+    for (const doc of ['README.md', 'docs/otel/kurulum.md']) {
       const text = read(doc)
       for (const name of ['Bismuth-Setup.exe', 'Bismuth.dmg', 'Bismuth-Intel.dmg', 'SHA256SUMS.txt']) {
         expect(text, `${doc}: ${name}`).toContain(name)

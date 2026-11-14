@@ -116,7 +116,7 @@ jobs:
           retention-days: 14
           compression-level: 0
 
-  # Camera add-on (Faz 20 P20f): separate download, ~0.7 GB each (docs/kurulum.md). Built on its own system because
+  # Camera add-on (Faz 20 P20f): separate download, ~0.7 GB each (docs/otel/kurulum.md). Built on its own system because
   # insightface is compiled there (a Linux-built Windows add-on would not run): Windows x64 on windows-latest (x2), Apple
   # chip on macos-latest (x10). The model weights are not in the repository (yasak 14): they come from the owner's private
   # release-assets storage via the secret CAMERA_MODELS_URL (a .tar.gz of resources/camera/models; sha256 in
@@ -209,7 +209,7 @@ jobs:
           NOTES="docs/surum-notlari/$TAG.md"
           if [ ! -f "$NOTES" ]; then
             NOTES="$RUNNER_TEMP/notes.md"
-            printf '%s\n' "Windows: Bismuth-Setup.exe (ARM işlemci: Bismuth-Setup-arm64.exe) · Mac (Apple çipli): Bismuth.dmg · Mac (Intel): Bismuth-Intel.dmg · Doğrulama: SHA256SUMS.txt · Kurulum: docs/kurulum.md" > "$NOTES"
+            printf '%s\n' "Windows: Bismuth-Setup.exe (ARM işlemci: Bismuth-Setup-arm64.exe) · Mac (Apple çipli): Bismuth.dmg · Mac (Intel): Bismuth-Intel.dmg · Doğrulama: SHA256SUMS.txt · Kurulum: docs/otel/kurulum.md" > "$NOTES"
           fi
           gh release create "$TAG" dist/* --repo "$REPO" \
             --title "Bismuth $TAG" \

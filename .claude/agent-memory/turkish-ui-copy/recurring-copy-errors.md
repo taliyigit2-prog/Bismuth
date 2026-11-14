@@ -70,7 +70,7 @@ Bismuth arayüz metinlerinde tekrar eden hatalar:
 
 - Kılavuz kutu etiketi kayması: kılavuz eski etiketi yazmış ("Kodları sakladım" / "I have saved the codes" / "Коды сохранены"),
   arayüz `setup.recovery.written` ile "Kâğıda yazdım" / "I have written it down" / "Записано на бумаге" diyor. Kılavuz düğme ya da
-  kutu adı değiştiğinde üç dilde birlikte güncellenmeli. `docs/kullanim-kilavuzu.md:68` ve `docs/kurulum-rehberi-basit.md:37` aynı eski etiketi taşıyor (kapsam dışı, sahip kararı).
+  kutu adı değiştiğinde üç dilde birlikte güncellenmeli. `docs/otel/kullanim-kilavuzu.md:68` ve `docs/otel/kurulum-rehberi-basit.md:37` aynı eski etiketi taşıyor (kapsam dışı, sahip kararı).
 - Sözlük kayması kılavuzda: "satışa kapalı odalar" yerine "satılmaz odalar" (Satılmaz, G-38).
 - ru "загрузки" (indirme anlamı) içe aktarma için kullanılmış; içe aktarma = "Импорт данных" / "записи импорта".
 - Kılavuz içinde "Kılavuz" ve "Rehber" ayrı terimler: "Rehber" telefon rehberi ekranı, doğru; "Kılavuz" yardım bölümü.

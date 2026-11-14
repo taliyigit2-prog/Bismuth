@@ -14,7 +14,7 @@
   yolu), `payments-service.ts` (iade bağlama), `src/shared/contract/procedures/booking.ts` (`booking.undoCheckIn`,
   `booking.cancel` girdi: `refund?`), `src/main/api/handlers/booking.ts`, `src/renderer/features/calendar/`
   (`reservation-panel.tsx`, `stay-dialogs.tsx`, `payment-dialog.tsx`, yeni `giveup-dialog.tsx`), i18n `booking.*`,
-  `errors.*`; `docs/kullanim-kilavuzu.md` §3 iptal/iade; `src/renderer/guide/`.
+  `errors.*`; `docs/otel/kullanim-kilavuzu.md` §3 iptal/iade; `src/renderer/guide/`.
 - **Bağımlılık:** yok (ilk dalga). S-100 cevabı (2026-11-13): **resepsiyon iade girebilir** → `payments.refund` resepsiyon
   rolünde varsayılan E (rol ayarından kapatılabilir), her iade audit; "İade bekliyor" parkı yalnız yetkisiz kullanıcı için.
 - **Kabul:** (1) `in_house` rezervasyonda üç nokta menüsünde "Vazgeçme ve iade" var, üç seçenek sunar; (2) `checked_out`
@@ -126,8 +126,8 @@
   **tetikleme sahipte**.
 
 ### P19b · Kurulum belgeleri ve program içi kılavuz
-- `docs/kurulum.md` sadeleştirme (07 §4 #1–#7: xattr kaldır, SHA256 "isteğe bağlı" başlığına, doğrula işaretleri
-  S-80'e bağlı, "kuran kullanıcıyla açın" uyarı kutusu (S-113), uzaktan erişim yalnız `docs/uzaktan-erisim.md`
+- `docs/otel/kurulum.md` sadeleştirme (07 §4 #1–#7: xattr kaldır, SHA256 "isteğe bağlı" başlığına, doğrula işaretleri
+  S-80'e bağlı, "kuran kullanıcıyla açın" uyarı kutusu (S-113), uzaktan erişim yalnız `docs/otel/uzaktan-erisim.md`
   bağlantısı), `kurulum-rehberi-basit.md` son hali, program içi kılavuza "Kurulum" bölümü (3 dil), kurulum sihirbazında
   tek "kâğıda yazın" adımı + yazdır (K-41), Ayarlar → Yedek'te **"Drive klasörünü bul"** düğmesi (07 §4 #5;
   `feature-builder`). Belge çelişkileri (02 §5): Ç-01 hafta sonu notu (S-119 cevabına göre K-44 detayına tek cümle),

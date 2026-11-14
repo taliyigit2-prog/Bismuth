@@ -21,7 +21,7 @@ export function PageHeader({
         </div>
         {description ? <p className="text-muted-foreground mt-1 text-sm">{description}</p> : null}
       </div>
-      {/* Phone: the actions sit under the title, full width, the main button stretching (docs/tasarim.md §9). */}
+      {/* Phone: the actions sit under the title, full width, the main button stretching (docs/gelistirici/tasarim.md §9). */}
       {actions ? (
         <div className="flex shrink-0 flex-wrap items-center gap-2 max-md:w-full max-md:[&>[data-slot=button]]:flex-1">
           {actions}

@@ -1,7 +1,7 @@
 # Bismuth terim sözlüğü (Türkçe · İngilizce · Rusça)
 
 Bu belge arayüzdeki üç dilin **aynı kavram için aynı sözcüğü** kullanmasını sağlar. Yeni anahtar yazarken, çeviri
-gözden geçirirken ve kılavuz (`docs/kullanim-kilavuzu.md`) yazarken buna bakılır; sözlükte olmayan yeni bir kavram
+gözden geçirirken ve kılavuz (`docs/otel/kullanim-kilavuzu.md`) yazarken buna bakılır; sözlükte olmayan yeni bir kavram
 çıkarsa önce buraya satır eklenir.
 
 **Kaynaklar ve öncelik:** Türkçe sütun sahibin kelimeleridir (`docs/plan/akislar.md`, `02-excel-analizi.md`,

@@ -22,7 +22,7 @@ export const cameraStatusSchema = z.object({
   state: cameraRuntimeStateSchema,
   /** Why it is not started: no camera address saved yet. */
   blocked: z.enum(['noSource']).nullable(),
-  /** False in an installed (packaged) Bismuth without the camera add-on (docs/kurulum.md "Kamera eki"); true otherwise. */
+  /** False in an installed (packaged) Bismuth without the camera add-on (docs/otel/kurulum.md "Kamera eki"); true otherwise. */
   addonInstalled: z.boolean(),
   /** Crashes inside the last ten minutes and since the program started. */
   crashes: z.number().int().min(0),

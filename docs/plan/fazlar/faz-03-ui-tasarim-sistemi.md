@@ -11,7 +11,7 @@ taslağı. Sahip taslakları onaylar; sonraki fazlar taslağı uygular.
 
 ## Teslimatlar
 
-1. **Tasarım dili belgesi** (`docs/tasarim.md`): yazı tipleri (Latin/Türkçe/Kiril), ölçek, boşluk, köşe, yoğunluk modları, simge seti, durum rengi mantığı (otomatik + özel etiket, lejant), tablo/form/boş durum/toast kalıpları, klavye odak, **mobil kalıplar** (alt gezinme, Sheet formlar, liste kartları, 44 px hedefler).
+1. **Tasarım dili belgesi** (`docs/gelistirici/tasarim.md`): yazı tipleri (Latin/Türkçe/Kiril), ölçek, boşluk, köşe, yoğunluk modları, simge seti, durum rengi mantığı (otomatik + özel etiket, lejant), tablo/form/boş durum/toast kalıpları, klavye odak, **mobil kalıplar** (alt gezinme, Sheet formlar, liste kartları, 44 px hedefler).
 2. **Tema ve etiket sistemi** (kod): shadcn değişkenleri + `--status-*`; **Durum Etiketleri ekranı**: otomatik durumlar (ad, renk, açık/kapalı), özel etiketler (ekle/sil, ad, renk, anlam metni), öncelik ayarı, canlı takvim önizlemesi, lejant bileşeni; açık/koyu/sistem; "Tema önizleme" (tüm bileşenler, üç dilde örnek metin).
 3. **Uygulama kabuğu (masaüstü)**: sol daraltılabilir menü (rol‑duyarlı), üst çubuk, içerik; 1366×768'de rahat.
 4. **Mobil kabuk**: alt gezinme (Bugün · Takvim · Misafir · Kasa · Daha fazla), üst çubuk (otel adı, bağlantı rozeti), Sheet formlar.
@@ -22,7 +22,7 @@ taslağı. Sahip taslakları onaylar; sonraki fazlar taslağı uygular.
 
 ## Kabul ölçütleri
 
-- [x] `docs/tasarim.md` yazıldı; `ui-reviewer` ajanı bunu referans alır.
+- [x] `docs/gelistirici/tasarim.md` yazıldı; `ui-reviewer` ajanı bunu referans alır.
 - [x] Durum Etiketleri ekranında ad/renk değişikliği ve yeni özel etiket takvim önizlemesine anında yansır; koyu tema kontrastı geçer.
 - [x] Tüm masaüstü taslakları 1366×768'de, mobil taslaklar 390×844'te taşmaz; Rusça uzun metinlerde kırpılma yok.
 - [x] Sahip taslakları onayladı (`docs/plan/taslak-onay/2026-10-04.md`, 2026-10-04).
@@ -36,7 +36,7 @@ görüntülerdi; inceleme sayfasına eklendi (arayüz zaten üç dilliydi).
 
 **Yapılanlar**
 
-- **Tasarım dili** — `docs/tasarim.md`: ilkeler, yazı ve ölçek, renk ve durum rengi mantığı (otomatik durum + özel
+- **Tasarım dili** — `docs/gelistirici/tasarim.md`: ilkeler, yazı ve ölçek, renk ve durum rengi mantığı (otomatik durum + özel
   etiket, lejant), boşluk ve yoğunluk, simgeler, bileşen kalıpları, klavye ve odak, telefon kalıpları (ana eylem başlık
   altında tam genişlik, liste kartları, 44 px), metin ve dil (Rusça uzunluk, mantıksal CSS), rol duyarlılığı, ekran
   listesi, gözden geçirme listesi. `ui-reviewer` ajanı bu belgeyi referans alır.

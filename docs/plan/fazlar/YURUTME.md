@@ -378,7 +378,7 @@ QA2b, akış testleri C/D) bu plana **Son** satırında katılır; ayrı yürüt
   **Dalga 13 bitti. Faz 21 kodu tamam (P21a atlandı).**
 - 2026-11-14: Dalga 14 başladı (P22a + P22b, feature-builder ×2; taban 5b0af10). Sadeleştirme (dalga 9–13) dalga 14 sonrasına.
 - 2026-11-14: P22a ✅ — `scripts/perf-measure.mjs` (açılış, süreç başına RSS/PSS/CPU boşta + yoğun, `--light`, `--attach` Tauri için),
-  programda `--perf-out` bayrağı (paketli sürüm; talimat `docs/kurulum.md` sonu), **hafif mod** (`app.lightMode`, varsayılan kapalı,
+  programda `--perf-out` bayrağı (paketli sürüm; talimat `docs/otel/kurulum.md` sonu), **hafif mod** (`app.lightMode`, varsayılan kapalı,
   otonom varsayılan: yalnız ana bilgisayar kipinde; pencere kapanınca tepside kalır, arayüz mevcut `127.0.0.1` sunucusundan tarayıcıda;
   e2e). Ölçüm (Codespace): boşta toplam RSS 871 → 589 MB (−%32), PSS 566 → 379 MB (−%33) hafif modla; GPU bayrakları fayda vermedi,
   reddedildi; tembel import `date-holidays` senkron kullanıldığı için yapılmadı. Tablo `11-rust-gecisi.md` §7. P22b ✅ —

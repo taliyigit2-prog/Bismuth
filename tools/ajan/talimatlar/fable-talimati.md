@@ -67,7 +67,7 @@ Sırayla ve özetleyerek:
 
 1. `CLAUDE.md`, `.claude/` klasörünün tamamı (ajanlar, beceriler, kancalar, kurallar, ayarlar).
 2. `docs/plan/README.md`, `01-gereksinimler.md` (G-xx), `03-mimari.md`, `06-kararlar.md` (K-xx), `05-sorular.md` (S-xx),
-   `akislar.md`, `fazlar/DURUM.md`, `fazlar/YURUTME.md`, `docs/tasarim.md`, `docs/kurulum.md`, `docs/kullanim-kilavuzu.md`.
+   `akislar.md`, `fazlar/DURUM.md`, `fazlar/YURUTME.md`, `docs/gelistirici/tasarim.md`, `docs/otel/kurulum.md`, `docs/otel/kullanim-kilavuzu.md`.
 3. `src/` yapısı: `shared/contract`, `shared/domain`, `main/services`, `main/db/schema`, `drizzle/`, `renderer/features`
    (özellikle `calendar/`, `in-house/`, `ledger/`, `guests/`, `rooms/`), `renderer/layouts`, `main/windows/main-window.ts`,
    `main/app/window-state.ts`, `main/app/display-follow.ts`.
@@ -153,7 +153,7 @@ Program **her bilgisayarda tam ekran ve rahat** çalışmalı, **çalışmayan h
 
 Sahip programı ve kamera bileşenini teknik bilgi gerektirmeden kurabilmeli.
 
-- Mevcut durumu incele: `electron-builder.yml`, `release.yml`, `docs/kurulum.md`, imzasız macOS/Windows uyarıları
+- Mevcut durumu incele: `electron-builder.yml`, `release.yml`, `docs/otel/kurulum.md`, imzasız macOS/Windows uyarıları
   (Gatekeeper, SmartScreen), otomatik güncelleme yasağı (G-07).
 - Actions dakikaları kısıtlı. Hangi paketin nerede üretileceğine dair ucuz bir strateji öner: Linux'ta Windows
   paketi, sürüm başına tek elle tetiklenen iş akışı, GitHub Releases'e yükleme vb.

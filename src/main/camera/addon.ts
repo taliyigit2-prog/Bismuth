@@ -1,6 +1,6 @@
 // The camera add-on (Faz 20, P20f): Python, its libraries, the Python files and the model files are ~1.5 GB, so they
 // are NOT part of the main installer. The owner unpacks `Bismuth-Kamera-<platform>.zip` into `<userData>/camera-addon`
-// (docs/kurulum.md); a packaged Bismuth looks only there (never in PATH, never in a variable, G-01/G-07).
+// (docs/otel/kurulum.md); a packaged Bismuth looks only there (never in PATH, never in a variable, G-01/G-07).
 //
 //   camera-addon/
 //     addon.json            { schema, platform, arch, bismuth, python }   (written by scripts/camera-bundle.mjs)

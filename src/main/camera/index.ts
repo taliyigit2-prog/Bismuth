@@ -152,7 +152,7 @@ export function createCameraRuntime(opts: CameraRuntimeOptions): CameraRuntime {
     ...opts.overrides
   })
 
-  // Packaged without the add-on: nothing to start (the Camera tab says "camera add-on not installed", docs/kurulum.md).
+  // Packaged without the add-on: nothing to start (the Camera tab says "camera add-on not installed", docs/otel/kurulum.md).
   const addonMissing = !!opts.packaged && !opts.addon
   const wanted = (): boolean => opts.settings()['camera.enabled'] && !addonMissing
   const running = (): boolean => ['starting', 'running', 'backoff'].includes(sidecar.snapshot().state)

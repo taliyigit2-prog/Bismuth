@@ -187,7 +187,7 @@ kapanır; sonda modül başına hata avı, akış testi, karar denetimi, güvenl
 json'a değil, dil başına Markdown dosyalarına yazılır (`src/renderer/guide/content/{tr,en,ru}/`). Bu, yasak 8'in ("metin
 koda gömülmez") ruhuna uyar: metin kodda değil, dile göre ayrılmış içerik dosyasındadır. Üç dilde aynı bölüm ve çapa
 kümesi testle zorlanır; Markdown'ı yeni bağımlılık olmadan kendi küçük işleyicimiz React öğelerine çevirir (HTML
-enjeksiyonu yok); kılavuz arayüzünün kısa metinleri yine i18n anahtarıdır. `docs/kullanim-kilavuzu.md` Türkçe içerikten
+enjeksiyonu yok); kılavuz arayüzünün kısa metinleri yine i18n anahtarıdır. `docs/otel/kullanim-kilavuzu.md` Türkçe içerikten
 betikle üretilir (Faz 16 madde 7: "program içi yardımla aynı içerik").
 
 **K-41 · Bismuth anahtarının kâğıt biçimi: 11×5 harf-rakam + QR (2026-10-05, varsayılan; K-05'in biçim kısmını

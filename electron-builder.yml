@@ -24,7 +24,7 @@ extraResources:
   - from: THIRD_PARTY_NOTICES.md
     to: THIRD_PARTY_NOTICES.md
 # The camera (Python, libraries, models, ~2 GB) is NOT packed here: it is a separate add-on zip (scripts/camera-bundle.mjs,
-# docs/kurulum.md) that the owner unpacks into userData/camera-addon. No extraResources for it.
+# docs/otel/kurulum.md) that the owner unpacks into userData/camera-addon. No extraResources for it.
 asar: true
 asarUnpack:
   - '**/node_modules/better-sqlite3/**'

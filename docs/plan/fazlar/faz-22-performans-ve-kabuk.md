@@ -18,7 +18,7 @@ S-122 (Mac'te yazdırma/PDF ve tarih seçici kusursuz olmalı mı?). Cevapsız =
 
 ## Teslimatlar
 1. **P22a Ölç ve hafiflet** — `scripts/perf-measure.mjs` (açılış süresi, süreç başına RSS/CPU boşta ve yoğun, Electron
-   tabanı), gerçek PC talimatı (`docs/kurulum.md` ek), Electron denemeleri (`backgroundThrottling`, tek pencere, GPU
+   tabanı), gerçek PC talimatı (`docs/otel/kurulum.md` ek), Electron denemeleri (`backgroundThrottling`, tek pencere, GPU
    kısıtı, modül yükü), **"hafif mod"** prototipi: sunucu modunda pencere kapalı + tepsi simgesi + tarayıcıda arayüz.
 2. **P22b Kabuk soyutlama** — `src/renderer/lib/shell/` (dosya diyaloğu, yazdırma, `safeStorage`, pencere durumu, menü,
    sürüm) Electron ve tarayıcı/HTTP uygulamaları; mevcut `transport` ile birlikte kabuktan bağımsız arayüz.
@@ -54,7 +54,7 @@ betiği ve `--perf-out` (gerçek PC ölçümü sahip onay paketinde), kabuk soyu
 
 ### P22a — Ölç ve hafiflet (2026-11-14)
 - `scripts/perf-measure.mjs`: açılış, süreç başına RSS/PSS/CPU (boşta + yoğun), `--light`, `--attach` (Tauri için), `--report`.
-  Programın kendi `--perf-out=<dosya> [--perf-idle=sn]` bayrağı (Node'suz gerçek PC için; `runAsNode` kapalı); talimat `docs/kurulum.md`.
+  Programın kendi `--perf-out=<dosya> [--perf-idle=sn]` bayrağı (Node'suz gerçek PC için; `runAsNode` kapalı); talimat `docs/otel/kurulum.md`.
 - Hafif mod: `app.lightMode` (varsayılan kapalı, otonom varsayılan); ana bilgisayar kipinde pencere kapanınca tepside kalır
   (Aç / Tarayıcıda aç / Çık), sunucu çalışmıyorsa program yine kapanır; arayüz mevcut `127.0.0.1:<kapı>` sunucusundan. Yeni dinleyici yok.
   Ayar anahtarı Ayarlar → Uzaktan erişim'de (en küçük arayüz değişikliği: bir anahtar satırı).

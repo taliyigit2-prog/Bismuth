@@ -65,7 +65,7 @@ sahip onay paketine kaldı.
   gider; "x" → teslim/kasadan). Yazma servisler üzerinden (yetki, kapalı gün, denetim kaydı). Misafir adları
   düzeltilir, aynı ad tek kart; benzer adlar işaretlenir (birleştirme Misafirler ekranında).
 - **Veri klasörü**: yol, boyut, "Klasörü aç" (yalnız programın kendi penceresinde).
-- **Kılavuz**: `docs/yedek-ve-tasima.md`.
+- **Kılavuz**: `docs/otel/yedek-ve-tasima.md`.
 
 **Kararlar (varsayılan)**
 
@@ -121,7 +121,7 @@ Bulgu → test (her biri önce kırmızı yazıldı; #1, #3, #7 P13sec'te):
   iptal edilmiş rezervasyona bağlanmaz".
 - #18 eşleşmeyen gelirin satış folyosu + masrafı ödemesiyle tek işlemde, kapalı gün denetimiyle → `data-import-fixes.test.ts`
   "eşleşmeyen gelirin satış folyosu ödemeyle tek işlemde yazılır…".
-- #21 `docs/yedek-ve-tasima.md` koda uyduruldu (QR + Yazdır, yeni uyarılar, açılış kopyası, yeniden deneme aralığı, maaş
+- #21 `docs/otel/yedek-ve-tasima.md` koda uyduruldu (QR + Yazdır, yeni uyarılar, açılış kopyası, yeniden deneme aralığı, maaş
   şablonu, tekrar ve aktarım iptali). **(varsayılan) Yerel yedeği şifreleme ayarı yok**: bu bilgisayardaki yedek canlı
   veritabanı dosyasıyla aynı yerde duruyor (bilgisayara erişene karşı bir şey katmaz), anahtar kaybolursa en hızlı geri dönüş
   yolunu kapatır; bilgisayardan çıkan Drive kopyası her zaman şifreli (K-05'in "isteğe bağlı" kısmı uygulanmadı, kılavuzda

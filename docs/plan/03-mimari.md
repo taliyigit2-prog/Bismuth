@@ -477,7 +477,7 @@ Her kural için test dosyası aynı adı taşır (`*.test.ts`). Excel'den doğru
 ```
 /
 ├─ CLAUDE.md, .claude/                 kurallar, kancalar, ajanlar, beceriler
-├─ docs/plan/                          bu plan · docs/gelistirici.md geliştirici notları
+├─ docs/plan/                          bu plan · docs/gelistirici/README.md geliştirici notları
 ├─ src/main/                           app (yollar, pencere durumu, menü, ana süreç i18n), api (Hono yönlendirici + işleyiciler:
 │                                      IPC ve HTTP'nin ortak kapısı), db, services, ipc, server (Hono statik + güvenlik
 │                                      başlıkları), security, windows, backup, network, discovery, notifications, printing, attachments

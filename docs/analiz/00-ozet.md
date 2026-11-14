@@ -17,7 +17,7 @@
   yurt dışı aktarım riski. Açık lisanslı modellerle, Bismuth'un içinde sekme olarak, veriyi tek kaynaktan alan bir plan
   hazır (`06-…`, Faz 20).
 - **Kurulum:** çift tıkla kurulum var; macOS/Windows imzasız uyarıları belgede. Sürüm iş akışı pahalı (Mac runner 10×);
-  ucuz düzen önerildi; tek sayfalık basit kurulum rehberi yazıldı (`docs/kurulum-rehberi-basit.md`, `07-…`).
+  ucuz düzen önerildi; tek sayfalık basit kurulum rehberi yazıldı (`docs/otel/kurulum-rehberi-basit.md`, `07-…`).
 - **Ajan sistemi** Opus'un planı kendi başına yürütebileceği hâle getirildi: `/orkestra`, 6 yeni uzman ajan, iki yeni
   güvenlik kancası, hızlı belge commit'i, Opus devir notu (`09-…`, `OPUS-BASLANGIC.md`).
 

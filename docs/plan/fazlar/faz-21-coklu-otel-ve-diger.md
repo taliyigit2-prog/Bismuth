@@ -77,7 +77,7 @@ Merkezi bulut veritabanı; oteller arası ortak misafir kartı (ileride öneri);
   zaman aşımı, yetki (401/403/429), Bismuth değil, parmak izi değişti, sürüm farklı.
 - **Yeni yordamlar** (`remote.*`, yalnız istemci modu, ana bilgisayarda "istemci değil"): `remote.hotels`, `remote.hotelUpdate`,
   `remote.hotelRemove`. Otele bağlanmak = `remote.connect` (adresiyle). `remote.forgetHost` artık oteli listede bırakır.
-- **Belge:** `docs/uzaktan-erisim.md` → "İkinci otelin ana bilgisayarına bağlanın" (uydurma NetBird adresleri).
+- **Belge:** `docs/otel/uzaktan-erisim.md` → "İkinci otelin ana bilgisayarına bağlanın" (uydurma NetBird adresleri).
 - **Karşılanan:** G-140…G-146 (istemci modu), K-54, S-114…S-117, H-33. Kabul: iki kayıt, yanlış parmak izinde bağlanmaz.
 - **Varsayılanlar (otonom varsayılan):** otel kodu adın ASCII kısaltmasıdır (çakışırsa `-2`); kullanımdaki otelin adresi
   düzenlenemez; listeden kaldırınca o otelin salt okunur kopyası bu bilgisayardan silinir (otelin kendi verisine dokunulmaz);

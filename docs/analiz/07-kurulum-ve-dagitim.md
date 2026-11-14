@@ -1,10 +1,10 @@
 # 07 — Kurulum ve dağıtım ("kolayca indir ve kur")
 
-> Hazırlayan: Fable (2026-11-12). Kaynak: `electron-builder.yml`, `.github/workflows/*.yml`, `docs/kurulum.md`,
-> `docs/gelistirici.md`, `package.json`, `scripts/`, `prototypes/`, `.devcontainer/`. Dakika çarpanları GitHub belgesinden
+> Hazırlayan: Fable (2026-11-12). Kaynak: `electron-builder.yml`, `.github/workflows/*.yml`, `docs/otel/kurulum.md`,
+> `docs/gelistirici/README.md`, `package.json`, `scripts/`, `prototypes/`, `.devcontainer/`. Dakika çarpanları GitHub belgesinden
 > (doğrulandı 2026-11-12, docs.github.com "About billing for GitHub Actions": dakika başına Linux 2 çekirdek $0,006,
 > Windows $0,010, macOS $0,062 → macOS ≈ 10×, Windows ≈ 2× Linux; dahil dakikalarda çarpan 1×/2×/10×). Sahip için tek sayfalık rehber:
-> `docs/kurulum-rehberi-basit.md` (taslak; gerçek makinede doğrulanacak, S-80).
+> `docs/otel/kurulum-rehberi-basit.md` (taslak; gerçek makinede doğrulanacak, S-80).
 
 ## 1. Mevcut durum
 
@@ -17,7 +17,7 @@
 | Otomatik güncelleme | **yok** (`publish: null`, `electron-updater` bağımlılığı yok) — G-07 ile uyumlu | `package.json` |
 | Releases | `release.yml` tag `v*` → `gh release create`, notlar `docs/surum-notlari/<tag>.md`; tag ≠ `package.json` sürümü ise durur | |
 | Fuse'lar | `electronFuses` (ad-hoc imza sıfırlama dahil) | `electron-builder.yml` |
-| Belgeler | `docs/kurulum.md` (281 satır) SmartScreen ve Gatekeeper adımlarını anlatıyor; 7 adet `<!-- doğrula -->` işareti; `xattr` komutu veriyor | §4 |
+| Belgeler | `docs/otel/kurulum.md` (281 satır) SmartScreen ve Gatekeeper adımlarını anlatıyor; 7 adet `<!-- doğrula -->` işareti; `xattr` komutu veriyor | §4 |
 
 ### İş akışları ve maliyet
 
@@ -142,7 +142,7 @@ istemez; ayrıca `YOLO_OFFLINE=1` her ağ yoklamasını kapatır.
 kök `.gitignore`'a `!otel-kamera/.env.example` istisnası eklendi; `kbs-data-guard` kancası dosyada kimlik verisi aramadı
 (yalnız anahtar adları ve varsayılanlar var).
 
-## 4. `docs/kurulum.md` — sade olmayan ya da eksik adımlar
+## 4. `docs/otel/kurulum.md` — sade olmayan ya da eksik adımlar
 
 | # | Sorun | Öneri |
 |---|---|---|
@@ -152,13 +152,13 @@ kök `.gitignore`'a `!otel-kamera/.env.example` istisnası eklendi; `kbs-data-gu
 | 4 | İki ayrı gizli bilgi (kurtarma kodları + Bismuth anahtarı) | Sihirbazda tek "Kâğıda yazın" adımı + **yazdır** düğmesi (K-41 QR/yazdırma bugün yok) |
 | 5 | Drive sürücü harfi, "akış modu", tam yol yazma | Ayarlar → Yedek'te "Drive klasörünü bul" düğmesi (varsayılan yolları dener) |
 | 6 | "Kurduğunuz Windows kullanıcısıyla açın" | Belgede açık uyarı kutusu; ileride makine geneli kurulum seçeneği (S-113) |
-| 7 | Uzaktan erişim (güvenlik duvarı, özel ağ) kurulum belgesinde | `docs/uzaktan-erisim.md`'ye bağlantı; ana belgeden çıkar |
+| 7 | Uzaktan erişim (güvenlik duvarı, özel ağ) kurulum belgesinde | `docs/otel/uzaktan-erisim.md`'ye bağlantı; ana belgeden çıkar |
 | 8 | Ekran görüntüsü yok | Sahip onay paketinde gerçek Windows/Mac görüntüleri |
 | 9 | Kamera bileşeni kurulumu yok | 06 raporu K7 paketinden sonra bölüm eklenir |
 
 ## 5. Sahip için "Kurulum Rehberi (Basit)"
 
-`docs/kurulum-rehberi-basit.md` yazıldı: indir → çift tıkla (SmartScreen/Gatekeeper tek adım) → ilk açılış sihirbazı →
+`docs/otel/kurulum-rehberi-basit.md` yazıldı: indir → çift tıkla (SmartScreen/Gatekeeper tek adım) → ilk açılış sihirbazı →
 yedek → kamera (henüz ürün dışı) → üç sorun giderme satırı. Program içi kılavuza (`src/renderer/guide/`) aynı
 içeriğin üç dilde eklenmesi P19b paketinde.
 

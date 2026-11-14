@@ -126,7 +126,7 @@ P13sec/P13sec2) bu turda tekrarlanmadı → "Son" dalgasında `security-reviewer
 | # | Çelişki | Kanıt | Çözüm | Paket |
 |---|---|---|---|---|
 | Ç-01 | Hafta sonu tanımı: fiyat varsayılanı Cuma + Cumartesi (K-44, `03-mimari.md:362`) ↔ takvim vurgusu Cumartesi + Pazar (G-40, `03-mimari.md:95`) | belgeler | Bilinçli ayrım ise K-44 detayına tek cümle; değilse sahibe soru (00-ozet S-119 önerisi) | P19b (belge) |
-| Ç-02 | G-03 "terminal gerekmez" ↔ `docs/kurulum.md:257` `xattr` komutu | belge | Komut kaldırılır | P19b |
+| Ç-02 | G-03 "terminal gerekmez" ↔ `docs/otel/kurulum.md:257` `xattr` komutu | belge | Komut kaldırılır | P19b |
 | Ç-03 | K-44 metni "oda bu gece yeniden satılabilir" ↔ kod ikinci turda satmıyor (H-03) | kod | P17d | P17d |
 | Ç-04 | `05-sorular.md` S-06 "TR, EN, RU, AR" ↔ K-20 Arapça ertelendi | belge | S-06 satırına not | P19b |
 | Ç-05 | `akislar.md` check-in/check-out/iptal/iade akışlarını içermiyor; kılavuzda var | belge | akislar.md'ye "programdaki karşılığı" satırları | P19b |

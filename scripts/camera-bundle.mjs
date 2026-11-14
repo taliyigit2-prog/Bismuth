@@ -3,7 +3,7 @@
 //                                [--python-archive <file>] [--pip <python>] [--dry-run]
 //
 // Builds the camera add-on (Faz 20, P20f): one zip with an embedded Python, its libraries, the Python files and the
-// model files (layout in src/main/camera/addon.ts). Not part of the main installer: ~1.5-2 GB installed (docs/kurulum.md).
+// model files (layout in src/main/camera/addon.ts). Not part of the main installer: ~1.5-2 GB installed (docs/otel/kurulum.md).
 // Runs on the packager's computer or in the release workflow, never on the hotel computer. Needs: node 22, python 3.12
 // with pip and venv, zip (Windows: the system's tar.exe), curl, and a C/C++ compiler for insightface (MSVC on Windows, Xcode tools on
 // macOS). The target system is the HOST system: the Windows add-on is built on Windows, the Mac add-on on an Apple-chip
@@ -88,7 +88,7 @@ if (!target || !opt.models) {
 if (!dry && (process.platform !== target.platform || process.arch !== target.arch)) {
   console.error(
     `camera-bundle: the ${opt.target} add-on is built on its own system (this one is ${process.platform}/${process.arch}): ` +
-      'insightface is compiled here and its libraries are installed for the host (docs/kurulum.md)'
+      'insightface is compiled here and its libraries are installed for the host (docs/otel/kurulum.md)'
   )
   process.exit(2)
 }

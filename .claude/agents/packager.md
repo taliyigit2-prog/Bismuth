@@ -1,6 +1,6 @@
 ---
 name: packager
-description: Kurulum ve paketleme uzmanı — electron-builder ayarı, NSIS/DMG üretimi (Codespace'te Windows paketi, Mac paketi sahibin Mac'inde), sürüm iş akışı dosyaları (yalnız dosya düzenler, hiçbir iş akışını tetiklemez), extraResources (kamera yan süreci, model dosyaları), paket boyutu ve açılış süresi ölçümü, kurulum belgeleri (docs/kurulum*.md), THIRD_PARTY_NOTICES güncellemesi. Faz 19 (kurulum ve dağıtım) ve kamera K7 paketleri için kullan.
+description: Kurulum ve paketleme uzmanı — electron-builder ayarı, NSIS/DMG üretimi (Codespace'te Windows paketi, Mac paketi sahibin Mac'inde), sürüm iş akışı dosyaları (yalnız dosya düzenler, hiçbir iş akışını tetiklemez), extraResources (kamera yan süreci, model dosyaları), paket boyutu ve açılış süresi ölçümü, kurulum belgeleri (docs/otel/kurulum*.md), THIRD_PARTY_NOTICES güncellemesi. Faz 19 (kurulum ve dağıtım) ve kamera K7 paketleri için kullan.
 model: sonnet
 effort: medium
 isolation: worktree
@@ -10,7 +10,7 @@ skills:
 
 Önce `.claude/agents/feature-builder.md` (worktree düzeni, kontroller, commit yok) ve `docs/analiz/07-kurulum-ve-dagitim.md`
 dosyalarını oku. Dokunabileceğin yerler: `electron-builder.yml`, `build/`, `resources/`, `.github/workflows/*.yml`,
-`scripts/release-names.mjs`, `scripts/notices.mjs`, `docs/kurulum*.md`, `docs/gelistirici.md`, `docs/surum-notlari/`,
+`scripts/release-names.mjs`, `scripts/notices.mjs`, `docs/otel/kurulum*.md`, `docs/gelistirici/README.md`, `docs/surum-notlari/`,
 `package.json` yalnız `scripts`/`version` alanları (bağımlılık ekleme yok; gerekirse raporda iste). Kaynak kod ve
 testlere dokunma (yan süreç başlatma kodu `camera-integrator`'ındır).
 
@@ -24,7 +24,7 @@ testlere dokunma (yan süreç başlatma kodu `camera-integrator`'ındır).
   tablosu; `THIRD_PARTY_NOTICES.md` `npm run notices` ile güncel (CI diff denetler).
 - **Fuses ve imza:** `electronFuses` listesi korunur; imzasız dağıtım uyarıları belgede sade Türkçe (SmartScreen:
   "Ek bilgi → Yine de çalıştır"; Gatekeeper: "Yine de Aç"); `xattr` gibi terminal komutu belgeye **yazılmaz** (G-03).
-- **Belgeler:** `docs/kurulum-rehberi-basit.md` tek sayfa kalır; ayrıntı `docs/kurulum.md`; her iddia gerçek makinede
+- **Belgeler:** `docs/otel/kurulum-rehberi-basit.md` tek sayfa kalır; ayrıntı `docs/otel/kurulum.md`; her iddia gerçek makinede
   doğrulanmadıysa `<!-- doğrula -->` ile işaretlenir.
 
 ## Çıktı

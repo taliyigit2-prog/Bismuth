@@ -1,7 +1,7 @@
 # 04 — Butik ve küçük otellerin gerçek ihtiyaçlarıyla karşılaştırma
 
 > Hazırlayan: Fable (2026-11-12). Kaynaklar: kod (`01-mimari-ve-kod-haritasi.md`), `docs/plan/akislar.md`,
-> `docs/kullanim-kilavuzu.md`, `docs/plan/04-arastirma/otel-pms-ozellikleri.md`, rakip PMS belgeleri
+> `docs/otel/kullanim-kilavuzu.md`, `docs/plan/04-arastirma/otel-pms-ozellikleri.md`, rakip PMS belgeleri
 > (`ekler/kamera-kaynaklar.md` §C, 2026-11-12). Çoklu otel: `10-coklu-otel.md`. Önem: Kritik / Yüksek / Orta / Düşük; büyüklük S/M/L.
 
 ## 1. Günlük resepsiyon işleri — var / eksik / fazla

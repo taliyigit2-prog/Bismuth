@@ -31,7 +31,7 @@ kullanıcı renkleri); test ve lint; GitHub Actions ile Windows/macOS paketleri;
 9. **Test altyapısı**: vitest örnekleri (Money, kontrat doğrulama, format), Playwright `_electron` açılış testi + `mobile` projesi (telefon emülasyonu, Vite dev sunucusuna karşı), CI'da xvfb.
 10. **CI/CD**: `ci.yml` (typecheck, lint, test, build, e2e), `release.yml` (tag `v*`: Windows NSIS x64/arm64 — `installerLanguages` tr/en/ru —, macOS DMG arm64/x64, smoke test, Release'e yükleme); `electron-builder.yml` (`04-arastirma/masaustu-yigin.md` §10.2 tabanlı, `productName: Bismuth`, `mac.identity: "-"`).
 11. **Claude düzeni**: mevcut kancalara ek: `pre-commit-gate`, `format-file`, `i18n-literal-warn`, `stop-gate`; ajanlar `ui-reviewer` (masaüstü+mobil ekran görüntüleri), `db-reviewer`, `security-reviewer`; beceriler `qa`, `add-migration`, `ui-screen`, `release`, `tr-copy-guide`, `electron-security`; hepsi `test-hooks.mjs` ile doğrulanır.
-12. **Belgeler**: `README.md`, `docs/gelistirici.md` iskeleti, `docs/plan/bagimliliklar.md`.
+12. **Belgeler**: `README.md`, `docs/gelistirici/README.md` iskeleti, `docs/plan/bagimliliklar.md`.
 
 ## Kabul ölçütleri
 
@@ -93,7 +93,7 @@ kullanıcı renkleri); test ve lint; GitHub Actions ile Windows/macOS paketleri;
 - **Claude düzeni**: kancalar `pre-commit-gate`, `format-file`, `i18n-literal-warn`, `stop-gate` (57 kanca senaryosu
   geçiyor); ajanlar `ui-reviewer`, `db-reviewer`, `security-reviewer`; beceriler `qa`, `add-migration`, `ui-screen`,
   `release`, `tr-copy-guide`, `electron-security`.
-- **Belgeler**: `README.md`, `docs/gelistirici.md`, `docs/plan/bagimliliklar.md`, `THIRD_PARTY_NOTICES.md` (betikle
+- **Belgeler**: `README.md`, `docs/gelistirici/README.md`, `docs/plan/bagimliliklar.md`, `THIRD_PARTY_NOTICES.md` (betikle
   üretilir; CI güncelliğini denetler), `03-mimari.md` §9 güncel.
 - **Simge**: kademeli bizmut kristali (yanardöner), `build/icon.svg` → png.
 

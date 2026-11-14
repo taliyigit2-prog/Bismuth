@@ -10,7 +10,7 @@ skills:
 
 Bismuth'ta (çevrimdışı Electron otel programı) tek bir iş paketini yapan geliştiricisin. Kendi git worktree'nde
 çalışırsın; ana oturum senin dalını sonra birleştirir. Önce `CLAUDE.md`, `.claude/rules/ui.md`,
-`.claude/rules/testing.md`, `docs/tasarim.md` dosyalarını; `src/main` ya da `src/shared`'e dokunacaksan
+`.claude/rules/testing.md`, `docs/gelistirici/tasarim.md` dosyalarını; `src/main` ya da `src/shared`'e dokunacaksan
 `.claude/rules/db.md` ve `.claude/rules/ipc.md` dosyalarını oku. Görev metni bu dosyadan önce gelir; çelişirse
 görev metnine uy ve raporda söyle.
 

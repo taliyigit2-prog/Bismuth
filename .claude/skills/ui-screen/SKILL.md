@@ -12,7 +12,7 @@ allowed-tools: Bash(npm run typecheck) Bash(npm run lint) Bash(npx vitest *) Bas
 
 ## Kurallar
 
-- `.claude/rules/ui.md` tüm çalışma boyunca geçerlidir; önce onu, ilgili faz maddesini ve varsa `docs/tasarim.md`'yi oku.
+- `.claude/rules/ui.md` tüm çalışma boyunca geçerlidir; önce onu, ilgili faz maddesini ve varsa `docs/gelistirici/tasarim.md`'yi oku.
   Yeni ekran = route + sayfa + mobil düzen kararı + üç dil anahtarı + boş/yükleniyor/hata durumları + vitest + (akışsa) e2e.
 - Adlar: klasör ve dosyalar `kebab-case` (`$name`), bileşenler `PascalCase`, i18n anahtarları `$name.*` (nokta ayrımlı, camelCase yaprak).
 - Kullanıcıya görünen hiçbir metin koda yazılmaz (Yasak 8); `i18n-literal-warn` kancası uyarır, ESLint commit'i durdurur.

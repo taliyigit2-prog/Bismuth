@@ -8,7 +8,7 @@ Program her bilgisayarda (1280×720'den 4K'ya, Windows %100/%125/%150, macOS Ret
 rahat çalışır; hiçbir öğe çalışmaz durumda kalmaz.
 
 ## Gereksinimler
-G-143 (telefon kırılımı), G-08 (üç dil), tasarım dili (`docs/tasarim.md` §4, §8, §12), Ö-23 (pencere; sahip onayı
+G-143 (telefon kırılımı), G-08 (üç dil), tasarım dili (`docs/gelistirici/tasarim.md` §4, §8, §12), Ö-23 (pencere; sahip onayı
 beklemeden kısayol ve hatırlama yapılır, çoklu monitör davranışı varsayılanla).
 
 ## Sorular

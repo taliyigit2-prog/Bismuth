@@ -1,6 +1,6 @@
 // Every keyboard shortcut of the program, in one place (G-19, S-51): the global keys the shell listens to, the keys
 // of the calendar grid and of every form. The shortcut list (`?` / F1), the guide's shortcut table (`[[shortcuts]]`
-// in the guide text, docs/kullanim-kilavuzu.md through scripts/guide-docs-lib.ts) and the listeners read this list,
+// in the guide text, docs/otel/kullanim-kilavuzu.md through scripts/guide-docs-lib.ts) and the listeners read this list,
 // so what the list says is what the keys do. Pure data and pure functions: no React, no browser globals.
 
 export type ShortcutGroup = 'global' | 'calendar' | 'forms'

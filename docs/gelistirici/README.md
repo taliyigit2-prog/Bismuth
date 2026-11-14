@@ -2,7 +2,7 @@
 
 Yıllar sonra bu depoya dönen biri için: nasıl derlenir, paketlenir, nerede ne var, yeni bir şey nasıl eklenir, hangi
 tuzaklar bilinir. Kurallar `CLAUDE.md` ve `.claude/rules/*.md`'de; plan, gereksinimler ve kararlar `docs/plan/` altında.
-Kullanıcıya dönük belgeler: [`kurulum.md`](kurulum.md), [`yedek-ve-tasima.md`](yedek-ve-tasima.md).
+Kullanıcıya dönük belgeler: [`kurulum.md`](../otel/kurulum.md), [`yedek-ve-tasima.md`](../otel/yedek-ve-tasima.md).
 
 ## 0. Önce bunları okuyun
 
@@ -12,7 +12,7 @@ Kullanıcıya dönük belgeler: [`kurulum.md`](kurulum.md), [`yedek-ve-tasima.md
    `docs/plan/03-mimari.md`, kararlar `docs/plan/06-kararlar.md` (K-xx), sahibin soruları `docs/plan/05-sorular.md` (S-xx),
    günlük akış `docs/plan/akislar.md`, faz durumu `docs/plan/fazlar/DURUM.md`, her fazın ne yaptığı
    `docs/plan/fazlar/faz-NN-*.md` içindeki "Sonuç" bölümü. Bir şeyin **neden** öyle olduğunu önce buralarda arayın.
-3. `docs/tasarim.md` — arayüz dili ve bileşen kuralları.
+3. `docs/gelistirici/tasarim.md` — arayüz dili ve bileşen kuralları.
 4. `docs/plan/bagimliliklar.md` — her bağımlılığın gerekçesi ve sabit sürümü.
 
 ## 1. Gerekenler
@@ -62,7 +62,7 @@ Kullanıcıya dönük belgeler: [`kurulum.md`](kurulum.md), [`yedek-ve-tasima.md
   electron-builder'ın yazdığı ad `Bismuth-Setup-<mimari>.exe`.
 - macOS: DMG, `arm64` ve `x64`; `identity: '-'` (ad-hoc imza), `notarize: false`, `hardenedRuntime: false`. Noter onayı ve
   Apple geliştirici imzası yok (S-04: ücretsiz yol); kullanıcı ilk açılışta Gatekeeper uyarısını elle geçer
-  ([`kurulum.md`](kurulum.md)). İki DMG (evrensel tek paket değil, K-07): her biri yarı boyutta ve yerel modül
+  ([`kurulum.md`](../otel/kurulum.md)). İki DMG (evrensel tek paket değil, K-07): her biri yarı boyutta ve yerel modül
   birleştirme gerektirmez. electron-builder'ın yazdığı ad `Bismuth-<mimari>.dmg`.
 - **Dosya adları (G-03):** `scripts/release-names.mjs` CI'da paketlerden sonra çalışır ve sahibin indirdiği sabit adları
   verir: `Bismuth-Setup.exe` (Windows x64), `Bismuth-Setup-arm64.exe`, `Bismuth.dmg` (Apple çipli), `Bismuth-Intel.dmg`;
@@ -371,7 +371,7 @@ kapıdan geçer. Ayrıntı: `.claude/skills/electron-security/`.
   `YYYY-MM-DD` yerel gün metnidir, konaklama `[giriş, çıkış)` — çıkış günü gece değildir.
 - **Yedek ve anahtar.** Drive'a giden her dosya Bismuth anahtarıyla şifrelidir; anahtar `safeStorage`'a bağlıdır
   (Windows kullanıcı hesabı / macOS anahtar zinciri). İmzasız (ad-hoc) macOS paketinde her yeni sürümde anahtar zinciri
-  sorusu çıkabilir ([`kurulum.md`](kurulum.md)); anahtar deposunu değiştiren kod buna dikkat etmeli.
+  sorusu çıkabilir ([`kurulum.md`](../otel/kurulum.md)); anahtar deposunu değiştiren kod buna dikkat etmeli.
 - **Geri yükleme çalışan veritabanını değiştirmez.** Yedek açılıp denetlenir, işaret dosyası (`restore-pending.json`)
   yazılır, değişim sonraki açılışta DB açılmadan önce yapılır (`applyPendingRestore`). Bu sırayı bozmayın.
 - **Paralel çalışma.** Birden fazla ajan/oturum aynı depoda çalışırken `contract/index.ts` ve `api/handlers.ts` yerine modül

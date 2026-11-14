@@ -1,4 +1,4 @@
-// docs/kullanim-kilavuzu.md from the program's own Turkish guide
+// docs/otel/kullanim-kilavuzu.md from the program's own Turkish guide
 // (src/renderer/guide/content/tr/*.md, K-40), so the user guide in the repository and the one inside the program are
 // the same text (Faz 16 madde 7). Guide links become anchors of this one file, pictures point at the bundled
 // screenshots, "ipucu / dikkat" boxes become GitHub notes, author notes (<!-- doğrula: … -->) are dropped, and
@@ -23,8 +23,8 @@ export interface GuidePage {
 
 const ROOT = resolve(__dirname, '..')
 export const CONTENT_DIR = join(ROOT, 'src/renderer/guide/content/tr')
-export const DOC_FILE = join(ROOT, 'docs/kullanim-kilavuzu.md')
-const IMAGE_DIR = '../src/renderer/guide/img/tr'
+export const DOC_FILE = join(ROOT, 'docs/otel/kullanim-kilavuzu.md')
+const IMAGE_DIR = '../../src/renderer/guide/img/tr'
 
 const I18N_FILE = join(ROOT, 'src/renderer/i18n/tr.json')
 

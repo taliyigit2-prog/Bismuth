@@ -53,7 +53,7 @@ ayrıca $100–200 ve yalnızca ölçülmüş darboğazda; K-62 tam yeniden yaz�
 
 1. **Electron'da kalalım mı** (önerim, P22d açılmaz), yoksa Windows'ta kendi PC'nizde bir deneme mi istiyorsunuz?
 2. Deneme isterseniz (yarım saat): `shell-tauri/README.md` → Windows adımları; otel bilgisayarında `--perf-out` ölçümü
-   (`docs/kurulum.md` "Teknik: bilgisayarı ne kadar yorduğunu ölçmek") ve hafif modun gerçek Windows tepsisinde denenmesi (P22a'dan
+   (`docs/otel/kurulum.md` "Teknik: bilgisayarı ne kadar yorduğunu ölçmek") ve hafif modun gerçek Windows tepsisinde denenmesi (P22a'dan
    bekleyen iş) daha ucuz ve daha kesin bilgi verir; onları **önce** yapmanızı öneririm.
 3. Mac'te yazdırma/tarih seçici kusursuz olmalı kararı (S-122) Tauri'yi fiilen eler; cevabınız değişmediyse (kusursuz) Tauri için
    Mac denemesi şart.

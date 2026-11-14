@@ -158,7 +158,7 @@ dalgalandığı için **karşılaştırmada kullanılmaz**; temiz yükte (≤1) 
   çalışmaktır (hafif mod) ya da kabuk değişimi (P22c'de aynı betikle ölçülecek).
 
 **Gerçek otel bilgisayarı:** ölçüm tablosu bu bilgisayarda henüz yok; sahibin PC'sinde `--perf-out` ile alınacak
-(`docs/kurulum.md` → "Teknik: bilgisayarı ne kadar yorduğunu ölçmek"). Sahip onay paketine yazıldı.
+(`docs/otel/kurulum.md` → "Teknik: bilgisayarı ne kadar yorduğunu ölçmek"). Sahip onay paketine yazıldı.
 
 ## 8. P22c sonuç: Tauri 2 prototipi ve Electron karşılaştırması (Codespace, Xvfb, 2026-11-14)
 
@@ -207,7 +207,7 @@ servislerin kendisi Rust'a taşınmalı (P22e: `axum` + `rusqlite`; Node yan sü
 darboğazda" ve K-62 tam yeniden yazımı reddediyor.
 
 **Sahibin PC'sinde tekrar:** `shell-tauri/README.md` → "Ölçüm"; Windows'ta `--tauri <exe>` aynı betikle (PSS Windows'ta yok,
-çalışma kümesi kullanılır; WebView2 süreçleri `webview2` diye ayrılır; ölçmeden önce `docs/kurulum.md` "Teknik: bilgisayarı ne kadar
+çalışma kümesi kullanılır; WebView2 süreçleri `webview2` diye ayrılır; ölçmeden önce `docs/otel/kurulum.md` "Teknik: bilgisayarı ne kadar
 yorduğunu ölçmek"). Karar belgesi: `docs/analiz/13-tauri-karar.md`.
 
 **Prototipin sınırları (yapılmadı / doğrulanmadı):** ilk kurulum sihirbazı HTTP'de reddedilir (yalnız IPC; kurulmuş otel klasörüyle

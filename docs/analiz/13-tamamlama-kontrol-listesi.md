@@ -10,7 +10,7 @@
 | 3 | Resepsiyonun 4 maddesi: kök neden, repro, tasarım | ✅ | `03-resepsiyon-geri-bildirimi.md`; `ekler/resepsiyon-repro.test.ts.txt`; 2. oturumda iptal → ızgara gerçek Electron'da doğrulandı (§4 "Doğrulandı") |
 | 4 | Raporlar 00–09 (tablo) | ✅ | `docs/analiz/00…09`; ek olarak 10 (çoklu otel), 11 (Rust), 12 (21st.dev), 13 (bu dosya) |
 | 4.1 | Ekran ve tam ekran: 7 çözünürlük, ölçek, tema, dil, pencere, her düğme | ✅ | `05-…md` §1–§4 (111 görüntü, metrics.jsonl); akış testi kapsamı §5 (2. oturumda tüm route'lar, bkz. B) |
-| 4.2 | Kurulum ve dağıtım, depo düzeni, basit rehber, `.env.example` | ✅ | `07-…md`; `docs/kurulum-rehberi-basit.md`; `otel-kamera` örnek env dosyası depoda; Windows paketi Linux'ta **üretildi** (07 §2) |
+| 4.2 | Kurulum ve dağıtım, depo düzeni, basit rehber, `.env.example` | ✅ | `07-…md`; `docs/otel/kurulum-rehberi-basit.md`; `otel-kamera` örnek env dosyası depoda; Windows paketi Linux'ta **üretildi** (07 §2) |
 | 4.3 | 21st.dev değerlendirme + kurulum anlatımı + `.mcp.json` | ✅ (sahip kararıyla genişletildi) | `05` §7, `12-21st-tasarim-secimi.md`, `.mcp.json`, `.claude/settings.json` `enabledMcpjsonServers` |
 | 5 | Kamera: seçenekler, veri, çatışmalar, hukuk/lisans, kod kalitesi, aşamalı plan | ✅ | `06-…md` (§6.3 sahibin model kararı + lisans), `ekler/kamera-kaynaklar.md`, `ekler/kamera-kod-bulgulari.md` (§0 paket eşlemesi) |
 | 5.2 | Çoklu otel | ✅ | `10-coklu-otel.md`; K-54 kesin (sahip cevapları) |

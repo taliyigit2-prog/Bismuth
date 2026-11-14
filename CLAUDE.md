@@ -5,7 +5,7 @@ Küçük/orta oteller için masaüstü otel yönetim programı. Electron + React
 (Arapça ertelendi). Windows `Bismuth-Setup.exe` ve macOS `Bismuth.dmg` GitHub Actions'ta paketlenir. Ürün "bitmiş" olacak: v1.0
 sonrası bakım yok. İlk müşteri: 19 odalı (38 yataklı) bir İstanbul oteli; otele özgü her kural **ayar**dır. Günlük akış: `docs/plan/akislar.md`.
 
-Plan: `docs/plan/README.md` · Gereksinimler: `docs/plan/01-gereksinimler.md` (G-xx) · Mimari ve veri modeli:
+Belge haritası (kim neyi okur): `docs/README.md` · Plan: `docs/plan/README.md` · Gereksinimler: `docs/plan/01-gereksinimler.md` (G-xx) · Mimari ve veri modeli:
 `docs/plan/03-mimari.md` · Kararlar: `docs/plan/06-kararlar.md` (K-xx) · Sorular: `docs/plan/05-sorular.md` (S-xx) ·
 Faz durumu: `docs/plan/fazlar/DURUM.md` · Yürütme (dalgalar): `docs/plan/fazlar/YURUTME.md` · Araştırmalar: `docs/plan/04-arastirma/` ·
 **Analiz raporları ve geliştirme planı (2026-11-12): `docs/analiz/`** (özet `00-ozet.md`, plan `08-gelistirme-plani.md`).

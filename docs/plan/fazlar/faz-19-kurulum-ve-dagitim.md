@@ -17,7 +17,7 @@ S-113. Cevapsız = kullanıcı başına kurulum kalır.
 1. **P19a Sürüm iş akışı** — `release.yml` tek kaynak (dispatch + tag): Linux verify (check + e2e) → Windows NSIS
    (Linux'ta deneme; olmazsa Windows runner) → macOS DMG tek iş → Releases; `ci.yml` yalnız Linux verify; Playwright ve
    npm önbelleği; `faz0-*.yml` kaldırılır; belgede dakika tablosu. **Hiçbir iş akışı tetiklenmez** (kanca).
-2. **P19b Belgeler ve kılavuz** — `docs/kurulum.md` sadeleştirme (xattr yok), `kurulum-rehberi-basit.md` son hali,
+2. **P19b Belgeler ve kılavuz** — `docs/otel/kurulum.md` sadeleştirme (xattr yok), `kurulum-rehberi-basit.md` son hali,
    program içi kılavuz "Kurulum" bölümü (3 dil), sihirbazda tek "kâğıda yazın" adımı + yazdır (K-41).
 3. **P19c Depo temizliği** — `archive/faz0` etiketi; `prototypes/`, `faz0-*.yml`, `resources/icon.png` silinir;
    kanca istisnaları ve testleri güncellenir; `otel-kamera` belgelerindeki yerel yollar temizlenir; kök README analiz işaretçisi.
@@ -28,7 +28,7 @@ S-113. Cevapsız = kullanıcı başına kurulum kalır.
 - [x] İş akışı dosyaları YAML geçerli (`actionlint` ya da `node -e yaml`), paketleme tek yerde; `npm run package:win`
       Codespace'te denendi (2026-11-12: `wine64` + `wine32:i386` + temiz `~/.wine` ile x64 102 MB / arm64 97 MB, 3,5 dk;
       07 §2); `.devcontainer` postCreate'e wine paketleri ve `release.yml` Linux işine aynı apt adımı eklenir.
-- [x] (kısmen: ana akışta terminal komutu yok; isteğe bağlı SHA256 denetimi en sondaki "isteğe bağlı, teknik" bölümünde, 07 §4 #2) `docs/kurulum.md` terminal komutu içermez; `<!-- doğrula -->` işaretleri yalnız S-80'e bağlı satırlarda. — belge
+- [x] (kısmen: ana akışta terminal komutu yok; isteğe bağlı SHA256 denetimi en sondaki "isteğe bağlı, teknik" bölümünde, 07 §4 #2) `docs/otel/kurulum.md` terminal komutu içermez; `<!-- doğrula -->` işaretleri yalnız S-80'e bağlı satırlarda. — belge
 - [x] Sihirbazda kurtarma kodları + Bismuth anahtarı tek adımda, yazdır düğmesi (e2e setup). — `recovery-codes.test.tsx`, `tests/e2e/electron/setup.spec.ts`
 - [x] `prototypes/` ve `faz0-*.yml` yok; `node .claude/hooks/test-hooks.mjs` ve `npm run check` yeşil.
 - [x] Plan belgelerinde prototip yolları "arşiv etiketi `archive/faz0`" notuyla.
@@ -50,7 +50,7 @@ kalktı; Playwright önbelleği. Etiket adı betiğe `env` ile girer. `npm run p
 dakika tablosu 07 §2. `.devcontainer` postCreate'e `wine64 wine32:i386`. **Tetikleme sahipte** (önce elle, sonra etiket).
 
 ## Sonuç (2026-11-13) — P19b ve P19d
-**P19b:** `docs/kurulum.md` sadeleştirildi (xattr yok, SHA256 sona "isteğe bağlı, teknik", `doğrula` işaretleri yalnız S-80, "kuran
+**P19b:** `docs/otel/kurulum.md` sadeleştirildi (xattr yok, SHA256 sona "isteğe bağlı, teknik", `doğrula` işaretleri yalnız S-80, "kuran
 kullanıcıyla açın" kutusu (S-113), uzaktan erişim yalnız `uzaktan-erisim.md` bağlantısı); `kurulum-rehberi-basit.md` son hali;
 program içi kılavuza "Kurulum ve yeni sürüm" bölümü (`21-installation.md`, tr/en/ru; sonda, dosya numarası yeniden dağıtılmadı);
 sihirbazın bitiş ekranı tek "Kâğıda yazın" adımı: kurtarma kodları + Bismuth anahtarı (`backup.recoveryText`'ten türetilir) + tek A4

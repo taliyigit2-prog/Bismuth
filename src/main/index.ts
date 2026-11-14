@@ -63,7 +63,7 @@ if (chromiumLang) app.commandLine.appendSwitch('lang', chromiumLang)
 
 const smokeOut = process.argv.find((a) => a.startsWith('--smoke-out='))?.slice('--smoke-out='.length) ?? null
 const smoke = process.argv.includes('--smoke') || smokeOut !== null
-// Measuring on a real computer (docs/kurulum.md): sample the program's own processes, write a JSON, quit.
+// Measuring on a real computer (docs/otel/kurulum.md): sample the program's own processes, write a JSON, quit.
 const perfProbe = parsePerfArgs(process.argv)
 const devUrl = !app.isPackaged ? (process.env['ELECTRON_RENDERER_URL'] ?? null) : null
 const devOrigin = devUrl ? new URL(devUrl).origin : null
