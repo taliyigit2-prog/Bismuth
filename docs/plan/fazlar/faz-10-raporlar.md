@@ -39,7 +39,7 @@ Excel'inden saniyeler içinde üretmek.
 - [x] (kısmen: exceljs geri okuma testi var; Excel, Numbers ve LibreOffice'te açma sahip onay paketinde; son kontrol) XLSX dışa aktarma Excel ve Numbers'ta açılır; Türkçe karakterler bozulmaz. — `export-tables.test.ts` "aylık özet Excel dosyası geri okununca Türkçe harfler aynen durur", e2e `reports.spec.ts` (kaydedilen dosya geri okunur); Excel/Numbers'ta açılış sahip onay paketine
 - [x] Yazdırma önizlemesi A4'e sığar. — e2e `reports.spec.ts` (printToPDF: A4 MediaBox, sayfa sayısı; A4 yazılabilir genişlikte taşma yok)
 - [x] Resepsiyon rolü kâr/gider raporlarını menüde görmez; doğrudan erişim denemesi servis katmanında reddedilir. — `tests/unit/permissions-reports.test.ts` (6 rol × 11 yoklama + yönlendirici 403), e2e "resepsiyon menüde raporları ve ay sonunu görmez"
-- [x] Panel doğrulaması: 1 giriş / 2 gece / 28 yatak / 30 gün → %0,24 (bakanlık panelindeki değer); Pandora 38 yatakla Eylül 840 gece → %73,7.
+- [x] Panel doğrulaması: 1 giriş / 2 gece / 28 yatak / 30 gün → %0,24 (bakanlık panelindeki değer); Lale 38 yatakla Eylül 840 gece → %73,7.
 - [x] Sahibin Eylül 2026 KBS dosyası yüklenince 23 ülke, 607 giriş, **840 geceleme** (otelde kalan 5 kişi 1 Ekim'e kadar; planlı çıkışları Bismuth'ta varsa ona göre) üretilir; "GERMANY (Deutschland)" → "Almanya", "KUZEY KIBRIS TURK CUMHURİYETİ" → "Kuzey Kıbrıs Türk Cumhuriyeti" otomatik; "TÜRKYİE" gibi hatalı yazım öneri + onay ister; "KIBRIS" otomatik eşlenmez; onaylanan eşleme hatırlanır.
 - [x] Kopyala → bakanlık paneline yapıştırılabilir biçim; "bildirildi" işareti geçmişte görünür.
 - [x] Program verisi karşılaştırması: uyruğu girilmiş sentetik veride fark 0; eksik uyruk listesi doğru.

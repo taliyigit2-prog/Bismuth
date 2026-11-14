@@ -385,7 +385,7 @@ export function createShiftService(deps: ServiceDeps) {
   }
 
   return {
-    // ---- shift definitions (G-95: a setting; Pandora 09–21 / 21–09) ----
+    // ---- shift definitions (G-95: a setting; Lale 09–21 / 21–09) ----
 
     listShifts(ctx: Ctx, opts: { includeInactive?: boolean } = {}): ShiftView[] {
       if (!ctx.can('shift_notes', 'view') && !ctx.can('tasks', 'view') && !ctx.can('settings', 'view'))

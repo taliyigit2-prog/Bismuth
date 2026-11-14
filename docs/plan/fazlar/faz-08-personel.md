@@ -1,16 +1,16 @@
 # Faz 8 · Personel: Maaş, Avans, İzin, Mesai, Prim
 
 **Amaç:** Sahibin "Maaşlar" sayfasını ve defterdeki "x maaş / x izin parası" satırlarını, ayarlanabilir kurallarla
-otomatik hesaplayan bir modüle dönüştürmek. Pandora kuralı (4 izin/ay, kullanılmayan ödenir, ÷30) bir **ayar setidir**.
+otomatik hesaplayan bir modüle dönüştürmek. Lale kuralı (4 izin/ay, kullanılmayan ödenir, ÷30) bir **ayar setidir**.
 
 **Gereksinimler:** G-80 … G-88, G-25, G-69, G-85.
 **Ön koşul:** Faz 7 (giderler), Faz 9'un takvim bayram verisi (bayram mesaisi için; Faz 9 sonra geliyorsa bayram tablosu tohum verisinden okunur).
-**Sorular:** yok — S-34…S-39 cevaplandı (oranları Sahip + Müdür belirler; Pandora'da ek mesai ücreti yok; izin devretmez, ödenir; kasadan avans; ek mesaiyi yalnız Müdür girer, çalışan kendi geliş/çıkış saatini girer).
+**Sorular:** yok — S-34…S-39 cevaplandı (oranları Sahip + Müdür belirler; Lale'da ek mesai ücreti yok; izin devretmez, ödenir; kasadan avans; ek mesaiyi yalnız Müdür girer, çalışan kendi geliş/çıkış saatini girer).
 
 ## Teslimatlar
 
-1. **Çalışan listesi ve kartı**: ad, görev, işe giriş/çıkış, aktif/pasif, maaş + para birimi + geçerlilik tarihi (**maaş geçmişi**: Kenan 30.000 → 40.000), iletişim, notlar, kullanıcı hesabı bağlantısı (varsa).
-   - **Ödeme kuralları** (çalışan bazında, otel varsayılanından devralır): aylık izin hakkı; kullanılmayan izin ödenir mi; günlük ücret böleni (30 / ayın gün sayısı); devir; günlük standart saat (8); mesai ücreti türü (**yok** / saatlik sabit / normal saatin %X fazlası — Pandora: yok); bayram oranı; prim türü (yüzde / sabit) ve tabanı (tüm oda geliri / kanal / ek hizmet); kesinti kalemleri; **kasadan avans** açık/kapalı. Oranları ve tabanları yalnız **Sahip + Müdür** değiştirir (K-38).
+1. **Çalışan listesi ve kartı**: ad, görev, işe giriş/çıkış, aktif/pasif, maaş + para birimi + geçerlilik tarihi (**maaş geçmişi**: Kerem 30.000 → 40.000), iletişim, notlar, kullanıcı hesabı bağlantısı (varsa).
+   - **Ödeme kuralları** (çalışan bazında, otel varsayılanından devralır): aylık izin hakkı; kullanılmayan izin ödenir mi; günlük ücret böleni (30 / ayın gün sayısı); devir; günlük standart saat (8); mesai ücreti türü (**yok** / saatlik sabit / normal saatin %X fazlası — Lale: yok); bayram oranı; prim türü (yüzde / sabit) ve tabanı (tüm oda geliri / kanal / ek hizmet); kesinti kalemleri; **kasadan avans** açık/kapalı. Oranları ve tabanları yalnız **Sahip + Müdür** değiştirir (K-38).
    - Çalışan çıkarma: pasife alma (geçmiş korunur), çıkış tarihi, son ay hesabı.
 2. **Avans**: tarih, tutar, para birimi, not → anında defter gideri (kategori: Avans, çalışan bağlı) + o ayın maaş tablosunda düşer.
 3. **İzin**: gün bazlı kayıt (tür: izin / hastalık / ücretsiz / bayramda çalıştı); ay içinde kullanılan/kalan otomatik; defterin gün notuna isteğe bağlı yansıma.

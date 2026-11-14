@@ -10,7 +10,7 @@ ekrana dönüştürmek.
 ## Teslimatlar
 
 1. **Günlük defter ekranı** (`features/ledger/`):
-   - Üstte gün seçici (takvim + ◀ ▶ + bugün), gün notu alanı (serbest metin, örn. "Nilüfer izin kullandı").
+   - Üstte gün seçici (takvim + ◀ ▶ + bugün), gün notu alanı (serbest metin, örn. "Nermin izin kullandı").
    - Sol: gelirler (ödemeler + ek hizmet satışları) — sütunlar: teslim (✓), tutar, para birimi, misafir/rezervasyon, oda(lar), yöntem, kanal, not. Satıra tıkla → düzenle. "Yeni gelir" → rezervasyon seç (arama) **veya** ek hizmet satışı (oda yok).
    - Sağ: giderler — teslim/kasadan (✓), tutar, para birimi, **açıklama** (serbest; önceki açıklamalardan otomatik tamamlama; hazır kategori yok — S-33), **bölüm** (Genel / Yönetici giderleri), isteğe bağlı **ürün satırları** (ürün, adet, birim fiyat → tedarik fiyat geçmişi; G-71), çalışan bağlantısı (maaş/avans/izin parası otomatik buradan gelir; elle yazılmaz). Düzen Excel defterine benzer, daha temiz (S-74).
    - **Sırala** düğmesi: yöntem sırası (nakit → havale → kart → diğer) — Excel onay kutusunun karşılığı; sıralama tercihi hatırlanır.

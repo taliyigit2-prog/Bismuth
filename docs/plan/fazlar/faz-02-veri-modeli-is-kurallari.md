@@ -38,7 +38,7 @@ denetimi, para/tarih tipleri ve Excel'den çıkan tüm iş kuralları. Bu faz bi
    - `BackupService`: çevrimiçi yedek (ekler dahil), geri yükle, bütünlük.
    - `AuditService`: okuma ve filtre (cihaz bilgisi dahil).
 4. **Tohum veriler** (`src/main/db/seed/`): oda tipleri (çok dilli ad, gruplu), ödeme yöntemleri, satış kanalları, ek hizmetler, gider bölümleri (Genel, Yönetici giderleri), roller + varsayılan üç seviyeli yetkiler (K-38), görev önerileri + bakım örnekleri + yasal hatırlatıcılar (TR), vardiya tanımları (2 × 12 saat örneği), otomatik durum etiketleri (varsayılan renkler Excel'den; kısmen/kapora ayrı renk), çamaşır türleri (geniş liste), ürün kategorileri (geniş liste, temizlik dahil), rehber kategorileri, **ülke eşleme tablosu** (`country_map`: ISO2 + KBS yazımları + bakanlık Türkçe adı), bayram üretici (`date-holidays`, herhangi yıl).
-5. **Örnek veri üretici** (`scripts/seed-demo.ts`): Pandora benzeri 19 oda, 1 yıl rezervasyon/ödeme/gider/personel — geliştirme ve testler için (gerçek isim/para içermez).
+5. **Örnek veri üretici** (`scripts/seed-demo.ts`): Lale benzeri 19 oda, 1 yıl rezervasyon/ödeme/gider/personel — geliştirme ve testler için (gerçek isim/para içermez).
 6. **Testler** (`vitest`): her iş kuralı için (bkz. `03-mimari.md` §6 listesi); Excel'den doğrulanmış örnekler test verisi olarak (31.500, 2.328, 5.333…); yetki testleri (her rol × yasak işlem); migrasyon testi (boş DB → güncel; v0 örnek → güncel).
 
 ## Kabul ölçütleri
@@ -121,7 +121,7 @@ denetimi, para/tarih tipleri ve Excel'den çıkan tüm iş kuralları. Bu faz bi
    çıkışta KBS çıkışı istenir".
 10. Görevler: `tasks-service.test.ts` "'her gün 12:00' şablonu iki kez işlenince kopya oluşmaz…", "her 10 konaklamada bir derin
     temizlik…"; `shift-service.test.ts` "kişisel not yalnız yazana döner — Sahip dahil kimse göremez…".
-11. Mesai: `salary.test.ts` "Pandora (overtime_mode=none): ek mesai saati girilse bile ücret 0", "gece yarısını aşan vardiya:
+11. Mesai: `salary.test.ts` "Lale (overtime_mode=none): ek mesai saati girilse bile ücret 0", "gece yarısını aşan vardiya:
     çıkış < geliş → +24 saat".
 12. Tedarik ve çamaşırhane: `supply-laundry.test.ts` "üç alışın ürün satırlarından son zam yüzdesi doğru…", "ay mutabakatı:
     … fatura 2.000 → 30 TL fark", "bekleyen: giden − gelen…".

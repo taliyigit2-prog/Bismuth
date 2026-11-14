@@ -12,7 +12,7 @@
 Yıllardır Google E‑Tablo ile yürütülen otel defteri, rezervasyon tablosu ve maaş tablosunun yerine geçecek;
 **otel bilgisayarında internetsiz çalışan**, sahibin evdeki Mac'inden ve telefonundan da ulaşabildiği, Windows
 (`Bismuth-Setup.exe`) ve macOS (`Bismuth.dmg`) için çift tıkla kurulan, roller/kara liste/gelir‑gider/personel/
-rapor/istatistik içeren, üç dilli, **bitmiş** bir program. Genel bir otel ürünü: Pandora'ya özgü her kural ayardır.
+rapor/istatistik içeren, üç dilli, **bitmiş** bir program. Genel bir otel ürünü: Lale'ya özgü her kural ayardır.
 
 ## Belgeler
 

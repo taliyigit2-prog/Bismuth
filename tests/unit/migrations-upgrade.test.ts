@@ -35,7 +35,7 @@ describe('eski veritabanının yükseltilmesi', () => {
     expect(v0.schemaVersion).toBe(1)
     v0.sqlite
       .prepare(
-        "insert into settings (key, value_json, updated_at) values ('hotel.name', '\"Pandora\"', '2026-09-01T00:00:00Z')"
+        "insert into settings (key, value_json, updated_at) values ('hotel.name', '\"Lale\"', '2026-09-01T00:00:00Z')"
       )
       .run()
     v0.sqlite
@@ -57,7 +57,7 @@ describe('eski veritabanının yükseltilmesi', () => {
     const role = current.sqlite.prepare("select name, code from roles where id = 'r-old'").get()
     expect(role).toEqual({ name: 'Gece resepsiyonu', code: null })
     expect(current.sqlite.prepare("select value_json from settings where key = 'hotel.name'").get()).toEqual({
-      value_json: '"Pandora"'
+      value_json: '"Lale"'
     })
     seedBaseData(current.db)
     const tables = (

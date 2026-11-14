@@ -1,4 +1,4 @@
-# shadcn/ui Ekosistemi Araştırması — Hotel-CRM (Pandora, 19 oda, 10 yıllık takvim)
+# shadcn/ui Ekosistemi Araştırması — Hotel-CRM (Lale, 19 oda, 10 yıllık takvim)
 
 **Tarih:** 2026-10-01 · **Hedef:** Tamamen çevrimdışı masaüstü uygulaması (Windows `setup.exe`, macOS `.app`), React 19 + TypeScript + Tailwind v4 + shadcn/ui, Electron **veya** Tauri 2, arayüz Türkçe.
 
@@ -286,7 +286,7 @@ Renk formatı: değişken içine **hex de yazılabilir** (`--primary: #1e40af`);
 | themux (llanesluis/themux) | MIT | 129 ★ | Web aracı; OKLCH/HSL/RGB/HEX çıktı, Tailwind v4. Kod referansı. |
 | ui.jln.dev (jln13x) | MIT | 1.3k ★ | 10.000+ tema galerisi (web). |
 | ShouryaBatra/shadcn-color-theme-switcher | — | küçük | `[data-theme="x"]` ile çoklu tema deseni (derleme zamanı). |
-| shadcn `registry:theme` / `cssVars` | MIT | resmî | `registry-item.json` → `cssVars: { theme, light, dark }`. Derleme zamanı preset'leri için (ör. otelin kurumsal teması `npx shadcn add ./themes/pandora.json`). Çalışma anı için değil. |
+| shadcn `registry:theme` / `cssVars` | MIT | resmî | `registry-item.json` → `cssVars: { theme, light, dark }`. Derleme zamanı preset'leri için (ör. otelin kurumsal teması `npx shadcn add ./themes/lale.json`). Çalışma anı için değil. |
 | shadcn `apply` / presets | MIT | resmî (2026-04) | `npx shadcn@latest apply --preset <kod>` mevcut projeye renk/font/ikon preset'i uygular (geliştirici aracı). |
 
 **Sonuç:** Hazır, üretim kalitesinde "uygulama içi tema editörü" paketi yok; ihtiyaç zaten dar (vurgu rengi + durum renkleri + açık/koyu + radius). **Kendi "Tema Ayarları" sayfası** yazılır: preset kartları (tweakcn JSON'undan seçilmiş ~8 preset), vurgu rengi seçici, durum renkleri seçici, önizleme, varsayılana dön. Renk seçici: yerli `<input type="color">` (Electron/Tauri'de çalışır, sıfır bağımlılık) veya `react-colorful` (MIT, ~3 KB, 2022'den beri stabil).

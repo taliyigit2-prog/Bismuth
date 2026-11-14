@@ -204,7 +204,7 @@ describe('mesai ve bayram çalışması (S-34, S-35, S-39, K-38)', () => {
       overtimeMinutes: 120,
       startTime: '21:00'
     })
-    // overtime_mode = none (Pandora): overtime hours pay nothing.
+    // overtime_mode = none (Lale): overtime hours pay nothing.
     expect(staff.salaryPeriod(owner, { employeeId: deniz.id, year: 2026, month: 9 }).overtimePay).toBe(0)
     expect(staff.listWork(denizSelf, { from: '2026-09-01', to: '2026-09-30' })).toHaveLength(1)
     expect(() =>

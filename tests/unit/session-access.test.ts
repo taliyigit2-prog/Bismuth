@@ -81,7 +81,7 @@ type Options = {
   roles: { id: string; code: string | null }[]
 }
 
-/** The Pandora-sized draft: 19 rooms on 5 floors (S-78), two seeded types and one of the hotel's own. */
+/** The Lale-sized draft: 19 rooms on 5 floors (S-78), two seeded types and one of the hotel's own. */
 function draftFrom(options: Options): SetupDraft {
   const [double, twin] = options.roomTypes.filter((t) => t.group === 'occupancy')
   const reception = options.roles.find((r) => r.code === 'reception')!

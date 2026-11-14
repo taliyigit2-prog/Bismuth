@@ -197,7 +197,7 @@ employees               id pk, first_name, last_name, position?, phone?, start_d
 employee_salaries       id pk, employee_id fk*, valid_from*, monthly_minor, currency     -- maaş geçmişi
 pay_policies            scope(hotel|employee), employee_id?, key, value_json
                         -- leave_days_per_month(4), unused_leave_paid(true), unused_leave_multiplier(1.0), daily_divisor(30|days_in_month),
-                        -- leave_carry_over(false), standard_hours_per_day(8), overtime_mode(none|hourly_fixed|multiplier) (Pandora: none), overtime_hourly_minor?,
+                        -- leave_carry_over(false), standard_hours_per_day(8), overtime_mode(none|hourly_fixed|multiplier) (Lale: none), overtime_hourly_minor?,
                         -- overtime_multiplier(1.5), hourly_divisor(225), holiday_multiplier(2.0), holiday_pay_mode(hourly|daily),
                         -- commission_mode(none|pct|fixed), commission_pct?, commission_base(room_revenue_all|own_sales|extras), commission_fixed_minor?,
                         -- advance_from_drawer(bool)   -- oranları ve tabanı Sahip + Müdür ayarlar (S-34…S-38)
@@ -237,7 +237,7 @@ task_templates      id pk, title, description?, kind(general|maintenance|legal),
 tasks               id pk, template_id? fk, title, description?, assignee_user_id?, assignee_role_id?, assignee_shift_id?, room_id?,
                     due_at*?, status(open|done|cancelled)*, done_at?, done_by?, note?, created_by
                     -- UNIQUE(template_id, due_at): tekrar üretimi idempotent
-shift_definitions   id pk, name_i18n_json, start_time, end_time, sort, active   -- Pandora tohumu: Gündüz 09:00–21:00, Gece 21:00–09:00
+shift_definitions   id pk, name_i18n_json, start_time, end_time, sort, active   -- Lale tohumu: Gündüz 09:00–21:00, Gece 21:00–09:00
 shift_handovers     id pk, business_date*, from_shift_id?, to_shift_id?, written_by, written_at, text?, summary_json (otomatik özet anlık görüntüsü),
                     acknowledged_by?, acknowledged_at?
 notes               id pk, kind(personal|board), owner_user_id? (personal ise yalnız o görür), text, remind_at?, pinned(bool), done_at?, created_by
@@ -386,7 +386,7 @@ Her kural için test dosyası aynı adı taşır (`*.test.ts`). Excel'den doğru
   - `leave_entitled` = policy.leave_days_per_month; `leave_used` = rest_day kayıtları; `leave_left` = max(0, entitled − used) (+ devir, ayar).
   - `leave_payout` = unused_leave_paid ? leave_left × daily × unused_leave_multiplier : 0.
   - `hourly` = monthly ÷ hourly_divisor (225) ya da sabit saatlik.
-  - `overtime_pay` = `overtime_mode=none` ise 0 (Pandora); aksi halde Σ overtime_hours × (multiplier modunda hourly × overtime_multiplier, sabit modda overtime_hourly). `overtime_hours` yalnız Müdür/Sahip girer; `hours_worked` çalışanın girdiği geliş/çıkış saatinden türetilir (gece yarısını aşan vardiya: çıkış < geliş → +24 saat).
+  - `overtime_pay` = `overtime_mode=none` ise 0 (Lale); aksi halde Σ overtime_hours × (multiplier modunda hourly × overtime_multiplier, sabit modda overtime_hourly). `overtime_hours` yalnız Müdür/Sahip girer; `hours_worked` çalışanın girdiği geliş/çıkış saatinden türetilir (gece yarısını aşan vardiya: çıkış < geliş → +24 saat).
   - `holiday_pay` = `holiday_pay_mode` saatlikse Σ hours × hourly × (holiday_multiplier − 1), günlükse çalışılan bayram günü × daily × (holiday_multiplier − 1).
   - `commission` = mode'a göre pct × base (ay oda geliri | sold_by = çalışanın kullanıcısı | ek hizmet) veya sabit.
   - `advances` = Σ advance; `deductions` = Σ deduction.
@@ -394,7 +394,7 @@ Her kural için test dosyası aynı adı taşır (`*.test.ts`). Excel'den doğru
   - "Bayramda çalıştı" izin kaydı (aynı gün çalışma kaydı yoksa) bir bayram günü sayılır: günlük modda 1 gün, saatlik modda `standard_hours_per_day` saat (P7fix B15).
   - Çalışma dönemleri (`employment_periods`): işten ayrılıp yeniden alınan çalışanın aradaki ayları boştur; ay içinde birden çok dönem varsa gün sayıları toplanır (P7fix B6).
   - **`net = monthly − unpaid_deduction − advances + leave_payout + overtime_pay + holiday_pay + commission + bonus − deductions`**; `paid` = Σ ödeme türleri; `remaining = net − paid`.
-  - Testler: Eylül (40.000, 12.500, 4/1/3) → 31.500; Haziran Elmir (35.000, 35.005, 4/2/2) → 2.328; Kenan Haziran (40.000, 36.000, 4/2/2) → 6.667; mesai 2 saat × (40.000/225 × 1.5) = 53.333 kuruş.
+  - Testler: Eda (40.000, 12.500, 4/1/3) → 31.500; Haziran Erol (35.000, 35.005, 4/2/2) → 2.328; Kerem Haziran (40.000, 36.000, 4/2/2) → 6.667; mesai 2 saat × (40.000/225 × 1.5) = 53.333 kuruş.
 
 ### 6.7 Takvim (güncellendi)
 - `ensureYearGenerated(year)`: takvimde görünen her yıl için `calendar_generation` yoksa kural tabanlı üret (`date-holidays`), `source=generated`. Sınırsız yıl; takvimin gösterdiği yıl aralığı K-46 (1): geçmişte `calendar.startYear` ayarı ile en eski konaklamanın yılından erken olanı, ileride bugünden 10 yıl ile en ileri kaydın yılı + 1'den geç olanı. Sahip düzenlemesi `source=user` olur ve yeniden üretimde korunur.
@@ -405,7 +405,7 @@ Her kural için test dosyası aynı adı taşır (`*.test.ts`). Excel'den doğru
 - `materializeTasks(templates, from, to)`: tekrar kuralından görev üretir (UNIQUE(template_id, due_at) ile idempotent); geciken açık görev bir kez bildirim üretir.
 - `everyNStays(roomId, n)`: odanın son "yapıldı" kaydından bu yana **çıkış yapılmış konaklama sayısı** ≥ n → o oda için görev (S-94, varsayılan n=10; gündüz kullanımı sayılır: kural `countDayUse` alanı, varsayılan evet; ekranda ayrı bir ayar yok, K-46 (8)).
 - Yasal tohumlar (TR, kapatılabilir): "Turizm Bakanlığı konaklama istatistiği" her ayın 1'i (10'una kadar), "KBS çıkış bildirimi kontrolü" günlük.
-- Örnek görev önerileri (Pandora akışından, ilk kurulumda seçmeli): "12:00 çıkış yapmayan odaları ara", "15:00 çamaşırhaneye kirli teslim", "11:00 temiz çamaşır fişini gir".
+- Örnek görev önerileri (Lale akışından, ilk kurulumda seçmeli): "12:00 çıkış yapmayan odaları ara", "15:00 çamaşırhaneye kirli teslim", "11:00 temiz çamaşır fişini gir".
 
 ### 6.9 Kara liste eşleşmesi
 - `normalizeName` (küçük harf, Türkçe karakter sadeleştirme, tek boşluk), `normalizePhone` (+90, boşluk, 0 öneki); `matches(candidate, entries)` → ad **veya** kimlik no **veya** telefon.
@@ -423,7 +423,7 @@ Her kural için test dosyası aynı adı taşır (`*.test.ts`). Excel'den doğru
 - Çıkışı olmayan satırlar (KBS `1900-01-01` = otelde): Bismuth'ta **aynı oda + aynı giriş günü** rezervasyonu varsa **planlı çıkışına kadar** (sonraki aya sarkan geceler dahil; S-81), yoksa **içe alma gününe kadar**; `nights_basis` işaretlenir, ekranda listelenir, kullanıcı düzeltebilir. Yeni dosya alınınca gerçek çıkışla yeniden hesaplanır.
 - Uyruk → `country_map` (K-36): anahtar normalizasyonu (Türkçe büyük harf, aksan ve noktalama yok sayılır: "K.K.T.C." = "KKTC"), takma adlar (TR, KKTC, GKRY…), İngilizce + Türkçe ülke adı dizini; **harf hatalı yazım** (≤ 1–2 harf) tek en yakın ülkeye öneri olarak eşlenir ama **kullanıcı onayı** ister; belirsiz ("KIBRIS") ve hassas ("CYPRUS" → Güney Kıbrıs Rum Kesimi) değerler otomatik eşlenmez; onaylanan eşleme kalıcıdır. Bakanlık panelinde liste yok, yazdıkça çıkan kutu var → Türkçe ülke adı Bismuth'tan (bazı adlar bakanlık kullanımına göre: "Rusya Federasyonu", "Amerika Birleşik Devletleri", "Filistin", "Kuzey Kıbrıs Türk Cumhuriyeti").
 - Karşılaştırma: aynı dönem için programın `stay_occupants` verisinden giriş/geceleme toplamı (uyruk isteğe bağlı olduğundan ülke bazında karşılaştırma yalnız uyruk girilmişse); farklar listelenir.
-- **Doluluk oranı (bakanlık) = geceleme ÷ (yatak sayısı × ayın gün sayısı)**; yatak sayısı o ayın kapasite geçmişinden (K-27) — **gerçek** sayı; bakanlıkta kayıtlı sayı kullanılmaz (S-99). Pandora 38 yatak: Eylül 840 ÷ (38 × 30) = **%73,7**. (Panelin %0,24 değeri bakanlığın kayıtlı 28 yatağıyla hesaplanmıştı.) Otelin kendi oda doluluğu (§6.10) ayrı KPI'dır.
+- **Doluluk oranı (bakanlık) = geceleme ÷ (yatak sayısı × ayın gün sayısı)**; yatak sayısı o ayın kapasite geçmişinden (K-27) — **gerçek** sayı; bakanlıkta kayıtlı sayı kullanılmaz (S-99). Lale 38 yatak: Eylül 840 ÷ (38 × 30) = **%73,7**. (Panelin %0,24 değeri bakanlığın kayıtlı 28 yatağıyla hesaplanmıştı.) Otelin kendi oda doluluğu (§6.10) ayrı KPI'dır.
 - Testler: Eylül örneği (607 giriş, 840 geceleme — otelde kalan 5 kişi dosya ayı sonuna kadar —, 248 aynı gün, 23 ülke) sentetik satırlarla yeniden üretilir; yazım hatası örnekleri (`TÜRKYİE`, `KUZY KIBRIS TURK CUMHURIYETI`), belirsiz `KIBRIS`, planlı çıkış senaryosu (prototip: `prototypes/kbs-stats` (arşiv etiketi `archive/faz0`), 15 test).
 
 ### 6.12 Misafir fiyat geçmişi (yeni)
@@ -512,7 +512,7 @@ v1 ile aynı + sunucu modu: `/api` yanıtı < 100 ms (yerel ağ), telefon Bugün
 | Mod | Nerede | Davranış |
 |---|---|---|
 | Tek bilgisayar | Küçük otel, tek PC | IPC; sunucu kapalı. |
-| **Sunucu** | Otel bilgisayarı | IPC + Hono sunucusu açık (port ayarlanır); yerel ağda `bonjour` ile "Bismuth @ Pandora" olarak duyurur; özel ağ adresi varsa ayarlarda gösterir; QR kod ile telefon bağlantısı. |
+| **Sunucu** | Otel bilgisayarı | IPC + Hono sunucusu açık (port ayarlanır); yerel ağda `bonjour` ile "Bismuth @ Lale" olarak duyurur; özel ağ adresi varsa ayarlarda gösterir; QR kod ile telefon bağlantısı. |
 | **İstemci + yedek kopya** | Sahibin Mac'i | Yazmalar `hostUrl`'e (canlı); yerel **salt‑okunur yedek kopya** (SQLite) canlı akıştan ve Drive kutusundan güncellenir; bağlantı yoksa tüm ekranlar kopyadan salt‑okunur ("Yedek kopya · saat" rozeti); "Ana bilgisayarı devral" sihirbazı. |
 | Tarayıcı / telefon | Herhangi cihaz | `http(s)://<adres>:<port>` → mobil düzen; "ana ekrana ekle" (PWA kabuğu). |
 

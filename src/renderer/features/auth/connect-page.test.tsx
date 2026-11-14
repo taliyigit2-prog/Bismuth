@@ -71,7 +71,7 @@ function clientTransport(
               app: 'bismuth' as const,
               version: opts.answer === 'other' ? '0.2.0' : '0.1.0',
               schemaVersion: 11,
-              hotelName: 'Pandora'
+              hotelName: 'Lale'
             }
             status = {
               ...status,
@@ -111,13 +111,13 @@ function clientTransport(
 describe('bağlantı ekranı (istemci modu)', () => {
   it('yerel ağda bulunan ana bilgisayara dokununca bağlanır ve oturum açma ekranına geçer', async () => {
     const transport = clientTransport({
-      found: [{ name: 'Bismuth (OTEL-PC)', url: URL_, hotelName: 'Pandora', version: '0.1.0' }]
+      found: [{ name: 'Bismuth (OTEL-PC)', url: URL_, hotelName: 'Lale', version: '0.1.0' }]
     })
     await renderApp({ setup: 'needed', mode: 'client', signedIn: null, transport })
     expect(await screen.findByTestId('connect')).toBeInTheDocument()
     const user = userEvent.setup()
     const host = await screen.findByTestId('connect-found-host')
-    expect(host).toHaveTextContent('Pandora')
+    expect(host).toHaveTextContent('Lale')
     expect(host).toHaveTextContent(URL_)
     await user.click(host)
     await waitFor(() => expect(currentHref()).toMatch(/^\/login/))
@@ -220,9 +220,9 @@ describe('bağlantı ekranı (istemci modu)', () => {
     )
   })
 
-  const pandora: SavedHotel = {
-    code: 'pandora',
-    name: 'Pandora',
+  const lale: SavedHotel = {
+    code: 'lale',
+    name: 'Lale',
     url: URL_,
     fingerprint: 'AB12-CD34-EF56-7890',
     lastUsedAt: '2026-11-10T09:30:00.000Z',
@@ -238,11 +238,11 @@ describe('bağlantı ekranı (istemci modu)', () => {
   }
 
   it('kayıtlı oteller listelenir (ad, adres, parmak izi); dokununca o adrese bağlanır', async () => {
-    const transport = clientTransport({ hotels: [pandora, bosphorus] })
+    const transport = clientTransport({ hotels: [lale, bosphorus] })
     await renderApp({ setup: 'needed', mode: 'client', signedIn: null, transport })
     const rows = await screen.findAllByTestId('hotel-row')
     expect(rows).toHaveLength(2)
-    expect(rows[0]).toHaveTextContent('Pandora')
+    expect(rows[0]).toHaveTextContent('Lale')
     expect(rows[0]).toHaveTextContent('AB12-CD34-EF56-7890')
     expect(rows[1]).toHaveTextContent('Henüz bağlanılmadı')
     const user = userEvent.setup()
@@ -260,13 +260,13 @@ describe('bağlantı ekranı (istemci modu)', () => {
   })
 
   it('otelin adı ve adresi düzenlenir; adres hatalıysa kaydedilmez ve nedeni yazar', async () => {
-    const transport = clientTransport({ hotels: [pandora] })
+    const transport = clientTransport({ hotels: [lale] })
     await renderApp({ setup: 'needed', mode: 'client', signedIn: null, transport })
     const user = userEvent.setup()
     await user.click(await screen.findByTestId('hotel-edit'))
     const name = await screen.findByTestId('hotel-name')
     await user.clear(name)
-    await user.type(name, 'Pandora Kadıköy')
+    await user.type(name, 'Lale Beyoğlu')
     const url = screen.getByTestId('hotel-url')
     await user.clear(url)
     await user.type(url, '192.168.1.20:99999')
@@ -275,10 +275,10 @@ describe('bağlantı ekranı (istemci modu)', () => {
     await user.clear(url)
     await user.type(url, '192.168.1.30')
     await user.click(screen.getByTestId('hotel-save'))
-    await waitFor(() => expect(screen.getByTestId('hotel-row')).toHaveTextContent('Pandora Kadıköy'))
+    await waitFor(() => expect(screen.getByTestId('hotel-row')).toHaveTextContent('Lale Beyoğlu'))
     expect(transport.calls.find((c) => c.name === 'remote.hotelUpdate')?.input).toEqual({
-      code: 'pandora',
-      name: 'Pandora Kadıköy',
+      code: 'lale',
+      name: 'Lale Beyoğlu',
       url: '192.168.1.30'
     })
   })
@@ -288,7 +288,7 @@ describe('bağlantı ekranı (istemci modu)', () => {
       setup: 'needed',
       mode: 'client',
       signedIn: null,
-      transport: clientTransport({ hotels: [{ ...pandora, active: true }] })
+      transport: clientTransport({ hotels: [{ ...lale, active: true }] })
     })
     const user = userEvent.setup()
     await user.click(await screen.findByTestId('hotel-edit'))
@@ -296,11 +296,11 @@ describe('bağlantı ekranı (istemci modu)', () => {
   })
 
   it('otel listeden kaldırılırken onay ister', async () => {
-    const transport = clientTransport({ hotels: [pandora, bosphorus] })
+    const transport = clientTransport({ hotels: [lale, bosphorus] })
     await renderApp({ setup: 'needed', mode: 'client', signedIn: null, transport })
     const user = userEvent.setup()
     await user.click((await screen.findAllByTestId('hotel-remove'))[0]!)
-    expect(await screen.findByText('Pandora listeden kaldırılsın mı?')).toBeInTheDocument()
+    expect(await screen.findByText('Lale listeden kaldırılsın mı?')).toBeInTheDocument()
     await user.click(screen.getByTestId('hotel-remove-confirm'))
     await waitFor(() => expect(screen.getAllByTestId('hotel-row')).toHaveLength(1))
     expect(screen.getByTestId('hotel-row')).toHaveTextContent('Bosphorus Inn')
@@ -321,7 +321,7 @@ describe('bağlantı ekranı (istemci modu)', () => {
     ['denied', 'Ana bilgisayar bu bilgisayarın bağlanmasını kabul etmedi.'],
     ['down', 'Ana bilgisayara ulaşılamadı.']
   ] as const)('bağlantı hatası nedenini ve adresi söyler: %s', async (answer, text) => {
-    const transport = clientTransport({ answer, hotels: [pandora] })
+    const transport = clientTransport({ answer, hotels: [lale] })
     await renderApp({ setup: 'needed', mode: 'client', signedIn: null, transport })
     const user = userEvent.setup()
     await user.click(await screen.findByTestId('hotel-connect'))

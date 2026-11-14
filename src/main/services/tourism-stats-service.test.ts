@@ -43,7 +43,7 @@ const ROOM_NUMBERS = [
   '404'
 ]
 
-/** Pandora-like: 19 rooms × 2 beds = 38 real beds (the ministry's 28 is not used). */
+/** Lale-like: 19 rooms × 2 beds = 38 real beds (the ministry's 28 is not used). */
 async function setup() {
   handle = await seededDatabase()
   const clock = testClock('2026-10-01T09:00:00.000Z')

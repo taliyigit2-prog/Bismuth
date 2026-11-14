@@ -633,7 +633,7 @@ beforeAll(async () => {
       name: 'otel ayarı',
       permission: 'settings',
       level: 'edit',
-      run: (c) => svc.settings.set(c, { 'hotel.name': 'Pandora' })
+      run: (c) => svc.settings.set(c, { 'hotel.name': 'Lale' })
     }
   )
 })

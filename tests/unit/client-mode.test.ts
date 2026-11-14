@@ -72,7 +72,7 @@ function client(version = '0.1.0') {
   const app = createClientApp({
     link,
     config,
-    discover: async () => [{ name: 'Bismuth (OTEL-PC)', url: URL_, hotelName: 'Pandora', version: '0.1.0' }],
+    discover: async () => [{ name: 'Bismuth (OTEL-PC)', url: URL_, hotelName: 'Lale', version: '0.1.0' }],
     openExternal: () => undefined,
     leaveClient: () => void left++
   })

@@ -677,7 +677,7 @@ describe('kurulum sihirbazı: devam, bitirme, kurtarma kodları', () => {
     expect(transport.finished).toHaveLength(0)
   })
 
-  it('baştan sona: Pandora boyutunda kurulum doğru taslağı gönderir, kodlar bir kez gösterilir, programa geçilir', async () => {
+  it('baştan sona: Lale boyutunda kurulum doğru taslağı gönderir, kodlar bir kez gösterilir, programa geçilir', async () => {
     const user = userEvent.setup()
     const { transport } = await renderSetup()
     expect(await heading('Dil ve tema')).toBeInTheDocument()

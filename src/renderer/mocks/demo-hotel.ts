@@ -1736,7 +1736,7 @@ export function createDemoHotel(todayDate: LocalDate): DemoHotel {
     today,
     now,
     currency: 'TRY',
-    hotelName: 'Pandora Suit Otel',
+    hotelName: 'Lale Suit Otel',
     rooms,
     channels: CHANNELS,
     methods: METHODS,

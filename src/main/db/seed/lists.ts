@@ -304,7 +304,7 @@ export const STATUS_TAG_SEED = [
   { code: 'blocked', name: { tr: 'Satılmaz', en: 'Not for sale', ru: 'Закрыт для продажи' } }
 ]
 
-/** G-95: Pandora example 2 × 12 h; other hotels change it. */
+/** G-95: Lale example 2 × 12 h; other hotels change it. */
 export const SHIFT_SEED = [
   { code: 'day', startTime: '09:00', endTime: '21:00', name: { tr: 'Gündüz', en: 'Day', ru: 'Дневная' } },
   { code: 'night', startTime: '21:00', endTime: '09:00', name: { tr: 'Gece', en: 'Night', ru: 'Ночная' } }
@@ -351,7 +351,7 @@ export const PRODUCT_CATEGORY_SEED = [
 ]
 
 /**
- * The hotel's pay rules (S-34…S-38, Pandora; P7fix B29): written as `pay_policies` hotel rows at the first start
+ * The hotel's pay rules (S-34…S-38, Lale; P7fix B29): written as `pay_policies` hotel rows at the first start
  * (and by the setup wizard), so they are the hotel's settings, changed in Personel → Ödeme kuralları. The code's
  * DEFAULT_PAY_POLICY is only a safe fallback for a key without a row.
  */

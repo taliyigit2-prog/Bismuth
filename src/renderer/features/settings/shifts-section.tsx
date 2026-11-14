@@ -1,4 +1,4 @@
-// "Vardiyalar" (faz-04 madde 1/8b, G-91…G-95): the hotel's shifts (Pandora: Gündüz 09:00–21:00, Gece 21:00–09:00)
+// "Vardiyalar" (faz-04 madde 1/8b, G-91…G-95): the hotel's shifts (Lale: Gündüz 09:00–21:00, Gece 21:00–09:00)
 // — name, start, end, in use. An end before the start runs into the next day. Nothing is deleted: a shift the
 // hotel no longer works is switched off (old handovers keep its name).
 import { useId, useState, type FormEvent } from 'react'
