@@ -916,10 +916,9 @@ export function createTasksService(deps: ServiceDeps) {
           .set({ status: 'open', doneAt: null, doneBy: null, updatedAt: iso })
           .where(eq(tasks.id, id))
           .run()
-        if (before.templateId)
-          syncTourismMark(tx, audit, ctx, getTemplate(tx, before.templateId), before.dueAt, false, now)
-        if (before.templateId && before.dueAt) {
-          const template = getTemplate(tx, before.templateId)
+        const template = before.templateId ? getTemplate(tx, before.templateId) : null
+        if (template) syncTourismMark(tx, audit, ctx, template, before.dueAt, false, now)
+        if (template && before.dueAt) {
           if (parseRule(template.recurrence)?.kind === 'interval') {
             const successors = tx
               .select({ id: tasks.id })

@@ -289,8 +289,10 @@ export function createPaymentsService(deps: ServiceDeps) {
         if (before.collectedAt) throw conflict('errors.paymentCollected')
         if (before.kind === 'refund') requirePermission(ctx, 'payments.refund', 'edit')
         guardDay(tx, ctx, before.date, data.dayClosedReason)
-        if (data.date && data.date !== before.date) assertExpenseDateNear(data.date, now)
-        if (data.date && data.date !== before.date) guardDay(tx, ctx, data.date, data.dayClosedReason)
+        if (data.date && data.date !== before.date) {
+          assertExpenseDateNear(data.date, now)
+          guardDay(tx, ctx, data.date, data.dayClosedReason)
+        }
         if (data.methodId) methodOf(tx, data.methodId)
         const next = {
           amountMinor: data.amountMinor ?? before.amountMinor,

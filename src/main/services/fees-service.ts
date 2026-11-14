@@ -184,13 +184,14 @@ export function createFeesService(deps: ServiceDeps, parts: { payments: Payments
         if (stay.status !== 'in_house' && stay.status !== 'done') throw invalid('errors.feeStayNotStarted')
         const day = today(now)
         const closedReason = assertDayWritable(tx, ctx, day, data.dayClosedReason)
+        const reason = closedReason ?? data.note
         insertFeeCharge(tx, audit, ctx, now, {
           reservationId: stay.reservationId,
           code: 'late_checkout',
           date: day,
           amountMinor: data.amountMinor,
           suffix: data.time,
-          ...((closedReason ?? data.note) ? { reason: closedReason ?? data.note } : {})
+          ...(reason ? { reason } : {})
         })
         return { reservationId: stay.reservationId }
       })
@@ -397,13 +398,14 @@ export function createFeesService(deps: ServiceDeps, parts: { payments: Payments
           })
           .where(eq(damageDeposits.id, before.id))
           .run()
+        const settleReason = closedReason ?? data.reason
         audit({
           entity: 'damage_deposit',
           entityId: before.id,
           action: 'update',
           before,
           after: { status: data.action === 'refund' ? 'refunded' : 'converted', chargeId },
-          ...((closedReason ?? data.reason) ? { reason: closedReason ?? data.reason } : {})
+          ...(settleReason ? { reason: settleReason } : {})
         })
         return { reservationId: before.reservationId }
       })

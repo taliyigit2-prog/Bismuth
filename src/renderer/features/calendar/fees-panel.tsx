@@ -389,6 +389,12 @@ function TakeDialog({ view, onClose }: { view: BookingView; onClose: () => void 
   )
 }
 
+const SETTLE_TEXT = {
+  refund: { toast: 'feesPanel.refunded', title: 'feesPanel.refundTitle', button: 'feesPanel.refund' },
+  convert: { toast: 'feesPanel.converted', title: 'feesPanel.convertTitle', button: 'feesPanel.convert' },
+  undoConvert: { toast: 'feesPanel.undoneToast', title: 'feesPanel.undoTitle', button: 'feesPanel.undo' }
+} as const
+
 function SettleDialog({
   deposit,
   action,
@@ -406,12 +412,7 @@ function SettleDialog({
   const [tried, setTried] = useState(false)
   const day = useClosedDay()
   const settle = useBookingMutation('booking.settleDeposit', {
-    success:
-      action === 'refund'
-        ? t('feesPanel.refunded')
-        : action === 'undoConvert'
-          ? t('feesPanel.undoneToast')
-          : t('feesPanel.converted'),
+    success: t(SETTLE_TEXT[action].toast),
     onSuccess: onClose,
     onError: day.onError
   })
@@ -431,27 +432,9 @@ function SettleDialog({
     <ResponsiveDialog
       open
       onOpenChange={(o) => !o && onClose()}
-      title={
-        action === 'refund'
-          ? t('feesPanel.refundTitle')
-          : action === 'undoConvert'
-            ? t('feesPanel.undoTitle')
-            : t('feesPanel.convertTitle')
-      }
+      title={t(SETTLE_TEXT[action].title)}
       description={t('feesPanel.settleHelp')}
-      footer={
-        <Buttons
-          form={form}
-          label={
-            action === 'refund'
-              ? t('feesPanel.refund')
-              : action === 'undoConvert'
-                ? t('feesPanel.undo')
-                : t('feesPanel.convert')
-          }
-          onCancel={onClose}
-        />
-      }
+      footer={<Buttons form={form} label={t(SETTLE_TEXT[action].button)} onCancel={onClose} />}
     >
       <form
         id={form}
