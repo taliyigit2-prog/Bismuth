@@ -415,3 +415,8 @@ QA2b, akış testleri C/D) bu plana **Son** satırında katılır; ayrı yürüt
   gün gerekçesi alıyor; "gelire çevir" geri alınabiliyor (bağlı ödeme yöntem+tutar+tarihle bulunuyor; açık bağ sütunu migrasyon
   isterdi); defterde iptal rezervasyon aranabiliyor; gelecek gün kapatılamıyor; gider tarihi ≤ 1 yıl ileri; konaklama türü süzgeci
   ALOS/dışa aktarmada. Dokunulmadı (ürün kararı): elle kurda akla yatkınlık uyarısı.
+- 2026-11-14: Son/G3 ✅ — `bug-hunter` G3 (operasyon/Bugün/personel + QA2b): 12 bulgu (4 Orta). QA2b: 44 px, uzun metin, kopyalama
+  temiz; alan sınırları eksikti. Düzeltme 6ee7de7: "her N konaklamada" şablonunda N değişimi sayacı sıfırlamıyor, dolu odaya konan
+  bakım/arıza çıkıştan sonra blok açıyor, kamera alarmı/kopma bildirimi Bugün kartında (`camera.todayNotice`, K-50), personel tarih
+  doğrulamaları + ay içinde ayrılan panelde, yasal turizm görevi tek giriş (tik = bildirildi), alan sınırları, ad tekrarı reddi,
+  kapanmış çamaşır ayı kilidi. Bırakılan (ürün kararı): avansın maaşı aşma eşiği, kapanmış çamaşır ayını yeniden açma.
