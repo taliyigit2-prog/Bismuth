@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { Outlet, useRouterState } from '@tanstack/react-router'
 import { useIsMobile } from '@/hooks/use-mobile'
+import { shell } from '@/lib/shell'
 import { isBarePath } from '@/lib/session/gate'
 import { DesktopLayout } from './desktop/desktop-layout'
 import { MobileLayout } from './mobile/mobile-layout'
@@ -17,7 +18,7 @@ export function RootLayout() {
   })
   useEffect(() => {
     // Tells the main process the UI is up (smoke test, packaged-app e2e).
-    window.bismuth?.ready()
+    shell.ready()
   }, [])
   // Setup, connection, sign-in, recovery, lock and the forced password change have no menu and no top bar.
   const bare = isBarePath(pathname)

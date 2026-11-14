@@ -32,9 +32,9 @@ S-122 (Mac'te yazdırma/PDF ve tarih seçici kusursuz olmalı mı?). Cevapsız =
    `__drizzle_migrations` uyumlu koşucu), vitest eşdeğeri Rust testleri.
 
 ## Kabul ölçütleri
-- [ ] P22a: ölçüm tablosu (Codespace + gerçek PC) raporda; en az bir hafifletme ile boşta toplam RSS −%20 ya da "mümkün
+- [x] P22a (gerçek PC ölçümü sahip onay paketinde; Codespace tablosu `docs/analiz/11-rust-gecisi.md` §7; hafif mod e2e: `tests/e2e/electron/light-mode.spec.ts` "hafif modda pencere kapanınca program çalışır…"): ölçüm tablosu (Codespace + gerçek PC) raporda; en az bir hafifletme ile boşta toplam RSS −%20 ya da "mümkün
       değil" gerekçesi; hafif mod ile pencere/GPU süreci yokken program tarayıcıdan tam çalışır (e2e).
-- [ ] P22b: Electron'a özgü çağrı yalnız `lib/shell/electron.ts`'te (`grep window.bismuth`/`electron` dışarıda 0); tarayıcı
+- [x] P22b (src/renderer/lib/shell/shell.test.ts, eslint no-restricted-properties): Electron'a özgü çağrı yalnız `lib/shell/electron.ts`'te (`grep window.bismuth`/`electron` dışarıda 0); tarayıcı
       uygulamasında tüm akışlar çalışır (mobil e2e yeşil).
 - [ ] P22c: Tauri prototipi aynı arayüzle açılır, sunucu modu yan süreç olarak çalışır; ölçüm karşılaştırması; sahip karar
       sayfası (`❓ SORULARIM`: devam mı Electron mu).
@@ -50,3 +50,16 @@ Tam Rust yeniden yazımı; kamera modülünün Rust'a taşınması; Faz 17–21'
 
 ## Sonuç
 (Opus doldurur.)
+
+### P22a — Ölç ve hafiflet (2026-11-14)
+- `scripts/perf-measure.mjs`: açılış, süreç başına RSS/PSS/CPU (boşta + yoğun), `--light`, `--attach` (Tauri için), `--report`.
+  Programın kendi `--perf-out=<dosya> [--perf-idle=sn]` bayrağı (Node'suz gerçek PC için; `runAsNode` kapalı); talimat `docs/kurulum.md`.
+- Hafif mod: `app.lightMode` (varsayılan kapalı, otonom varsayılan); ana bilgisayar kipinde pencere kapanınca tepside kalır
+  (Aç / Tarayıcıda aç / Çık), sunucu çalışmıyorsa program yine kapanır; arayüz mevcut `127.0.0.1:<kapı>` sunucusundan. Yeni dinleyici yok.
+  Ayar anahtarı Ayarlar → Uzaktan erişim'de (en küçük arayüz değişikliği: bir anahtar satırı).
+- Ölçüm: hafif mod boşta −%32 RSS / −%33 PSS (hedef −%20 karşılandı); GPU bayrakları ve `backgroundThrottling` reddedildi (gerekçe `11-rust-gecisi.md` §7).
+- Sahip onay paketine: otel PC'sinde `--perf-out` ölçümü ve hafif modun gerçek Windows tepsisinde denenmesi (tepsi simgesi Xvfb'de görülemedi).
+### P22b Kabuk soyutlaması (2026-11-14)
+- `src/renderer/lib/shell/` (`index.ts` `shell`/`useShell`, `electron.ts` köprüye dokunan tek dosya, `browser.ts`, `types.ts`); seçim çağrı anında, `transport` ile aynı ölçüt (köprü var mı). Taşınan çağrılar: `ready`, `platform`, `window.print` (2 yer), dosya indirme (`saveExport`, `saveBase64`).
+- ESLint `no-restricted-properties`: `window/globalThis/self.bismuth` yalnız `lib/shell/electron.ts` ve `lib/transport/` içinde serbest.
+- Kalan: dosya diyaloğu, pencere durumu, menü, safeStorage, sürüm için renderer tarafında çağrı yok (ana süreçte); arayüze eklenirse `Shell`e eklenir. Tauri (P22c) `createShell`e üçüncü uygulama ekler.

@@ -117,3 +117,45 @@ Toplam R0–R2: **$95–190**; R3 +$80–160; R3+R4 ile tam (b2) yolu $300–550
 - Rust crate'leri: `rusqlite` 0.42.0, `axum` 0.8.9, `ort` 2.0.0-rc.15 (crates.io, 2026-11-13); `mdns-sd`.
 - İkincil ölçümler (blog; dikkatli): levminer.com/blog/tauri-vs-electron ; dev.to/gethopp/… ; dev.to/johalputt/… ;
   dev.to/gerus_team/… ; dev.to/demonazgh/… . "Tauri %90 daha az RAM" türü iddialar kaynaksızdır, kullanılmadı.
+
+## 7. P22a ölçümü: Electron önce/sonra (Codespace, Xvfb, 2026-11-14)
+
+Betik: `scripts/perf-measure.mjs` (süreç ağacı ölçümü programdan bağımsızdır; `--attach <pid|ad>` ile Tauri'ye de uygulanır).
+Ortam: Electron 37.10.3, `xvfb-run -a`, 4 çekirdek, aynı yoğun tohum (19 oda + 1, ~19.000 rezervasyon, 1.300 defter satırı).
+Taban satır 3 koşu medyanı, deneyler 2 koşu. **RSS** süreçlerin ortak sayfalarını birkaç kez sayar (zygote'tan çatallanan
+süreçler); **PSS** ortak sayfaları bölüştürür, toplam için dürüst olan odur (yalnız Linux'ta okunur).
+
+| Ölçüt | Taban (pencere açık) | **Hafif mod** (pencere kapalı) | `--in-process-gpu` | `--disable-gpu-compositing` | `--disable-gpu` |
+|---|---:|---:|---:|---:|---:|
+| Boşta süreç sayısı | 6 | **5** | 5 | 6 | 6 |
+| Boşta toplam RSS (MB) | 871 | **589 (−%32)** | 832 (−%4,5) | 867 | 879 |
+| Boşta toplam PSS (MB) | 566 | **379 (−%33)** | 572 (+%1) | 569 | 578 |
+| Boşta CPU (% tek çekirdek) | 0,6 | 0,1 | 0,5 | 0,2 | 0,2 |
+| Ana süreç RSS (MB) | 348 | 351 | 389 | 352 | 363 |
+| Renderer RSS (MB) | 264 | yok | 263 | 261 | 263 |
+| GPU süreci RSS (MB) | 76 | 57 | yok (ana süreçte) | 75 | 75 |
+| Yoğun (20 sn gezinti): RSS / PSS (MB), CPU | 999 / 686, %38,9 | – | – | – | – |
+
+Açılış süreleri (pencere 2,1–4,4 sn, hazır 2,6–5,4 sn, takvim 1,4–3,3 sn) koşular arası yük farkından (0,5 ile 7 arası)
+dalgalandığı için **karşılaştırmada kullanılmaz**; temiz yükte (≤1) pencere ≈ 2,1 sn, uygulama hazır ≈ 2,6 sn, takvim ≈ 1,4 sn.
+
+**Denemeler ve karar**
+- **Hafif mod (kabul):** boşta −%32 RSS / −%33 PSS. Renderer ve çizim yükü gider; kalan ana süreç + yardımcı süreçler.
+  Hedef (−%20) bu yolla aşıldı. Yalnız ana bilgisayar kipinde ve ayar açıkken; varsayılan kapalı.
+- **`--in-process-gpu` (red):** RSS −39 MB görünür ama PSS değişmez (GPU kodu ana sürece taşınır, yük yer değiştirir);
+  GPU sürecinin çökmesi artık ana süreci (veritabanı) düşürür. Yan etki > kazanç.
+- **`--disable-gpu-compositing` / `--disable-gpu` (red):** bellekte fark yok (≤ ölçüm gürültüsü); gerçek ekran kartlı PC'de
+  kaydırma akıcılığını bozma riski var. Ölçülmüş fayda olmadan eklenmedi.
+- **`backgroundThrottling` (değişmedi):** Electron'un varsayılanı zaten açık; yalnız gizli/simge durumundaki pencerede
+  işler, boşta CPU zaten %0,1–0,6. Ek ayar kazandırmaz.
+- **Gizli pencere:** yok; tek geçici gizli pencere saatlik PDF özetinde (`summary-pdf.ts`) açılıp `finally` içinde yok
+  ediliyor. Kalıcı gizli pencere yok.
+- **Ana süreçte tembel `import` (yapılmadı, "mümkün değil" gerekçeli):** `exceljs` zaten ayrı parça (tembel). Kalan en
+  büyük yük `date-holidays` (~23 MB, bu betikle ölçüldü) senkron servislerden (`setup-service`, `calendar-service`)
+  çağrılıyor; tembel yapmak onları asenkron yapmayı gerektirir (kapsam dışı, kazanç ≈ ana sürecin %6'sı). `bonjour-service`
+  örneği zaten tembel kuruluyor. SQLite önbelleği varsayılan (2 MB), büyütülecek bir şey yok.
+- **Sonuç:** Electron taban ağırlığı (~420 MB RSS, boş pencere) ayardan küçülmez; küçültmenin gerçek yolu pencere olmadan
+  çalışmaktır (hafif mod) ya da kabuk değişimi (P22c'de aynı betikle ölçülecek).
+
+**Gerçek otel bilgisayarı:** ölçüm tablosu bu bilgisayarda henüz yok; sahibin PC'sinde `--perf-out` ile alınacak
+(`docs/kurulum.md` → "Teknik: bilgisayarı ne kadar yorduğunu ölçmek"). Sahip onay paketine yazıldı.

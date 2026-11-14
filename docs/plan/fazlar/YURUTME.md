@@ -110,8 +110,8 @@ Harcama sütunu: başlatıcının yazdığı `$` (dalga toplamı, gerçek).
 | 12 | P21d Geç çıkış, no-show bedeli, hasar depozitosu kalemi, gece raporu | 21 | booking, reports | feature-builder | $6–9 | ~$18 | ✅ |
 | 13 | P21e Orta/Düşük bulgular (02 + 04 listesi, faz-21) | 21 | bulguya göre | feature-builder-lite / feature-builder | $4–6 | ~$25 | ✅ |
 | 13 | P21a Profil altyapısı (isteğe bağlı; tek makinede iki otel) | 21 | main/app/paths, auth, settings | feature-builder | $10–15 | | ⏭ atlandı (otonom varsayılan) |
-| 14 | P22a Ölç ve hafiflet (perf betiği, Electron denemeleri, hafif mod) | 22 | scripts, main/windows, main/app | feature-builder | $15–30 | | ⬜ |
-| 14 | P22b Kabuk soyutlaması `lib/shell` (Electron + tarayıcı) | 22 | renderer/lib/shell, preload | feature-builder | $20–40 | | ⬜ |
+| 14 | P22a Ölç ve hafiflet (perf betiği, Electron denemeleri, hafif mod) | 22 | scripts, main/windows, main/app | feature-builder | $15–30 | ~$20 | ✅ |
+| 14 | P22b Kabuk soyutlaması `lib/shell` (Electron + tarayıcı) | 22 | renderer/lib/shell, preload | feature-builder | $20–40 | ~$12 | ✅ |
 | 15 | P22c Tauri 2 prototipi + aynı ölçümle karşılaştırma + sahip karar sayfası (**durma noktası**) | 22 | shell-tauri/ (ürün dışı) | rust-shell-builder | $60–120 | | ⬜ |
 | 16 | P22d Tauri ürünleştirme (yalnız sahip "devam" derse); P22e Rust servis pilotu (yalnız darboğazda) | 22 | shell-tauri, .github, docs | rust-shell-builder + packager | $80–160 (+$100–200) | | ⬜ |
 | Son | Tam kontrol sürüsü (bug-hunter + flow-tester modül başına, decision, security, db, ui, screen, privacy, copy, tracer) → **modül başına Ponytail `full` sadeleştirme turu (K-61; testler aynı)** → düzeltme turu → `/owner-review` | — | — | hepsi | $50–75 | | ⬜ |
@@ -376,3 +376,12 @@ QA2b, akış testleri C/D) bu plana **Son** satırında katılır; ayrı yürüt
   sonuç + tek tarama, önizleme 1 MB sınırı, `camera.staff` yalnız ana pencere (arayüz de yalnız orada listeler), Telegram 5 sohbet / 12 sn,
   gece raporu tek seferde 3 sorgu, `stop-gate` kapsamı. Telefon e2e bu turda koşulamadı (Playwright chromium yolu yok) → Son dalgada.
   **Dalga 13 bitti. Faz 21 kodu tamam (P21a atlandı).**
+- 2026-11-14: Dalga 14 başladı (P22a + P22b, feature-builder ×2; taban 5b0af10). Sadeleştirme (dalga 9–13) dalga 14 sonrasına.
+- 2026-11-14: P22a ✅ — `scripts/perf-measure.mjs` (açılış, süreç başına RSS/PSS/CPU boşta + yoğun, `--light`, `--attach` Tauri için),
+  programda `--perf-out` bayrağı (paketli sürüm; talimat `docs/kurulum.md` sonu), **hafif mod** (`app.lightMode`, varsayılan kapalı,
+  otonom varsayılan: yalnız ana bilgisayar kipinde; pencere kapanınca tepside kalır, arayüz mevcut `127.0.0.1` sunucusundan tarayıcıda;
+  e2e). Ölçüm (Codespace): boşta toplam RSS 871 → 589 MB (−%32), PSS 566 → 379 MB (−%33) hafif modla; GPU bayrakları fayda vermedi,
+  reddedildi; tembel import `date-holidays` senkron kullanıldığı için yapılmadı. Tablo `11-rust-gecisi.md` §7. P22b ✅ —
+  `src/renderer/lib/shell/` (`electron.ts` köprüye dokunan tek dosya, `browser.ts`), 6 çağrı taşındı, ESLint `no-restricted-properties`
+  ile köprü erişimi yalnız `lib/shell/electron.ts` + `lib/transport/**`. Telefon e2e bu ortamda koşulamadı → Son dalgası.
+  **Dalga 14 bitti.**

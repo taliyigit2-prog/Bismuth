@@ -279,6 +279,7 @@ function ServerState({ status, canEdit }: { status: HostStatus; canEdit: boolean
   const { t } = useTranslation()
   const [qr, setQr] = useState<string | null>(null)
   const update = useUpdateSettings()
+  const settings = useSettings()
   const queryClient = useQueryClient()
   const setMode = useAdminMutation('remote.setMode', { invalidate: ['remote.hostStatus'] })
   const setListenLan = useAdminMutation('remote.setListenLan', {
@@ -332,6 +333,16 @@ function ServerState({ status, canEdit }: { status: HostStatus; canEdit: boolean
             if (enabled) setConfirmLan(true)
             else setListenLan.mutate({ enabled: false })
           }}
+        />
+      </div>
+      <div className="grid gap-2 rounded-lg border p-3" data-testid="light-mode">
+        <SwitchRow
+          id="remote-light-mode"
+          label={t('settings.remote.lightMode.label')}
+          help={t('settings.remote.lightMode.help')}
+          checked={settings.data?.['app.lightMode'] ?? false}
+          disabled={!canEdit || update.isPending}
+          onChange={(enabled) => update.mutate({ 'app.lightMode': enabled })}
         />
       </div>
       {status.running && status.addresses.length === 0 ? (

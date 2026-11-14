@@ -13,6 +13,9 @@ import { installCrashHandlers, offerRecoveryRestore, setUpErrorLog } from './app
 import { displayFollows } from './app/display-follow'
 import { isDamagedDatabaseError } from './backup/startup-recovery'
 import { buildMenu } from './app/menu'
+import { browserUrl, keepRunningWithoutWindow, lightModeWanted } from './app/light-mode'
+import { createAppTray, type AppTray } from './app/tray'
+import { parsePerfArgs, runPerfProbe } from './app/perf-probe'
 import { applySecurityPolicy, enforceSingleInstance, isAppUrl } from './security/policy'
 import { createMainWindow } from './windows/main-window'
 import { applyZoom, setZoomHandler } from './windows/window-actions'
@@ -56,11 +59,17 @@ if (chromiumLang) app.commandLine.appendSwitch('lang', chromiumLang)
 
 const smokeOut = process.argv.find((a) => a.startsWith('--smoke-out='))?.slice('--smoke-out='.length) ?? null
 const smoke = process.argv.includes('--smoke') || smokeOut !== null
+// Measuring on a real computer (docs/kurulum.md): sample the program's own processes, write a JSON, quit.
+const perfProbe = parsePerfArgs(process.argv)
 const devUrl = !app.isPackaged ? (process.env['ELECTRON_RENDERER_URL'] ?? null) : null
 const devOrigin = devUrl ? new URL(devUrl).origin : null
 const startedAt = Date.now()
 
 let mainWindow: BrowserWindow | null = null
+/** Light mode (P22a): whether the program outlives its last window, and the way back to a window (tray, second start). */
+let keepInTray: () => boolean = () => false
+let reopenWindow: () => void = () => undefined
+let quitting = false
 /** How often alarms are taken from the sidecar and the face list is sent to it, and how often the retention job runs. */
 const CAMERA_ROUND_MS = 3_000
 const CAMERA_PURGE_MS = 3_600_000
@@ -82,9 +91,11 @@ const blockedRequests: string[] = []
 let lastActivity = 0
 /** Set once the closing backup ran (or is not wanted: a restart for a restore, a smoke run). */
 let closingBackupDone = false
+let perfReported = false
 
 function focusMainWindow(): void {
-  if (!mainWindow || mainWindow.isDestroyed()) return
+  // In the tray (light mode) there is no window: a second start of the program opens one.
+  if (!mainWindow || mainWindow.isDestroyed()) return reopenWindow()
   // Started again because the window's page died: open the page again, not only the dead window (QA2c #1).
   if (mainWindow.webContents.isCrashed()) mainWindow.webContents.reload()
   if (mainWindow.isMinimized()) mainWindow.restore()
@@ -575,6 +586,24 @@ async function start(): Promise<void> {
     sessionFor: (sender) => (client ? client.sessionFor(sender) : desktop.binding(sender.id)),
     isTrustedUrl: (url) => isAppUrl(url, devOrigin),
     onReady: (sender) => {
+      if (perfProbe && !perfReported) {
+        perfReported = true
+        void runPerfProbe({
+          ...perfProbe,
+          startedAt,
+          platform: `${process.platform}-${process.arch}`,
+          versions: {
+            app: app.getVersion(),
+            electron: process.versions.electron,
+            chrome: process.versions.chrome
+          },
+          metrics: () => app.getAppMetrics(),
+          done: () => app.quit()
+        }).catch((error: unknown) => {
+          log.error('perf probe failed', error)
+          app.quit()
+        })
+      }
       if (!smoke) return
       writeSmokeResult({
         ok: true,
@@ -610,6 +639,35 @@ async function start(): Promise<void> {
     return win
   }
   mainWindow = openWindow(!smoke)
+  reopenWindow = () => {
+    if (!mainWindow || mainWindow.isDestroyed()) mainWindow = openWindow(true)
+    focusMainWindow()
+  }
+  // Light mode: the tray icon exists while the setting is on at the main computer; the program stays alive without a
+  // window only while the server answers. The screens then open in the browser at the server's own address.
+  const wantedNow = (): boolean => lightModeWanted(services.settings.get(systemCtx()))
+  keepInTray = () =>
+    keepRunningWithoutWindow({ wanted: wantedNow(), serverRunning: host.state().running, quitting, smoke })
+  let tray: AppTray | null = null
+  const syncTray = (): void => {
+    if (wantedNow() && !smoke) {
+      tray ??= createAppTray({
+        openWindow: reopenWindow,
+        openBrowser: () =>
+          void shell.openExternal(browserUrl(services.settings.get(systemCtx())['host.port'])),
+        quit: () => app.quit()
+      })
+    } else if (tray) {
+      tray.destroy()
+      tray = null
+    }
+  }
+  syncTray()
+  services.settings.onChange((_values, changed) => {
+    if (changed.includes('app.lightMode') || changed.includes('app.mode')) syncTray()
+    if (changed.includes('ui.language')) tray?.refresh()
+  })
+  app.on('will-quit', () => tray?.destroy())
   // The computer locked or went to sleep: the program locks too (G-22).
   powerMonitor.on('lock-screen', () => desktop.lockAll())
   powerMonitor.on('suspend', () => desktop.lockAll())
@@ -687,7 +745,12 @@ function startClientMode(windowStateFile: string): void {
 }
 
 if (enforceSingleInstance(focusMainWindow)) {
+  app.on('before-quit', () => {
+    quitting = true
+  })
   app.on('window-all-closed', () => {
+    // Light mode: the server keeps running in the tray; "Çık" in the tray menu quits.
+    if (keepInTray()) return
     if (process.platform !== 'darwin' || smoke) app.quit()
   })
   app.on('will-quit', () => database?.close())

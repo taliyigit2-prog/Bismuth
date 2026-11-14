@@ -117,6 +117,11 @@ export const settingsShape = {
   'hotel.timezone': timeZoneSchema,
   /** standalone: this computer alone; host: the hotel's main computer others connect to; client: uses a host. */
   'app.mode': z.enum(['standalone', 'host', 'client']),
+  /**
+   * Light mode (Faz 22 P22a): on the main computer closing the window keeps the program in the tray with the server
+   * running; the screens open in the computer's own browser. Frees the window, graphics and page processes.
+   */
+  'app.lightMode': z.boolean(),
   /** Minutes without a key or mouse before the window locks (G-22); 0 = never. */
   'security.idleLockMinutes': z.number().int().min(0).max(240),
   /** Base currency of all totals and reports; rates are frozen to it (K-15). */
@@ -321,6 +326,7 @@ export const SETTINGS_DEFAULTS: SettingsValues = {
   'hotel.email': '',
   'hotel.timezone': 'Europe/Istanbul',
   'app.mode': 'standalone',
+  'app.lightMode': false,
   'security.idleLockMinutes': 15,
   'hotel.baseCurrency': 'TRY',
   'hotel.currencies': ['TRY', 'EUR', 'USD', 'GBP', 'RUB'],
@@ -418,6 +424,7 @@ export const PUBLIC_SETTING_KEYS: readonly SettingsKey[] = [
  */
 export const isDesktopOnlySettingKey = (key: SettingsKey): boolean =>
   key === 'app.mode' ||
+  key === 'app.lightMode' ||
   key.startsWith('host.') ||
   key.startsWith('relay.') ||
   key.startsWith('summary.') ||
@@ -458,7 +465,11 @@ export const settingPermission = (
   | 'camera' =>
   key.startsWith('camera.')
     ? 'camera'
-    : key.startsWith('host.') || key.startsWith('relay.') || key.startsWith('summary.') || key === 'app.mode'
+    : key.startsWith('host.') ||
+        key.startsWith('relay.') ||
+        key.startsWith('summary.') ||
+        key === 'app.mode' ||
+        key === 'app.lightMode'
       ? 'remote.settings'
       : key === 'staff.expenseSection'
         ? 'expenses.owner'

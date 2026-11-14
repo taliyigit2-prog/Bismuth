@@ -287,3 +287,32 @@ Bu bölüm zorunlu değildir; yalnız indirme yarım kaldıysa ya da dosya yolda
 - **Mac:** Launchpad → Diğer → **Terminal**'i açın ve `shasum -a 256 ~/Downloads/Bismuth.dmg` yazın.
 
 Çıkan dizi `SHA256SUMS.txt`'dekiyle **aynıysa** dosya sağlamdır. Farklıysa dosyayı silip yeniden indirin.
+
+## Teknik: bilgisayarı ne kadar yorduğunu ölçmek (isteğe bağlı)
+
+Bismuth'un otel bilgisayarında ne kadar bellek ve işlemci kullandığını görmek isterseniz program kendini ölçüp bir dosyaya
+yazabilir. Bu ölçüm yalnızca bu bilgisayarda kalır; hiçbir yere gönderilmez ve kayıtlarınıza dokunmaz.
+
+1. Bismuth açıksa kapatın (tek örnek çalışır; açıkken ikinci başlatma ölçmez).
+2. Başlat'a "PowerShell" yazıp açın ve şunu yapıştırın (`Bismuth.exe` başka bir yerdeyse yolu değiştirin; Başlat'taki
+   Bismuth kısayoluna sağ tıklayıp **Dosya konumunu aç** yolu gösterir):
+
+   `& "$env:LOCALAPPDATA\Programs\Bismuth\Bismuth.exe" --perf-out="$HOME\Desktop\bismuth-olcum.json" --perf-idle=60`
+
+3. Program açılır. Oturum açıp **Takvim** ekranına geçin ve 60 saniye bekleyin (süreyi `--perf-idle=` ile 5–600 saniye
+   arasında değiştirebilirsiniz; varsayılan 30). Süre dolunca program kendiliğinden kapanır ve masaüstüne
+   `bismuth-olcum.json` yazılır.
+4. Dosyayı bana gönderin ya da bir geliştirici bilgisayarında `node scripts/perf-measure.mjs --report bismuth-olcum.json`
+   komutuyla tabloya çevirin. Tablodaki "RSS" sütunu Görev Yöneticisi'ndeki "Bellek"e en yakın sayıdır (çalışma kümesi).
+
+Ölçümü karşılaştırmak için ikinci kez, bu kez **Ayarlar → Uzaktan erişim** ekranında **Pencere kapanınca tepside çalışsın**
+seçiliyken (ana bilgisayar kipinde) pencereyi kapatıp Görev Yöneticisi'nde "Bismuth" satırlarına bakabilirsiniz: pencere,
+grafik ve sayfa süreçleri kalmaz.
+
+### Hafif mod
+
+Ana bilgisayarda **Ayarlar → Uzaktan erişim** ekranındaki **Pencere kapanınca tepside çalışsın** seçeneği açıkken pencereyi
+kapatınca program kapanmaz; saatin yanındaki tepsi simgesinde bekler (sunucu çalışmaya devam eder). Simgeye sağ tıklayınca
+**Bismuth'u aç**, **Tarayıcıda aç** (bu bilgisayarın tarayıcısında `http://127.0.0.1:<kapı>` adresi) ve **Çık** vardır; tam
+kapatmak için **Çık**'ı kullanın. Tarayıcıda her zamanki kullanıcı adı ve parolanızla oturum açarsınız. Seçenek varsayılan
+olarak kapalıdır ve yalnızca ana bilgisayar kipinde etki eder.

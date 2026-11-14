@@ -1033,6 +1033,10 @@
         "acceptTitle": "Accept the new identity?",
         "acceptBody": "Accept it only if the hotel's main computer changed (taken over or set up again). Compare the new identity with the one in Settings → Remote access on the main computer; if you are not sure, tell the hotel owner.",
         "accept": "Accept new identity"
+      },
+      "lightMode": {
+        "label": "Keep running in the tray when the window is closed",
+        "help": "Closing the window does not stop the program; it stays in the tray and the screens open in this computer's browser. The computer uses less memory. To close the program completely, choose \"Quit\" from the tray icon."
       }
     },
     "timeInvalid": "Enter the time like 14:00.",
@@ -1901,6 +1905,12 @@
       "alertTelegramAt": "Bismuth: an unregistered person is at the camera. At {{time}}, {{location}}.",
       "crashedBody_one": "The camera system stopped {{count}} time; it is restarting by itself.",
       "crashedBody_other": "The camera system stopped {{count}} times; it is restarting by itself."
+    },
+    "tray": {
+      "open": "Open Bismuth",
+      "openBrowser": "Open in browser",
+      "quit": "Quit",
+      "tooltip": "Bismuth is running"
     }
   },
   "companies": {

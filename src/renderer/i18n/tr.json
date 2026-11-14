@@ -1033,6 +1033,10 @@
         "acceptTitle": "Yeni kimlik kabul edilsin mi?",
         "acceptBody": "Yalnız otelin ana bilgisayarı değiştiyse (devralındı ya da yeniden kuruldu) kabul edin. Yeni kimliği ana bilgisayarın Ayarlar → Uzaktan erişim ekranındakiyle karşılaştırın; emin değilseniz otel sahibine haber verin.",
         "accept": "Yeni kimliği kabul et"
+      },
+      "lightMode": {
+        "label": "Pencere kapanınca tepside çalışsın",
+        "help": "Pencereyi kapatınca program durmaz, tepside kalır; ekranlar bu bilgisayarın tarayıcısında açılır. Bilgisayar daha az bellek kullanır. Programı tamamen kapatmak için tepsi simgesinden \"Çık\" deyin."
       }
     },
     "timeInvalid": "Saati 14:00 gibi yazın.",
@@ -1901,6 +1905,12 @@
       "alertTelegramAt": "Bismuth: kayıtsız biri kameraya girdi. Saat {{time}}, {{location}}.",
       "crashedBody_one": "Kamera sistemi {{count}} kez durdu; kendiliğinden yeniden başlatılıyor.",
       "crashedBody_other": "Kamera sistemi {{count}} kez durdu; kendiliğinden yeniden başlatılıyor."
+    },
+    "tray": {
+      "open": "Bismuth'u aç",
+      "openBrowser": "Tarayıcıda aç",
+      "quit": "Çık",
+      "tooltip": "Bismuth çalışıyor"
     }
   },
   "companies": {

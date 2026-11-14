@@ -227,6 +227,23 @@ export default tseslint.config(
     }
   },
   {
+    // The preload bridge (window.bismuth) is touched only by lib/shell/electron.ts and the IPC transport; screens use
+    // `shell` (lib/shell) and the lib/api hooks (faz-22 P22b).
+    files: ['src/renderer/**/*.{ts,tsx}'],
+    ignores: ['src/renderer/lib/shell/electron.ts', 'src/renderer/lib/transport/**', '**/*.test.{ts,tsx}'],
+    rules: {
+      'no-restricted-properties': [
+        'error',
+        ...['window', 'globalThis', 'self'].map((object) => ({
+          object,
+          property: 'bismuth',
+          message:
+            'Köprüye yalnız lib/shell/electron.ts ve lib/transport dokunur; shell kullanın (faz-22 P22b).'
+        }))
+      ]
+    }
+  },
+  {
     files: ['**/*.test.{ts,tsx}', 'tests/**'],
     rules: { 'i18next/no-literal-string': 'off' }
   },
