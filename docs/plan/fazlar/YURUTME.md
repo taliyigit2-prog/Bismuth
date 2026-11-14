@@ -442,3 +442,9 @@ QA2b, akış testleri C/D) bu plana **Son** satırında katılır; ayrı yürüt
   odalar uyarıda (`booking.kbsGaps`), elle otel kurunda ≥ %20 sapma uyarısı (`fx.manualRateWarnPercent`), kapanmış çamaşır ayı
   gerekçeyle yeniden açılıyor (`laundry.reopenMonth`, audit), pasif oda tipine oda reddi; S-126 avans uyarısı zaten vardı. Rol
   testleri iki yeni yordam için eklendi. Sıradaki: `flow-tester` (akış testi C/D, telefon e2e parça parça).
+- 2026-11-14 Son — akış testi C/D (`flow-tester`, rapor `docs/analiz/ekler/son-kontrol/flow-cd.md`): telefon 26 spec / Electron 41 spec
+  tek tek; 11 kırmızının hepsi test eskimesi ya da macOS farkı. Bulgular düzeltildi (`fix-flow.md`): **B1** Electron/HTTP e2e ve
+  ekran betikleri sahibin gerçek Google Drive klasörüne yedek yazıyordu → `BISMUTH_DRIVE_HOME` ile test yalıtımı (Drive'daki eski
+  136 test yedeğine dokunulmadı, temizlik sahibe soruldu); eskimiş spec'ler güncellendi; gece raporu yazdırma taşması; geç çıkış boş
+  tutar, giriş ekranı ve oda tipi alan hataları; yetkisiz rolde gereksiz 403 sorguları; sınır aşan arama girdileri. B5 yanlış pozitif
+  (anahtarların 46 px dokunma alanı zaten var). Sıradaki: kontrol ajanları tek tek.

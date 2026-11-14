@@ -49,4 +49,11 @@
   .print-root [data-slot='table-container'] {
     overflow: visible;
   }
+
+  /* On paper a table cannot scroll sideways: cells wrap, so a two-column block stays inside the A4 width. */
+  .print-root [data-slot='table-head'],
+  .print-root [data-slot='table-cell'] {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
 }

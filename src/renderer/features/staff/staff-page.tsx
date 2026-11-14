@@ -202,7 +202,7 @@ function StaffView({
   const [openId, setOpenId] = useState<string | null>(null)
   const [dialog, setDialog] = useState<DialogState>(null)
 
-  const panel = useApiQuery('staff.panel', current)
+  const panel = useApiQuery('staff.panel', current, { enabled: can('staff') })
   const policy = useApiQuery('staff.getPolicy', {}, { enabled: can('staff.policy') || canSalary })
   const leaveQuery = useApiQuery(
     'staff.leaveBetween',

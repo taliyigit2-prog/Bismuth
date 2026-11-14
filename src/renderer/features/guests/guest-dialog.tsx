@@ -86,8 +86,9 @@ export function GuestDialog({
   const phoneTyped = phoneText(phone)
   const candidate = useDebounced({
     name: fullName.slice(0, CANDIDATE_NAME_MAX),
-    phone: phone.number.length >= 7 ? phoneTyped : null,
-    idDocNumber: identity && docNumber.trim().length >= 5 ? docNumber.trim() : null,
+    // The contract's limits (40): a longer typed text is checked by its start, never sent over the limit.
+    phone: phone.number.length >= 7 ? phoneTyped.slice(0, 40) : null,
+    idDocNumber: identity && docNumber.trim().length >= 5 ? docNumber.trim().slice(0, 40) : null,
     ...(guest ? { excludeId: guest.id } : {})
   })
   const enoughToCheck =

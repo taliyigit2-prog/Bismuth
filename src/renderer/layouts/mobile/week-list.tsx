@@ -2,6 +2,7 @@
 // day with who arrives and who leaves (room and name, tap to open the reservation) and how many rooms stay free,
 // read from the same `reservations.grid` service as the desktop grid. Arrows move a week; the title goes back to
 // today.
+import { useCan } from '@/lib/view-as'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { CalendarDaysIcon, ChevronLeftIcon, ChevronRightIcon, LogInIcon, LogOutIcon } from 'lucide-react'
@@ -18,12 +19,17 @@ import { WEEK_DAYS, weekOf } from './week'
 
 export function WeekList({ onOpen }: { onOpen: (reservationId: string) => void }) {
   const { t } = useTranslation()
+  const can = useCan()
   const f = useFormat()
   const [clientToday] = useState(todayOf)
   const [picked, setPicked] = useState<LocalDate | null>(null)
   const start = picked ?? clientToday
   // The day before too: a departure's last night belongs to it.
-  const query = useApiQuery('reservations.grid', { from: addDays(start, -1), to: addDays(start, WEEK_DAYS) })
+  const query = useApiQuery(
+    'reservations.grid',
+    { from: addDays(start, -1), to: addDays(start, WEEK_DAYS) },
+    { enabled: can('calendar') }
+  )
   const page = query.data
   const days = useMemo(() => (page ? weekOf(page, start) : null), [page, start])
   const roomNumber = (s: GridStayView): string => page?.rooms.find((r) => r.id === s.roomId)?.number ?? ''

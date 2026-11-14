@@ -12,7 +12,10 @@ test('Ayarlar → Kılavuz, ekranın "?" düğmesi ve arama doğru bölümü aç
   await page.getByTestId('settings-tab-guide').click()
   await page.getByTestId('guide-settings-open').click()
   await expect(page.getByRole('heading', { level: 1, name: 'Kılavuz' })).toBeVisible()
-  await expect(page.getByTestId('guide-home').getByRole('link')).toHaveCount(20)
+  // One card per section of the side list (the count is not hard-coded: a new topic adds both).
+  const sections = await page.locator('[data-testid^="guide-section-"]').count()
+  expect(sections).toBeGreaterThanOrEqual(20)
+  await expect(page.getByTestId('guide-home').getByRole('link')).toHaveCount(sections)
 
   // "?" on the ledger opens "Defter ve giderler"; on the laundry screen, the laundry part of its section.
   await reload(page, '#/ledger')

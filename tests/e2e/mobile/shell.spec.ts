@@ -86,14 +86,14 @@ test.describe('telefon görünümü (390×844)', () => {
 
     await page.goto('/#/settings?tab=hotel')
     await page.getByLabel('Otel adı').fill('Deneme Otel')
-    await page.getByRole('button', { name: 'Kaydet' }).click()
+    await page.getByTestId('hotel-save').click()
     const toast = page.locator('[data-sonner-toast]').first()
     await expect(toast).toBeVisible()
     const toastBox = await toast.boundingBox()
     const navBox = await page.getByTestId('mobile-nav').boundingBox()
     expect(toastBox!.y + toastBox!.height).toBeLessThanOrEqual(navBox!.y)
     await page.getByLabel('Otel adı').fill('Örnek Otel')
-    await page.getByRole('button', { name: 'Kaydet' }).click()
+    await page.getByTestId('hotel-save').click()
   })
 
   test('hızlı arama telefonda alttan açılır, yazı 16 px', async ({ page }) => {

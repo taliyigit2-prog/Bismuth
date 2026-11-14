@@ -20,7 +20,12 @@ function freshUserData(): string {
 async function launch(userData: string): Promise<{ app: ElectronApplication; page: Page }> {
   const app = await _electron.launch({
     args: [root, ...(process.platform === 'linux' ? ['--no-sandbox'] : [])],
-    env: { ...process.env, BISMUTH_USER_DATA: userData, ELECTRON_RENDERER_URL: '' },
+    env: {
+      ...process.env,
+      BISMUTH_USER_DATA: userData,
+      BISMUTH_DRIVE_HOME: userData,
+      ELECTRON_RENDERER_URL: ''
+    },
     cwd: root
   })
   apps.push(app)
@@ -53,6 +58,7 @@ const TEXT = {
     steps: ['Dil ve tema', 'Çalışma şekli', 'Otel', 'Para birimleri', 'Oda tipleri', 'Odalar'],
     rest: ['Ödeme ve satış', 'Personel ve vardiyalar', 'Çalışanlar', 'Takvim', 'Sahip hesabı', 'Özet'],
     hourly: 'Saatlik satış',
+    camera: 'Kamera',
     price: '2.800',
     totals: '19 oda · 38 yatak',
     calendar: 'Takvim',
@@ -75,6 +81,7 @@ const TEXT = {
       'Сводка'
     ],
     hourly: 'Почасовые продажи',
+    camera: 'Камера',
     price: '2.800',
     totals: '19 номеров · 38 кроватей',
     calendar: 'Календарь',
@@ -176,7 +183,10 @@ for (const lang of ['tr', 'ru'] as const) {
       page.getByTestId('setup-holidays').getByText(text.republicDay, { exact: true }).first()
     ).toBeVisible()
     await next(page)
-    // 11. Sahip hesabı.
+    // 11. Kamera (optional): nothing to set up, skip.
+    await expect(heading(page, text.camera)).toBeVisible()
+    await next(page)
+    // 12. Sahip hesabı.
     await expect(heading(page, text.rest[4])).toBeVisible()
     await page.getByTestId('setup-owner-name').fill('Otel Sahibi')
     await page.getByTestId('setup-owner-username').fill('sahip')
@@ -184,7 +194,7 @@ for (const lang of ['tr', 'ru'] as const) {
     await page.getByTestId('setup-owner-repeat').fill('cok-gizli-sifre')
     await page.getByTestId('setup-owner-pin').fill('2468')
     await next(page)
-    // 12. Özet → Kurulumu bitir.
+    // 13. Özet → Kurulumu bitir.
     await expect(heading(page, text.rest[5])).toBeVisible()
     await expect(page.getByTestId('setup-summary-totals')).toHaveText(text.totals)
     await page.getByTestId('setup-finish').click()

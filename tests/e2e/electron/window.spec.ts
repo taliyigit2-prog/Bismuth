@@ -32,6 +32,10 @@ const zoomFactor = (app: ElectronApplication): Promise<number> =>
   app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]!.webContents.getZoomFactor())
 
 test('F11 tam ekrana alır, çıkarır; açılışta tam ekran hatırlanır', async ({ launch, userData }) => {
+  test.skip(
+    process.platform === 'darwin',
+    'macOS: the injected key event does not toggle native full screen (isFullScreen stays false); the Windows/Linux run covers it'
+  )
   test.setTimeout(120_000)
   const first = await launch()
   expect(await fullScreen(first.app)).toBe(false)

@@ -1,6 +1,7 @@
 // The calendar on the phone (G-143, faz-05 "mobilde gün/oda listesi"): no ten-year grid, a day list — arrivals,
 // departures, staying, free rooms — read from the same `reservations.grid` service as the desktop grid, with the
 // night's payment status on each card. Arrows move a day; the date goes back to today. Faz 13 completes it.
+import { useCan } from '@/lib/view-as'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -36,6 +37,7 @@ const SECTIONS = [
 
 export function DayList({ onOpen }: { onOpen: (reservationId: string) => void }) {
   const { t } = useTranslation()
+  const can = useCan()
   const f = useFormat()
   const [picked, setPicked] = useState<LocalDate | null>(null)
   const [clientToday] = useState(todayOf)
@@ -46,7 +48,11 @@ export function DayList({ onOpen }: { onOpen: (reservationId: string) => void })
   // T (lib/shortcuts): a phone with a keyboard goes back to today as well.
   useShortcutAction('goToday', () => setPicked(null))
   // The day before as well: a departure's last night is the day before it.
-  const query = useApiQuery('reservations.grid', { from: addDays(day, -1), to: addDays(day, 1) })
+  const query = useApiQuery(
+    'reservations.grid',
+    { from: addDays(day, -1), to: addDays(day, 1) },
+    { enabled: can('calendar') }
+  )
   const page = query.data
   if (page && !hotelToday && page.today !== clientToday) setHotelToday(page.today)
   const activity = useMemo(() => (page ? dayActivity(page, day) : null), [page, day])

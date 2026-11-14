@@ -1188,7 +1188,9 @@
         "withdrawn": "Planned change withdrawn",
         "help": "To change the capacity, edit beds, for sale or in use above and pick the date it applies from."
       },
-      "typeOff": "Off"
+      "typeOff": "Off",
+      "typeNameOnly": "The type needs a name (at most 80 characters).",
+      "typePriceNegative": "The price cannot be below zero."
     },
     "shifts": {
       "title": "Shifts",

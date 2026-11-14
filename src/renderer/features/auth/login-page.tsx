@@ -117,6 +117,7 @@ function PickedUserForm({
   const { t } = useTranslation()
   const [method, setMethod] = useState<Method>(user.hasPin ? 'pin' : 'password')
   const [secret, setSecret] = useState('')
+  const [tried, setTried] = useState(false)
   const signIn = useSignIn()
   const signInWithPin = useSignInWithPin()
   const pin = method === 'pin'
@@ -137,7 +138,8 @@ function PickedUserForm({
       noValidate
       onSubmit={(e) => {
         e.preventDefault()
-        if (!secret || pending) return
+        if (pending) return
+        if (!secret) return setTried(true)
         void attempt.run(() =>
           pin
             ? signInWithPin.mutateAsync({ userId: user.id, pin: secret })
@@ -182,7 +184,11 @@ function PickedUserForm({
           ))}
         </ToggleGroup>
       ) : null}
-      <Field id="secret" label={t(`auth.method.${method}`)} error={Boolean(attempt.error)}>
+      <Field
+        id="secret"
+        label={t(`auth.method.${method}`)}
+        error={attempt.error ? true : tried && !secret ? 'auth.validation.required' : undefined}
+      >
         {(aria) => (
           <PasswordInput
             {...aria}
@@ -198,7 +204,7 @@ function PickedUserForm({
         )}
       </Field>
       {attempt.error ? <SignInError messageKey={attempt.error} tries={attempt.tries} pin={pin} /> : null}
-      <Button type="submit" disabled={!secret || pending} data-testid="sign-in">
+      <Button type="submit" disabled={pending} data-testid="sign-in">
         <LogInIcon aria-hidden />
         {t('auth.signIn')}
       </Button>
@@ -210,6 +216,7 @@ function UsernameForm({ failures, onBack }: { failures: Failures; onBack: (() =>
   const { t } = useTranslation()
   const [username, setUsername] = useState('')
   const [secret, setSecret] = useState('')
+  const [tried, setTried] = useState(false)
   const signIn = useSignIn()
   const key = `name:${username.trim().toLocaleLowerCase('tr')}`
   const passwordField = useRef<HTMLInputElement>(null)
@@ -223,11 +230,16 @@ function UsernameForm({ failures, onBack }: { failures: Failures; onBack: (() =>
       noValidate
       onSubmit={(e) => {
         e.preventDefault()
-        if (!username.trim() || !secret || signIn.isPending) return
+        if (signIn.isPending) return
+        if (!username.trim() || !secret) return setTried(true)
         void attempt.run(() => signIn.mutateAsync({ username: username.trim(), secret }))
       }}
     >
-      <Field id="username" label={t('auth.username')} error={Boolean(attempt.error)}>
+      <Field
+        id="username"
+        label={t('auth.username')}
+        error={attempt.error ? true : tried && !username.trim() ? 'auth.validation.required' : undefined}
+      >
         {(aria) => (
           <Input
             {...aria}
@@ -243,7 +255,11 @@ function UsernameForm({ failures, onBack }: { failures: Failures; onBack: (() =>
           />
         )}
       </Field>
-      <Field id="password" label={t('auth.method.password')} error={Boolean(attempt.error)}>
+      <Field
+        id="password"
+        label={t('auth.method.password')}
+        error={attempt.error ? true : tried && !secret ? 'auth.validation.required' : undefined}
+      >
         {(aria) => (
           <PasswordInput
             {...aria}
@@ -256,7 +272,7 @@ function UsernameForm({ failures, onBack }: { failures: Failures; onBack: (() =>
         )}
       </Field>
       {attempt.error ? <SignInError messageKey={attempt.error} tries={attempt.tries} pin={false} /> : null}
-      <Button type="submit" disabled={!username.trim() || !secret || signIn.isPending} data-testid="sign-in">
+      <Button type="submit" disabled={signIn.isPending} data-testid="sign-in">
         <LogInIcon aria-hidden />
         {t('auth.signIn')}
       </Button>

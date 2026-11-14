@@ -115,6 +115,9 @@ test('menü tuşu ve boşluk: Shift+F10 hücre menüsünü açar, Boşluk konakl
   await expect(page.getByTestId('selection-bar')).toHaveCount(0)
 })
 
+// Ctrl+click is the context menu on macOS; the multi-select key there is Cmd (the grid reads ctrl or meta).
+const MULTI_KEY = process.platform === 'darwin' ? 'Meta' : 'Control'
+
 test('Ctrl ile iki konaklama seç: toplu ödeme her rezervasyonun bakiyesini kapatır', async ({ launch }) => {
   test.setTimeout(120_000)
   const { page } = await launch()
@@ -123,8 +126,8 @@ test('Ctrl ile iki konaklama seç: toplu ödeme her rezervasyonun bakiyesini kap
   const a = await book(page, rooms[0]!.id, 'Birinci', today, shiftDay(today, 2))
   const b = await book(page, rooms[1]!.id, 'İkinci', today, shiftDay(today, 2))
   await reload(page, '#/calendar')
-  await page.getByTestId(`stay-${a.stays[0]!.id}`).click({ modifiers: ['Control'] })
-  await page.getByTestId(`stay-${b.stays[0]!.id}`).click({ modifiers: ['Control'] })
+  await page.getByTestId(`stay-${a.stays[0]!.id}`).click({ modifiers: [MULTI_KEY] })
+  await page.getByTestId(`stay-${b.stays[0]!.id}`).click({ modifiers: [MULTI_KEY] })
   const bulk = page.getByTestId('selection-bar')
   await expect(bulk.getByTestId('selection-count')).toContainText('2')
   await bulk.getByTestId('bulk-pay').click()

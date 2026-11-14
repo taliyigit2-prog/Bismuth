@@ -51,7 +51,14 @@ async function wizard(page: Page): Promise<void> {
   await page.getByTestId('setup-generate').click()
   await expect(page.getByTestId('setup-room-totals')).toHaveText('6 oda · 12 yatak')
   await next(page)
-  for (const title of ['Ödeme ve satış', 'Personel ve vardiyalar', 'Çalışanlar', 'Takvim']) {
+  for (const title of [
+    'Saatlik satış',
+    'Ödeme ve satış',
+    'Personel ve vardiyalar',
+    'Çalışanlar',
+    'Takvim',
+    'Kamera'
+  ]) {
     await expect(heading(page, title)).toBeVisible()
     await next(page)
   }

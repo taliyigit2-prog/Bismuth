@@ -304,6 +304,7 @@ async function runDesktop(scale) {
     env: {
       ...process.env,
       BISMUTH_USER_DATA: userData,
+      BISMUTH_DRIVE_HOME: userData,
       ELECTRON_RENDERER_URL: '',
       // Screenshots never reach the internet: online data goes to a closed port unless a fake server is given.
       BISMUTH_EXTERNAL_ORIGIN: process.env.BISMUTH_EXTERNAL_ORIGIN ?? 'http://127.0.0.1:9'

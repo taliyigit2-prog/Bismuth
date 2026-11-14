@@ -150,7 +150,7 @@ function ExpenseForm({
   const [closedReason, setClosedReason] = useState('')
   const [tried, setTried] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const typed = useDebounced(description.trim(), 200)
+  const typed = useDebounced(description.trim().slice(0, 100), 200)
   const suggestions = useApiQuery(
     'ledger.suggestDescriptions',
     { prefix: typed, limit: 10 },

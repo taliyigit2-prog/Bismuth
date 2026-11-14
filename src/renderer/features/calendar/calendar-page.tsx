@@ -198,7 +198,8 @@ function GridSkeleton() {
  * from its first column, on the day it was showing.
  */
 function DesktopCalendar(props: DesktopProps) {
-  const years = useGridYears(props.clientToday)
+  const canSeeGrid = useCan()('calendar')
+  const years = useGridYears(props.clientToday, canSeeGrid)
   const client = useQueryClient()
   const shown = useRef<LocalDate | null>(null)
   const onAnchor = useCallback((d: LocalDate) => {
@@ -264,7 +265,8 @@ function DesktopGrid({
   )
   const data = useGridData(
     dateAt(base, Math.max(0, view.first - PREFETCH_DAYS)),
-    dateAt(base, Math.min(count, view.first + view.visible + PREFETCH_DAYS))
+    dateAt(base, Math.min(count, view.first + view.visible + PREFETCH_DAYS)),
+    can('calendar')
   )
   const model = data.model
   const today = model.today ?? clientToday

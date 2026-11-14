@@ -41,6 +41,10 @@ test('hafif modda pencere kapanınca program çalışır, tarayıcıdan giriş y
 })
 
 test('hafif mod kapalıyken son pencere kapanınca program kapanır', async ({ launch }) => {
+  test.skip(
+    process.platform === 'darwin',
+    'macOS keeps the app running after the last window closes (platform rule, window-all-closed is not quit)'
+  )
   test.setTimeout(120_000)
   const { app } = await launch()
   const closed = new Promise<void>((resolve) => app.process().once('exit', () => resolve()))

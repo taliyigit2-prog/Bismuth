@@ -56,7 +56,8 @@ const realProbe = (): DriveProbe => {
   let network: Set<string> | null = null
   return {
     platform: process.platform,
-    home: homedir(),
+    // BISMUTH_DRIVE_HOME: test hook so e2e/screenshot runs never see (or write into) the owner's real Drive folder.
+    home: process.env['BISMUTH_DRIVE_HOME'] || homedir(),
     skipRoot: (root) => {
       if (process.platform !== 'win32') return false
       network ??= mappedNetworkLetters()

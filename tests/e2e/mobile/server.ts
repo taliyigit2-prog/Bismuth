@@ -26,6 +26,8 @@ import { draftFrom } from '../setup-draft.mjs'
 const WINDOW = 1
 
 async function main(): Promise<void> {
+  // Never look at (or write into) the real Google Drive folder of whoever runs the tests.
+  process.env['BISMUTH_DRIVE_HOME'] ||= mkdtempSync(join(tmpdir(), 'bismuth-e2e-drive-'))
   const port = Number(process.env['E2E_PORT'] ?? 47373)
   const root = resolve(__dirname, '../../..')
   const handle = await openDatabase({ file: ':memory:', migrationsFolder: resolve(root, 'drizzle') })

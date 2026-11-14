@@ -7,6 +7,7 @@ import { expect } from '@playwright/test'
 import { maxLengthOf } from '../../src/shared/contract/limits'
 import {
   calendarNoteInputSchema,
+  handoverInputSchema,
   lostItemInputSchema,
   noteInputSchema,
   taskInputSchema
@@ -64,7 +65,7 @@ export async function seedLongText(page: Page): Promise<void> {
     note: L(taskInputSchema.shape.note),
     dueAt: `${today}T20:00`
   })
-  await must(page, 'shift.saveHandover', { text: unbroken(5000) })
+  await must(page, 'shift.saveHandover', { text: L(handoverInputSchema.shape.text) })
   await must(page, 'notes.add', { kind: 'board', text: L(noteInputSchema.shape.text), pinned: true })
   await must(page, 'notes.add', { kind: 'personal', text: L(noteInputSchema.shape.text) })
   await must(page, 'lostItems.create', {
@@ -91,7 +92,7 @@ export async function seedLongText(page: Page): Promise<void> {
     name: L(contactInputSchema.shape.name),
     category: 'custom',
     customCategory: unbroken(60),
-    phones: [{ label: unbroken(40), number: unbroken(40, '1') }],
+    phones: [{ label: unbroken(40), number: unbroken(17, '1') }],
     address: unbroken(500),
     note: unbroken(1000),
     favorite: true
@@ -138,7 +139,7 @@ export async function seedLongText(page: Page): Promise<void> {
       guest: {
         firstName: L(newGuestSchema.shape.firstName),
         lastName: L(newGuestSchema.shape.lastName),
-        phone: unbroken(40, '5')
+        phone: unbroken(17, '5')
       },
       channelId: options.channels[0]!.id,
       channelRef: unbroken(80, '7'),
@@ -169,7 +170,7 @@ export async function seedLongText(page: Page): Promise<void> {
   })
   await must(page, 'blacklist.add', {
     name: unbroken(160),
-    phone: unbroken(40, '4'),
+    phone: unbroken(17, '4'),
     severity: 'warn',
     reasonCode: 'other',
     reasonText: L(blacklistInputSchema.shape.reasonText)
@@ -200,7 +201,7 @@ export async function seedLongText(page: Page): Promise<void> {
     firstName: L(employeeCreateSchema.shape.firstName),
     lastName: L(employeeCreateSchema.shape.lastName),
     position: unbroken(60),
-    phone: unbroken(40, '3'),
+    phone: unbroken(17, '3'),
     startDate: shiftDay(today, -30),
     notes: L(employeeCreateSchema.shape.notes)
   })

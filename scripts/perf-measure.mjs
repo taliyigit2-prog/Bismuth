@@ -262,6 +262,7 @@ async function electronRun(o, seed, idx) {
     env: {
       ...process.env,
       BISMUTH_USER_DATA: dir,
+      BISMUTH_DRIVE_HOME: dir,
       ELECTRON_RENDERER_URL: '',
       BISMUTH_EXTERNAL_ORIGIN: 'http://127.0.0.1:9',
       ...o.env

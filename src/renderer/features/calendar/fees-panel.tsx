@@ -226,6 +226,7 @@ function LateDialog({ view, onClose }: { view: BookingView; onClose: () => void 
   const [time, setTime] = useState(nowClock)
   const [fee, setFee] = useState<MoneyValue | null>(null)
   const [note, setNote] = useState('')
+  const [amountError, setAmountError] = useState(false)
   const quote = useApiQuery(
     'booking.feeQuote',
     { kind: 'lateCheckout', stayId, time: isClock(time) ? time : '23:59' },
@@ -256,7 +257,11 @@ function LateDialog({ view, onClose }: { view: BookingView; onClose: () => void 
         onSubmit={(e) => {
           e.preventDefault()
           if (deferForPendingAmount(e.currentTarget)) return
-          if (!stayId || !isClock(time) || !shown.amountMinor || shown.amountMinor <= 0 || day.missing) return
+          if (!shown.amountMinor || shown.amountMinor <= 0) {
+            setAmountError(true)
+            return
+          }
+          if (!stayId || !isClock(time) || day.missing) return
           add.mutate({
             stayId,
             time,
@@ -298,8 +303,12 @@ function LateDialog({ view, onClose }: { view: BookingView; onClose: () => void 
         <MoneyInput
           label={t('feesPanel.amount')}
           value={shown}
-          onChange={(v) => setFee({ ...v, currency })}
+          onChange={(v) => {
+            setAmountError(false)
+            setFee({ ...v, currency })
+          }}
           currencies={[currency]}
+          error={amountError ? t('form.required') : null}
         />
         <div className="grid gap-1.5">
           <Label htmlFor="late-note">{t('feesPanel.note')}</Label>

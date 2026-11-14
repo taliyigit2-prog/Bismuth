@@ -51,6 +51,8 @@ export const test = base.extend<AppFixtures>({
         env: {
           ...process.env,
           BISMUTH_USER_DATA: opts.dir ?? userData,
+          // The data folder doubles as "home" for the Drive lookup: tests never write into the real Google Drive.
+          BISMUTH_DRIVE_HOME: opts.dir ?? userData,
           ELECTRON_RENDERER_URL: '',
           // Tests never reach the internet: optional online data (Faz 11) goes to a closed local port unless a
           // spec starts its own fake server.

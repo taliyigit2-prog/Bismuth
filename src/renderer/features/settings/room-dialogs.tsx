@@ -153,6 +153,7 @@ export function RoomTypeDialog({
   })
   const [active, setActive] = useState(type?.active ?? true)
   const [error, setError] = useState(false)
+  const [priceBad, setPriceBad] = useState(false)
   // The service refuses a name another type already has; the answer sits under the field, not in a toast.
   const [taken, setTaken] = useState(false)
   const done = { onSuccess: onClose }
@@ -174,16 +175,19 @@ export function RoomTypeDialog({
   })
   // One currency per type: the prices move together.
   const pickBase = (v: MoneyValue): void => {
+    setPriceBad(false)
     setBase(v)
     setWeekend((w) => ({ ...w, currency: v.currency }))
     setHourly((h) => ({ ...h, currency: v.currency }))
   }
   const pickWeekend = (v: MoneyValue): void => {
+    setPriceBad(false)
     setWeekend(v)
     setBase((b) => ({ ...b, currency: v.currency }))
     setHourly((h) => ({ ...h, currency: v.currency }))
   }
   const pickHourly = (v: MoneyValue): void => {
+    setPriceBad(false)
     setHourly(v)
     setBase((b) => ({ ...b, currency: v.currency }))
     setWeekend((w) => ({ ...w, currency: v.currency }))
@@ -193,12 +197,14 @@ export function RoomTypeDialog({
     e.preventDefault()
     if (deferForPendingAmount(e.currentTarget)) return
     const trimmed = name.trim()
-    const priceBad = [base.amountMinor, weekend.amountMinor, hourly.amountMinor].some(
+    const negative = [base.amountMinor, weekend.amountMinor, hourly.amountMinor].some(
       (m) => m !== null && m < 0
     )
-    if (!trimmed || trimmed.length > 80 || priceBad) {
-      setError(true)
-      document.getElementById(`${formId}-name`)?.focus()
+    const nameBad = !trimmed || trimmed.length > 80
+    if (nameBad || negative) {
+      setError(nameBad)
+      setPriceBad(negative)
+      if (nameBad) document.getElementById(`${formId}-name`)?.focus()
       return
     }
     if (!type) {
@@ -242,7 +248,7 @@ export function RoomTypeDialog({
           id={`${formId}-name`}
           label={t('settings.rooms.typeName')}
           help={type && !type.isCustom ? t('settings.seededRename') : undefined}
-          error={error ? t('settings.rooms.typeNameRequired') : taken ? t('errors.nameTaken') : null}
+          error={error ? t('settings.rooms.typeNameOnly') : taken ? t('errors.nameTaken') : null}
         >
           <Input
             id={`${formId}-name`}
@@ -266,12 +272,14 @@ export function RoomTypeDialog({
             value={base}
             onChange={pickBase}
             currencies={values['hotel.currencies']}
+            error={priceBad && (base.amountMinor ?? 0) < 0 ? t('settings.rooms.typePriceNegative') : null}
           />
           <MoneyInput
             label={t('settings.rooms.weekendPrice')}
             value={weekend}
             onChange={pickWeekend}
             currencies={values['hotel.currencies']}
+            error={priceBad && (weekend.amountMinor ?? 0) < 0 ? t('settings.rooms.typePriceNegative') : null}
           />
           <div className="grid content-start gap-1">
             <MoneyInput
@@ -279,6 +287,7 @@ export function RoomTypeDialog({
               value={hourly}
               onChange={pickHourly}
               currencies={values['hotel.currencies']}
+              error={priceBad && (hourly.amountMinor ?? 0) < 0 ? t('settings.rooms.typePriceNegative') : null}
             />
             <p className="text-muted-foreground text-xs">{t('settings.hourly.priceHelp')}</p>
           </div>
