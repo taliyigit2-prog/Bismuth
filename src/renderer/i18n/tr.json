@@ -4672,7 +4672,7 @@
         "clean": "Temiz",
         "dirty": "Kirli",
         "inspected": "Kontrol edildi",
-        "outOfService": "Hizmet dışı"
+        "outOfService": "Bakımda / kullanım dışı"
       },
       "cash": "Kasa özeti",
       "cashNone": "Bu gün için kasa hareketi yok.",
@@ -5614,7 +5614,7 @@
     "standaloneTitle": "Bu bilgisayar tek başına mı çalışacak?",
     "standaloneBody": "Otelin bütün kayıtları bu bilgisayarda tutulur; kurulum adımları açılır.",
     "standalone": "Bu bilgisayarı tek başına kur",
-    "addressHelp": "Adres, ana bilgisayarda Ayarlar → Uzaktan erişim bölümünde yazar (örn. 192.168.1.20:7373).",
+    "addressHelp": "Adres, ana bilgisayarda Ayarlar → Uzaktan erişim bölümünde görünür (örn. 192.168.1.20:7373).",
     "unreachableTitle": "Ana bilgisayara ulaşılamadı",
     "unreachableBody": "{{url}} yanıt vermiyor. Ana bilgisayarın açık olduğunu ve bu bilgisayarın aynı ağda olduğunu (ya da NetBird'ün açık olduğunu) kontrol edin. Ekran birkaç saniyede bir yeniden dener.",
     "otherAddress": "Başka adres gir",
@@ -7550,7 +7550,7 @@
   },
   "feesPanel": {
     "title": "Ücret kalemleri ve emanet",
-    "error": "Kalemler yüklenemedi. Sayfayı yenileyip tekrar deneyin.",
+    "error": "Kalemler yüklenemedi. Ekranı yenileyip tekrar deneyin.",
     "empty": "Henüz ücret kalemi ya da depozito yok.",
     "addLate": "Geç çıkış ekle",
     "takeDeposit": "Depozito al",

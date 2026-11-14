@@ -2,7 +2,7 @@
 // night report. Fee rules are hotel settings (`fees.*`). Fee lines are ordinary folio charges (voided, never
 // deleted); a damage deposit is money held, not income: it is given back or, with a reason, turned into a damage
 // charge plus a payment (the only moment it becomes income).
-import { and, asc, eq, inArray, isNull, lte, ne } from 'drizzle-orm'
+import { and, asc, eq, gte, inArray, isNull, lte, ne, or } from 'drizzle-orm'
 import {
   depositSettleSchema,
   depositTakeSchema,
@@ -209,6 +209,9 @@ export function createFeesService(deps: ServiceDeps, parts: { payments: Payments
           : undefined
         if (!service || !['late_checkout', 'no_show_fee', 'damage_fee'].includes(service.code))
           throw invalid('errors.feeNotVoidable')
+        // The damage line of a deposit turned into income goes with its payment: it is not voided alone.
+        if (tx.select().from(damageDeposits).where(eq(damageDeposits.convertedChargeId, row.id)).get())
+          throw invalid('errors.feeNotVoidable')
         assertDayWritable(tx, ctx, row.date, undefined)
         tx.update(charges)
           .set({ voidedAt: now.toISOString(), voidReason: data.reason, updatedAt: now.toISOString() })
@@ -263,6 +266,7 @@ export function createFeesService(deps: ServiceDeps, parts: { payments: Payments
         const r = tx.select().from(reservations).where(eq(reservations.id, data.reservationId)).get()
         if (!r) throw notFound('reservation', data.reservationId)
         if (r.status === 'cancelled' || r.status === 'no_show') throw invalid('errors.reservationClosed')
+        assertDayWritable(tx, ctx, today(now), undefined)
         const folio = folioOfReservation(tx, r.id)
         if (!tx.select().from(paymentMethods).where(eq(paymentMethods.id, data.methodId)).get())
           throw notFound('payment_method', data.methodId)
@@ -288,14 +292,16 @@ export function createFeesService(deps: ServiceDeps, parts: { payments: Payments
     settleDeposit(ctx: Ctx, input: unknown): { reservationId: string } {
       const data = parseInput(depositSettleSchema, input)
       requirePermission(ctx, data.action === 'refund' ? 'payments.refund' : 'payments', 'edit')
+      // Turning a deposit into income also writes a damage charge line.
+      if (data.action === 'convert') requirePermission(ctx, 'extras', 'edit')
       return inTransaction(deps, ctx, (tx, audit, now) => {
         const before = tx.select().from(damageDeposits).where(eq(damageDeposits.id, data.id)).get()
         if (!before) throw notFound('damage_deposit', data.id)
         if (before.status !== 'held') throw invalid('errors.depositSettled')
         const day = today(now)
+        assertDayWritable(tx, ctx, day, undefined)
         let chargeId: string | null = null
         if (data.action === 'convert') {
-          assertDayWritable(tx, ctx, day, undefined)
           chargeId = insertFeeCharge(tx, audit, ctx, now, {
             reservationId: before.reservationId,
             code: 'damage_fee',
@@ -404,9 +410,11 @@ export function createFeesService(deps: ServiceDeps, parts: { payments: Payments
         .innerJoin(guests, eq(guests.id, reservations.primaryGuestId))
         .where(
           and(
-            ne(reservationRooms.status, 'cancelled'),
+            // A no-show's stays are released (cancelled) by the no-show itself: keep them for the "Gelmeyenler" list.
+            or(ne(reservationRooms.status, 'cancelled'), eq(reservations.status, 'no_show')),
             inArray(reservations.status, ['tentative', 'confirmed', 'checked_in', 'checked_out', 'no_show']),
-            lte(reservationRooms.checkIn, date)
+            lte(reservationRooms.checkIn, date),
+            gte(reservationRooms.checkOut, date)
           )
         )
         .all()

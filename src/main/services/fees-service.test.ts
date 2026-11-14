@@ -186,6 +186,9 @@ describe('hasar depozitosu', () => {
     expect(
       svc.fees.nightReport(owner, { date: '2026-10-01' }).cash!.byCurrency.find((c) => c.currency === 'TRY')
     ).toMatchObject({ incomeMinor: 100_000, depositHeldMinor: 0 })
+    // The damage line goes with its payment: it is not voided alone.
+    const line = svc.fees.folioLines(reception, b.reservation.id).charges.find((c) => c.code === 'damage_fee')!
+    expect(() => svc.fees.voidFee(owner, { chargeId: line.id, reason: 'yanlış' })).toThrow()
   })
 
   it('kat hizmetleri depozito alamaz', async () => {
@@ -215,5 +218,14 @@ describe('gece raporu', () => {
     expect(out.departures).toHaveLength(1)
     expect(out.staying).toHaveLength(0)
     expect(() => svc.fees.nightReport(housekeeping, { date: '2026-10-01' })).toThrow()
+  })
+
+  it('gelmedi işaretlenen rezervasyon o günün "Gelmeyenler" listesinde görünür', async () => {
+    const { svc, book } = await setup()
+    const b = book('2026-10-01', '2026-10-03')
+    svc.reservations.noShow(reception, b.reservation.id)
+    const rep = svc.fees.nightReport(owner, { date: '2026-10-01' })
+    expect(rep.noShows).toHaveLength(1)
+    expect(rep.arrivals).toHaveLength(0)
   })
 })

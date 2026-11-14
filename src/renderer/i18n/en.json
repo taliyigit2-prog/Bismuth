@@ -4661,18 +4661,18 @@
       "departures": "Departures",
       "staying": "Staying",
       "noShows": "No-shows",
-      "none": "None.",
+      "none": "No records.",
       "room": "Room",
       "guest": "Guest",
       "dates": "Dates",
       "balance": "Balance due",
       "rooms": {
-        "total": "Rooms",
+        "total": "Total rooms",
         "occupied": "Occupied",
         "clean": "Clean",
         "dirty": "Dirty",
         "inspected": "Inspected",
-        "outOfService": "Out of service"
+        "outOfService": "Maintenance / out of order"
       },
       "cash": "Cash summary",
       "cashNone": "No cash movements on this day.",

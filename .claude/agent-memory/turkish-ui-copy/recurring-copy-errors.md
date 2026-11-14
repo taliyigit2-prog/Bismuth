@@ -95,3 +95,23 @@ Ajan notu: bu oturumda `.tmp/` altına rapor dosyası yazma isteği araç taraf�
   format.ts (`settings/camera-section.tsx:117`).
 - Kabul edilen: "kayıtsız kişi" (unregistered), "tanıma eşiği", "canlı görüntü", "Yeniden başlat" (düğme) + "Ayarlar'da
   Kamera bölümü"; "Telegram'a gönder" ifadeleri; ru "Система камер" (koleksiyon, kabul).
+
+## Dalga 12 (portföy, ücretler/gece raporu, bağlan ekranı) incelemesinden
+
+- Oda durumu terimi: gece raporu "Hizmet dışı" (tr) / "Out of service" / "Не в продаже" (ru) oda durumu sözlüğüyle (Kullanım dışı /
+  Out of order / Вне эксплуатации) çakışıyordu; ayrıca sayı hem bakımı hem kullanım dışını sayar. Düzeltildi:
+  "Bakımda / kullanım dışı" (tr), "Maintenance / out of order" (en), "На обслуживании / вне эксплуатации" (ru).
+- Ru sayı + isim kalıbı: düz `portfolio.kpi.tonightHint` ("{{count}}/{{rooms}} номеров") yanlış çekim üretir. Yeni anahtar
+  yasağı varken çözüm isim içermeyen biçim: "Занято: {{count}} из {{rooms}}". tr "3/4 oda" test bağımlıdır, tr değişmedi.
+- "Sayfa" yasağı: `feesPanel.error` "Sayfayı yenileyin" (tr) / "Обновите страницу" (ru) → "Ekranı" / "экран".
+- Menü adı ile sayfa başlığı kayması: ru menü "Мои отели", başlık "Портфель отелей"; tr/en menü ve başlık aynı. Menü "Портфель".
+- Yardım cümlesinde "yazar" (yazılı görünür anlamında) → "görünür" (`connect.addressHelp`).
+- Türkçe kopya ru/en'e sızmış: en `reports.night.rooms.total` "Rooms" → "Total rooms" (tr "Toplam oda").
+- Açık (test bağımlı, değiştirilmedi): tr `connect.hotels.removeTitle` "Listeden kaldırılsın mı: {{name}}?" → kamera ile aynı
+  "{{name}} listeden kaldırılsın mı?" kalıbı. connect-page.test.tsx:303 bu metni bekliyor; öneri test ile birlikte.
+- Kabul edilen: "Gelenler / Gidenler / Kalanlar / Gelmeyenler" (gece raporu liste başlıkları; `reports.night.*`); "Kâr";
+  "Yedek kopya" = salt okunur kopya (sözlükle uyumlu); "Kullanımda" (aktif otel); "Gelmeme bedeli" (no-show ücreti).
+- Açık sahip kararı: `feesPanel.voidReason` "İptal nedeni" vs `errors.reasonRequired` "Bir gerekçe yazın." (bilinen neden/gerekçe ayrımı).
+
+**Why:** Dalga 12 json incelemesi ve düzeltmeleri; yeni anahtar eklenmedi.
+**How to apply:** Oda durumu adları room-status sözlüğüyle aynı olmalı; ru'da sayıyla birlikte isim kullanılmıyorsa isimsiz biçim tercih et.

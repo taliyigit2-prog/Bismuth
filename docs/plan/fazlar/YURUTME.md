@@ -106,8 +106,8 @@ Harcama sütunu: başlatıcının yazdığı `$` (dalga toplamı, gerçek).
 | 10 | P20g Kamera kurulum sihirbazı (K-59: donanım otomatik, Hikvision keşif + RTSP kalıbı + test) | 20 | features/setup, main/camera/discovery, otel-kamera/discovery | camera-integrator | $10–15 | ~$25 | ✅ |
 | 11 | P20f Kamera paketleme (torch dahil; gerekirse ayrı kamera eki kurulumu) | 20 | electron-builder, resources | packager | $12–18 | ~$25 | ✅ |
 | 11 | P21b İstemci çoklu ana bilgisayar (K-54: kayıtlı otel listesi) | 21 | remote | feature-builder | $8–12 | ~$15 | ✅ |
-| 12 | P21c Portföy özeti (iki otelin takvimi, gelir-gider, doluluk, kasa) | 21 | portfolio | feature-builder | $8–12 | | 🔄 |
-| 12 | P21d Geç çıkış, no-show bedeli, hasar depozitosu kalemi, gece raporu | 21 | booking, reports | feature-builder | $6–9 | | 🔄 |
+| 12 | P21c Portföy özeti (iki otelin takvimi, gelir-gider, doluluk, kasa) | 21 | portfolio | feature-builder | $8–12 | ~$20 | ✅ |
+| 12 | P21d Geç çıkış, no-show bedeli, hasar depozitosu kalemi, gece raporu | 21 | booking, reports | feature-builder | $6–9 | ~$18 | ✅ |
 | 13 | P21e Orta/Düşük bulgular (02 + 04 listesi, faz-21) | 21 | bulguya göre | feature-builder-lite / feature-builder | $4–6 | | ⬜ |
 | 13 | P21a Profil altyapısı (isteğe bağlı; tek makinede iki otel) | 21 | main/app/paths, auth, settings | feature-builder | $10–15 | | ⬜ |
 | 14 | P22a Ölç ve hafiflet (perf betiği, Electron denemeleri, hafif mod) | 22 | scripts, main/windows, main/app | feature-builder | $15–30 | | ⬜ |
@@ -349,3 +349,16 @@ QA2b, akış testleri C/D) bu plana **Son** satırında katılır; ayrı yürüt
   A4 doğrulaması, aydınlatma metninde toplama yöntemi/alıcı grupları. 2958 test yeşil. **Dalga 10 bitti.**
 - 2026-11-13: Dalga 10 sadeleştirme dalga 11 ile birlikte. Dalga 11 başladı (P20f packager + P21b feature-builder; taban 96684ee).
 - 2026-11-14: Dalga 11 sadeleştirme dalga 12 ile birlikte. Dalga 12 başladı (P21c + P21d, feature-builder ×2; taban 2f3369f).
+- 2026-11-14: P21c ✅ — Portföy ekranı `/portfolio` (owner: `remote.settings` + `reports.finance` görüntüleme, servis katmanında): kayıtlı
+  her otel için bu gece doluluk, kasa, dönem gelir/gider/kâr (otelin kendi para biriminde; aynı para birimi ≥2 otelde "Toplam", kur çevirisi
+  yok), kaynak rozeti (canlı / "Yedek kopya, son eşitleme"); otel seçici + salt-okunur takvim (`CalendarGrid`; telefonda gün listesi);
+  istemcide etkin otel canlı, diğerleri `replica/<kod>` kopyasından; ana bilgisayarda yalnız kendi oteli + "kendi cihazınızdan bağlanın".
+  Rakamlar mevcut servislerden (yeni hesap yok). P21d ✅ — geç çıkış ücreti (öneri ayardan, çıkış diyaloğu + Para sekmesi), gelmeme bedeli
+  (`penalty`), hasar depozitosu (migrasyon **0023** `damage_deposits`; alınınca gelir değil, iade gelir dışı, gelire çevirme o gün), tek A4
+  gece raporu; kurallar Ayarlar → Otel → Ücretler (varsayılan "yok"). Oturum kesildiği için birleştirme WIP commit'i (2ba01b2) olarak
+  kaydedilmişti; bu turda doğrulandı. Düzeltmeler: gece raporunda gelmeyenler listesi boş kalıyordu (Yüksek, db-reviewer) + test; gelire
+  çevirme `extras` edit de ister; gelire çevrilmiş depozitonun hasar kalemi tek başına iptal edilemez; depozito alma/iade kapalı gün kilidine
+  uyar; gece raporu sorgusu `checkOut >= gün` ile sınırlandı; portföy kılavuz eşlemesi. turkish-ui-copy 7 metin düzeltmesi.
+  P21e'ye: portföyde telefonda alt boşluk, ücret kartı `SelectTrigger` tam genişlik, `fees-panel` hata durumunda "Tekrar dene", gece raporu
+  dolu görüntü + yazdırma görüntüsü, `damage_deposits.method_id` dizini, gece raporu N+1 bakiye sorgusu, `connect-page` onay metni kalıbı.
+  **Dalga 12 bitti.**

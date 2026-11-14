@@ -32,6 +32,7 @@ export const GUIDE_ROUTE_MAP: Readonly<Record<string, GuideTarget | null>> = {
   '/contacts': { section: 'operations', anchor: 'contacts' },
   '/staff': { section: 'staff' },
   '/reports': { section: 'month-end', anchor: 'reports' },
+  '/portfolio': { section: 'month-end', anchor: 'reports' },
   '/tourism': { section: 'tourism' },
   '/settings': { section: 'settings' },
   '/theme-preview': { section: 'settings', anchor: 'status-colors' },

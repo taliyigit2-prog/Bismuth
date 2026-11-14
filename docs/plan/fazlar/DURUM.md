@@ -25,8 +25,8 @@
 | 17 | `faz-17-resepsiyon-duzeltmeleri.md` | ⬜ planlandı (2026-11-12) | resepsiyonun 4 maddesi: vazgeçme/iade, grup + toplu giriş, hızlı takvim, gündüz kullanımı 2.0, kritik hatalar (G-193…G-196) |
 | 18 | `faz-18-ekran-ve-tam-ekran.md` | ⬜ planlandı (2026-11-12) | çözünürlük/ölçek/tema/dil uyumu, pencere ve tam ekran, çalışmayan öğeler |
 | 19 | `faz-19-kurulum-ve-dagitim.md` | ✅ kod tamam (2026-11-13; P19a–d); gerçek Windows/Mac denemesi sahip onay paketinde | sürüm iş akışı tekleştirme, kurulum belgeleri, depo temizliği, ajan bakımı |
-| 20 | `faz-20-kamera-entegrasyonu.md` | 🔄 P20a, P20b, P20d tamam (2026-11-13); P20c, P20e, P20g, P20f sürüyor | otel-kamera Bismuth içinde sekme: yan süreç + Telegram (ayarlı), veri, mevcut modeller (telemetrisiz), aydınlatma, kurulum sihirbazı, paketleme |
-| 21 | `faz-21-coklu-otel-ve-diger.md` | ⬜ planlandı (2026-11-12; sahip cevapları 2026-11-13 işlendi, K-54 kesin) | istemci otel listesi + takvimli portföy (K-54), geç çıkış/no-show/gece raporu, orta/düşük bulgular, isteğe bağlı profiller |
+| 20 | `faz-20-kamera-entegrasyonu.md` | ✅ kod tamam (2026-11-14; P20a–P20g); gerçek kamera/ek denemesi ve avukat görüşü sahip onay paketinde | otel-kamera Bismuth içinde sekme: yan süreç + Telegram (ayarlı), veri, mevcut modeller (telemetrisiz), aydınlatma, kurulum sihirbazı, paketleme |
+| 21 | `faz-21-coklu-otel-ve-diger.md` | 🔄 P21b, P21c, P21d tamam (2026-11-14); P21e, P21a sürüyor | istemci otel listesi + takvimli portföy (K-54), geç çıkış/no-show/gece raporu, orta/düşük bulgular, isteğe bağlı profiller |
 | 22 | `faz-22-performans-ve-kabuk.md` | ⬜ planlandı (2026-11-13; sahip yönergesi B.1, K-62 taslak) | Electron ölçüm/hafifletme, kabuk soyutlaması, Tauri 2 prototipi ve sahip kararı; tam Rust yok |
 
 **Şu anki faz:** 17–21 **analiz turu planı; `/orkestra` ile dalga 1'den başlanır** (`YURUTME.md`). Faz 5–16 kodu tamam; kalan son kontrol "Son" dalgasında. Eski not: 5–16 **kesintisiz yürütülüyor** (K-39: sahip ara onay istemiyor; hepsi bitince ayrıntılı kontrol ve
