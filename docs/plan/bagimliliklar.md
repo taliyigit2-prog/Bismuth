@@ -97,6 +97,7 @@ kontrol maddesi bu dağıtım hedeflerini kapsar.
 | @playwright/test | 1.63.0 | Apache-2.0 | Uçtan uca testler: Electron + telefon emülasyonu |
 | @axe-core/playwright | 4.13.0 | MPL-2.0 | Erişilebilirlik taraması e2e'de (Faz 15 madde 5): `tests/e2e/electron/a11y.spec.ts`, `tests/e2e/mobile/a11y.spec.ts`; kurulum paketine girmez. Bağımlılığı `axe-core` 4.13.0 (MPL-2.0) |
 | @vitest/coverage-v8 | 5.0.3 | MIT | Test kapsamı ölçümü (`domain/` + `services/` ≥ %85, faz-02) |
+| yaml | 2.9.1 | ISC | `tests/unit/packaging.test.ts` electron-builder.yml ve iş akışı dosyalarını okur. Önceden Vite'ın isteğe bağlı eşi olarak geliyordu; npm 11 (Mac) bunu kurmadığı için doğrudan eklendi |
 
 ## Kamera yan süreci (Python; Faz 20, `otel-kamera/`)
 
