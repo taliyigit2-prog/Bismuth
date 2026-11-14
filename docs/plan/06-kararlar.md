@@ -110,6 +110,19 @@ Gerekçeler ve ayrıntılar `docs/analiz/` altında: K-48 ve K-55 → `03-reseps
 `00-ozet.md`'deki soruları cevaplamasıyla kesinleşir; cevap gelmezse Opus varsayılanla uygular ve satırı
 "varsayılan (tarih)" yapar (K-39).
 
+## Sahip cevapları (2026-11-14, 9. tur — Son dalgası bulguları S-124…S-128)
+
+> Kaynak: sahip, oturumda sunulan beş soruya "önerine göre devam et" dedi (Opus oturumu, 2026-11-14). Bulgular
+> `docs/analiz/ekler/son-kontrol/`.
+
+| Soru | Cevap | Etki |
+|---|---|---|
+| S-124 Toplu çıkışta KBS bilgisi eksik odalar | Öneri: eksik odalar adlarıyla uyarıda listelenir, çıkış engellenmez (tek çıkışla aynı) | Toplu çıkış diyaloğu; servis değişmez |
+| S-125 Elle girilen kurda akla yatkınlık | Öneri: son bilinen kurdan ≥ %20 sapmada uyarı, kayıt engellenmez (çevrimdışı giriş bozulmaz, G-01) | Kur alanı uyarısı; eşik ayar (G-09) |
+| S-126 Avansın maaşı aşması | Öneri: dönemin avansları net maaşı aşınca uyarı, engel yok | Avans diyaloğu uyarısı |
+| S-127 Kapanmış çamaşır ayı | Öneri: yönetici/sahip gerekçeyle yeniden açabilir; audit'e yazılır (kapalı gün kalıbı) | Çamaşır ayı "yeniden aç" |
+| S-128 Pasif oda tipine oda eklemek | Öneri: reddedilir, anlaşılır hata ("önce oda tipini etkinleştirin") | `rooms-service` doğrulaması |
+
 ## Sahip cevapları (2026-11-13, 8. tur — S-119…S-123)
 
 > Kaynak: sahibin terminalden verdiği cevaplar (Opus oturumu, 2026-11-13).
