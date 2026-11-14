@@ -114,7 +114,7 @@ Harcama sütunu: başlatıcının yazdığı `$` (dalga toplamı, gerçek).
 | 14 | P22b Kabuk soyutlaması `lib/shell` (Electron + tarayıcı) | 22 | renderer/lib/shell, preload | feature-builder | $20–40 | ~$12 | ✅ |
 | 15 | P22c Tauri 2 prototipi + aynı ölçümle karşılaştırma + sahip karar sayfası (**durma noktası**) | 22 | shell-tauri/ (ürün dışı) | rust-shell-builder | $60–120 | ~$25 | ✅ |
 | 16 | P22d Tauri ürünleştirme (yalnız sahip "devam" derse); P22e Rust servis pilotu (yalnız darboğazda) | 22 | shell-tauri, .github, docs | rust-shell-builder + packager | $80–160 (+$100–200) | | ⏭ açılmadı (K-62: ölçüm olumsuz; sahip "devam" demedi) |
-| Son | Tam kontrol sürüsü (bug-hunter + flow-tester modül başına, decision, security, db, ui, screen, privacy, copy, tracer) → **modül başına Ponytail `full` sadeleştirme turu (K-61; testler aynı)** → düzeltme turu → `/owner-review` | — | — | hepsi | $50–75 | | ⬜ |
+| Son | Tam kontrol sürüsü (bug-hunter + flow-tester modül başına, decision, security, db, ui, screen, privacy, copy, tracer) → **modül başına Ponytail `full` sadeleştirme turu (K-61; testler aynı)** → düzeltme turu → `/owner-review` | — | — | hepsi | $50–75 | | 🔄 |
 
 Dalga sırası kuralları: bir paket bağımlı olduğu paketten **sonraki** dalgada (P17c → P17b, P18b → P17c, P20b/P20d → P20a,
 P20c → P20b, P21b/P21c → P21a); aynı dalgadaki iki paket aynı dizine dokunmaz. Migrasyon numarası dalga sırasıyla verilir
@@ -394,3 +394,12 @@ QA2b, akış testleri C/D) bu plana **Son** satırında katılır; ayrı yürüt
   soru sorulmadı; K-62'nin kendi kuralı uygulandı, P22d/P22e açılmadı (sahip isterse Windows PC'sinde deneme adımları `shell-tauri/README.md`).
   Ek: `kbs-data-guard` harf/rakam bitişik dizileri (hex özetler, `Cargo.lock`) kimlik numarası saymaz (+ kanca testi, 117 senaryo).
   **Dalga 15 bitti; dalga 16 açılmadı. Sıradaki: Son dalgası.**
+- 2026-11-14: **Son dalgası başladı** (taban 904f184; sahibin Mac'i: aynı anda en çok 1 ajan, testler/e2e parça parça). Sıra:
+  S1 okuma sürüsü — modül grupları G1 rezervasyon/takvim/misafir, G2 para/rapor/turizm/portföy/ücret, G3 operasyon/Bugün/personel,
+  G4 sistem (giriş, kurulum, ayarlar, odalar, yedek, aktarma, uzaktan, kılavuz), G5 kamera; grup başına `bug-hunter`, akış testi C/D +
+  QA2b doğrulaması `flow-tester`, sonra `security-reviewer`, `db-reviewer`, `privacy-auditor`, `decision-auditor`,
+  `requirements-tracer`, `turkish-ui-copy`, `ui-reviewer`, `screen-auditor` (raporlar `.tmp/son/<ad>.md`) → S2 düzeltme paketleri
+  (grup başına, Yüksek ve üstü + ucuz Orta) → S3 Ponytail `full` grup başına → S4 `/owner-review`. Her paketten sonra commit + push.
+  Ön iş: `yaml` doğrudan devDependency (npm 11 Vite'ın isteğe bağlı eşini kurmuyordu, typecheck kırmızıydı); `npm run dev` Mac'te
+  pencereyi açıyor (önceki erken bitiş yeniden üretilemedi; uygulama hata yazmadan temiz kapanmıştı — çağıran süreç kapatmış olmalı).
+
