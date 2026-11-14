@@ -403,3 +403,10 @@ QA2b, akış testleri C/D) bu plana **Son** satırında katılır; ayrı yürüt
   Ön iş: `yaml` doğrudan devDependency (npm 11 Vite'ın isteğe bağlı eşini kurmuyordu, typecheck kırmızıydı); `npm run dev` Mac'te
   pencereyi açıyor (önceki erken bitiş yeniden üretilemedi; uygulama hata yazmadan temiz kapanmıştı — çağıran süreç kapatmış olmalı).
 
+- 2026-11-14: Son/G1 ✅ — `bug-hunter` G1 (rezervasyon/takvim/misafir): 9 bulgu (1 Yüksek, 3 Orta, 5 Düşük), fuzz 60×220 adım değişmez
+  ihlali yok. Düzeltme 5b9a312: grup ödemesi panel ve `payGroup` tek kural (`groupPayableMinor`; çıkış yapmış odanın borcu sayılır,
+  iptal/gelmedi dışarıda), saatlik satış misafir geçmişinde gece sayılmıyor, saatlik kayıtlı odada otomatik arıza bloğu açılıyor,
+  gelmeme bedeli kapalı gün kilidine uyuyor, misafir birleştirmede grup lideri taşınıyor, iptalde tutulan para `totalSpent`'te,
+  iptal/gelmedi rezervasyona borçtan fazla tahsilat reddediliyor, geç çıkış saati yerel saat. **Açık (sahip onay paketine):** toplu
+  çıkışta KBS boşluğu olan odalar ayrılmıyor (servis tek çıkışta da reddetmiyor; sözleşmeye alan gerekir). Not: `isolation: worktree`
+  ajanları bu Mac'te eski tabandan açıldı → düzeltmeler izolasyonsuz ajanla ana checkout'ta.
