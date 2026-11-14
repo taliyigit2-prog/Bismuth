@@ -426,3 +426,10 @@ QA2b, akış testleri C/D) bu plana **Son** satırında katılır; ayrı yürüt
   maaş dönemi/kuralları `staff.salary` ile, listeler; G-122); CSV koruması telefonlara `'` eklemiyor; kurulum geri almada saat
   dilimi, oda no harf duyarsız tekil, denetim kaydında para satırları `payments` yetkisine bağlı, ödeme tarihi ≤ 1 yıl ileri.
   Bırakılan: pasif oda tipine oda ekleme, ağ zaman aşımının toplam 5 sn olması (gerekçeler `.tmp/son/fix-g4.md`).
+- 2026-11-14: ⏸ **Son dalgası duraklatıldı (sahip isteği: eve gidiyor, evde devam).** G5 kamera hata avı yarıda durduruldu (rapor yok).
+  G1–G4 raporları `docs/analiz/ekler/son-kontrol/` (bug-gN = bulgu, fix-gN = düzeltme). **Devam sırası:** G5 `bug-hunter` (kamera) →
+  düzeltme → `flow-tester` (akış testi C/D, telefon e2e parça parça) → `security-reviewer`, `db-reviewer`, `privacy-auditor`,
+  `decision-auditor`, `requirements-tracer`, `turkish-ui-copy`, `ui-reviewer`, `screen-auditor` (sırayla, tek ajan) → düzeltme →
+  Ponytail `full` grup başına → `/owner-review`. Düzeltme ajanları `general-purpose` + izolasyonsuz (worktree ajanları bu Mac'te eski
+  tabandan açılıyor). Sahip onay paketine birikenler: toplu çıkışta KBS boşluğu, elle kur uyarısı, avans eşiği, kapanmış çamaşır ayını
+  yeniden açma, pasif oda tipine oda.
