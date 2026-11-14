@@ -410,3 +410,8 @@ QA2b, akış testleri C/D) bu plana **Son** satırında katılır; ayrı yürüt
   iptal/gelmedi rezervasyona borçtan fazla tahsilat reddediliyor, geç çıkış saati yerel saat. **Açık (sahip onay paketine):** toplu
   çıkışta KBS boşluğu olan odalar ayrılmıyor (servis tek çıkışta da reddetmiyor; sözleşmeye alan gerekir). Not: `isolation: worktree`
   ajanları bu Mac'te eski tabandan açıldı → düzeltmeler izolasyonsuz ajanla ana checkout'ta.
+- 2026-11-14: Son/G2 ✅ — `bug-hunter` G2 (para/rapor/turizm/portföy/ücret): 10 bulgu; defter ↔ rapor ↔ ay sonu ↔ portföy rakamları
+  rastgele senaryoda tutarlı. Düzeltme 424da09: gece raporunda maaş sızıntısı (Yüksek, K-42) kapandı; ücret/depozito işlemleri kapalı
+  gün gerekçesi alıyor; "gelire çevir" geri alınabiliyor (bağlı ödeme yöntem+tutar+tarihle bulunuyor; açık bağ sütunu migrasyon
+  isterdi); defterde iptal rezervasyon aranabiliyor; gelecek gün kapatılamıyor; gider tarihi ≤ 1 yıl ileri; konaklama türü süzgeci
+  ALOS/dışa aktarmada. Dokunulmadı (ürün kararı): elle kurda akla yatkınlık uyarısı.
