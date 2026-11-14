@@ -433,3 +433,12 @@ QA2b, akış testleri C/D) bu plana **Son** satırında katılır; ayrı yürüt
   Ponytail `full` grup başına → `/owner-review`. Düzeltme ajanları `general-purpose` + izolasyonsuz (worktree ajanları bu Mac'te eski
   tabandan açılıyor). Sahip onay paketine birikenler: toplu çıkışta KBS boşluğu, elle kur uyarısı, avans eşiği, kapanmış çamaşır ayını
   yeniden açma, pasif oda tipine oda.
+- 2026-11-14: Son dalgası devam (sahip: "kaldığın yerden devam et"). Son/G5 ✅ — `bug-hunter` G5 (kamera): 6 bulgu (3 Orta); çökme
+  sayacı, köprü belirteci, `network.enabled=false`, çıkışta yüz silme, özel IP keşfi sağlam. Düzeltme e36aa05: tırnaklı RTSP şifresi
+  de maskeleniyor (TS + Python tek kural), Bugün kamera kartı canlı yan süreç durumundan ve saklama süresi içindeki alarmlardan,
+  ilk yüz listesi gelmeden tanımsız yüz alarmı yok, Telegram turu bloklamıyor, yan süreç yalnız okuduğu ayarlarla yeniden başlıyor,
+  purge alarm olayındaki `guest_id`'yi boşaltıyor. Python 151 test yeşil (geçici sanal ortam, Python 3.12).
+- 2026-11-14: Son/S2-K ✅ — sahip S-124…S-128'e "önerine göre" dedi (`06-kararlar.md` 9. tur). 4dd9c41: toplu çıkışta KBS eksik
+  odalar uyarıda (`booking.kbsGaps`), elle otel kurunda ≥ %20 sapma uyarısı (`fx.manualRateWarnPercent`), kapanmış çamaşır ayı
+  gerekçeyle yeniden açılıyor (`laundry.reopenMonth`, audit), pasif oda tipine oda reddi; S-126 avans uyarısı zaten vardı. Rol
+  testleri iki yeni yordam için eklendi. Sıradaki: `flow-tester` (akış testi C/D, telefon e2e parça parça).
