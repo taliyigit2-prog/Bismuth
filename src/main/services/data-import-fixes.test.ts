@@ -74,6 +74,29 @@ const ledgerInput = (text = LEDGER, fileName = 'Defter Ekim 2026.csv') => ({
 const live = <T extends typeof payments | typeof expenses>(table: T) =>
   handle.db.select().from(table).where(isNull(table.voidedAt)).all()
 
+describe('defter tarih hücresi (G4)', () => {
+  it('dolu ama geçersiz tarih satır hatası olur ve önceki güne yazılmaz; boş tarih önceki güne devam eder', async () => {
+    const s = await setup()
+    const head = LEDGER.split('\n')[0]!
+    const text = [
+      head,
+      '01.10.2026;;1.000;TL;Deneme Gelir A;Nakit;;---;;;;',
+      '31.09.2026;;2.000;TL;Deneme Gelir B;Nakit;;---;;;;',
+      ';;3.000;TL;Deneme Gelir C;Nakit;;---;;;;',
+      '1O.10.2026;;4.000;TL;Deneme Gelir D;Nakit;;---;;;;'
+    ].join('\n')
+    const preview = await s.imp.preview(owner, ledgerInput(text, 'gecersiz.csv'))
+    expect(preview.errors.map((e) => [e.row, e.code])).toEqual([
+      [3, 'badDate'],
+      [4, 'badDate'],
+      [5, 'badDate']
+    ])
+    const run = await s.imp.run(owner, ledgerInput(text, 'gecersiz.csv'))
+    expect(run.payments).toBe(1)
+    expect(live(payments).map((p) => p.date)).toEqual(['2026-10-01'])
+  })
+})
+
 describe('içe aktarma tekrarı ve aktarımı iptal (P14fix #2)', () => {
   it('aynı defter dosyası ikinci kez alınınca hiçbir satır iki kez yazılmaz; önizleme "zaten alınmış" der', async () => {
     const s = await setup()

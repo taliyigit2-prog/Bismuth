@@ -6582,7 +6582,14 @@
       "laundryPrices": "Laundry prices",
       "laundrySettlements": "Laundry monthly accounts",
       "productCategories": "Product categories",
-      "importBatches": "Imports"
+      "importBatches": "Imports",
+      "damageDeposits": "Damage deposits",
+      "salaryPeriods": "Salary periods",
+      "payPolicies": "Pay rules",
+      "paymentMethods": "Payment methods",
+      "salesChannels": "Sales channels",
+      "extraServices": "Extra services",
+      "statusTags": "Status tags"
     },
     "col": {
       "date": "Date",
@@ -6760,7 +6767,14 @@
       "importedExpenses": "Expenses",
       "importedSalaries": "Salary amounts",
       "importedSalaryPayments": "Salary payments",
-      "voidedAt": "Voided at"
+      "voidedAt": "Voided at",
+      "takenDate": "Taken on",
+      "settledDate": "Settled on",
+      "settleNote": "Settlement note",
+      "depositStatus": "Status",
+      "lockedAt": "Locked at",
+      "policyKey": "Rule",
+      "policyValue": "Value"
     },
     "value": {
       "yes": "Yes",
@@ -6874,6 +6888,11 @@
         "tcmb": "CBRT (TCMB)",
         "manual": "Entered by hand",
         "hotel": "Hotel rate"
+      },
+      "depositStatus": {
+        "held": "Held",
+        "refunded": "Refunded",
+        "converted": "Converted to damage"
       }
     },
     "import": {

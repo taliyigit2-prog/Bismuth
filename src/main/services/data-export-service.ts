@@ -24,6 +24,13 @@ import {
   calendarDays,
   cashHandovers,
   charges,
+  damageDeposits,
+  extraServices,
+  payPolicies,
+  paymentMethods,
+  salaryPeriods,
+  salesChannels,
+  statusTags,
   companies,
   contacts,
   employees,
@@ -96,7 +103,14 @@ const COUNT_TABLE = {
   laundryPrices,
   laundrySettlements,
   productCategories,
-  importBatches
+  importBatches,
+  damageDeposits,
+  salaryPeriods,
+  payPolicies,
+  paymentMethods,
+  salesChannels,
+  extraServices,
+  statusTags
 } as const satisfies Record<ExportDataset, unknown>
 
 /**

@@ -24,6 +24,10 @@ import {
   calendarDays,
   cashHandovers,
   charges,
+  damageDeposits,
+  extraServices,
+  payPolicies,
+  salaryPeriods,
   companies,
   contacts,
   employees,
@@ -1184,6 +1188,169 @@ export const DATASETS: readonly DatasetDef[] = [
           item: listLabel(r.itemName, r.itemI18n, opts.locale),
           baseCurrency: opts.baseCurrency,
           voided: r.voidedAt !== null
+        }))
+    }
+  },
+  {
+    id: 'damageDeposits',
+    entity: 'damage_deposit',
+    permissions: ['payments'],
+    columns: [
+      c('takenDate', 'date'),
+      c('source'),
+      c('guest'),
+      c('amount', 'money'),
+      c('currency'),
+      c('method'),
+      e('depositStatus', 'depositStatus'),
+      c('settledDate', 'date'),
+      c('settleNote'),
+      c('note')
+    ],
+    load(db, _ctx, opts) {
+      return db
+        .select({
+          takenDate: damageDeposits.takenDate,
+          code: reservations.code,
+          first: guests.firstName,
+          last: guests.lastName,
+          amount: damageDeposits.amountMinor,
+          currency: damageDeposits.currency,
+          methodName: paymentMethods.name,
+          methodI18n: paymentMethods.nameI18n,
+          depositStatus: damageDeposits.status,
+          settledDate: damageDeposits.settledDate,
+          settleNote: damageDeposits.settleNote,
+          note: damageDeposits.note
+        })
+        .from(damageDeposits)
+        .innerJoin(reservations, eq(reservations.id, damageDeposits.reservationId))
+        .leftJoin(guests, eq(guests.id, reservations.primaryGuestId))
+        .innerJoin(paymentMethods, eq(paymentMethods.id, damageDeposits.methodId))
+        .where(inRange(damageDeposits.takenDate, opts))
+        .orderBy(asc(damageDeposits.takenDate), asc(damageDeposits.createdAt))
+        .all()
+        .map((r) => ({
+          ...r,
+          source: r.code,
+          guest: fullName(r.first, r.last),
+          method: listLabel(r.methodName, r.methodI18n, opts.locale)
+        }))
+    }
+  },
+  {
+    id: 'salaryPeriods',
+    entity: 'salary_period',
+    // Staff money like `salaries`: only a role that may see salaries.
+    permissions: ['staff.salary'],
+    columns: [c('employee'), c('period'), c('lockedAt', 'datetime')],
+    load(db) {
+      return db
+        .select({
+          first: employees.firstName,
+          last: employees.lastName,
+          year: salaryPeriods.year,
+          month: salaryPeriods.month,
+          lockedAt: salaryPeriods.lockedAt
+        })
+        .from(salaryPeriods)
+        .innerJoin(employees, eq(employees.id, salaryPeriods.employeeId))
+        .orderBy(asc(salaryPeriods.year), asc(salaryPeriods.month), asc(employees.firstName))
+        .all()
+        .map((r) => ({
+          employee: fullName(r.first, r.last),
+          period: `${r.year}-${String(r.month).padStart(2, '0')}`,
+          lockedAt: r.lockedAt
+        }))
+    }
+  },
+  {
+    id: 'payPolicies',
+    entity: 'pay_policy',
+    permissions: ['staff.salary'],
+    columns: [c('employee'), c('policyKey'), c('policyValue')],
+    load(db) {
+      return db
+        .select({
+          first: employees.firstName,
+          last: employees.lastName,
+          key: payPolicies.key,
+          value: payPolicies.valueJson
+        })
+        .from(payPolicies)
+        .leftJoin(employees, eq(employees.id, payPolicies.employeeId))
+        .orderBy(asc(payPolicies.scope), asc(employees.firstName), asc(payPolicies.key))
+        .all()
+        .map((r) => ({
+          employee: r.first ? fullName(r.first, r.last) : '',
+          policyKey: r.key,
+          policyValue: r.value
+        }))
+    }
+  },
+  {
+    id: 'paymentMethods',
+    entity: 'payment_method',
+    permissions: ['settings.lists'],
+    columns: [c('code'), c('name'), c('active', 'bool')],
+    load(db, _ctx, opts) {
+      return db
+        .select()
+        .from(paymentMethods)
+        .orderBy(asc(paymentMethods.sort), asc(paymentMethods.code))
+        .all()
+        .map((r) => ({ code: r.code, name: listLabel(r.name, r.nameI18n, opts.locale), active: r.active }))
+    }
+  },
+  {
+    id: 'salesChannels',
+    entity: 'sales_channel',
+    permissions: ['settings.lists'],
+    columns: [c('code'), c('name'), c('active', 'bool')],
+    load(db, _ctx, opts) {
+      return db
+        .select()
+        .from(salesChannels)
+        .orderBy(asc(salesChannels.sort), asc(salesChannels.code))
+        .all()
+        .map((r) => ({ code: r.code, name: listLabel(r.name, r.nameI18n, opts.locale), active: r.active }))
+    }
+  },
+  {
+    id: 'extraServices',
+    entity: 'extra_service',
+    permissions: ['settings.lists'],
+    columns: [c('code'), c('name'), c('unitPrice', 'money'), c('currency'), c('active', 'bool')],
+    load(db, _ctx, opts) {
+      return db
+        .select()
+        .from(extraServices)
+        .orderBy(asc(extraServices.sort), asc(extraServices.code))
+        .all()
+        .map((r) => ({
+          code: r.code,
+          name: listLabel(r.name, r.nameI18n, opts.locale),
+          unitPrice: r.defaultPriceMinor,
+          currency: r.defaultCurrency ?? '',
+          active: r.active
+        }))
+    }
+  },
+  {
+    id: 'statusTags',
+    entity: 'status_tag',
+    permissions: ['settings.colors'],
+    columns: [c('code'), c('name'), c('active', 'bool')],
+    load(db, _ctx, opts) {
+      return db
+        .select()
+        .from(statusTags)
+        .orderBy(asc(statusTags.sort), asc(statusTags.code))
+        .all()
+        .map((r) => ({
+          code: r.code,
+          name: listLabel(r.name, r.nameI18n, opts.locale),
+          active: r.enabled
         }))
     }
   },

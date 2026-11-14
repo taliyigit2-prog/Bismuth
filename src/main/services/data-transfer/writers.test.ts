@@ -3,7 +3,7 @@
 import { describe, expect, it } from 'vitest'
 import ExcelJS from 'exceljs'
 import { translator } from './labels'
-import { toXlsx } from './writers'
+import { toCsv, toXlsx } from './writers'
 
 describe('Excel miktar biçimi', () => {
   it('tam sayı miktar ondalık işaretsiz, kesirli miktar en çok üç basamakla yazılır', async () => {
@@ -23,5 +23,21 @@ describe('Excel miktar biçimi', () => {
     const cells = [2, 3, 4].map((r) => ws.getRow(r).getCell(1))
     expect(cells.map((c) => c.value)).toEqual([160, 7.5, 2.75])
     expect(cells.map((c) => c.numFmt)).toEqual(['#,##0', '#,##0.###', '#,##0.###'])
+  })
+})
+
+describe('CSV formül koruması', () => {
+  it('telefon ve sayı biçimli değerlere kesme işareti eklenmez; formül gibi başlayanlara eklenir', () => {
+    const t = translator('tr')
+    const csv = toCsv(
+      {
+        title: 'x',
+        columns: [{ key: 'v', label: 'dataTransfer.col.phone', type: 'text' }],
+        rows: [{ v: '+90 532 000 00 00' }, { v: '-5' }, { v: '=1+1' }, { v: '@SUM(A1)' }, { v: '+cmd|x' }]
+      },
+      { locale: 'tr', t, timeZone: 'Europe/Istanbul' }
+    )
+    const lines = csv.split('\r\n')
+    expect(lines.slice(1, 6)).toEqual(['+90 532 000 00 00', '-5', "'=1+1", "'@SUM(A1)", "'+cmd|x"])
   })
 })

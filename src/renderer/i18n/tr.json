@@ -6582,7 +6582,14 @@
       "laundryPrices": "Çamaşırhane fiyatları",
       "laundrySettlements": "Çamaşırhane ay hesapları",
       "productCategories": "Ürün kategorileri",
-      "importBatches": "İçe aktarmalar"
+      "importBatches": "İçe aktarmalar",
+      "damageDeposits": "Hasar güvence bedelleri",
+      "salaryPeriods": "Maaş dönemleri",
+      "payPolicies": "Maaş kuralları",
+      "paymentMethods": "Ödeme yöntemleri",
+      "salesChannels": "Satış kanalları",
+      "extraServices": "Ek hizmetler",
+      "statusTags": "Durum etiketleri"
     },
     "col": {
       "date": "Tarih",
@@ -6760,7 +6767,14 @@
       "importedExpenses": "Gider",
       "importedSalaries": "Maaş tutarı",
       "importedSalaryPayments": "Maaş ödemesi",
-      "voidedAt": "İptal zamanı"
+      "voidedAt": "İptal zamanı",
+      "takenDate": "Alındığı tarih",
+      "settledDate": "Sonuçlandığı tarih",
+      "settleNote": "Sonuç notu",
+      "depositStatus": "Durum",
+      "lockedAt": "Kilitlendiği an",
+      "policyKey": "Kural",
+      "policyValue": "Değer"
     },
     "value": {
       "yes": "Evet",
@@ -6874,6 +6888,11 @@
         "tcmb": "TCMB",
         "manual": "Elle girildi",
         "hotel": "Otel kuru"
+      },
+      "depositStatus": {
+        "held": "Tutuluyor",
+        "refunded": "İade edildi",
+        "converted": "Hasara çevrildi"
       }
     },
     "import": {

@@ -144,7 +144,15 @@ export const EXPORT_DATASETS = [
   'laundryPrices',
   'laundrySettlements',
   'productCategories',
-  'importBatches'
+  'importBatches',
+  // G4: deposits, salary periods and pay policies, and the list tables.
+  'damageDeposits',
+  'salaryPeriods',
+  'payPolicies',
+  'paymentMethods',
+  'salesChannels',
+  'extraServices',
+  'statusTags'
 ] as const
 export type ExportDataset = (typeof EXPORT_DATASETS)[number]
 export const EXPORT_FORMATS = ['csv', 'xlsx'] as const

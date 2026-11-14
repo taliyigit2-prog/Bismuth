@@ -26,6 +26,35 @@ describe('istemci modu dosyası (yasak 13: mod veritabanında değil)', () => {
     expect(readConnectionConfig(file).mode).toBe('local')
   })
 
+  it('istemci dosyası bozuk ya da şemaya uymuyorsa bilgisayar yerel moda düşmez; bozuk dosya .bak olarak saklanır', () => {
+    const file = tempFile()
+    writeFileSync(file, '{"mode":"client","hostUrl":"http://a:7373"')
+    expect(readConnectionConfig(file)).toEqual({ mode: 'client', hostUrl: null })
+    expect(readFileSync(`${file}.bak`, 'utf8')).toContain('"client"')
+    const file2 = tempFile()
+    writeFileSync(
+      file2,
+      JSON.stringify({ mode: 'client', hostUrl: 'http://a:7373', hotels: [{ code: 'x', url: 'https://x' }] })
+    )
+    expect(readConnectionConfig(file2).mode).toBe('client')
+  })
+
+  it('bilinmeyen isteğe bağlı görünüm değeri dosyayı geçersiz kılmaz, yalnız yok sayılır', () => {
+    const file = tempFile()
+    writeFileSync(
+      file,
+      JSON.stringify({
+        mode: 'client',
+        hostUrl: 'http://a:7373',
+        display: { 'ui.language': 'ar', 'ui.theme': 'dark' }
+      })
+    )
+    const read = readConnectionConfig(file)
+    expect(read.hostUrl).toBe('http://a:7373')
+    expect(read.display?.['ui.language']).toBeUndefined()
+    expect(read.display?.['ui.theme']).toBe('dark')
+  })
+
   it('istemci modu, adres ve cihaz çerezi saklanır; adres düzeltilir', () => {
     const file = tempFile()
     const store = createConfigStore(file)

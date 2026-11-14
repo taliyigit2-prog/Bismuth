@@ -358,6 +358,7 @@ export function createClientApp(deps: ClientAppDeps): Hono<ApiEnv> {
         return json(LOCAL, hotelViews())
       }
       case 'remote.acceptHostIdentity': {
+        if (!(await mayChangeHotels(windowId))) return denied()
         const parsed = acceptHostIdentitySchema.safeParse(body)
         if (!parsed.success) return failure(400, 'VALIDATION', 'errors.validation')
         // N-7: the key answering now must be the one the screen showed; otherwise show the new one first.
@@ -370,10 +371,12 @@ export function createClientApp(deps: ClientAppDeps): Hono<ApiEnv> {
         return json(LOCAL, link.status())
       }
       case 'remote.forgetHost':
+        if (!(await mayChangeHotels(windowId))) return denied()
         // The hotel stays in the list; this computer uses none until one is chosen.
         useHotel(null)
         return json(LOCAL, link.status())
       case 'remote.leaveClient':
+        if (!(await mayChangeHotels(windowId))) return denied()
         deps.leaveClient()
         return json(LOCAL, { ok: true })
       case 'remote.openInBrowser': {

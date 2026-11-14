@@ -29,7 +29,7 @@ import {
 import type { AuditEntry } from './audit'
 import type { Ctx } from './context'
 import { chargeBaseMinor, convertViaBase } from './currency-service'
-import { assertDayWritable, sectionAccess } from './expenses-service'
+import { assertDayWritable, assertExpenseDateNear, sectionAccess } from './expenses-service'
 import {
   conflict,
   inChunks,
@@ -228,6 +228,7 @@ export function createPaymentsService(deps: ServiceDeps) {
   ): PaymentRow {
     const data = parsePayment(input)
     requirePermission(ctx, data.kind === 'refund' ? 'payments.refund' : 'payments', 'edit')
+    assertExpenseDateNear(data.date, now)
     guardDay(tx, ctx, data.date, data.dayClosedReason)
     const folio = folioFor(tx, data)
     const row = insertPayment(tx, ctx, now, data, folio)
@@ -288,6 +289,7 @@ export function createPaymentsService(deps: ServiceDeps) {
         if (before.collectedAt) throw conflict('errors.paymentCollected')
         if (before.kind === 'refund') requirePermission(ctx, 'payments.refund', 'edit')
         guardDay(tx, ctx, before.date, data.dayClosedReason)
+        if (data.date && data.date !== before.date) assertExpenseDateNear(data.date, now)
         if (data.date && data.date !== before.date) guardDay(tx, ctx, data.date, data.dayClosedReason)
         if (data.methodId) methodOf(tx, data.methodId)
         const next = {

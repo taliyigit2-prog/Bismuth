@@ -193,6 +193,24 @@ describe('gün kapatma ve gider tarihi sınırları', () => {
   })
 })
 
+describe('ödeme tarihi sınırı (G4)', () => {
+  it('ödeme tarihi bir yıldan fazla ileri olamaz; makul gelecek tarih kabul edilir', async () => {
+    const { svc, book, cash } = await setup()
+    const b = book(0, '2026-10-15', '2026-10-17', 'Kaya')
+    const pay = (date: string) =>
+      svc.payments.create(manager, {
+        reservationId: b.reservation.id,
+        date,
+        kind: 'payment',
+        methodId: cash,
+        amountMinor: 10_000,
+        currency: 'TRY'
+      })
+    expect(() => pay('2099-03-15')).toThrow(/dateTooFar/)
+    expect(pay('2026-12-01').date).toBe('2026-12-01')
+  })
+})
+
 describe('rapor: konaklama türü süzgeci', () => {
   it('saatlik süzgeçte ortalama kalış süresi boş; gecelikte dolu; dışa aktarma süzgeci kabul eder', async () => {
     const { svc, book } = await setup()

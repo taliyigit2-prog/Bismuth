@@ -2,7 +2,7 @@
 // computer that uses the hotel's main computer never opens a local hotel.db. The file says which way this computer
 // works, the main computer's address, the device cookie the main computer gave it, and the last language and theme
 // (so the connection screen keeps them while the main computer cannot be reached).
-import { readFileSync, renameSync, writeFileSync } from 'node:fs'
+import { copyFileSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import * as z from 'zod'
 import { APP_LOCALES } from '@shared/format'
 import { hotelCodeSchema, isReservedHotelCode, normalizeHostUrl } from '@shared/contract/remote'
@@ -59,10 +59,12 @@ const configSchema = z.object({
   hostKey: hostKeySchema,
   display: z
     .object({
-      'ui.language': z.enum(APP_LOCALES).optional(),
-      'ui.theme': z.enum(['light', 'dark', 'system']).optional()
+      // An unknown value (a language added later, a downgrade) is ignored, not a reason to drop the whole file.
+      'ui.language': z.enum(APP_LOCALES).optional().catch(undefined),
+      'ui.theme': z.enum(['light', 'dark', 'system']).optional().catch(undefined)
     })
-    .optional(),
+    .optional()
+    .catch(undefined),
   /**
    * The read-only copy (P13b): the main computer's grant to pull its change log (like the device cookie, a
    * credential kept only here), whose view the copy shows, and the Drive box folder chosen by hand.
@@ -88,14 +90,32 @@ export type ConnectionConfig = z.output<typeof configSchema>
 
 export const LOCAL_CONFIG: ConnectionConfig = { mode: 'local', hostUrl: null }
 
-/** The saved choice; a missing or damaged file means this computer keeps its own data. */
+/**
+ * The saved choice. A missing file means this computer keeps its own data. A file that is there but cannot be
+ * read in full never turns a client computer into a local one (yasak 13: a client opens no local database): when
+ * it still says `client`, this computer stays a client with no hotel chosen (the connection screen), and the
+ * damaged file is kept as `<file>.bak`.
+ */
 export function readConnectionConfig(file: string): ConnectionConfig {
+  let text: string
   try {
-    const parsed = configSchema.safeParse(JSON.parse(readFileSync(file, 'utf8')))
-    return parsed.success ? parsed.data : LOCAL_CONFIG
+    text = readFileSync(file, 'utf8')
   } catch {
     return LOCAL_CONFIG
   }
+  try {
+    const parsed = configSchema.safeParse(JSON.parse(text))
+    if (parsed.success) return parsed.data
+  } catch {
+    // Half-written or damaged JSON: looked at below.
+  }
+  if (!/"mode"\s*:\s*"client"/.test(text)) return LOCAL_CONFIG
+  try {
+    copyFileSync(file, `${file}.bak`)
+  } catch {
+    // Keeping the copy is a courtesy.
+  }
+  return { mode: 'client', hostUrl: null }
 }
 
 /** Write then rename: a crash mid-write never leaves half a file. */

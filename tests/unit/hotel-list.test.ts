@@ -374,7 +374,10 @@ describe('nedenli bağlantı hatası (H-33)', () => {
     for (const [name, body] of [
       ['remote.hotelRemove', { code: pandora!.code }],
       ['remote.hotelUpdate', { code: pandora!.code, name: 'X' }],
-      ['remote.connect', { url: A }]
+      ['remote.connect', { url: A }],
+      ['remote.forgetHost', {}],
+      ['remote.leaveClient', {}],
+      ['remote.acceptHostIdentity', { fingerprint: 'x'.repeat(10) }]
     ] as const) {
       const denied = await c.call<{ error: { code: string } }>(name, body)
       expect(denied.status).toBe(403)

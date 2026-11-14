@@ -116,9 +116,12 @@ export function cellText(col: Column, row: Row, opts: WriteOptions): string {
 
 const csvDelimiter = (locale: AppLocale): string => (locale === 'en' ? ',' : ';')
 
+const PHONE_OR_NUMBER = /^[+-]?\d[\d\s().-]*$/
+
 function csvEscape(text: string, delimiter: string, isText: boolean): string {
   let v = text
-  if (isText && /^[=+\-@\t\r]/.test(v)) v = `'${v}`
+  // A phone or plain number ("+90 532 000 00 00", "-5") is no formula: only letters, `=`, `@`... are guarded.
+  if (isText && /^[=+\-@\t\r]/.test(v) && !PHONE_OR_NUMBER.test(v)) v = `'${v}`
   return v.includes(delimiter) || /["\r\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v
 }
 

@@ -6950,7 +6950,14 @@
       "laundryPrices": "Цены прачечной",
       "laundrySettlements": "Расчёты с прачечной",
       "productCategories": "Категории товаров",
-      "importBatches": "Импорт данных"
+      "importBatches": "Импорт данных",
+      "damageDeposits": "Депозиты за ущерб",
+      "salaryPeriods": "Расчётные периоды зарплаты",
+      "payPolicies": "Правила оплаты",
+      "paymentMethods": "Способы оплаты",
+      "salesChannels": "Каналы продаж",
+      "extraServices": "Дополнительные услуги",
+      "statusTags": "Метки статуса"
     },
     "col": {
       "date": "Дата",
@@ -7128,7 +7135,14 @@
       "importedExpenses": "Расходов",
       "importedSalaries": "Сумм зарплат",
       "importedSalaryPayments": "Выплат зарплат",
-      "voidedAt": "Время аннулирования"
+      "voidedAt": "Время аннулирования",
+      "takenDate": "Дата получения",
+      "settledDate": "Дата закрытия",
+      "settleNote": "Примечание к закрытию",
+      "depositStatus": "Статус",
+      "lockedAt": "Время блокировки",
+      "policyKey": "Правило",
+      "policyValue": "Значение"
     },
     "value": {
       "yes": "Да",
@@ -7242,6 +7256,11 @@
         "tcmb": "ЦБ Турции (TCMB)",
         "manual": "Введён вручную",
         "hotel": "Курс отеля"
+      },
+      "depositStatus": {
+        "held": "Удерживается",
+        "refunded": "Возвращён",
+        "converted": "Зачтён в ущерб"
       }
     },
     "import": {

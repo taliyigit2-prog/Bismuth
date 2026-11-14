@@ -13,7 +13,7 @@ import {
   type SetupProgress
 } from '@shared/contract/admin'
 import type { SettingsKey, SettingsPatch } from '@shared/contract'
-import { localDate, localDateOf, type LocalDate } from '@shared/date'
+import { localDate, localDateOf, setHotelTimeZone, type LocalDate } from '@shared/date'
 import { localDateIn } from '@shared/domain/weather'
 import { taskSuggestedIn } from '@shared/domain/task-country'
 import type { BismuthDb } from '../db/client'
@@ -53,7 +53,7 @@ export interface SetupServiceParts {
 }
 
 /** Field names that may hold a secret anywhere in the draft: password(s), PIN(s), secrets, recovery codes. */
-const SECRET_KEY = /[pP]assword|[sS]ecret|[rR]ecovery|^pin(?![a-z])|Pin(?![a-z])/
+const SECRET_KEY = /[pP]assword|[sS]ecret|[rR]ecovery|^pin(?![a-z])|Pin(?![a-z])|^([rR]epeat|[cC]onfirm)/
 
 /** Never keep a secret in the saved draft: passwords and PINs are typed again after a restart. */
 export function withoutSecrets(draft: Record<string, unknown>): Record<string, unknown> {
@@ -405,6 +405,10 @@ export function createSetupService(deps: ServiceDeps, parts: SetupServiceParts) 
           )
           return { ownerId: owner.id, recoveryCodes }
         })
+      } catch (error) {
+        // The transaction rolled back: the process-wide zone goes back to the one the database still holds.
+        setHotelTimeZone(readSetting(db, 'hotel.timezone'))
+        throw error
       } finally {
         finishing = false
       }

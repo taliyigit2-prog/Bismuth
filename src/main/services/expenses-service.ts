@@ -153,7 +153,7 @@ export function assertDayWritable(db: Reader, ctx: Ctx, date: string, reason?: s
 /** An expense is dated at most a year ahead (a typo such as 2099 is refused, not stored). */
 export const EXPENSE_MAX_DAYS_AHEAD = 366
 
-function assertExpenseDateNear(date: string, now: Date): void {
+export function assertExpenseDateNear(date: string, now: Date): void {
   if (date > addDays(localDateOf(now), EXPENSE_MAX_DAYS_AHEAD)) throw invalid('errors.dateTooFar')
 }
 

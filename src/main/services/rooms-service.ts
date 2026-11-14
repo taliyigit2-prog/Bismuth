@@ -1,6 +1,6 @@
 // Room types, rooms, capacity history, housekeeping status and blocks (03-mimari.md §4.2, §6.1; G-11, G-12, G-38,
 // G-90, K-27). Read methods need no special permission (room lists are not sensitive); writes are checked here.
-import { and, asc, desc, eq, gt, gte, isNull, lt, ne } from 'drizzle-orm'
+import { and, asc, desc, eq, gt, gte, isNull, lt, ne, sql } from 'drizzle-orm'
 import {
   hkNoteSchema,
   hkStatusSchema,
@@ -76,12 +76,24 @@ export function createRoomsService(deps: ServiceDeps) {
     return row
   }
 
+  /** A room number is unique whatever its letter case ("a1" and "A1" are one room), like the wizard and Excel match. */
+  const numberTaken = (tx: Pick<typeof db, 'select'>, number: string, exceptId?: string): boolean =>
+    tx
+      .select({ id: rooms.id })
+      .from(rooms)
+      .where(
+        and(
+          sql`lower(${rooms.number}) = ${number.toLowerCase()}`,
+          exceptId ? ne(rooms.id, exceptId) : undefined
+        )
+      )
+      .get() !== undefined
+
   function createRoom(ctx: Ctx, input: RoomInput): RoomRow {
     requirePermission(ctx, 'settings.rooms', 'edit')
     const data = parseInput(roomInputSchema, input)
     return inTransaction(deps, ctx, (tx, audit, now) => {
-      if (tx.select({ id: rooms.id }).from(rooms).where(eq(rooms.number, data.number)).get())
-        throw conflict('errors.roomNumberTaken', { number: data.number })
+      if (numberTaken(tx, data.number)) throw conflict('errors.roomNumberTaken', { number: data.number })
       if (!tx.select({ id: roomTypes.id }).from(roomTypes).where(eq(roomTypes.id, data.roomTypeId)).get())
         throw notFound('room_type', data.roomTypeId)
       const id = newId(now)
@@ -225,9 +237,14 @@ export function createRoomsService(deps: ServiceDeps) {
       const data = parseInput(roomUpdateSchema, input)
       return inTransaction(deps, ctx, (tx, audit, now) => {
         const before = getRoomTx(tx, id)
+        if (
+          data.roomTypeId &&
+          !tx.select({ id: roomTypes.id }).from(roomTypes).where(eq(roomTypes.id, data.roomTypeId)).get()
+        )
+          throw notFound('room_type', data.roomTypeId)
         if (data.number && data.number !== before.number) {
-          const taken = tx.select({ id: rooms.id }).from(rooms).where(eq(rooms.number, data.number)).get()
-          if (taken) throw conflict('errors.roomNumberTaken', { number: data.number })
+          if (numberTaken(tx, data.number, id))
+            throw conflict('errors.roomNumberTaken', { number: data.number })
         }
         const { validFrom, note, beds, sellable, active, ...fields } = data
         const capacityAsked = beds !== undefined || sellable !== undefined || active !== undefined
