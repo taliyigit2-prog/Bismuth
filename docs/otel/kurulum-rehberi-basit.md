@@ -6,8 +6,18 @@
 
 ## 1. İndir
 
-1. Tarayıcıda proje sayfasına gidin → **Releases** → en üstteki sürüm.
-2. Windows için **`Bismuth-Setup.exe`**, Mac için **`Bismuth.dmg`** (Apple M1/M2/M3/M4) ya da **`Bismuth-Intel.dmg`** (eski Intel Mac) dosyasını indirin.
+Bilgisayarınıza uyan bağlantıya tıklayın; dosya hemen iner (GitHub hesabı gerekmez). Bağlantılar hep **en yeni sürümü** indirir.
+
+| Bilgisayar | Tıklayın |
+|---|---|
+| **Windows 10 / 11** (otel bilgisayarı) | [Bismuth-Setup.exe](https://github.com/taliyigit2-prog/Bismuth/releases/latest/download/Bismuth-Setup.exe) |
+| Mac, Apple çipli (M1, M2, M3, M4) | [Bismuth.dmg](https://github.com/taliyigit2-prog/Bismuth/releases/latest/download/Bismuth.dmg) |
+| Mac, Intel işlemcili | [Bismuth-Intel.dmg](https://github.com/taliyigit2-prog/Bismuth/releases/latest/download/Bismuth-Intel.dmg) |
+| Windows, ARM işlemcili (az rastlanır) | [Bismuth-Setup-arm64.exe](https://github.com/taliyigit2-prog/Bismuth/releases/latest/download/Bismuth-Setup-arm64.exe) |
+
+Hangisi olduğunu bilmiyorsanız: Windows'ta ilk satır neredeyse her zaman doğrudur. Mac'te sol üstteki Apple simgesi →
+**Bu Mac Hakkında**: "Çip: Apple M…" yazıyorsa ikinci, "İşlemci: Intel" yazıyorsa üçüncü satır.
+İndirilen dosya **İndirilenler** (Downloads) klasöründedir.
 
 ## 2. Kur (çift tıkla)
 

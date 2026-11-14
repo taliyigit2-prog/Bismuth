@@ -92,11 +92,7 @@ test('iki otel: bağlan ekranında liste, otel değiştirince oturum ve veri kar
   await expect(page.getByTestId('hotel-row')).toHaveCount(2)
   if (process.env['HOTELS_SHOTS'])
     await page.screenshot({ path: `${process.env['HOTELS_SHOTS']}/connect-list.png` })
-  await page
-    .getByTestId('hotel-row')
-    .filter({ hasText: 'Lale Beyoğlu' })
-    .getByTestId('hotel-connect')
-    .click()
+  await page.getByTestId('hotel-row').filter({ hasText: 'Lale Beyoğlu' }).getByTestId('hotel-connect').click()
   await signInAt(page)
   expect(await hotelName(page)).toBe('Lale Beyoğlu')
 

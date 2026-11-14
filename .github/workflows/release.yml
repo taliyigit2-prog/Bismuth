@@ -1,7 +1,10 @@
 name: release
 # The only workflow that builds installers (G-07: no update feed; owners download by hand).
 #   Run workflow (workflow_dispatch) → verify + Windows x64 + macOS, kept as artifacts for 14 days; nothing is published.
+#   Run workflow with "publish" ticked (on main) → the same as a tag: the release vX.Y.Z (X.Y.Z = package.json version)
+#                                       is created by this workflow, so the owner never types a git command.
 #   Tag vX.Y.Z (the owner pushes it)  → the same, plus Windows arm64, then a GitHub Release with SHA-256 sums.
+# Fixed download links (public repository): https://github.com/<owner>/<repo>/releases/latest/download/Bismuth-Setup.exe
 # Jobs: verify (Linux, ci.yml: check + e2e) → windows (Linux + wine, NSIS) and macos (one job, both DMGs) and camera-addon
 # (Windows + Mac, the camera zips; on a tag when the variable CAMERA_ADDON is `true`) → publish.
 # Fixed file names (scripts/release-names.mjs): Bismuth-Setup.exe, Bismuth-Setup-arm64.exe, Bismuth.dmg (Apple chip),
@@ -12,6 +15,10 @@ on:
     inputs:
       camera_addon:
         description: 'Also build the camera add-on (Bismuth-Kamera-Windows.zip, Bismuth-Kamera-Mac.zip; kept as artifacts); needs the model files in a secret'
+        type: boolean
+        default: false
+      publish:
+        description: 'Sürümü yayınla: package.json sürümüyle (vX.Y.Z) GitHub Release oluşturur; yalnız main dalında'
         type: boolean
         default: false
   push:
@@ -33,6 +40,18 @@ jobs:
         with:
           sparse-checkout: package.json
           sparse-checkout-cone-mode: false
+      - name: Publishing by hand only from main, and only a version not released yet
+        if: inputs.publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          if [ "$GITHUB_REF" != refs/heads/main ]; then echo "publish only from main (this is $GITHUB_REF)"; exit 1; fi
+          if gh release view "v$VERSION" --repo "$REPO" > /dev/null 2>&1; then
+            echo "v$VERSION is already released: raise the version in package.json first"
+            exit 1
+          fi
       - name: Tag matches package.json version
         if: startsWith(github.ref, 'refs/tags/v')
         env:
@@ -69,9 +88,11 @@ jobs:
           sudo apt-get install -y --no-install-recommends wine64 wine32:i386
       - run: npm ci --no-audit --no-fund
       - run: npm run build
-      - name: Package (x64 always, arm64 only for a tag)
+      - name: Package (x64 always, arm64 only for a release)
+        env:
+          PUBLISH: ${{ inputs.publish }}
         run: |
-          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then ARCH="--x64 --arm64"; else ARCH="--x64"; fi
+          if [[ "$GITHUB_REF" == refs/tags/v* || "$PUBLISH" == true ]]; then ARCH="--x64 --arm64"; else ARCH="--x64"; fi
           npx electron-builder --win nsis $ARCH --publish never
           node scripts/release-names.mjs release
           ls -la release
@@ -171,7 +192,7 @@ jobs:
   publish:
     needs: [windows, macos, camera-addon]
     # camera-addon is skipped (not failed) unless CAMERA_ADDON=true or asked; a failed one blocks the release.
-    if: startsWith(github.ref, 'refs/tags/v') && !failure() && !cancelled()
+    if: (startsWith(github.ref, 'refs/tags/v') || inputs.publish) && !failure() && !cancelled()
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -179,7 +200,10 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          sparse-checkout: docs/surum-notlari
+          sparse-checkout: |
+            docs/surum-notlari
+            package.json
+          sparse-checkout-cone-mode: false
       - uses: actions/download-artifact@v7
         with:
           path: dist
@@ -203,14 +227,16 @@ jobs:
       - name: Create the GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.ref_name }}
+          REF_NAME: ${{ github.ref_name }}
           REPO: ${{ github.repository }}
         run: |
+          # A tag push names the release; a "publish" run takes it from package.json and creates the tag at this commit.
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then TAG="$REF_NAME"; else TAG="v$(node -p "require('./package.json').version")"; fi
           NOTES="docs/surum-notlari/$TAG.md"
           if [ ! -f "$NOTES" ]; then
             NOTES="$RUNNER_TEMP/notes.md"
             printf '%s\n' "Windows: Bismuth-Setup.exe (ARM işlemci: Bismuth-Setup-arm64.exe) · Mac (Apple çipli): Bismuth.dmg · Mac (Intel): Bismuth-Intel.dmg · Doğrulama: SHA256SUMS.txt · Kurulum: docs/otel/kurulum.md" > "$NOTES"
           fi
-          gh release create "$TAG" dist/* --repo "$REPO" \
+          gh release create "$TAG" dist/* --repo "$REPO" --target "$GITHUB_SHA" \
             --title "Bismuth $TAG" \
             --notes-file "$NOTES"

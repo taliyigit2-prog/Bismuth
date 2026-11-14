@@ -30,17 +30,21 @@ Son analiz raporları ve geliştirme planı: [`docs/analiz/00-ozet.md`](docs/ana
 
 Ayrıntılı, adım adım kılavuz: [`docs/otel/kurulum.md`](docs/otel/kurulum.md).
 
-| Bilgisayar                                            | Dosya                     |
-| ----------------------------------------------------- | ------------------------- |
-| Windows 10 / 11 (otel bilgisayarı ve çoğu bilgisayar) | `Bismuth-Setup.exe`       |
-| Windows, ARM işlemcili (az rastlanır)                 | `Bismuth-Setup-arm64.exe` |
-| Mac, Apple çipli (M1, M2, M3, M4)                     | `Bismuth.dmg`             |
-| Mac, Intel işlemcili                                  | `Bismuth-Intel.dmg`       |
+Tıklayınca en yeni sürüm iner:
+
+| Bilgisayar                                                | İndir                                                                                                                  |
+| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| **Windows 10 / 11** (otel bilgisayarı ve çoğu bilgisayar) | [Bismuth-Setup.exe](https://github.com/taliyigit2-prog/Bismuth/releases/latest/download/Bismuth-Setup.exe)             |
+| Mac, Apple çipli (M1, M2, M3, M4)                         | [Bismuth.dmg](https://github.com/taliyigit2-prog/Bismuth/releases/latest/download/Bismuth.dmg)                         |
+| Mac, Intel işlemcili                                      | [Bismuth-Intel.dmg](https://github.com/taliyigit2-prog/Bismuth/releases/latest/download/Bismuth-Intel.dmg)             |
+| Windows, ARM işlemcili (az rastlanır)                     | [Bismuth-Setup-arm64.exe](https://github.com/taliyigit2-prog/Bismuth/releases/latest/download/Bismuth-Setup-arm64.exe) |
 
 - **Sürümler:** GitHub → **Releases** → en yeni sürüm → **Assets**. Yanında `SHA256SUMS.txt` (dosyanın bozulmadan indiğini
   denetlemek için) vardır.
-- **Denemelik paketler:** GitHub → **Actions** → en son yeşil **ci** çalışması → **Artifacts** (`Bismuth-Windows`,
-  `Bismuth-Mac`; 14 gün saklanır). Sürüm etiketi (`v*`) atılınca paketler kalıcı olarak **Releases** sayfasına yüklenir.
+- **Yeni sürüm yayınlamak (sahip):** `package.json` sürümünü artırın, `docs/surum-notlari/vX.Y.Z.md` yazın, sonra GitHub →
+  **Actions** → **release** → **Run workflow** → dal `main`, **Sürümü yayınla** kutusunu işaretleyin → **Run workflow**. Yaklaşık
+  30 dakikada kurulum dosyaları **Releases** sayfasına ve yukarıdaki bağlantılara gelir. Kutu işaretsizse yalnız deneme paketi
+  üretilir (Actions → çalışma → **Artifacts**, 14 gün).
 - **Windows:** kurulum dosyası imzasız olduğu için "Windows bilgisayarınızı korudu" uyarısı çıkar: **Ek bilgi → Yine de
   çalıştır**. Kurulum yalnız sizin kullanıcınıza yapılır, yönetici şifresi istemez; masaüstüne ve Başlat menüsüne
   kısayol koyar.

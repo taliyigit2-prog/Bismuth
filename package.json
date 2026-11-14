@@ -1,7 +1,7 @@
 {
   "name": "bismuth",
   "productName": "Bismuth",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "description": "Bismuth — küçük ve orta oteller için masaüstü otel yönetim programı",
   "main": "./out/main/index.js",
@@ -34,6 +34,7 @@
     "notices": "node scripts/notices.mjs",
     "camera:bundle": "node scripts/camera-bundle.mjs",
     "icon": "node scripts/make-icon.mjs",
+    "dmg:background": "node scripts/make-dmg-background.mjs",
     "seed:demo": "tsx --tsconfig tsconfig.node.json scripts/seed-demo.ts",
     "guide:docs": "tsx --tsconfig tsconfig.node.json scripts/guide-docs.ts",
     "guide:shots": "electron-vite build && node scripts/guide-shots.mjs"
