@@ -16,7 +16,8 @@ concurrency:
 jobs:
   verify:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    # The full e2e suite alone takes ~20 minutes on the runner; 30 left no room for a retry and cut the report off.
+    timeout-minutes: 50
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
@@ -50,7 +51,8 @@ jobs:
           xvfb-run -a release/linux-unpacked/bismuth --no-sandbox --smoke --smoke-out="$PWD/smoke.json"
           node -e "const r=require('./smoke.json'); console.log(r); if(!r.ok||r.db.integrity!=='ok'||r.blockedRequests.length) process.exit(1)"
       - uses: actions/upload-artifact@v6
-        if: failure()
+        # cancelled(): a run stopped by the time limit still uploads what it has.
+        if: failure() || cancelled()
         with:
           name: playwright-report
           path: |
