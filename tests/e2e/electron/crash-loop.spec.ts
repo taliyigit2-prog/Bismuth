@@ -47,7 +47,10 @@ test('pencere bir dakikada iki kez çökerse ikincisinde soru sorulmadan yeniden
   const crash = () =>
     app.evaluate(() => {
       const g = globalThis as unknown as G
-      setTimeout(() => g.qaWc.forcefullyCrashRenderer(), 10)
+      // The page's process is killed from outside, as the system does when memory runs out. Not
+      // `forcefullyCrashRenderer()`: on Linux that only asks the page to crash itself, and on the GitHub runner
+      // nothing came of it (release runs 2–4: the page stayed alive, so no question was ever due).
+      setTimeout(() => process.kill(g.qaWc.getOSProcessId(), 'SIGKILL'), 10)
     })
   const status = () =>
     app.evaluate(({ BrowserWindow }) => {

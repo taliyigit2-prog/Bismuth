@@ -11,13 +11,10 @@ copyright: Bismuth
 directories:
   buildResources: build
   output: release
-files:
-  - out/**
-  - package.json
-  - '!**/*.map'
-  # better-sqlite3 ships C sources and 8 prebuilt binaries; keep only what this OS needs.
-  - '!**/node_modules/better-sqlite3/{deps,src}/**'
-  - '!**/node_modules/better-sqlite3/binding.gyp'
+# What goes into the program: the built code and package.json (node_modules are added by electron-builder), nothing
+# else of the repository. The list lives under each system (win/mac/linux `files`), NOT here: with a list here and
+# only "!" lines under a system, electron-builder 26 treats the system's lines as their own list, finds no positive
+# pattern in it and packs the whole project folder (sources, tests, documents, local backups) into app.asar.
 extraResources:
   - from: drizzle
     to: drizzle
@@ -41,6 +38,12 @@ electronFuses:
 win:
   icon: build/icon.png
   files:
+    - out/**
+    - package.json
+    - '!**/*.map'
+    # better-sqlite3 ships C sources and 8 prebuilt binaries; keep only what this system needs.
+    - '!**/node_modules/better-sqlite3/{deps,src}/**'
+    - '!**/node_modules/better-sqlite3/binding.gyp'
     - '!**/node_modules/better-sqlite3/prebuilds/{darwin,linux,linuxmusl}-*.node'
   executableName: Bismuth
   target:
@@ -70,6 +73,12 @@ nsis:
 mac:
   icon: build/icon.png
   files:
+    - out/**
+    - package.json
+    - '!**/*.map'
+    # better-sqlite3 ships C sources and 8 prebuilt binaries; keep only what this system needs.
+    - '!**/node_modules/better-sqlite3/{deps,src}/**'
+    - '!**/node_modules/better-sqlite3/binding.gyp'
     - '!**/node_modules/better-sqlite3/prebuilds/{win32,linux,linuxmusl}-*.node'
   category: public.app-category.business
   # Faz 13: macOS asks once before Bismuth looks for, or connects to, the hotel's main computer on the local network.
@@ -89,6 +98,12 @@ linux:
   # Linux is only built in CI for e2e of the packaged app; not distributed.
   target: dir
   files:
+    - out/**
+    - package.json
+    - '!**/*.map'
+    # better-sqlite3 ships C sources and 8 prebuilt binaries; keep only what this system needs.
+    - '!**/node_modules/better-sqlite3/{deps,src}/**'
+    - '!**/node_modules/better-sqlite3/binding.gyp'
     - '!**/node_modules/better-sqlite3/prebuilds/{win32,darwin}-*.node'
 
 dmg:
