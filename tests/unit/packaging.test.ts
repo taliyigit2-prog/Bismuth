@@ -245,6 +245,17 @@ describe('iş akışları', () => {
   })
 })
 
+describe('e2e saat dilimi', () => {
+  it('playwright yapılandırması testleri otelin dilimi Europe/Istanbul\'a sabitler (runner UTC iken "bugün" kaymasın)', () => {
+    const config = read('playwright.config.ts')
+    expect(config).toMatch(/process\.env\['TZ'\]\s*=\s*'Europe\/Istanbul'/)
+    expect(config).toMatch(/TZ:\s*'Europe\/Istanbul'/)
+    // Component tests format the hotel's today with the local clock too.
+    expect(read('vitest.config.ts').match(/TZ: 'Europe\/Istanbul'/g)).toHaveLength(2)
+    expect(read('tests/e2e/setup-draft.mjs')).toContain("timezone: 'Europe/Istanbul'")
+  })
+})
+
 describe('sürüm damgası (Hakkında)', () => {
   it('kaynaktan çalışırken (test, geliştirme) damga boştur; şema bunu kabul eder', () => {
     expect(buildStamp()).toEqual({ commit: null, date: null })
