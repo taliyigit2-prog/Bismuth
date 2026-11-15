@@ -49,6 +49,8 @@ export default defineConfig({
           environment: 'jsdom',
           include: ['src/renderer/**/*.test.{ts,tsx}'],
           setupFiles: ['tests/unit/setup-dom.ts'],
+          // Screens format the hotel's "today" with the local clock: same zone as the node project.
+          env: { TZ: 'Europe/Istanbul' },
           // Screens with many Radix controls render slowly in jsdom when every file runs in parallel, and slower
           // still when parallel agents share the machine.
           testTimeout: 60_000
