@@ -1,7 +1,7 @@
 {
   "name": "bismuth",
   "productName": "Bismuth",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "Bismuth — küçük ve orta oteller için masaüstü otel yönetim programı",
   "main": "./out/main/index.js",
