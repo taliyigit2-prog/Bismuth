@@ -2,6 +2,8 @@
 // crash asks (the native box is answered by a stub: first button, "Pencereyi yeniden aç"); the second opens the
 // window again by itself, so it never stays a dead page. Only the main process is asked after a crash (the Playwright
 // page object does not survive a renderer crash).
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { expect, test } from './fixtures'
 
 type G = {
@@ -14,7 +16,8 @@ type G = {
 }
 
 test('pencere bir dakikada iki kez çökerse ikincisinde soru sorulmadan yeniden açılır', async ({
-  launch
+  launch,
+  userData
 }) => {
   const { app, page } = await launch()
   // The start page is still moving to the calendar and a first request round trip is under way; a page killed in the
@@ -61,17 +64,31 @@ test('pencere bir dakikada iki kez çökerse ikincisinde soru sorulmadan yeniden
       }
     })
 
-  await crash()
-  // First the page must really be gone, then the question must come: the failure says which step did not happen.
-  await expect.poll(status, { timeout: 15_000 }).toMatchObject({ gone: 1 })
-  await expect.poll(status, { timeout: 15_000 }).toMatchObject({ asked: 1 })
-  await expect.poll(status, { timeout: 15_000 }).toMatchObject({ crashed: false })
-  // Let the reloaded page settle, then the same page fails again (or the weak computer runs out of memory again).
-  await new Promise((r) => setTimeout(r, 3_000))
-  await crash()
-  await expect.poll(status, { timeout: 15_000 }).toMatchObject({ gone: 2 })
-  await expect.poll(status, { timeout: 15_000 }).toMatchObject({ crashed: false })
-  expect(await status()).toMatchObject({ asked: 1 })
+  // CI is the only place this ever failed and its report can be lost: the state and the app's own error log go
+  // straight into the job's output when a step does not come.
+  const explain = async () => {
+    const logs = join(userData, 'logs')
+    const files = existsSync(logs) ? readdirSync(logs) : []
+    console.log('crash-loop status', JSON.stringify(await status().catch((e: unknown) => String(e))))
+    for (const name of files)
+      console.log(`--- ${name}\n${readFileSync(join(logs, name), 'utf8').slice(-4000)}`)
+  }
+  try {
+    await crash()
+    // First the page must really be gone, then the question must come: the failure says which step did not happen.
+    await expect.poll(status, { timeout: 15_000 }).toMatchObject({ gone: 1 })
+    await expect.poll(status, { timeout: 15_000 }).toMatchObject({ asked: 1 })
+    await expect.poll(status, { timeout: 15_000 }).toMatchObject({ crashed: false })
+    // Let the reloaded page settle, then the same page fails again (or the weak computer runs out of memory again).
+    await new Promise((r) => setTimeout(r, 3_000))
+    await crash()
+    await expect.poll(status, { timeout: 15_000 }).toMatchObject({ gone: 2 })
+    await expect.poll(status, { timeout: 15_000 }).toMatchObject({ crashed: false })
+    expect(await status()).toMatchObject({ asked: 1 })
+  } catch (error) {
+    await explain()
+    throw error
+  }
   // The page is the program again (the app's own markup is back).
   await expect
     .poll(
