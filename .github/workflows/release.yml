@@ -48,7 +48,8 @@ jobs:
         run: |
           VERSION="$(node -p "require('./package.json').version")"
           if [ "$GITHUB_REF" != refs/heads/main ]; then echo "publish only from main (this is $GITHUB_REF)"; exit 1; fi
-          if gh release view "v$VERSION" --repo "$REPO" > /dev/null 2>&1; then
+          # A draft left by a publish step that stopped half way does not count: the publish job replaces it.
+          if [ "$(gh release view "v$VERSION" --repo "$REPO" --json isDraft --jq .isDraft 2> /dev/null)" = false ]; then
             echo "v$VERSION is already released: raise the version in package.json first"
             exit 1
           fi
@@ -85,7 +86,11 @@ jobs:
         run: |
           sudo dpkg --add-architecture i386
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends wine64 wine32:i386
+          # `wine` is the command electron-builder calls; wine64/wine32 alone do not provide it.
+          sudo apt-get install -y --no-install-recommends wine wine64 wine32:i386
+          wine --version
+          # The first wine call creates its settings folder; done here, not inside electron-builder's 2-minute limit.
+          timeout 120 wineboot -u || true
       - run: npm ci --no-audit --no-fund
       - run: npm run build
       - name: Package (x64 always, arm64 only for a release)
@@ -124,11 +129,19 @@ jobs:
           node scripts/release-names.mjs release
           ls -la release
       - name: Smoke test (packaged app)
+        # The packaged app uses its own data folder (a fresh one on the runner). The mock keychain keeps a
+        # Keychain question from ever waiting for a click nobody can give; the limit ends a stuck window early.
+        timeout-minutes: 5
         run: |
-          export BISMUTH_USER_DATA="$RUNNER_TEMP/bismuth-smoke"
-          release/mac-arm64/Bismuth.app/Contents/MacOS/Bismuth --smoke --smoke-out="$PWD/smoke.json" > smoke.log 2>&1 || true
+          release/mac-arm64/Bismuth.app/Contents/MacOS/Bismuth --use-mock-keychain --smoke --smoke-out="$PWD/smoke.json" > smoke.log 2>&1 || true
           if [ ! -f smoke.json ]; then echo "no smoke result"; tail -60 smoke.log; exit 1; fi
           node -e "const r=require('./smoke.json'); console.log(JSON.stringify(r,null,1)); if(!r.ok||r.db.integrity!=='ok'||r.blockedRequests.length) process.exit(1)"
+      - uses: actions/upload-artifact@v6
+        if: failure()
+        with:
+          name: smoke-log-macOS
+          path: smoke.log
+          retention-days: 7
       - uses: actions/upload-artifact@v6
         with:
           name: installers-macOS
@@ -237,6 +250,12 @@ jobs:
             NOTES="$RUNNER_TEMP/notes.md"
             printf '%s\n' "Windows: Bismuth-Setup.exe (ARM işlemci: Bismuth-Setup-arm64.exe) · Mac (Apple çipli): Bismuth.dmg · Mac (Intel): Bismuth-Intel.dmg · Doğrulama: SHA256SUMS.txt · Kurulum: docs/otel/kurulum.md" > "$NOTES"
           fi
-          gh release create "$TAG" dist/* --repo "$REPO" --target "$GITHUB_SHA" \
+          # Draft first, public only when every file is up: a failed upload never leaves a half release behind, and
+          # running the workflow again replaces the leftover draft.
+          if [ "$(gh release view "$TAG" --repo "$REPO" --json isDraft --jq .isDraft 2> /dev/null)" = true ]; then
+            gh release delete "$TAG" --repo "$REPO" --yes
+          fi
+          gh release create "$TAG" dist/* --repo "$REPO" --target "$GITHUB_SHA" --draft \
             --title "Bismuth $TAG" \
             --notes-file "$NOTES"
+          gh release edit "$TAG" --repo "$REPO" --draft=false --latest

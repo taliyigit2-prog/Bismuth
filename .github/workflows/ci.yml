@@ -48,6 +48,9 @@ jobs:
       - name: Packaged app smoke test (Linux, fuses on)
         run: |
           npx electron-builder --linux dir --publish never
+          # Only the built code may be inside the program (not the sources, tests or documents of the repository).
+          EXTRA="$(npx asar list release/linux-unpacked/resources/app.asar | cut -d/ -f2 | sort -u | grep -vxE 'out|node_modules|package.json' || true)"
+          if [ -n "$EXTRA" ]; then echo "unexpected content in app.asar:"; echo "$EXTRA"; exit 1; fi
           xvfb-run -a release/linux-unpacked/bismuth --no-sandbox --smoke --smoke-out="$PWD/smoke.json"
           node -e "const r=require('./smoke.json'); console.log(r); if(!r.ok||r.db.integrity!=='ok'||r.blockedRequests.length) process.exit(1)"
       - uses: actions/upload-artifact@v6

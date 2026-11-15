@@ -73,6 +73,25 @@ describe('macOS paketi (DMG)', () => {
   })
 })
 
+describe('paketin içeriği', () => {
+  it('yalnız derlenmiş kod paketlenir: dosya listesi her sistemin altında ve olumlu desenle başlar', () => {
+    // A top-level list plus "!"-only lines under a system made electron-builder 26 pack the whole project folder
+    // (sources, tests, documents, local backups: a 900 MB app.asar instead of 19 MB).
+    expect(builder.files).toBeUndefined()
+    for (const os of ['win', 'mac', 'linux']) {
+      const files = builder[os].files as string[]
+      expect(files.slice(0, 2), os).toEqual(['out/**', 'package.json'])
+      expect(
+        files.filter((f) => !f.startsWith('!')),
+        os
+      ).toEqual(['out/**', 'package.json'])
+    }
+    // The Linux package built in CI is opened and checked for anything else.
+    const ci = read('.github/workflows/ci.yml')
+    expect(ci).toContain('asar list release/linux-unpacked/resources/app.asar')
+  })
+})
+
 describe('dosya adları (G-03)', () => {
   function run(files: string[]): { code: number; files: string[]; out: string } {
     const dir = mkdtempSync(join(tmpdir(), 'bismuth-release-'))
@@ -184,6 +203,29 @@ describe('iş akışları', () => {
     )
     expect(existsSync(join(root, 'build/background.png'))).toBe(true)
     expect(existsSync(join(root, 'build/background@2x.png'))).toBe(true)
+    // electron-builder reads one file: the .tiff carries both sizes (sharp on Retina screens).
+    expect(existsSync(join(root, 'build/background.tiff'))).toBe(true)
+  })
+
+  it("Windows işi electron-builder'ın çağırdığı `wine` komutunu kurar", () => {
+    // wine64/wine32 alone ship no `wine` command on Ubuntu 24.04; the installer build would stop at its first call.
+    expect(steps(release.jobs.windows)).toMatch(/apt-get install .* wine wine64 wine32:i386/)
+  })
+
+  it('Mac deneme açılışı Anahtar Zinciri sorusunda beklemez ve süresi sınırlıdır', () => {
+    const smoke = release.jobs.macos.steps.find((s: { name?: string }) => s.name?.startsWith('Smoke test'))
+    expect(smoke.run).toContain('--use-mock-keychain')
+    expect(smoke['timeout-minutes']).toBeLessThanOrEqual(5)
+    // The packaged app ignores BISMUTH_USER_DATA (app/paths.ts): setting it here would only mislead.
+    expect(smoke.run).not.toContain('BISMUTH_USER_DATA')
+  })
+
+  it('sürüm önce taslak olarak yüklenir, bütün dosyalar çıkınca yayınlanır', () => {
+    const publish = steps(release.jobs.publish)
+    expect(publish).toMatch(/gh release create .* --draft/)
+    expect(publish.indexOf('--draft=false')).toBeGreaterThan(publish.indexOf('gh release create'))
+    // A draft left by a failed upload does not block the next run.
+    expect(steps(release.jobs.version)).toContain('--json isDraft')
   })
 })
 

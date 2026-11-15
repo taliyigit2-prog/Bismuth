@@ -3,6 +3,7 @@
 // build/background@2x.png for Retina) with Chromium. electron-builder picks both up by name and places the Bismuth
 // icon on the left and the Applications shortcut on the right (electron-builder.yml `dmg.contents`), so the window
 // itself shows the one step: drag the icon onto the folder. Turkish first, English below (the DMG is not localised).
+import { execFileSync } from 'node:child_process'
 import { resolve } from 'node:path'
 import { chromium } from '@playwright/test'
 
@@ -38,3 +39,15 @@ for (const [scale, name] of [
   console.log(`build/${name}`)
 }
 await browser.close()
+
+// electron-builder takes one file: the .tiff holds both sizes, so the window is sharp on Retina screens too.
+if (process.platform === 'darwin') {
+  execFileSync('tiffutil', [
+    '-cathidpicheck',
+    resolve(root, 'build/background.png'),
+    resolve(root, 'build/background@2x.png'),
+    '-out',
+    resolve(root, 'build/background.tiff')
+  ])
+  console.log('build/background.tiff')
+} else console.log('build/background.tiff not refreshed: run this on a Mac (tiffutil)')
