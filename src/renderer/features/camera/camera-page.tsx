@@ -18,6 +18,7 @@ import { useIsMobile } from '@/hooks/use-mobile'
 import { useApiMutation, useApiQuery } from '@/lib/api/hooks'
 import { useTransport } from '@/lib/api/api-context'
 import { useCan } from '@/lib/view-as'
+import { CameraAddonInstall } from './addon-missing'
 import { AlertList } from './alert-list'
 import { cameraStateView, type CameraTone } from './camera-state'
 import { LiveView } from './live-view'
@@ -145,6 +146,8 @@ function SwitchedOff({ status }: { status: CameraStatus }) {
               {t('camera.openSettings')}
             </Link>
           </Button>
+        ) : view.key === 'noAddon' ? (
+          <CameraAddonInstall />
         ) : undefined
       }
     />

@@ -2,6 +2,8 @@
 // Spread into the contract by ./index.ts; handlers in src/main/api/handlers/camera.ts.
 import * as z from 'zod'
 import {
+  cameraAddonInstallStartSchema,
+  cameraAddonInstallStateSchema,
   cameraAlertCropSchema,
   cameraAlertIdInputSchema,
   cameraAlertsSchema,
@@ -57,5 +59,8 @@ export const cameraProcedures = {
   // P20g (K-59): the setup wizard's camera step and Ayarlar → Kamera "Yeniden tara". The hotel computer's own window only.
   'camera.hardware': proc(empty, cameraHardwareSchema, ['setup', 'user']),
   'camera.discover': proc(empty, cameraDiscoverySchema, ['setup', 'user']),
-  'camera.probe': proc(cameraProbeInputSchema, cameraProbeSchema, ['setup', 'user'])
+  'camera.probe': proc(cameraProbeInputSchema, cameraProbeSchema, ['setup', 'user']),
+  // "Kamera ekini kur…": the picker and the job (hotel computer's own window only), polled for its progress.
+  'camera.installAddon': proc(empty, cameraAddonInstallStartSchema, ['setup', 'user']),
+  'camera.addonInstallState': proc(empty, cameraAddonInstallStateSchema, ['setup', 'user'])
 } as const satisfies Record<string, Procedure>

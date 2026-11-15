@@ -179,7 +179,7 @@ describe('Kamera ekranı: durumlar', () => {
       'kamera eki yok',
       { addonInstalled: false, state: 'stopped' as const },
       'Kamera eki kurulu değil',
-      /Bismuth-Kamera-Windows\.zip.*camera-addon klasörünü.*Bismuth'u yeniden açın/
+      /Bismuth-Kamera-Windows\.zip.*Kamera ekini kur….*camera-addon klasörünü/
     ]
   ])('%s: tek başlık, ne yapılacağı ve görüntü yok', async (_name, patch, title, body) => {
     const state = emptyCamera()

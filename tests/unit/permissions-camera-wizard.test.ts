@@ -97,6 +97,7 @@ describe('kamera kurulum sihirbazı yetkisi (P20g)', () => {
   it('yalnız kamera görüntüleme yetkisi olan kullanıcı kuruluma dokunamaz', async () => {
     const { service, probed, searches } = await setup()
     const viewer = ctxFromPermissions('u', 'd', 'ipc', { camera: 'view' })
+    expect(await code(() => service.installAddon(viewer))).toBe('PERMISSION_DENIED')
     expect(await code(() => service.hardware(viewer))).toBe('PERMISSION_DENIED')
     expect(await code(() => service.discover(viewer))).toBe('PERMISSION_DENIED')
     expect(await code(() => service.probe(viewer, { source: GOOD }))).toBe('PERMISSION_DENIED')
@@ -128,6 +129,8 @@ describe('kamera kurulum sihirbazı yetkisi (P20g)', () => {
       'camera.hardware',
       'camera.discover',
       'camera.probe',
+      'camera.installAddon',
+      'camera.addonInstallState',
       'camera.setSecrets',
       'camera.status'
     ] as const)

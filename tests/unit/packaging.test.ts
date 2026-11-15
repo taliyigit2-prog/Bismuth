@@ -197,6 +197,22 @@ describe('iş akışları', () => {
     expect(steps(release.jobs.publish)).toContain(`TAG="v$(node -p "require('./package.json').version")"`)
   })
 
+  it('kamera eki gizli kalır: modeller ve hazır zip yalnız "kamera" taslak sürümünde, artifact ya da sırla değil', () => {
+    const job = release.jobs['camera-addon']
+    expect(job.if).toBe('inputs.camera_addon')
+    expect(job.env.MODELS_SHA256).toMatch(/^[0-9a-f]{64}$/)
+    const run = steps(job)
+    expect(run).toContain('gh release download kamera')
+    expect(run).toContain('gh release upload kamera')
+    expect(run).not.toMatch(/secrets\.|curl /)
+    // Artifacts of a public repository can be downloaded by any GitHub user.
+    expect(job.steps.some((s: { uses?: string }) => s.uses?.startsWith('actions/upload-artifact'))).toBe(
+      false
+    )
+    // The public release never carries the camera zips.
+    expect(steps(release.jobs.publish)).not.toContain('Bismuth-Kamera')
+  })
+
   it('DMG penceresi sürükleme görselini ve Uygulamalar kısayolunu gösterir', () => {
     expect(builder.dmg.contents).toEqual(
       expect.arrayContaining([expect.objectContaining({ type: 'link', path: '/Applications' })])

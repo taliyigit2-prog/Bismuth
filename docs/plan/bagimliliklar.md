@@ -46,6 +46,7 @@
 | exceljs | 4.4.0 | MIT | KBS Excel'ini okuma (sütunlar başlık adıyla; kimlik sütunları okunmaz, K-24); Faz 14: tabloları XLSX'e yazma, içe aktarmada XLSX okuma (hücre renkleriyle) | main · `services/tourism/kbs-reader.ts`, `services/data-transfer/{writers,table-reader}.ts` |
 | i18n-iso-countries | 7.14.0 | MIT | Uyruk eşleme: İngilizce + Türkçe ülke adları (K-36); yalnız çekirdek giriş + en/tr dilleri | main · `services/tourism/country-map.ts` |
 | bonjour-service | 1.4.4 | MIT | Sunucu modunda yerel ağ duyurusu ve arama (`_bismuth._tcp`, mDNS; yalnız yerel ağ, internete gitmez). Bağımlılıkları: multicast-dns, dns-packet, fast-deep-equal (MIT) — Faz 13 | main · `src/main/discovery/index.ts` |
+| yauzl | 3.4.0 | MIT | "Kamera ekini kur…": kamera eki zip'ini (~0,7 GB) parça parça açar; belleğe bütün yüklemez. Bağımlılıkları: buffer-crc32, pend (MIT); Vite paketler | main · `src/main/camera/addon-install.ts` |
 | uqr | 0.1.3 | MIT | Adreslerin QR kodu (telefon kamerayla okutur); bağımlılığı yok, pakete gömülü | renderer · `components/qr-code.tsx` |
 | date-holidays | 3.37.0 | ISC + CC-BY-3.0 (veri) | Sınırsız yıl, çevrimdışı bayram üretimi (K-04); 2076 sonrası `Intl` islamic-umalqura yedeği | main · `services/calendar/holidays.ts` |
 
@@ -67,6 +68,7 @@
 | @types/react | 19.3.0 | MIT | React tipleri |
 | @types/react-dom | 19.3.0 | MIT | React DOM tipleri |
 | @types/better-sqlite3 | 9.6.0 | MIT | better-sqlite3 tipleri |
+| @types/yauzl | 2.10.3 | MIT | yauzl tipleri |
 
 Not (güvenlik yeniden incelemesi N-12, bilinçli istisna): `electron-builder.yml` içindeki `linux: target: dir` yalnız
 CI'daki paketli uygulama duman testi (`npm run package:dir` + e2e) içindir; Linux kurulum dosyası üretilmez ve

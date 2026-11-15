@@ -279,3 +279,70 @@ describe('alarmları duraklat', () => {
     )
   })
 })
+
+describe('kamera ekini kur', () => {
+  const installer = () => {
+    const started: string[] = []
+    return {
+      started,
+      installer: {
+        running: () => false,
+        state: () => ({ phase: 'idle', percent: 0, error: null }) as never,
+        start: (zip: string, onDone: () => void) => {
+          started.push(zip)
+          onDone()
+        }
+      }
+    }
+  }
+  const make = async (pick: string | null) => {
+    const { service } = await setup()
+    const fake = installer()
+    let done = 0
+    const withInstall = createCameraService({
+      ...depsOf(handle, testClock()),
+      secrets: createSecretStore(null, null),
+      faceCrypto: createFaceCrypto(null, null),
+      addonInstall: {
+        pick: () => Promise.resolve(pick),
+        installer: fake.installer,
+        onInstalled: () => done++
+      }
+    })
+    void service
+    return { service: withInstall, fake, done: () => done }
+  }
+
+  it('seçilen zip kurulmaya başlar, denetim kaydı yazılır; pencere kapatılırsa hiçbir şey olmaz', async () => {
+    const chosen = await make('/tmp/Bismuth-Kamera-Mac.zip')
+    expect(await chosen.service.installAddon(roleCtx('owner'))).toEqual({ started: true })
+    expect(chosen.fake.started).toEqual(['/tmp/Bismuth-Kamera-Mac.zip'])
+    expect(chosen.done()).toBe(1)
+    expect(
+      handle.db
+        .select()
+        .from(auditLog)
+        .all()
+        .some((r) => r.reason === 'add-on install started')
+    ).toBe(true)
+    handle.close()
+    const closed = await make(null)
+    expect(await closed.service.installAddon(roleCtx('owner'))).toEqual({ started: false })
+    expect(closed.fake.started).toEqual([])
+  })
+
+  it('Resepsiyon kuramaz; telefon ve istemci kuramaz, durumu da okuyamaz', async () => {
+    const { service } = await make('/tmp/x.zip')
+    expect(await code(() => service.installAddon(roleCtx('reception')))).toMatch(/^PERMISSION_DENIED/)
+    expect(await code(() => service.installAddon(phone()))).toBe('PERMISSION_DENIED:errors.remoteLocalOnly')
+    expect(await code(() => service.addonInstallState(phone()))).toBe(
+      'PERMISSION_DENIED:errors.remoteLocalOnly'
+    )
+    expect(service.addonInstallState(roleCtx('owner')).phase).toBe('idle')
+  })
+
+  it('kurucu tanımlı değilse (bu bilgisayar kamerayı barındırmıyor) çakışma döner', async () => {
+    const { service } = await setup()
+    expect(await code(() => service.installAddon(roleCtx('owner')))).toBe('CONFLICT:errors.cameraUnavailable')
+  })
+})

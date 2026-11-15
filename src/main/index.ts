@@ -44,6 +44,7 @@ import {
   SIDECAR_SETTING_KEYS,
   type CameraRuntime
 } from './camera'
+import { createAddonInstaller } from './camera/addon-install'
 import { removeLegacyCameraFiles } from './camera/legacy'
 import { LOCAL_CONFIG, readConnectionConfig, writeConnectionConfig } from './server/connection-config'
 import {
@@ -250,6 +251,29 @@ async function start(): Promise<void> {
           addon: cameraAddon()
         }),
         discover: createDiscoverer({ packaged: app.isPackaged }),
+        // "Kamera ekini kur…": the zip is chosen with the system's dialog; the add-on is read only at start, so a
+        // packaged program restarts itself a moment after the install (the setup draft resumes the wizard).
+        addonInstall: {
+          pick: async () => {
+            const owner = BrowserWindow.getFocusedWindow() ?? mainWindow
+            const props = {
+              properties: ['openFile' as const],
+              filters: [{ name: 'ZIP', extensions: ['zip'] }]
+            }
+            const choice = owner
+              ? await dialog.showOpenDialog(owner, props)
+              : await dialog.showOpenDialog(props)
+            return choice.canceled ? null : (choice.filePaths[0] ?? null)
+          },
+          installer: createAddonInstaller({ userData: app.getPath('userData') }),
+          onInstalled: () => {
+            if (!app.isPackaged) return
+            setTimeout(() => {
+              app.relaunch()
+              app.quit()
+            }, 2_500)
+          }
+        },
         testMessage: () => tMain('main.camera.telegramTest'),
         // K-50: the Telegram text and the window notice of an alarm carry the time and the camera's place, never a name.
         alertMessage: ({ time, location }) =>

@@ -200,15 +200,21 @@ Intel Mac ve Windows ARM için kamera eki üretilmez (PyTorch'un bu sistemler i�
 **ana bilgisayarda** (kameranın bağlı olduğu, Bismuth'un sunucu/tek bilgisayar modundaki makine) gerekir; telefon ve diğer
 bilgisayarlar için gerekmez.
 
+**Nereden alınır:** kamera ekleri herkese açık sürüm sayfasında **değildir** (model dosyalarının lisansı yalnız sahibin kendi
+oteline izin verir). Sahip onları GitHub'da deponun **Releases** sayfasındaki gizli **kamera** taslağından indirir (taslağı
+yalnız depoya yazabilen görür) ve otel bilgisayarına getirir (USB bellek ya da kendi bulut klasörü).
+
 **Kurulum (terminal gerekmez):**
 
-1. Bismuth'u kapatın.
-2. `Bismuth-Kamera-…zip` dosyasını indirin (internet yalnız bu indirme için gerekir; kamera eki çalışırken hiçbir şey indirmez).
-3. Zip'i açın (Windows: sağ tık → **Tümünü ayıkla**; Mac: çift tık). Çıkan klasörün adı **camera-addon** olmalıdır.
-4. Bu klasörü Bismuth'un veri klasörüne taşıyın: Windows `C:\Users\<ad>\AppData\Roaming\Bismuth` (Dosya Gezgini'nin
+1. Zip'i otel bilgisayarına getirin; açmanız gerekmez.
+2. Bismuth'ta kurulum sihirbazının **Kamera** adımında ya da **Ayarlar → Kamera**'da "Kamera eki kurulu değil" uyarısındaki
+   **Kamera ekini kur…** düğmesine basın ve zip'i seçin. Bismuth eki doğru yere açar, denetler ve kendini yeniden başlatır.
+   Başka sisteme ait zip (ör. Mac eki Windows'ta) ya da diskte yer yoksa ne yapılacağını söyler; eski ek bozulmaz.
+3. Düğme kullanılamazsa elle kurulum: Bismuth'u kapatın, zip'i açın (Windows: sağ tık → **Tümünü ayıkla**; Mac: çift tık),
+   çıkan **camera-addon** klasörünü Bismuth'un veri klasörüne taşıyın: Windows `C:\Users\<ad>\AppData\Roaming\Bismuth` (Dosya Gezgini'nin
    adres çubuğuna `%APPDATA%\Bismuth` yazıp Enter'a basın), Mac `Kullanıcı/Kütüphane/Application Support/Bismuth`
    (Finder'da **Git → Klasöre Git**, `~/Library/Application Support/Bismuth` yazın). Sonuç: `…\Bismuth\camera-addon\addon.json`.
-5. Bismuth'u açın; uyarı kalkar. Kamerayı bağlamak için **Ayarlar → Kamera → Yeniden tara** düğmesine basın: kamera kurulum
+4. Bismuth'u açın; uyarı kalkar. Kamerayı bağlamak için **Ayarlar → Kamera → Yeniden tara** düğmesine basın: kamera kurulum
    sihirbazı orada açılır (ilk kurulumdaysanız sihirbazın Kamera adımı aynı işi yapar). **Kamera** ekranının kendisi sihirbazı
    göstermez; kamera adresi girilene kadar "Kamera adresi yok" der.
 
@@ -231,9 +237,10 @@ kullanılır; başkasına verilemez ya da satılamaz.
 yerleşimle bir klasörde tutulur. Üretim: `npm run camera:bundle -- --target win-x64 --models <klasör>` (Linux/Mac/Windows'ta
 Python 3.12 ve bir C++ derleyicisi gerekir). Ek, **hedef sistemin kendisinde** üretilir: Windows eki Windows'ta, Mac eki
 `--target mac-arm64` ile Apple çipli Mac'te (insightface derlenir; başka sistemde derlenen çalışmaz). Ya da `release` iş akışını
-elle çalıştırıp `camera_addon` kutusunu işaretleyin; sürüm etiketinde iş akışı eki yalnız depo değişkeni `CAMERA_ADDON` `true`
-iken üretir ve iki zip dosyası sürümün `SHA256SUMS.txt` listesine girer (model arşivi `CAMERA_MODELS_URL` /
-`CAMERA_MODELS_SHA256` sırlarından alınır). Kütüphaneler hash'li kilit dosyalarından kurulur (`otel-kamera/requirements-*.lock`,
+elle çalıştırıp **Kamera ekini de üret** kutusunu işaretleyin: iş akışı model arşivini (`kamera-modelleri.tar.gz`: `yolo11n.pt`
+ve `insightface/models/buffalo_s/{det_500m,w600k_mbf}.onnx`) gizli **kamera** taslak sürümünden alır, parmak izini iş akışında
+sabit `MODELS_SHA256` ile denetler ve hazır iki zip'i yine o taslağa koyar. Ek hiçbir zaman herkese açık sürüme ya da iş akışı
+çıktısına (artifact) girmez. Modeller değişirse yeni arşiv taslağa konur ve `MODELS_SHA256` güncellenir. Kütüphaneler hash'li kilit dosyalarından kurulur (`otel-kamera/requirements-*.lock`,
 yenilemek için `node scripts/camera-lock.mjs`; `pip install uv` gerekir); Python arşivi betikteki sabit özetle doğrulanır. Çıktı: `camera-addon-out/Bismuth-Kamera-*.zip` (git dışı). Python bağlantı adresleri ve ilk
 paketlemede doğrulanacak noktalar `scripts/camera-bundle.mjs` başındadır.
 

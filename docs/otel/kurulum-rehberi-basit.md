@@ -56,12 +56,13 @@ Hangisi olduğunu bilmiyorsanız: Windows'ta ilk satır neredeyse her zaman doğ
 - Yeni sürüm kurmadan önce **Ayarlar → Yedek → Şimdi yedek al** düğmesine basın.
 - Telefondan ya da Mac'ten bağlanmak için: [`uzaktan-erisim.md`](uzaktan-erisim.md).
 
-## 5. Kamera eki (isteğe bağlı; ayrı indirme)
+## 5. Kamera eki (isteğe bağlı; ayrı dosya)
 
-Kamera, ana programa dahil değildir; büyük bir dosyadır (yaklaşık 0,7 GB indirir, diskte 2 GB kadar yer tutar).
-Yalnız kamera kullanacaksanız kurun: **Bismuth-Kamera-Windows.zip** (Windows) ya da **Bismuth-Kamera-Mac.zip** (Apple
-çipli Mac) dosyasını indirin, sağ tıklayıp açın ve çıkan **camera-addon** klasörünü Bismuth'un veri klasörüne koyun
-(bu rehberin sonundaki klasör). Sonra Bismuth'u kapatıp açın; kamerayı bağlamak için Ayarlar → Kamera → Yeniden tara'ya basın (kurulum sihirbazı orada açılır).
+Kamera, ana programa dahil değildir; büyük bir dosyadır (yaklaşık 0,7 GB, diskte 2 GB kadar yer tutar) ve herkese açık
+sayfada durmaz. Yalnız kamera kullanacaksanız: **Bismuth-Kamera-Windows.zip** (Windows) ya da **Bismuth-Kamera-Mac.zip**
+(Apple çipli Mac) dosyasını sahibin gizli **kamera** taslağından alıp (GitHub → Releases) bu bilgisayara getirin. Sihirbazın
+Kamera adımında ya da Ayarlar → Kamera'da **Kamera ekini kur…** düğmesine basıp zip'i seçin; Bismuth eki kurar ve yeniden
+başlar. Sonra kamerayı bağlamak için Ayarlar → Kamera → Yeniden tara'ya basın (ağdaki kameralar aranır).
 Kurmazsanız Kamera ekranı, Ayarlar → Kamera ve sihirbazın Kamera adımı "Kamera eki kurulu değil" der; program başka her şeyde aynı çalışır. Intel Mac ve Windows ARM
 için kamera eki yoktur. Ayrıntı: [`kurulum.md`](kurulum.md#kamera-eki). <!-- doğrula -->
 

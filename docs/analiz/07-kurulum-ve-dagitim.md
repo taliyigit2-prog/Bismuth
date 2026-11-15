@@ -89,8 +89,9 @@ kaldırıcı veriyi silmez). Ana uygulama eki bulamazsa kamerayı başlatmaz (`s
 (Linux x64, Python 3.12) çözümlenen tekerlekler: toplam ≈ 600 MB sıkıştırılmış (torch CPU 210 MB, opencv ×2 135 MB, polars 54 MB,
 scipy 35 MB, av 35 MB, onnxruntime 28 MB); Windows/Mac gerçek boyutu **ölçülmedi** <!-- doğrula -->.
 
-`release.yml` işi `camera-addon` (elle `camera_addon` kutusu, ya da sürüm etiketinde depo değişkeni `CAMERA_ADDON=true` iken;
-model arşivi sırdan): **Windows eki `windows-latest`'te (×2), Mac eki `macos-latest`'te (×10)** üretilir (P20ffix).
+`release.yml` işi `camera-addon` (yalnız elle `camera_addon` kutusuyla; 2026-11-15 sahip kararı: model arşivi ve hazır ekler
+deponun gizli **kamera** taslak sürümünde durur, herkese açık sürüme ve artifact'e girmez; sırlar ve `CAMERA_ADDON` değişkeni
+kullanılmaz): **Windows eki `windows-latest`'te (×2), Mac eki `macos-latest`'te (×10)** üretilir (P20ffix).
 
 Neden Windows eki artık Linux'ta üretilmiyor: `insightface==0.7.3` için tekerlek yok (yalnız kaynak arşivi); Linux'ta derlenen
 `mesh_core_cython` Linux `.so`'sudur, Windows'ta çalışmaz. `from insightface.app import FaceAnalysis` bu derlenmiş modülü
@@ -110,9 +111,7 @@ ile aynı boyut); bu yüzden ikinci paket dizini kullanılmaz.
 | **Kamera eki de** | | | **+240–360 (Mac işi baskın)** |
 
 Süreler ölçülmedi <!-- doğrula -->. Mac eki pahalıdır: sahibin Mac'inde yerel `npm run camera:bundle -- --target mac-arm64
---models <klasör>` 0 dakikadır; sürüm etiketinde CI'da üretmek için `CAMERA_ADDON=true` değişkenini yalnız gerektiğinde koyun.
-Sürüm etiketinde ek yapılmışsa iki zip de `SHA256SUMS.txt`'ye girer ve GitHub Release'e eklenir; ek işi başarısız olursa
-sürüm yayınlanmaz.
+--models <klasör>` 0 dakikadır; CI'da yalnız kutu işaretlenince üretilir ve zip'ler gizli taslağa gider (herkese açık sürüme girmez).
 
 Önceki durum: release ≈ 180 + ci elle ≈ 130–200. Windows'u Linux'ta üretmek Windows runner'ının ×2 çarpanını da
 kaldırır. wine adımı runner'da çalışmazsa yedek: `windows` işini `runs-on: windows-latest` yapıp wine adımını silmek
@@ -121,7 +120,7 @@ kaldırır. wine adımı runner'da çalışmazsa yedek: `windows` işini `runs-o
 **Tedarik zinciri (P20ffix):** Python arşivi için betikte sabit sha256 (zorunlu, bayrakla değiştirilemez); kütüphaneler
 `otel-kamera/requirements-bundle.lock` (hash'li, `scripts/camera-lock.mjs` üretir, `pip --require-hashes`, tek dizin: PyPI);
 insightface derleme araçları `requirements-build.lock`, kaynak arşivi `requirements-insightface.lock`. Model arşivi
-`CAMERA_MODELS_SHA256` ile doğrulanır; gizli değerler yalnız o adıma verilir. `ultralytics-platform` (ve onun `httpx`'i)
+iş akışındaki sabit `MODELS_SHA256` ile doğrulanır (gizli taslaktan `gh release download` ile alınır). `ultralytics-platform` (ve onun `httpx`'i)
 ekte yoktur: `ultralytics` onu yalnız `ultralytics.Platform` istenirse içe aktarır (8.4.212 kaynağında doğrulandı) ve Bismuth
 istemez; ayrıca `YOLO_OFFLINE=1` her ağ yoklamasını kapatır.
 

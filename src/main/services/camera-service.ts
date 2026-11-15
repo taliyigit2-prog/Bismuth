@@ -15,6 +15,8 @@ import {
   cameraSaveAlertInputSchema,
   cameraSecretsInputSchema,
   cameraStaffInputSchema,
+  type CameraAddonInstallStart,
+  type CameraAddonInstallState,
   type CameraAlertCrop,
   type CameraAlerts,
   type CameraCandidate,
@@ -51,6 +53,7 @@ import {
   staffFaces
 } from '../db/schema'
 import type { CameraRuntime } from '../camera'
+import type { AddonInstaller } from '../camera/addon-install'
 import type { Bridge } from '../camera/bridge'
 import { FaceCryptoError, type FaceCrypto } from '../camera/crypto'
 import { discoverCameras } from '../camera/discovery'
@@ -120,6 +123,8 @@ export interface CameraServiceDeps extends ServiceDeps {
   discover?: () => Promise<CameraDiscovery>
   /** P20g. The one-picture test of an rtsp:// address (the main process passes the Python one; none = unavailable). */
   probe?: (source: string) => Promise<CameraProbe>
+  /** "Kamera ekini kur…": the file picker (null = closed), the installer and what happens after a success (relaunch). */
+  addonInstall?: { pick: () => Promise<string | null>; installer: AddonInstaller; onInstalled: () => void }
 }
 
 /** A webcam number ("0") or an RTSP address: the only camera targets (K-49). */
@@ -439,6 +444,28 @@ export function createCameraService(deps: CameraServiceDeps) {
         return { ok: false, reason: 'badAddress', image: null, width: 0, height: 0 }
       if (!deps.probe) return { ok: false, reason: 'unavailable', image: null, width: 0, height: 0 }
       return deps.probe(source)
+    },
+
+    /** Picks the add-on zip with the system's dialog and starts unpacking it; progress is read with `addonInstallState`. */
+    async installAddon(ctx: Ctx): Promise<CameraAddonInstallStart> {
+      requirePermission(ctx, 'camera', 'edit')
+      desktopOnly(ctx)
+      const install = deps.addonInstall
+      if (!install) throw new AppError('CONFLICT', 'errors.cameraUnavailable')
+      if (install.installer.running()) throw new AppError('CONFLICT', 'errors.cameraAddonBusy')
+      const zipPath = await install.pick()
+      if (!zipPath) return { started: false }
+      inTransaction(deps, ctx, (_tx, audit) =>
+        audit({ entity: 'camera', entityId: 'addon', action: 'update', reason: 'add-on install started' })
+      )
+      install.installer.start(zipPath, install.onInstalled)
+      return { started: true }
+    },
+
+    addonInstallState(ctx: Ctx): CameraAddonInstallState {
+      requirePermission(ctx, 'camera', 'view')
+      desktopOnly(ctx)
+      return deps.addonInstall?.installer.state() ?? { phase: 'idle', percent: 0, error: null }
     },
 
     /**
