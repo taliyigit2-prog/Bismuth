@@ -37,5 +37,7 @@ export const cameraHandlers = (services: Services): HandlersFor<keyof typeof cam
   },
   'camera.hardware': (ctx) => services.camera.hardware(ctx),
   'camera.discover': (ctx) => services.camera.discover(ctx),
-  'camera.probe': (ctx, input) => services.camera.probe(ctx, input)
+  'camera.probe': (ctx, input) => services.camera.probe(ctx, input),
+  'camera.installAddon': (ctx) => services.camera.installAddon(ctx),
+  'camera.addonInstallState': (ctx) => services.camera.addonInstallState(ctx)
 })

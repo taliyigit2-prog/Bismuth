@@ -103,6 +103,8 @@ export interface ServiceStorage {
     probe?: (source: string) => Promise<CameraProbe>
     discover?: () => Promise<CameraDiscovery>
     hardware?: () => Hardware
+    /** "Kamera ekini kur…": the zip picker, the installer and the step after a success. */
+    addonInstall?: NonNullable<Parameters<typeof createCameraService>[0]['addonInstall']>
     /** Tests: the face key (default: a file in the data folder sealed by the key store). */
     faceCrypto?: ReturnType<typeof createFaceCrypto>
   }
@@ -196,7 +198,8 @@ export function createServices(handle: DatabaseHandle, runtime: RuntimeInfo, sto
     ...(storage.camera?.onAlert ? { onAlert: storage.camera.onAlert } : {}),
     ...(storage.camera?.probe ? { probe: storage.camera.probe } : {}),
     ...(storage.camera?.discover ? { discover: storage.camera.discover } : {}),
-    ...(storage.camera?.hardware ? { hardware: storage.camera.hardware } : {})
+    ...(storage.camera?.hardware ? { hardware: storage.camera.hardware } : {}),
+    ...(storage.camera?.addonInstall ? { addonInstall: storage.camera.addonInstall } : {})
   })
   const setup = createSetupService(deps, {
     settings,

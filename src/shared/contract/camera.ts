@@ -311,3 +311,17 @@ export const cameraProbeSchema = z.object({
   height: z.number().int().min(0)
 })
 export type CameraProbe = z.infer<typeof cameraProbeSchema>
+
+/** "Kamera ekini kur…": why an install stopped (the screen shows each in the person's language). */
+export const CAMERA_ADDON_ERRORS = ['notAddon', 'wrongSystem', 'incomplete', 'noSpace', 'failed'] as const
+export type CameraAddonError = (typeof CAMERA_ADDON_ERRORS)[number]
+export const CAMERA_ADDON_PHASES = ['idle', 'checking', 'unpacking', 'verifying', 'done', 'failed'] as const
+export const cameraAddonInstallStateSchema = z.object({
+  phase: z.enum(CAMERA_ADDON_PHASES),
+  percent: z.number().int().min(0).max(100),
+  error: z.enum(CAMERA_ADDON_ERRORS).nullable()
+})
+export type CameraAddonInstallState = z.infer<typeof cameraAddonInstallStateSchema>
+/** `canceled`: the file picker was closed without a choice. */
+export const cameraAddonInstallStartSchema = z.object({ started: z.boolean() })
+export type CameraAddonInstallStart = z.infer<typeof cameraAddonInstallStartSchema>

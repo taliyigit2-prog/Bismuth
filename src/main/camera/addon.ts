@@ -28,13 +28,17 @@ export const addonRoot = (userData: string): string => join(userData, ADDON_DIR_
 const pythonPath = (root: string, platform: NodeJS.Platform): string =>
   platform === 'win32' ? join(root, 'python', 'python.exe') : join(root, 'python', 'bin', 'python3')
 
-/** The add-on if it is complete for this computer, else null ("camera add-on not installed"). */
-export function findCameraAddon(
-  userData: string,
+export type AddonProblem = 'notAddon' | 'wrongSystem' | 'incomplete'
+
+/**
+ * Looks at an add-on folder (the installed one, or the temporary one an install just unpacked): the add-on, or why it is
+ * none. An add-on built for another system (e.g. a Windows zip copied to a Mac) never starts: `wrongSystem`.
+ */
+export function inspectAddonRoot(
+  root: string,
   platform: NodeJS.Platform = process.platform,
   arch: string = process.arch
-): CameraAddon | null {
-  const root = addonRoot(userData)
+): { addon: CameraAddon } | { problem: AddonProblem } {
   const python = pythonPath(root, platform)
   const addon: CameraAddon = {
     root,
@@ -43,19 +47,28 @@ export function findCameraAddon(
     scriptDir: join(root, 'app'),
     modelsDir: join(root, 'models')
   }
-  if (!existsSync(join(root, 'addon.json'))) return null
+  if (!existsSync(join(root, 'addon.json'))) return { problem: 'notAddon' }
   try {
     const meta = JSON.parse(readFileSync(join(root, 'addon.json'), 'utf8')) as {
       platform?: unknown
       arch?: unknown
     }
-    // An add-on built for another system (e.g. a Windows zip copied to a Mac) never starts.
-    if (meta.platform !== platform || meta.arch !== arch) return null
+    if (meta.platform !== platform || meta.arch !== arch) return { problem: 'wrongSystem' }
   } catch {
-    return null
+    return { problem: 'notAddon' }
   }
   const needed = [python, join(addon.scriptDir, 'web_app.py'), join(addon.modelsDir, 'SHA256SUMS')]
-  return needed.every((p) => existsSync(p)) ? addon : null
+  return needed.every((p) => existsSync(p)) ? { addon } : { problem: 'incomplete' }
+}
+
+/** The add-on if it is complete for this computer, else null ("camera add-on not installed"). */
+export function findCameraAddon(
+  userData: string,
+  platform: NodeJS.Platform = process.platform,
+  arch: string = process.arch
+): CameraAddon | null {
+  const found = inspectAddonRoot(addonRoot(userData), platform, arch)
+  return 'addon' in found ? found.addon : null
 }
 
 // What a packaged sidecar (and the probe) inherits from Bismuth's own environment: system folders and locale only. Nothing

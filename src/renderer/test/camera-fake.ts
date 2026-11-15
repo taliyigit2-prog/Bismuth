@@ -7,6 +7,7 @@ import {
   type SettingsValues
 } from '@shared/contract'
 import type {
+  CameraAddonInstallState,
   CameraAlert,
   CameraCandidate,
   CameraDiscovery,
@@ -79,6 +80,8 @@ export interface CameraFakeState {
   hardware: CameraHardware
   discovery: CameraDiscovery
   probe: CameraProbe
+  /** "Kamera ekini kur…": `pick` = the dialog's answer, `install` = what the polled state says next. */
+  addon: { pick: 'started' | 'canceled'; install: CameraAddonInstallState }
 }
 
 export const emptyCamera = (): CameraFakeState => ({
@@ -111,7 +114,8 @@ export const emptyCamera = (): CameraFakeState => ({
     recommended: 'standard'
   },
   discovery: { devices: [], problem: null },
-  probe: { ok: true, reason: null, image: 'data:image/jpeg;base64,/9j/', width: 1280, height: 720 }
+  probe: { ok: true, reason: null, image: 'data:image/jpeg;base64,/9j/', width: 1280, height: 720 },
+  addon: { pick: 'started', install: { phase: 'idle', percent: 0, error: null } }
 })
 
 export function cameraTransport(
@@ -235,6 +239,13 @@ export function cameraTransport(
           write()
           desktopOnly()
           return structuredClone(state.probe) as never
+        case 'camera.installAddon':
+          write()
+          desktopOnly()
+          return { started: state.addon.pick === 'started' } as never
+        case 'camera.addonInstallState':
+          desktopOnly()
+          return structuredClone(state.addon.install) as never
         case 'camera.testTelegram':
           write()
           desktopOnly()

@@ -1809,7 +1809,8 @@
     "notEmployedInPeriod": "Çalışan {{month}}/{{year}} döneminde işte değil; bu döneme tutar yazılamaz.",
     "laundryMonthSettled": "Bu ayın faturası girilmiş; gelen fiş eklenemez ya da iptal edilemez.",
     "roomTypeInactive": "Bu oda tipi kapalı. Önce oda tipini etkinleştirin, sonra odayı ekleyin ya da taşıyın.",
-    "laundryMonthNotSettled": "Bu ayın faturası girilmemiş; açılacak bir şey yok."
+    "laundryMonthNotSettled": "Bu ayın faturası girilmemiş; açılacak bir şey yok.",
+    "cameraAddonBusy": "Kamera eki zaten kuruluyor. Bitmesini bekleyin."
   },
   "common": {
     "close": "Kapat",
@@ -2845,7 +2846,7 @@
         "noFrame": "Kameraya bağlanıldı ama görüntü alınamadı. Birkaç saniye sonra yeniden deneyin.",
         "badAddress": "Bu adres otelin kendi ağındaki bir kamera gibi görünmüyor.",
         "unavailable": "Kamera bölümü bu bilgisayarda çalışmıyor. Kurulum kılavuzundaki kamera bölümüne bakın.",
-        "noAddon": "Kamera eki kurulu değil, bu yüzden görüntü denemesi yapılamıyor. Kamera ekini kurduktan sonra Bismuth'u yeniden açıp tekrar deneyin."
+        "noAddon": "Kamera eki kurulu değil, bu yüzden görüntü denemesi yapılamıyor. \"Kamera ekini kur…\" düğmesiyle kurun, Bismuth yeniden açılınca tekrar deneyin."
       },
       "save": {
         "run": "Kamerayı kaydet",
@@ -7456,7 +7457,7 @@
       "noSource": "Kamera adresi girilmedi. Ayarlar'da Kamera bölümünden girin; yetkiniz yoksa otel sahibine başvurun.",
       "disabled": "Kamera sistemi kapalı. Açmak için Ayarlar'da Kamera bölümüne gidin; yetkiniz yoksa otel sahibine başvurun.",
       "unavailable": "Kamera sistemi bu bilgisayarda çalışmıyor. Otelin ana bilgisayarını kullanın.",
-      "noAddon": "Kamera eki ayrı bir indirmedir: Bismuth'un sürüm sayfasından Bismuth-Kamera-Windows.zip (Mac: Bismuth-Kamera-Mac.zip) dosyasını indirip açın, çıkan camera-addon klasörünü ana bilgisayarda Bismuth'un veri klasörüne koyun (Windows: %APPDATA%\\Bismuth, Mac: ~/Library/Application Support/Bismuth) ve Bismuth'u yeniden açın."
+      "noAddon": "Kamera eki ayrı bir dosyadır ve herkese açık sürüm sayfasında yoktur; sahibin özel GitHub taslağında (\"kamera\") bulunur. Bismuth-Kamera-Windows.zip (Mac: Bismuth-Kamera-Mac.zip) dosyasını bu bilgisayara getirin, \"Kamera ekini kur…\" düğmesiyle seçin; Bismuth kendisi kurar ve yeniden açılır. Olmazsa elle de olur: zip'i açıp çıkan camera-addon klasörünü Bismuth'un veri klasörüne koyun (Windows: %APPDATA%\\Bismuth, Mac: ~/Library/Application Support/Bismuth)."
     },
     "pause": {
       "label": "Alarmları duraklat",
@@ -7653,6 +7654,20 @@
       "addFailed": "Yüz alınamadı",
       "removed": "Listeden çıkarıldı",
       "removeFailed": "Listeden çıkarılamadı"
+    },
+    "addonInstall": {
+      "button": "Kamera ekini kur…",
+      "running": "Kamera eki kuruluyor. Bu birkaç dakika sürebilir; Bismuth'u kapatmayın.",
+      "progress": "Kurulum ilerlemesi",
+      "done": "Kamera eki kuruldu. Bismuth yeniden başlatılıyor…",
+      "doneDev": "Kamera eki kuruldu. Bismuth'u yeniden açın.",
+      "errors": {
+        "notAddon": "Bu dosya kamera eki gibi görünmüyor. Bismuth-Kamera-Windows.zip ya da Bismuth-Kamera-Mac.zip dosyasını seçin.",
+        "wrongSystem": "Bu kamera eki başka bir bilgisayar türü için hazırlanmış. Bu bilgisayarın sistemine uygun olan zip dosyasını seçin (Windows ya da Mac).",
+        "incomplete": "Zip dosyası eksik ya da bozuk. Dosyayı yeniden kopyalayıp tekrar deneyin.",
+        "noSpace": "Diskte yeterli boş yer yok. Kurulum için zip boyutunun yaklaşık üç katı boş yer gerekir; yer açıp tekrar deneyin.",
+        "failed": "Kamera eki kurulamadı. Kurulum yarıda kaldı, önceki hâli korundu. Tekrar deneyin ya da elle kurun."
+      }
     }
   },
   "feesPanel": {

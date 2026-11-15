@@ -1809,7 +1809,8 @@
     "notEmployedInPeriod": "The employee was not employed in {{month}}/{{year}}; nothing can be booked to that period.",
     "laundryMonthSettled": "This month's invoice is entered; incoming slips can no longer be added or voided.",
     "roomTypeInactive": "This room type is switched off. Switch the room type on first, then add or move the room.",
-    "laundryMonthNotSettled": "This month has no invoice entered; there is nothing to reopen."
+    "laundryMonthNotSettled": "This month has no invoice entered; there is nothing to reopen.",
+    "cameraAddonBusy": "The camera add-on is already being installed. Wait for it to finish."
   },
   "common": {
     "close": "Close",
@@ -2845,7 +2846,7 @@
         "noFrame": "The camera answered but no picture came. Try again in a few seconds.",
         "badAddress": "This address does not look like a camera on the hotel's own network.",
         "unavailable": "The camera part does not run on this computer. See the camera section of the installation guide.",
-        "noAddon": "The camera add-on is not installed, so the picture test cannot run. Install it, reopen Bismuth and try again."
+        "noAddon": "The camera add-on is not installed, so the picture test cannot run. Install it with \"Install camera add-on…\"; try again once Bismuth has restarted."
       },
       "save": {
         "run": "Save the camera",
@@ -7456,7 +7457,7 @@
       "noSource": "No camera address has been entered. Enter it in Settings under Camera; if you cannot, ask the hotel owner.",
       "disabled": "The camera system is off. To switch it on, go to Settings under Camera; if you cannot, ask the hotel owner.",
       "unavailable": "The camera system does not run on this computer. Use the hotel's main computer.",
-      "noAddon": "The camera add-on is a separate download: get Bismuth-Kamera-Windows.zip (Mac: Bismuth-Kamera-Mac.zip) from Bismuth's releases page, unpack it, put the camera-addon folder into Bismuth's data folder on the main computer (Windows: %APPDATA%\\Bismuth, Mac: ~/Library/Application Support/Bismuth) and reopen Bismuth."
+      "noAddon": "The camera add-on is a separate file and is not on the public release page; it is in the owner's private GitHub draft (\"kamera\"). Bring Bismuth-Kamera-Windows.zip (Mac: Bismuth-Kamera-Mac.zip) to this computer and pick it with \"Install camera add-on…\"; Bismuth installs it and restarts. If that fails, do it by hand: unzip it and put the camera-addon folder into Bismuth's data folder (Windows: %APPDATA%\\Bismuth, Mac: ~/Library/Application Support/Bismuth)."
     },
     "pause": {
       "label": "Pause alarms",
@@ -7653,6 +7654,20 @@
       "addFailed": "The face could not be taken",
       "removed": "Taken off the list",
       "removeFailed": "Could not take off the list"
+    },
+    "addonInstall": {
+      "button": "Install camera add-on…",
+      "running": "Installing the camera add-on. This can take a few minutes; do not close Bismuth.",
+      "progress": "Install progress",
+      "done": "The camera add-on is installed. Bismuth is restarting…",
+      "doneDev": "The camera add-on is installed. Reopen Bismuth.",
+      "errors": {
+        "notAddon": "This file does not look like the camera add-on. Pick Bismuth-Kamera-Windows.zip or Bismuth-Kamera-Mac.zip.",
+        "wrongSystem": "This camera add-on was built for another kind of computer. Pick the zip that matches this computer (Windows or Mac).",
+        "incomplete": "The zip file is incomplete or damaged. Copy it again and retry.",
+        "noSpace": "There is not enough free disk space. The install needs about three times the zip's size; free some space and retry.",
+        "failed": "The camera add-on could not be installed. The install stopped and nothing was changed. Retry, or install by hand."
+      }
     }
   },
   "feesPanel": {
