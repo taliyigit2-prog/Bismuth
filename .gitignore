@@ -71,3 +71,6 @@ tools/ajan/kayit/
 
 # Kamera eki uretim ciktisi (scripts/camera-bundle.mjs): agirliklar ve tekerlekler depoya girmez
 camera-addon-out/
+
+# Obsidian vault settings (local to each person)
+.obsidian/

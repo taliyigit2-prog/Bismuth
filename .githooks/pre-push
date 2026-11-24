@@ -1,0 +1,18 @@
+#!/bin/sh
+# Git's own pre-push hook (see pre-commit): main and release tags are the owner's; history on the remote is never
+# rewritten. Blocks a push to main/master, a v* tag, and a non-fast-forward (force) update of any branch.
+zero=0000000000000000000000000000000000000000
+status=0
+while read -r local_ref local_sha remote_ref remote_sha; do
+  case "$remote_ref" in
+    refs/heads/main|refs/heads/master)
+      echo "pre-push: blocked, $remote_ref is the owner's branch; push a work branch and open a pull request" >&2; status=1 ;;
+    refs/tags/v*)
+      echo "pre-push: blocked, release tags ($remote_ref) are set by the owner" >&2; status=1 ;;
+  esac
+  if [ "$local_sha" != "$zero" ] && [ "$remote_sha" != "$zero" ] && git cat-file -e "$remote_sha" 2>/dev/null; then
+    git merge-base --is-ancestor "$remote_sha" "$local_sha" || {
+      echo "pre-push: blocked, $remote_ref would lose commits (force push)" >&2; status=1; }
+  fi
+done
+exit $status

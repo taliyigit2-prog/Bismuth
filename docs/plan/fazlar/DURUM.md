@@ -29,8 +29,9 @@
 | 21 | `faz-21-coklu-otel-ve-diger.md` | ✅ kod tamam (2026-11-14; P21b–P21e; P21a atlandı, otonom varsayılan) | istemci otel listesi + takvimli portföy (K-54), geç çıkış/no-show/gece raporu, orta/düşük bulgular, isteğe bağlı profiller |
 | 22 | `faz-22-performans-ve-kabuk.md` | ✅ (2026-11-14) P22a–P22c; K-62 ölçümüyle Electron kalır, P22d/P22e açılmadı | Electron ölçüm/hafifletme, kabuk soyutlaması, Tauri 2 prototipi ve sahip kararı; tam Rust yok |
 
-**Şu anki faz:** tüm dalgalar ve **Son dalgası bitti (2026-11-14)**. Kalan yalnız sahip işleri: ekran onayı
-(`taslak-onay/2026-11-14-son.md`), gerçek Windows/Mac kurulum denemesi (S-80), gerçek kamera denemesi ve KVKK avukat görüşü, v1.0 etiketi (sahip atar).
+**Şu anki faz:** tüm dalgalar ve Son dalgası bitti (2026-11-14); **v1.0.1 yayında (2026-11-15)**, kamera eki sahibin gizli
+"kamera" taslağında. 2026-11-24: proje Antigravity'ye devredildi (başlangıç `AGENTS.md`). Kalan sahip işleri: ekran onayı
+(`taslak-onay/2026-11-14-son.md`), gerçek Windows kurulum denemesi (S-80), gerçek kamera denemesi, KVKK avukat görüşü.
 
 **Açık küçük soru (fazları engellemez):** S-80 — Faz 1 paketini otel bilgisayarında (Windows) ve Mac'te açıp denemek +
 otel bilgisayarının "Sistem türü" (sahip otele gidince). Paketler: GitHub → Actions → son yeşil `ci` → `Bismuth-Windows` /
