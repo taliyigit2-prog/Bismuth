@@ -149,14 +149,6 @@ Dosya başında kaynak satırı var; lisans metinleri `THIRD_PARTY_NOTICES.md`'d
 | cawa-93/vite-electron-builder | MIT | Güvenlik modülleri, paketli uygulama smoke fikri |
 | actualbudget/actual | MIT | `security/policy.ts` fikirleri, yol geçişi koruması, additive‑only migrasyon testi |
 
-## Geliştirme aracı (uygulamaya girmez)
-
-`tools/ajan/` kendi `package.json`'ı olan ayrı bir klasördür; uygulama paketine ve kök bağımlılıklara girmez.
-
-| Paket | Sürüm | Lisans | Ne için | Nerede |
-|---|---|---|---|---|
-| @anthropic-ai/claude-agent-sdk | 0.3.322 | Anthropic ticari şartları | Geliştirme ajanını Anthropic API anahtarıyla çalıştıran başlatıcı (`node tools/ajan/ajan.mjs`) | yalnızca geliştirme · `tools/ajan/` |
-
 ## Rust prototipi (uygulamaya girmez; Faz 22 P22c)
 
 `shell-tauri/` kendi `Cargo.lock` dosyası olan ayrı bir klasördür; Electron paketine ve `package.json`'a girmez. Sürümler

@@ -24,8 +24,6 @@ backups/
 .env.*
 # sır içermeyen örnek ayar dosyası depoya girer
 !otel-kamera/.env.example
-.claude/settings.local.json
-CLAUDE.local.md
 
 # OS / editor
 .DS_Store
@@ -39,16 +37,11 @@ coverage/
 playwright-report/
 test-results/
 
-# Claude hook marker (last successful npm run check)
-.claude/.checks-passed
 # local Electron profile used by e2e/ui-shot
 .tmp/
 .eslintcache
-# incremental type-check state (npm run typecheck)
+# incremental type-check state and last check marker (.cache/.checks-passed)
 .cache/
-
-# agent worktrees (local only)
-.claude/worktrees/
 
 # parallel agents: i18n spec files are merged with npm run i18n:add, never committed
 /i18n-spec/
@@ -65,9 +58,6 @@ resources/camera/models/*
 !resources/camera/models/README.md
 !resources/camera/models/SHA256SUMS
 otel-kamera/models/
-
-# agent runner logs and session state
-tools/ajan/kayit/
 
 # Kamera eki uretim ciktisi (scripts/camera-bundle.mjs): agirliklar ve tekerlekler depoya girmez
 camera-addon-out/

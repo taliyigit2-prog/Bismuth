@@ -1,7 +1,7 @@
 # Bismuth tasarım dili
 
 > Faz 3 teslimatı 1 (`docs/plan/fazlar/faz-03-ui-tasarim-sistemi.md`). Ekranları yazan herkes ve `ui-reviewer` ajanı bu
-> belgeyi referans alır. Kurallar `.claude/rules/ui.md` ile birlikte okunur; metin kuralları `.claude/skills/tr-copy-guide`.
+> belgeyi referans alır. Kurallar `.agent/rules/ui.md` ile birlikte okunur; metin kuralları `.agent/skills/tr-copy-guide`.
 > Canlı örnek: programda **Sistem → Tema önizleme** (bütün bileşenler, üç dilde örnek metin) ve **Ayarlar → Durum
 > etiketleri** (renk mantığı, canlı takvim önizlemesi).
 

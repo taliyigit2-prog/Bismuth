@@ -7,7 +7,7 @@ gözden geçirirken ve kılavuz (`docs/otel/kullanim-kilavuzu.md`) yazarken buna
 **Kaynaklar ve öncelik:** Türkçe sütun sahibin kelimeleridir (`docs/plan/akislar.md`, `02-excel-analizi.md`,
 `06-kararlar.md` → "Sahip cevapları"); çakışırsa sahibin sözü kazanır. İngilizce ve Rusça sütun
 `src/renderer/i18n/en.json` ve `ru.json` içindeki kullanımdan alınmıştır (5 Eki 2026 turunda tutarsızlıklar
-düzeltildi; kalanlar en sonda). Üslup kuralları: `.claude/skills/tr-copy-guide`.
+düzeltildi; kalanlar en sonda). Üslup kuralları: `.agent/skills/tr-copy-guide`.
 
 **Kısa kurallar:** Türkçe "siz" hitabı; cümle düzeni (yalnız ilk harf büyük); düğme ve etiketlerde nokta yok;
 "giriş" otelde **check-in** demektir, bu yüzden oturum için "oturum aç" kullanılır, "giriş yap" kullanılmaz.

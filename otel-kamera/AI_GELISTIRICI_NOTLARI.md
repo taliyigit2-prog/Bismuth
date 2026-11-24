@@ -2,7 +2,7 @@
 
 > Bu belge **kodla eşitlenmiştir** (Faz 20 P20a, 2026-11-13; Ç-08). Eski sürümde bulunan ama kodda olmayan şeyler
 > (`guest_face_profiles` tablosu, `.env.example`'a dayalı kurulum) kaldırıldı ya da "yapılacak" olarak işaretlendi; P20d
-> (2026-11-13) izleme, model yükleme ve yayını değiştirdi. Üst belgeler: `docs/analiz/06-kamera-entegrasyonu.md`, `.claude/rules/camera.md`, `docs/plan/fazlar/faz-20-*.md`.
+> (2026-11-13) izleme, model yükleme ve yayını değiştirdi. Üst belgeler: `docs/analiz/06-kamera-entegrasyonu.md`, `.agent/rules/camera.md`, `docs/plan/fazlar/faz-20-*.md`.
 
 ## 1. Ne yapar?
 

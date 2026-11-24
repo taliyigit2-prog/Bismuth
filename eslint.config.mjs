@@ -1,7 +1,7 @@
-// Bismuth ESLint (flat config). Rules mirror CLAUDE.md:
+// Bismuth ESLint (flat config). Rules mirror ANTIGRAVITY.md:
 //  - user-visible text only via t() (yasak 8) → i18next/no-literal-string in the renderer
 //  - logical CSS classes (ms-/me-/ps-/pe-/start-/end-) so an RTL language can be added later
-//  - network APIs only in src/main/network, src/main/server, src/renderer/lib/transport (yasak 1)
+//  - network APIs only in src/main/network, src/main/server, src/main/discovery, src/main/camera, src/renderer/lib/transport (yasak 1)
 import js from '@eslint/js'
 import tseslint from 'typescript-eslint'
 import react from 'eslint-plugin-react'
@@ -15,11 +15,11 @@ const physicalClass =
   '(?:^|\\s)-?(?:ml|mr|pl|pr|left|right|rounded-l|rounded-r|border-l|border-r|text-left|text-right)(?:-|\\s|$)'
 
 const networkMessage =
-  'Ağ kodu yalnız src/main/network, src/main/server, src/renderer/lib/transport (CLAUDE.md yasak 1).'
+  'Ağ kodu yalnız src/main/network, src/main/server, src/main/discovery, src/main/camera, src/renderer/lib/transport (ANTIGRAVITY.md yasak 1).'
 
 const moneyName = '/(minor|amount|price)/i'
 const moneyMessage =
-  'Para tutarında * / % yok: src/shared/money.ts (multiplyRatio, allocate) kullanın (CLAUDE.md yasak 6, G-131).'
+  'Para tutarında * / % yok: src/shared/money.ts (multiplyRatio, allocate) kullanın (ANTIGRAVITY.md yasak 6, G-131).'
 
 export default tseslint.config(
   {
@@ -31,8 +31,6 @@ export default tseslint.config(
       'coverage/**',
       'drizzle/**',
       'docs/**',
-      'tools/**',
-      '.claude/**',
       'playwright-report/**',
       'test-results/**',
       '.tmp/**',
@@ -53,12 +51,11 @@ export default tseslint.config(
         'error',
         {
           name: 'fetch',
-          message:
-            'Ağ kodu yalnız src/main/network, src/main/server, src/renderer/lib/transport (CLAUDE.md yasak 1).'
+          message: networkMessage
         },
-        { name: 'XMLHttpRequest', message: 'Ağ kodu yalnız izinli klasörlerde (CLAUDE.md yasak 1).' },
-        { name: 'WebSocket', message: 'Ağ kodu yalnız izinli klasörlerde (CLAUDE.md yasak 1).' },
-        { name: 'EventSource', message: 'Ağ kodu yalnız izinli klasörlerde (CLAUDE.md yasak 1).' }
+        { name: 'XMLHttpRequest', message: 'Ağ kodu yalnız izinli klasörlerde (ANTIGRAVITY.md yasak 1).' },
+        { name: 'WebSocket', message: 'Ağ kodu yalnız izinli klasörlerde (ANTIGRAVITY.md yasak 1).' },
+        { name: 'EventSource', message: 'Ağ kodu yalnız izinli klasörlerde (ANTIGRAVITY.md yasak 1).' }
       ],
       // The same rule for network modules (Faz 16 P16a): sockets, HTTP clients and servers, mDNS.
       'no-restricted-imports': [
@@ -78,9 +75,9 @@ export default tseslint.config(
     }
   },
   {
-    // The three network folders of CLAUDE.md yasak 1; src/main/discovery is the server mode's local-network
-    // announcement (mDNS, never the internet, faz-13 madde 1). src/main/camera is the camera sidecar's bridge: only
-    // 127.0.0.1 and rtsp:// (K-49; the `no-network-guard` hook checks the targets). Tests and scripts start fake servers.
+    // The five allowed network folders of ANTIGRAVITY.md yasak 1: src/main/discovery is the server mode's
+    // local-network announcement (mDNS, never the internet) and src/main/camera is the camera sidecar's bridge
+    // (only 127.0.0.1 and rtsp://, K-49; scripts/guards/no-network-guard.mjs checks targets). Tests and scripts start fake servers.
     files: [
       'src/main/network/**',
       'src/main/server/**',
@@ -165,12 +162,12 @@ export default tseslint.config(
         {
           selector: `JSXAttribute[name.name='className'] Literal[value=/${physicalClass}/]`,
           message:
-            'Mantıksal sınıf kullanın (ms-/me-/ps-/pe-/start-/end-/text-start); fiziksel yön yalnız takvim ızgarasında (CLAUDE.md yasak 8).'
+            'Mantıksal sınıf kullanın (ms-/me-/ps-/pe-/start-/end-/text-start); fiziksel yön yalnız takvim ızgarasında (ANTIGRAVITY.md yasak 8).'
         },
         {
           selector: `JSXAttribute[name.name='className'] TemplateElement[value.raw=/${physicalClass}/]`,
           message:
-            'Mantıksal sınıf kullanın (ms-/me-/ps-/pe-/start-/end-/text-start); fiziksel yön yalnız takvim ızgarasında (CLAUDE.md yasak 8).'
+            'Mantıksal sınıf kullanın (ms-/me-/ps-/pe-/start-/end-/text-start); fiziksel yön yalnız takvim ızgarasında (ANTIGRAVITY.md yasak 8).'
         }
       ]
     }
@@ -186,7 +183,7 @@ export default tseslint.config(
   },
   {
     // The tape chart is the calendar grid: a `dir="ltr"` island where days run left to right in every language
-    // (.claude/rules/ui.md), so physical left/right classes are its geometry, not text direction.
+    // (.agent/rules/ui.md), so physical left/right classes are its geometry, not text direction.
     files: ['src/renderer/components/tape-chart/**'],
     rules: { 'no-restricted-syntax': 'off' }
   },
@@ -203,11 +200,11 @@ export default tseslint.config(
   },
   {
     // Scripts run code inside the app's page (Playwright page.evaluate) as well as in Node.
-    files: ['scripts/**', 'tests/e2e/**'],
+    files: ['scripts/**', 'tests/e2e/**', '.agent/hooks/**'],
     languageOptions: { globals: { ...globals.node, ...globals.browser } }
   },
   {
-    // Money is integer minor units; multiplication/division only in src/shared/money.ts (CLAUDE.md yasak 6, G-131).
+    // Money is integer minor units; multiplication/division only in src/shared/money.ts (ANTIGRAVITY.md yasak 6, G-131).
     files: ['src/main/**/*.ts', 'src/shared/**/*.ts'],
     ignores: ['src/shared/money.ts', '**/*.test.ts'],
     rules: {
@@ -223,7 +220,7 @@ export default tseslint.config(
         },
         {
           selector: `CallExpression[callee.name='parseFloat'], CallExpression[callee.property.name=/^(parseFloat|toFixed)$/]`,
-          message: 'Para için kayan sayı yok: parseMoney / formatMoney kullanın (CLAUDE.md yasak 6).'
+          message: 'Para için kayan sayı yok: parseMoney / formatMoney kullanın (ANTIGRAVITY.md yasak 6).'
         }
       ]
     }

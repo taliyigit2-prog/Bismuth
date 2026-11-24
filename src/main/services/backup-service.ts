@@ -349,8 +349,14 @@ export function createBackupService(deps: BackupDeps) {
 
   const archivesIn = (dir: string | null): { name: string; parsed: ParsedName; size: number }[] => {
     if (!dir || !existsSync(dir)) return []
+    let names: string[]
+    try {
+      names = readdirSync(dir)
+    } catch {
+      return []
+    }
     const out: { name: string; parsed: ParsedName; size: number }[] = []
-    for (const name of readdirSync(dir)) {
+    for (const name of names) {
       const parsed = parseName(name)
       if (!parsed) continue
       try {

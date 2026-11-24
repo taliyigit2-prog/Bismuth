@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // npm run check — typecheck + lint + format check + unit tests in order, the same gates as CI's verify job
-// (CLAUDE.md: "üçü geçmeden madde bitti sayılmaz").
-// On success writes .claude/.checks-passed (read by the stop-gate hook).
+// (ANTIGRAVITY.md: typecheck + lint + test geçmeden iş "bitti" sayılmaz).
+// On success writes .cache/.checks-passed (read by scripts/guards/stop-gate.mjs).
 import { spawnSync } from 'node:child_process'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -23,6 +23,6 @@ for (const step of steps) {
     process.exit(result.status ?? 1)
   }
 }
-mkdirSync(join(root, '.claude'), { recursive: true })
-writeFileSync(join(root, '.claude', '.checks-passed'), `${new Date().toISOString()}\n`)
+mkdirSync(join(root, '.cache'), { recursive: true })
+writeFileSync(join(root, '.cache', '.checks-passed'), `${new Date().toISOString()}\n`)
 console.log('\n✔ typecheck, lint, biçim ve testler geçti')

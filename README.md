@@ -17,7 +17,7 @@ Hangi belgenin kimin için olduğu: [`docs/README.md`](docs/README.md).
 - **Otel çalışanı ve sahibi:** [`docs/otel/`](docs/otel/). Kurulum, kullanım kılavuzu, yedek, uzaktan erişim.
 - **Geliştirici:** [`docs/gelistirici/`](docs/gelistirici/).
 - **Plan ve kararlar:** [`docs/plan/`](docs/plan/).
-- **Yapay zekâ ajanları:** [`CLAUDE.md`](CLAUDE.md).
+- **Yapay zekâ ajanları:** [`AGENTS.md`](AGENTS.md) ve [`ANTIGRAVITY.md`](ANTIGRAVITY.md).
 
 ## Durum
 
@@ -66,7 +66,7 @@ npm run package:dir  # paketlenmiş uygulama (kurulumsuz klasör)
 ```
 
 Ayrıntılar: [`docs/gelistirici/README.md`](docs/gelistirici/README.md) · Bağımlılıklar: [`docs/plan/bagimliliklar.md`](docs/plan/bagimliliklar.md) ·
-Üçüncü taraf lisansları: [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) · Claude ile çalışma kuralları: [`CLAUDE.md`](CLAUDE.md).
+Üçüncü taraf lisansları: [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) · Ajan çalışma kuralları: [`ANTIGRAVITY.md`](ANTIGRAVITY.md).
 
 ## Lisans
 

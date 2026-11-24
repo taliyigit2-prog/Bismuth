@@ -51,7 +51,7 @@ rapor/istatistik içeren, üç dilli, **bitmiş** bir program. Genel bir otel ü
 
 ## Bir faz nasıl çalıştırılır? (Opus oturumu ritüeli)
 
-1. Yeni oturum aç; `CLAUDE.md` otomatik yüklenir. "**Faz N'i uygula**" de (ya da `/phase-runner N`).
+1. Yeni oturum aç; `AGENTS.md` ve `.agent/rules/` yüklenir. Ayrıntılı kurallar `ANTIGRAVITY.md` içindedir.
 2. Opus `fazlar/faz-NN-*.md`, atıf yapılan `G-xx`/`K-xx` satırlarını ve `03-mimari.md` ilgili bölümlerini okur.
 3. Fazın "Sorular" satırındaki soruları sahibe **basit dille, numaralı, tek seferde** sorar; cevapları `06-kararlar.md` → "Sahip cevapları"na yazar. Cevapsız soru = varsayılan + işaret.
 4. Teslimatları görev listesine çevirir; her madde kod + test; `typecheck`, `lint`, `test` geçmeden madde kapanmaz.
@@ -59,7 +59,7 @@ rapor/istatistik içeren, üç dilli, **bitmiş** bir program. Genel bir otel ü
 6. Kabul ölçütlerini işaretler; faz dosyasına "Sonuç" ekler; `DURUM.md` günceller; commit + push.
 7. Kapsam dışına çıkmaz; yeni fikir → `01-gereksinimler.md` §P (`/requirement-change`) + soru.
 
-## Değişmez kurallar (özet; tamamı `CLAUDE.md`)
+## Değişmez kurallar (özet; tamamı `ANTIGRAVITY.md`)
 
 Çevrimdışı veri girişi bozulmaz · ağ kodu yalnızca üç klasörde · OTA entegrasyonu yok · fatura kesme yok · bizim
 sunucumuz/telemetri/otomatik güncelleme yok · tek giriş · para tam sayı kuruş · yetki servis katmanında · metin dil

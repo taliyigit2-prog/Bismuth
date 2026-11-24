@@ -1,12 +1,12 @@
 # Geliştirici notları
 
 Yıllar sonra bu depoya dönen biri için: nasıl derlenir, paketlenir, nerede ne var, yeni bir şey nasıl eklenir, hangi
-tuzaklar bilinir. Kurallar `CLAUDE.md` ve `.claude/rules/*.md`'de; plan, gereksinimler ve kararlar `docs/plan/` altında.
+tuzaklar bilinir. Kurallar `ANTIGRAVITY.md` ve `.agent/rules/*.md`'de; plan, gereksinimler ve kararlar `docs/plan/` altında.
 Kullanıcıya dönük belgeler: [`kurulum.md`](../otel/kurulum.md), [`yedek-ve-tasima.md`](../otel/yedek-ve-tasima.md).
 
 ## 0. Önce bunları okuyun
 
-1. `CLAUDE.md` — ürün sınırları (çevrimdışı, OTA yok, fatura yok, telemetri/güncelleme yok) ve 13 yasak. Yasaklar kancalarla
+1. `ANTIGRAVITY.md` — ürün sınırları (çevrimdışı, OTA yok, fatura yok, telemetri/güncelleme yok) ve 15 yasak. Yasaklar kancalarla
    ve ESLint ile zorlanır; kod bu sınırları aşarsa derleme/commit düşer.
 2. `docs/plan/README.md` — planın haritası. Gereksinimler `docs/plan/01-gereksinimler.md` (G-xx), mimari ve veri modeli
    `docs/plan/03-mimari.md`, kararlar `docs/plan/06-kararlar.md` (K-xx), sahibin soruları `docs/plan/05-sorular.md` (S-xx),
@@ -28,9 +28,9 @@ Kullanıcıya dönük belgeler: [`kurulum.md`](../otel/kurulum.md), [`yedek-ve-t
 | Komut | Ne yapar |
 |---|---|
 | `npm run dev` | electron-vite geliştirme sunucusu + Electron (HMR). Geliştirmede CSP `'unsafe-inline'` ve localhost ws açılır; pakette açılmaz (`electron.vite.config.ts`). |
-| `npm run check` | `typecheck` → `lint` → `format:check` → `test` (CI'daki `verify` ile aynı adımlar); başarılıysa `.claude/.checks-passed` yazar (stop-gate kancası okur). Commit öncesi kanca bunu zorlar. |
+| `npm run check` | `typecheck` → `lint` → `format:check` → `test` (CI'daki `verify` ile aynı adımlar); başarılıysa `.cache/.checks-passed` yazar (`stop-gate.mjs` okur). Commit öncesi kanca bunu zorlar. |
 | `npm run typecheck` | Üç tsconfig: `tsconfig.node.json` (main, preload, shared, birim testleri), `tsconfig.web.json` (renderer), `tsconfig.e2e.json` (Playwright). |
-| `npm run lint` / `npm run format` / `npm run format:check` | ESLint (gömülü metin, fiziksel yön sınıfı, ağ global'i yasakları dahil; `eslint.config.mjs`) / Prettier. Prettier `docs/`, `drizzle/`, `components/ui` ve `.claude/` dosyalarına dokunmaz (`.prettierignore`). |
+| `npm run lint` / `npm run format` / `npm run format:check` | ESLint (gömülü metin, fiziksel yön sınıfı, ağ global'i yasakları dahil; `eslint.config.mjs`) / Prettier. Prettier `docs/`, `drizzle/`, `components/ui` ve `.agent/skills/owner-review/template.html` dosyalarına dokunmaz (`.prettierignore`). |
 | `npm test` | Vitest: `node` projesi (shared, main, `tests/unit`) + `dom` projesi (jsdom, renderer). |
 | `npm run test:coverage` | Yalnız node testleri + kapsam (`src/shared/domain`, `src/main/services`); eşik %85 (dal %75). |
 | `npm run build` | `out/` altına main, preload, renderer. e2e ve paketleme bundan önce gelir. |
@@ -82,13 +82,12 @@ Kullanıcıya dönük belgeler: [`kurulum.md`](../otel/kurulum.md), [`yedek-ve-t
 
 **CI** (`.github/workflows/`):
 
-- `ci.yml` (docs hariç her push): Linux'ta typecheck, lint, biçim, birim testleri, kanca testleri
-  (`node .claude/hooks/test-hooks.mjs`), lisans listesi güncelliği, build, e2e (Electron + telefon), paketlenmiş uygulama
-  smoke testi; sonra Windows (NSIS x64) ve macOS (DMG arm64 + x64) paketleri + smoke → `Bismuth-Windows` / `Bismuth-Mac`
-  yapıtları (14 gün).
-- `release.yml` (`v*` etiketi): önce etiket `package.json` sürümüyle aynı mı bakar (değilse durur); Windows (x64 + arm64)
+- `ci.yml` (elle `workflow_dispatch` ya da `release.yml` içinden çağrılır; dakika kotası nedeniyle push'ta otomatik çalışmaz): Linux'ta typecheck, lint, biçim, birim testleri, koruma testleri
+  (`node scripts/guards/test-guards.mjs`), lisans listesi güncelliği, build, e2e (Electron + telefon), paketlenmiş uygulama
+  smoke testi.
+- `release.yml` (sahibin elle başlattığı `workflow_dispatch` ya da `v*` etiketi): `verify` (`ci.yml`) ardından Windows (x64 + arm64)
   ve macOS (arm64 + x64) paketleri, smoke testi, GitHub Release'e sabit adlı dosyalar + `SHA256SUMS.txt`; sürüm notu
-  `docs/surum-notlari/<etiket>.md` dosyasından (yoksa kısa bir satır). Güncelleme beslemesi üretilmez. Sürüm çıkarma adımları `.claude/skills/release/SKILL.md` ("/release X.Y.Z").
+  `docs/surum-notlari/<etiket>.md` dosyasından (yoksa kısa bir satır). Güncelleme beslemesi üretilmez. Sürüm adımları `.agent/skills/release/SKILL.md` ("release" becerisi).
 - **Smoke modu:** `Bismuth --smoke --smoke-out=sonuc.json` pencereyi göstermeden açar; renderer hazır sinyali gelince sürüm,
   açılış süresi, DB durumu ve **engellenen ağ istekleri** JSON'a yazılır ve uygulama kapanır. CI paketlenmiş uygulamada
   bunu çalıştırır (`ok` olmalı, `db.integrity === 'ok'`, `blockedRequests` boş).
@@ -133,9 +132,10 @@ src/renderer/             React arayüzü
   mocks/                  Faz 3'ten kalan taslak veri (hâlâ kullanan ekran varsa orada kalır; yeni ekran kullanmaz)
 drizzle/                  Migrasyonlar (NNNN_ad.sql) ve meta/ (drizzle-kit yazar, elle düzenlenmez)
 tests/                    unit/ (servis ve izin testleri), e2e/{electron,mobile}/, factories/ (test kurulumları)
-scripts/                  check, i18n-add, i18n-check, notices, make-icon, seed-demo, ui-shot
+scripts/                  check, i18n-add, i18n-check, notices, make-icon, seed-demo, ui-shot, guards/
 build/, resources/        Simge kaynakları
-.claude/                  Ajanlar, beceriler, kancalar, yol bazlı kurallar (§8)
+.agent/                   Antigravity kuralları, becerileri ve hooks.json (§8)
+.githooks/                Git kancaları (pre-commit, pre-push)
 ```
 
 **Çağrı yolu:** `renderer` → `lib/transport` (IPC **ya da** HTTP, aynı kontrat) → `main/ipc` ya da `main/server` →
@@ -187,11 +187,11 @@ yedeği yerine koyar.
    `window.bismuth`'a doğrudan dokunmaz.
 6. **Testler:** servis (`tests/factories/db.ts` içindeki `memoryDatabase()` / `seededDatabase()` ile), yetkisiz rol →
    `PERMISSION_DENIED` testi (`tests/unit/permissions-<modül>.test.ts`), yönlendirici testi (`tests/unit/api.test.ts`
-   tarzı: 400/401/403). Yetki kuralı: `.claude/rules/db.md`, `.claude/rules/ipc.md`.
+   tarzı: 400/401/403). Yetki kuralı: `.agent/rules/db.md`, `.agent/rules/ipc.md`.
 
 ### 5.2 Yeni ekran
 
-`/ui-screen` becerisi iskeleti üretir (`.claude/skills/ui-screen/SKILL.md`). Elle yapılacaksa kontrol listesi:
+`ui-screen` becerisi adımları verir (`.agent/skills/ui-screen/SKILL.md`). Kontrol listesi:
 
 1. `src/renderer/features/<ad>/<ad>-page.tsx` (+ bileşenler, testler).
 2. `src/renderer/router.tsx` içine rota; `src/renderer/navigation.ts` içine menü satırı (hangi izin gösterir, telefonda
@@ -203,7 +203,7 @@ yedeği yerine koyar.
    içindeki `SCREEN_ROUTES` listesine ekleyin (1366×768 ve 390×844 taşma denetimi).
 6. `npm run ui:shot -- --routes <ad>` ile görüntüye bakın (açık/koyu, tr/ru).
 
-Kurallar: `.claude/rules/ui.md`. Yalnızca `components/ui` ve proje bileşenleri; inline stil yok (sanallaştırılmış ızgarada
+Kurallar: `.agent/rules/ui.md`. Yalnızca `components/ui` ve proje bileşenleri; inline stil yok (sanallaştırılmış ızgarada
 hesaplanan konum/boyut hariç); renkler CSS değişkeni; yön sınıfları mantıksal (`ms-`, `pe-`, `start-`).
 
 ### 5.2a Çoklu boyut ekran görüntüsü ve ölçüm
@@ -232,7 +232,7 @@ PW_CHROMIUM_PATH=/opt/pw-browsers/chromium xvfb-run -a npm run ui:shot -- --rout
 
 ### 5.3 Yeni migrasyon
 
-`/add-migration <slug> "<açıklama>"` becerisi (`.claude/skills/add-migration/SKILL.md`) adımları yürütür. Özet:
+`add-migration` becerisi (`.agent/skills/add-migration/SKILL.md`) adımları yürütür. Özet:
 
 1. Drizzle şemasını değiştirin: `src/main/db/schema/<alan>.ts` (+ `schema/index.ts` dışa aktarımı). Tablo: `id` (ULID),
    `created_at`, `updated_at`; para `amount_minor` + `currency`; tarih `YYYY-MM-DD` metin; silme yerine `voided_at`/durum;
@@ -262,7 +262,7 @@ Kullanıcıya görünen her metin `t('...')` anahtarıdır (G-08); `tr.json` kay
 ```
 
 Sonra `npm run i18n:add -- i18n-spec/<ad>.json` ve `npm run i18n:check`. `null` = o dilin mevcut metni kalsın. Anahtar
-silinmez; kullanılmaz kalanları `i18n:check` listeler. Ton ve sözlük için `.claude/skills/tr-copy-guide/SKILL.md`; paritenin
+silinmez; kullanılmaz kalanları `i18n:check` listeler. Ton ve sözlük için `.agent/skills/tr-copy-guide/SKILL.md`; paritenin
 testi `tests/unit/i18n-parity.test.ts`. Rusçada dört çoğul biçimi zorunludur. Tarih/para biçimi her zaman
 `src/shared/format.ts` üzerinden.
 
@@ -277,7 +277,7 @@ türü değerler (ödeme yöntemi, satış kanalı…) `src/main/db/seed/lists.t
 
 - **Vitest** (`vitest.config.ts`): `node` projesi (`src/shared/**`, `src/main/**`, `tests/unit/**`; `TZ=Europe/Istanbul`,
   zaman aşımı 60 sn) ve `dom` projesi (`src/renderer/**`, jsdom, `tests/unit/setup-dom.ts`). Tek dosya: `npx vitest run <yol>`.
-  Test adı davranışı anlatır; iş kuralı testleri Excel'den doğrulanmış sayıları kullanır (`.claude/rules/testing.md`).
+  Test adı davranışı anlatır; iş kuralı testleri Excel'den doğrulanmış sayıları kullanır (`.agent/rules/testing.md`).
   Servis testleri her test için `:memory:` veritabanı kurar (`tests/factories/db.ts`, `ctx.ts`); gerçek veritabanı okunmaz.
   Kapsam: `npm run test:coverage` (eşik %85, dal %75).
 - **E2E masaüstü** (`tests/e2e/electron/*.spec.ts`): Playwright `_electron.launch`, her test geçici veri klasörüyle
@@ -291,7 +291,7 @@ türü değerler (ödeme yöntemi, satış kanalı…) `src/main/db/seed/lists.t
   (`externalOrigin`). Ağ koduna dokunan her değişiklik `src/main/network/network.test.ts` ve smoke `blockedRequests` ile korunur.
 - **Yetki:** her yeni servis metodu için en az bir "yetkisiz rol → PERMISSION_DENIED" testi; ortak matris
   `tests/unit/permission-matrix.test.ts`, modül başına `tests/unit/permissions-<modül>.test.ts`.
-- **Kanca testleri:** `node .claude/hooks/test-hooks.mjs` (CI'da çalışır).
+- **Koruma testleri:** `node scripts/guards/test-guards.mjs` (CI'da çalışır).
 
 ## 7. Bağımlılıkları dondurma
 
@@ -302,8 +302,8 @@ türü değerler (ödeme yöntemi, satış kanalı…) `src/main/db/seed/lists.t
 - `dependencies` içinde yalnız yerel modül (`better-sqlite3`) durur; kalan her şey `devDependencies` — Vite onları pakete
   gömer, kurulum küçük kalır ve çalışma anında ağdan ya da diskten ek modül aranmaz.
 - **Yasak paketler** (G-07): `electron-updater`, `update-electron-app`, `@sentry/*`, `posthog*`, `mixpanel*`, `firebase*`,
-  `@segment/*` ve benzeri telemetri/otomatik güncelleme/bulut paketleri (`.claude/hooks/deps-guard.mjs` engeller;
-  `/release` becerisi G-07 denetimi yapar).
+  `@segment/*` ve benzeri telemetri/otomatik güncelleme/bulut paketleri (`scripts/guards/deps-guard.mjs` engeller;
+  `.agent/skills/release/SKILL.md` G-07 denetimi yapar).
 - **Tekrarlanabilir derleme** (Faz 16 madde 6): aynı commit + `npm ci` + aynı Node ana sürümü (CI: 22) → aynı `out/`.
   Doğrulandı (2026-10-05): `npm run build` art arda iki kez, `out/` altındaki 204 dosyanın sha256 özetleri birebir aynı.
   Karşılaştırma: `find out -type f | sort | xargs sha256sum | sha256sum`. Kurulum dosyalarının (`.exe`, `.dmg`) kendi
@@ -317,43 +317,40 @@ türü değerler (ödeme yöntemi, satış kanalı…) `src/main/db/seed/lists.t
   `npm run check`, `npm run build`, `npm run e2e`, `npm run e2e:mobile` ve paketlenmiş uygulamanın smoke testi geçmelidir.
   `vite` bilerek 7'de: `electron-vite` 5, Vite 8'i desteklemez (`docs/plan/bagimliliklar.md`).
 
-## 8. Kancalar, ajanlar ve beceriler (`.claude/`)
+## 8. Antigravity kuralları, becerileri ve korumalar (`.agent/`, `scripts/guards/`, `.githooks/`)
 
-Claude Code ile çalışırken devreye giren yapı. Kancalar `.claude/settings.json`'da bağlıdır, betikler `.claude/hooks/`'tadır:
+Antigravity özelleştirmeleri `.agent/` altında, paylaşılan koruma betikleri `scripts/guards/` içinde, terminal/IDE git korumaları ise `.githooks/` klasöründedir:
 
-| Kanca | Ne yapar |
+| Koruma | Ne yapar |
 |---|---|
-| `session-context.mjs` | Oturum başında faz durumunu ekrana basar. |
 | `db-migration-guard.mjs` | Commit edilmiş migrasyon dosyasına yazmayı engeller. |
 | `protect-files.mjs` | `.env*`, kilit dosyaları ve `docs/plan/01-gereksinimler.md` dosyasına sessiz değişikliği engeller. |
 | `kbs-data-guard.mjs` | Tablo dosyası (xlsx/csv…) ya da T.C. kimlik numarası içeren değişikliğin `git add`/`commit` edilmesini engeller. |
-| `push-guard.mjs` | Yalnız `claude/…` dalına ve `--force` olmadan push'a izin verir. |
-| `pre-commit-gate.mjs` | Her commit öncesi typecheck + lint + test koşar. |
+| `camera-data-guard.mjs` | Yüz görüntüsü/vektörü, ağırlık dosyası, `.env`, RTSP şifresi veya Telegram token'ının depoya girmesini engeller. |
+| `push-guard.mjs` | Yalnız `antigravity/…` dalına ve `--force` olmadan push'a izin verir. |
+| `workflow-guard.mjs` | `gh workflow run`, `gh release create`, `git tag v*` komutlarını engeller. |
+| `pre-commit-gate.mjs` | Her kod commit'i öncesi typecheck + lint + test koşar; yalnız belge/koruma commit'inde hızlı geçer. |
 | `deps-guard.mjs` | Yasak paketleri ve sabitlenmemiş sürümü engeller. |
-| `no-network-guard.mjs` | Ağ kodu (`fetch`, `axios`, `WebSocket`…) üç izinli dizin dışına yazılırsa düzenlemeyi hata sayar. |
+| `no-network-guard.mjs` | Ağ kodu (`fetch`, `axios`, `WebSocket`…) beş izinli dizin dışına yazılırsa engeller. |
 | `i18n-literal-warn.mjs` | JSX'e gömülü metni erken uyarır (asıl kapı ESLint). |
 | `format-file.mjs` | Düzenlenen dosyayı Prettier ile biçimler. |
-| `stop-gate.mjs` | `npm run check` geçmeden, `src/`/`tests/` değişmişse turun bitmesine izin vermez. |
+| `stop-gate.mjs` | `npm run check` geçmeden (`src/`, `tests/`, `drizzle/`, `scripts/`, `.github/` değişmişse) kapanışı uyarır. |
 
-Ajanlar (`.claude/agents/`): `feature-builder` (kod + test + i18n spec + görüntü + commit, kendi worktree'sinde),
-`feature-builder-lite` (küçük/mekanik işler), `researcher` (kaynaklı alan araştırması), `bug-hunter`, `flow-tester`,
-`decision-auditor`, `turkish-ui-copy`, `ui-reviewer`, `db-reviewer`, `requirements-tracer`, `security-reviewer`
-(kontrol ajanları; kaynak dosya düzenlemezler). Beceriler (`.claude/skills/`): `phase-runner`, `parallel-build`, `owner-review`,
-`qa`, `add-migration`, `ui-screen`, `release`, `requirement-change`, `electron-security`, `tr-copy-guide`. Yürütme planı ve
-dalgalar: `docs/plan/fazlar/YURUTME.md`.
+Araç kancası `.agent/hooks.json` → `.agent/hooks/pre-tool-use.mjs` aracılığıyla `run_command`, `edit_file` ve `write_file` öncesi bu korumaları çalıştırır.
+Alan kuralları `.agent/rules/` (`bismuth.md`, `db.md`, `ui.md`, `ipc.md`, `testing.md`, `camera.md`), beceriler `.agent/skills/` (`ui-screen`, `add-migration`, `tr-copy-guide`, `electron-security`, `release`, `requirement-change`, `qa`, `owner-review`) altındadır.
 
 ## 9. Güvenlik özeti
 
 `sandbox`, `contextIsolation`, Node entegrasyonu yok, `spellcheck: false`; sıkı CSP (`connect-src 'self'`); tüm izin
 istekleri reddedilir (yalnız temizlenmiş panoya yazma); `will-navigate` ve `window.open` engelli; uygulama dışı her istek
 `webRequest` ile engellenir ve günlüğe yazılır; preload yalnızca `window.bismuth = { api, ready, platform }` açar ve IPC
-çağrısında gönderen çerçevenin adresi denetlenir; electron-builder sigortaları (§3). Ağ kodu yalnızca `src/main/network/`,
-`src/main/server/`, `src/renderer/lib/transport/` içinde (ESLint ve kanca zorlar). Yetki yalnız serviste: IPC ve HTTP aynı
-kapıdan geçer. Ayrıntı: `.claude/skills/electron-security/`.
+çağrısında gönderen çerçevenin adresi denetlenir; electron-builder sigortaları (§3). Ağ kodu yalnızca beş izinli klasörde
+(`src/main/network/`, `src/main/server/`, `src/main/discovery/`, `src/main/camera/` ve `src/renderer/lib/transport/` — ESLint ve koruma zorlar). Yetki yalnız serviste: IPC ve HTTP aynı
+kapıdan geçer. Ayrıntı: `.agent/skills/electron-security/SKILL.md`.
 
 ## 10. Bilinen tuzaklar
 
-- **React Compiler kapalı.** TanStack Table v9 ile hatalar çıkardığı için açılmadı (`.claude/rules/ui.md`); `useMemo`/
+- **React Compiler kapalı.** TanStack Table v9 ile hatalar çıkardığı için açılmadı (`.agent/rules/ui.md`); `useMemo`/
   `useCallback` gereken yerde elle yazılır.
 - **`vaul` yok.** Bakımsız olduğu için eklenmez; mobil alt sayfa `Sheet side="bottom"`, ortak sarmalayıcı
   `ResponsiveDialog` (masaüstünde Dialog, telefonda alt Sheet).

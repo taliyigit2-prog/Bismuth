@@ -5,9 +5,8 @@ node_modules
 coverage
 drizzle
 docs
-tools
 package-lock.json
-.claude
+.agent/skills/owner-review/template.html
 src/renderer/components/ui
 THIRD_PARTY_NOTICES.md
 build

@@ -1,4 +1,5 @@
-import { resolve } from 'node:path'
+import { tmpdir } from 'node:os'
+import { join, resolve } from 'node:path'
 import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 
@@ -34,7 +35,10 @@ export default defineConfig({
           environment: 'node',
           // Services read the hotel's wall clock (business day, task due times): run them in the hotel's zone
           // whatever the developer's or CI machine's zone is.
-          env: { TZ: 'Europe/Istanbul' },
+          env: {
+            TZ: 'Europe/Istanbul',
+            BISMUTH_DRIVE_HOME: join(tmpdir(), 'bismuth-vitest-no-drive')
+          },
           // Password hashing (scrypt) and full service flows: generous on a busy machine (several agents build and
           // test in parallel on 4 cores), still catches hangs.
           testTimeout: 60_000,

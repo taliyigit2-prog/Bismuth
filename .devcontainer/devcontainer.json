@@ -1,15 +1,12 @@
 {
   // GitHub Codespaces / Dev Container for Bismuth.
-  // Claude Code runs inside the codespace and bills the Anthropic API key stored as the
-  // ANTHROPIC_API_KEY Codespaces secret (github.com > Settings > Codespaces > Secrets).
   "name": "Bismuth",
   "image": "mcr.microsoft.com/devcontainers/javascript-node:22",
   "features": {
-    "ghcr.io/devcontainers/features/python:1": { "version": "3.12" },
-    "ghcr.io/anthropics/devcontainer-features/claude-code:1.0": {}
+    "ghcr.io/devcontainers/features/python:1": { "version": "3.12" }
   },
   // Native modules (better-sqlite3, Electron) and the Electron e2e tests need these on Linux.
-  "postCreateCommand": "sudo dpkg --add-architecture i386 && sudo apt-get update && sudo apt-get install -y --no-install-recommends xvfb xauth libgtk-3-0 libnss3 libasound2t64 libxss1 git-lfs wine64 wine32:i386 && npm ci --no-audit --no-fund && npm ci --prefix tools/ajan --no-audit --no-fund && npx playwright install --with-deps chromium",
+  "postCreateCommand": "sudo dpkg --add-architecture i386 && sudo apt-get update && sudo apt-get install -y --no-install-recommends xvfb xauth libgtk-3-0 libnss3 libasound2t64 libxss1 git-lfs wine64 wine32:i386 && npm ci --no-audit --no-fund && npx playwright install --with-deps chromium",
   "remoteUser": "node",
   "customizations": {
     "vscode": {

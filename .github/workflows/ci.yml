@@ -29,8 +29,8 @@ jobs:
       - run: npm run lint
       - run: npm run format:check
       - run: npm test
-      - name: Claude hook tests
-        run: node .claude/hooks/test-hooks.mjs
+      - name: Guard tests
+        run: node scripts/guards/test-guards.mjs
       - name: Third-party notices are up to date
         run: |
           npm run notices
