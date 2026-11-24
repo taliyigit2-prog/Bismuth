@@ -7,7 +7,7 @@ Belgeler okuyucuya göre dört klasördedir. Aradığınızı bilmiyorsanız tab
 | **Otel çalışanı / otel sahibi** (programı kuran, kullanan) | [`otel/`](otel/) | [`otel/kurulum-rehberi-basit.md`](otel/kurulum-rehberi-basit.md) |
 | **Sahip** (planı, kararları, ekran onaylarını izleyen) | [`plan/`](plan/) | [`plan/fazlar/DURUM.md`](plan/fazlar/DURUM.md) |
 | **Geliştirici** (kodu derleyen, değiştiren) | [`gelistirici/`](gelistirici/) | [`gelistirici/README.md`](gelistirici/README.md) |
-| **Yapay zekâ ajanı** (Claude) | kök `CLAUDE.md` + `.claude/` | [`../CLAUDE.md`](../CLAUDE.md), sonra [`analiz/OPUS-BASLANGIC.md`](analiz/OPUS-BASLANGIC.md) |
+| **Yapay zekâ ajanı** (Antigravity/Gemini, Claude) | kök `AGENTS.md` + `CLAUDE.md` | [`../AGENTS.md`](../AGENTS.md), sonra [`../CLAUDE.md`](../CLAUDE.md) |
 
 ## `otel/` — programı kullananlar için
 
@@ -60,5 +60,6 @@ ham raporları ve ekran görüntüleridir; tarihsel kayıttır.
 | `otel-kamera/` | Kamera yan süreci (Python) |
 | `shell-tauri/` | Faz 22 Tauri denemesi (karar: Electron kalır) |
 | `build/` · `resources/` · `electron-builder.yml` | Paketleme ayarı ve simgeler |
-| `.claude/` | Ajan tanımları, beceriler, kurallar ve kancalar |
+| `.claude/` | Ajan tanımları, beceriler, kurallar ve kancalar (Claude Code) |
+| `.githooks/` | Git kancaları: aynı korumalar her araç için (`git config core.hooksPath .githooks`) |
 | `tools/ajan/` | Ajanları terminalden başlatan araç |

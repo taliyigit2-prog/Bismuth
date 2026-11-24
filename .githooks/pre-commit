@@ -1,0 +1,24 @@
+#!/bin/sh
+# Git's own pre-commit hook: the same guards Claude Code runs through .claude/settings.json, for every tool that
+# commits here (Antigravity, an IDE, a terminal). Enabled once per checkout with: git config core.hooksPath .githooks
+#   1. no KBS / identity data (spreadsheets, valid T.C. identity numbers)      .claude/hooks/kbs-data-guard.mjs
+#   2. no camera / biometric data or secrets (images, weights, .env, tokens)    .claude/hooks/camera-data-guard.mjs
+#   3. a committed migration is never changed (new numbered file instead)
+#   4. typecheck + lint + unit tests pass (skipped for docs-only commits)       .claude/hooks/pre-commit-gate.mjs
+root="$(git rev-parse --show-toplevel)" || exit 1
+command -v node >/dev/null 2>&1 || { echo "pre-commit: node not found; install Node 22" >&2; exit 1; }
+payload="{\"tool_input\":{\"command\":\"git commit\"},\"cwd\":\"$root\"}"
+
+for guard in kbs-data-guard camera-data-guard; do
+  printf '%s' "$payload" | node "$root/.claude/hooks/$guard.mjs" || { echo "pre-commit: blocked by $guard" >&2; exit 1; }
+done
+
+changed_migrations="$(git diff --cached --name-only --diff-filter=MDR -- 'drizzle/*.sql' 'src/main/db/migrations/*.sql')"
+if [ -n "$changed_migrations" ]; then
+  echo "pre-commit: a committed migration must not change (CLAUDE.md yasak 9); add a new numbered migration instead:" >&2
+  echo "$changed_migrations" >&2
+  exit 1
+fi
+
+printf '%s' "$payload" | node "$root/.claude/hooks/pre-commit-gate.mjs" || { echo "pre-commit: checks failed" >&2; exit 1; }
+exit 0
